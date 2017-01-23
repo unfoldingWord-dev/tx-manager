@@ -11,7 +11,7 @@ def read(f_name):
 
 setup(
     name="tx-manager",
-    packages=['tx_manager'],
+    packages=['aws_tools', 'client_tools', 'door43_tools', 'general_tools', 'gogs_tools'],
     version="0.0.1",
     author="unfoldingWord",
     author_email="info@unfoldingword.org",
