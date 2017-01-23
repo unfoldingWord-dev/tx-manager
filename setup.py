@@ -19,7 +19,7 @@ setup(
     license="MIT",
     keywords="tX manager",
     url="https://github.org/unfoldingWord-dev/tx-manager",
-    long_description=read('README.md'),
+    long_description=read('README.rst'),
     classifiers=[],
     install_requires=[
         'requests==2.12.5',

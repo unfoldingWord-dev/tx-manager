@@ -13,9 +13,9 @@ setup(
     classifiers=[],
     install_requires=[
         'requests==2.12.5',
-        'gogs_client==1.0.3',
-        'bs4==0.0.1',
         'boto3==1.4.4',
+        'bs4==0.0.1',
+        'gogs_client==1.0.3',
         'mock==2.0.0'
     ],
     test_suite='tests'
