@@ -48,13 +48,11 @@ class OBSInspection(object):
         self.errors = []
 
     def run(self):
-        if not os.path.isfile(self.filename):
-            self.errors.append('Chapter {0} does not exist!'.format(self.chapter))
+        if not self.chapter: # skip over files that are not chapters
             return
 
-        if not self.chapter:
-            basename = os.path.splitext(os.path.basename(self.filename))[0]
-            self.errors.append('This is not a chapter: {0}'.format(basename))
+        if not os.path.isfile(self.filename):
+            self.errors.append('Chapter {0} does not exist!'.format(self.chapter))
             return
 
         with open(self.filename) as chapter_file:
