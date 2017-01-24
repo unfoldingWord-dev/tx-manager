@@ -4,7 +4,7 @@ import unittest
 from gogs_tools.gogs_handler import GogsHandler
 
 
-class GogsHandlerTest(unittest.TestCase):
+class GogsHandlerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.handler = GogsHandler("https://www.example.com/")

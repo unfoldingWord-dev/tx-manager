@@ -3,7 +3,7 @@ import unittest
 from general_tools import smartquotes
 
 
-class SmartquotesTest(unittest.TestCase):
+class SmartquotesTests(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(smartquotes.smartquotes(""), "")
