@@ -5,7 +5,7 @@ import unittest
 from general_tools import url_utils
 
 
-class UrlUtilsTest(unittest.TestCase):
+class UrlUtilsTests(unittest.TestCase):
 
     @staticmethod
     def mock_urlopen(url):
