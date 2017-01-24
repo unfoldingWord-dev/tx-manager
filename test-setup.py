@@ -13,6 +13,7 @@ setup(
     classifiers=[],
     install_requires=[
         'requests',
+        'responses',
         'boto3',
         'bs4',
         'gogs_client',

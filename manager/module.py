@@ -1,10 +1,6 @@
-# TxModule class
-
 from __future__ import print_function
-
 from six import string_types
-from six import iteritems
-from tx_object import TxObject
+from object import TxObject
 
 
 class TxModule(TxObject):

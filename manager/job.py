@@ -1,9 +1,6 @@
-# TxJob class
-
 from __future__ import print_function
-
 from six import string_types
-from tx_object import TxObject
+from object import TxObject
 
 
 class TxJob(TxObject):

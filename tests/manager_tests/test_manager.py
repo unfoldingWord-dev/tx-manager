@@ -1,17 +1,15 @@
 import itertools
 import unittest
-
 import mock
 import responses
 from six import StringIO
+from manager_tests import mock_utils
+from manager.job import TxJob
+from manager.manager import TxManager
+from manager.module import TxModule
 
-from tests import mock_utils
-from tx_manager.tx_job import TxJob
-from tx_manager.tx_manager import TxManager
-from tx_manager.tx_module import TxModule
 
-
-class TxManagerTest(unittest.TestCase):
+class ManagerTest(unittest.TestCase):
     EXAMPLE_URL = "https://www.example.com/"
 
     mock_job_db = None
@@ -48,7 +46,7 @@ class TxManagerTest(unittest.TestCase):
                 "resource_type": "ulb",
                 "input_format": "usfm",
                 "output_format": "html",
-                "callback": TxManagerTest.EXAMPLE_URL,
+                "callback": ManagerTest.EXAMPLE_URL,
             },
             3: {
                 "job_id": 3,
@@ -93,25 +91,25 @@ class TxManagerTest(unittest.TestCase):
         cls.mock_lambda = mock.MagicMock(
             return_value=mock_utils.mock_lambda_handler(["module2"], ["module1"]))
 
-        TxManagerTest.patches = (
-            mock.patch("tx_manager.tx_manager.DynamoDBHandler", cls.mock_db),
-            mock.patch("tx_manager.tx_manager.GogsHandler", cls.mock_gogs),
-            mock.patch("tx_manager.tx_manager.LambdaHandler", cls.mock_lambda)
+        ManagerTest.patches = (
+            mock.patch("manager.manager.DynamoDBHandler", cls.mock_db),
+            mock.patch("manager.manager.GogsHandler", cls.mock_gogs),
+            mock.patch("manager.manager.LambdaHandler", cls.mock_lambda)
         )
 
-        for patch in TxManagerTest.patches:
+        for patch in ManagerTest.patches:
             patch.start()
 
     def setUp(self):
-        TxManagerTest.mock_job_db.reset_mock()
-        TxManagerTest.mock_module_db.reset_mock()
-        TxManagerTest.mock_db.reset_mock()
-        TxManagerTest.mock_gogs.reset_mock()
-        TxManagerTest.mock_lambda.reset_mock()
+        ManagerTest.mock_job_db.reset_mock()
+        ManagerTest.mock_module_db.reset_mock()
+        ManagerTest.mock_db.reset_mock()
+        ManagerTest.mock_gogs.reset_mock()
+        ManagerTest.mock_lambda.reset_mock()
 
     @classmethod
     def tearDownClass(cls):
-        for patch in TxManagerTest.patches:
+        for patch in ManagerTest.patches:
             patch.stop()
 
     def test_setup_job(self):
@@ -129,7 +127,7 @@ class TxManagerTest(unittest.TestCase):
         }
         tx_manager.setup_job(data)
         # assert an entry was aded to job database
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.insert_item, num_args=1)
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.insert_item, num_args=1)
         arg = args[0]
         self.assertIsInstance(arg, dict)
         self.assertEqual(arg["convert_module"], "module1")
@@ -182,7 +180,7 @@ class TxManagerTest(unittest.TestCase):
         tx_manager = TxManager(gogs_url="https://try.gogs.io/")
         tx_manager.start_job(1)
         # assert that correct lambda function was invoked
-        args, kwargs = self.call_args(TxManagerTest.mock_lambda().invoke, num_args=2)
+        args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
         module_name = args[0]
         self.assertEqual(module_name, "module1")
         payload = args[1]
@@ -191,7 +189,7 @@ class TxManagerTest(unittest.TestCase):
         self.assertIn("job", payload["data"])
 
         # job1's entry in database should have been updated
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.update_item, num_args=2)
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
@@ -210,13 +208,13 @@ class TxManagerTest(unittest.TestCase):
         invocation without warnings.
         """
         # mock out job 2's callback
-        responses.add(responses.POST, TxManagerTest.EXAMPLE_URL)
+        responses.add(responses.POST, ManagerTest.EXAMPLE_URL)
         tx_manager = TxManager(gogs_url="https://try.gogs.io/")
         tx_manager.start_job(2)
         self.assertEqual(len(responses.calls), 1)
-        self.assertEqual(responses.calls[0].request.url, TxManagerTest.EXAMPLE_URL)
+        self.assertEqual(responses.calls[0].request.url, ManagerTest.EXAMPLE_URL)
         # assert that correct lambda function was invoked
-        args, kwargs = self.call_args(TxManagerTest.mock_lambda().invoke, num_args=2)
+        args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
         module_name = args[0]
         self.assertEqual(module_name, "module2")
         payload = args[1]
@@ -225,8 +223,8 @@ class TxManagerTest(unittest.TestCase):
         self.assertIn("job", payload["data"])
 
         # job2's entry in database should have been updated
-        TxManagerTest.mock_job_db.update_item.assert_called()
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.update_item, num_args=2)
+        ManagerTest.mock_job_db.update_item.assert_called()
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
@@ -242,9 +240,9 @@ class TxManagerTest(unittest.TestCase):
         """
         manager = TxManager(gogs_url="https://try.gogs.io/")
         manager.start_job(3)
-        TxManagerTest.mock_lambda().invoke.assert_called()
+        ManagerTest.mock_lambda().invoke.assert_called()
         # assert that correct lambda function was invoked
-        args, kwargs = self.call_args(TxManagerTest.mock_lambda().invoke, num_args=2)
+        args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
         module_name = args[0]
         self.assertEqual(module_name, "module3")
         payload = args[1]
@@ -253,8 +251,8 @@ class TxManagerTest(unittest.TestCase):
         self.assertIn("job", payload["data"])
 
         # job3's entry in database should have been updated
-        TxManagerTest.mock_job_db.update_item.assert_called()
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.update_item, num_args=2)
+        ManagerTest.mock_job_db.update_item.assert_called()
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIn("job_id", keys)
         self.assertEqual(keys["job_id"], 3)
@@ -274,11 +272,11 @@ class TxManagerTest(unittest.TestCase):
         tx_manager.start_job(5)
 
         # no lambda function should have been invoked
-        TxManagerTest.mock_lambda().invoke.assert_not_called()
+        ManagerTest.mock_lambda().invoke.assert_not_called()
 
         # last existent job (4) should be updated in database to include error
         # messages
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.update_item, num_args=2)
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
@@ -298,7 +296,7 @@ class TxManagerTest(unittest.TestCase):
         tx_manager = TxManager(api_url=api_url, gogs_url="https://try.gogs.io/")
         jobs = tx_manager.list_jobs({"user_token": "token2"}, True)
         expected = [TxJob(job).get_db_data()
-                    for job in TxManagerTest.mock_job_db.mock_data.values()]
+                    for job in ManagerTest.mock_job_db.mock_data.values()]
         self.assertEqual(jobs, expected)
 
         self.assertRaises(Exception, tx_manager.list_jobs, {"bad_key": "token1"})
@@ -331,8 +329,8 @@ class TxManagerTest(unittest.TestCase):
             "output_format": "html"
         }
         manager.register_module(data)
-        TxManagerTest.mock_module_db.insert_item.assert_called()
-        args, kwargs = self.call_args(TxManagerTest.mock_module_db.insert_item, num_args=1)
+        ManagerTest.mock_module_db.insert_item.assert_called()
+        args, kwargs = self.call_args(ManagerTest.mock_module_db.insert_item, num_args=1)
         self.assertEqual(args[0], TxModule(data).get_db_data())
 
         for key in data:
@@ -366,14 +364,14 @@ class TxManagerTest(unittest.TestCase):
 
         # update_job
         manager.update_job(job)
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.update_item,
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item,
                                       num_args=2)
         self.assertEqual(args[0], {"job_id": 0})
         self.assertEqual(args[1], job.get_db_data())
 
         # delete_job
         manager.delete_job(job)
-        args, kwargs = self.call_args(TxManagerTest.mock_job_db.delete_item,
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.delete_item,
                                       num_args=1)
         self.assertEqual(args[0], {"job_id": 0})
 
@@ -391,14 +389,14 @@ class TxManagerTest(unittest.TestCase):
 
         # update_module
         manager.update_module(module)
-        args, kwargs = self.call_args(TxManagerTest.mock_module_db.update_item,
+        args, kwargs = self.call_args(ManagerTest.mock_module_db.update_item,
                                       num_args=2)
         self.assertEqual(args[0], {"name": "module1"})
         self.assertEqual(args[1], module.get_db_data())
 
         # delete_module
         manager.delete_module(module)
-        args, kwargs = self.call_args(TxManagerTest.mock_module_db.delete_item,
+        args, kwargs = self.call_args(ManagerTest.mock_module_db.delete_item,
                                       num_args=1)
         self.assertEqual(args[0], {"name": "module1"})
 
