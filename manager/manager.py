@@ -1,26 +1,22 @@
-# txManager functions
-
 from __future__ import print_function
-
 import hashlib
 from datetime import datetime
 from datetime import timedelta
-
 import json
 import requests
-
 from aws_tools.lambda_handler import LambdaHandler
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
-from tx_job import TxJob
-from tx_module import TxModule
+from job import TxJob
+from module import TxModule
 
 
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
 
-    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False, aws_access_key_id=None, aws_secret_access_key=None, job_table_name=None, module_table_name=None):
+    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False, aws_access_key_id=None,
+                 aws_secret_access_key=None, job_table_name=None, module_table_name=None):
         self.api_url = api_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
@@ -90,10 +86,14 @@ class TxManager(object):
         module = self.get_converter_module(job)
 
         if not module:
-            raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type, job.input_format, job.output_format))
+            raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
+                                                                                           job.input_format,
+                                                                                           job.output_format))
 
         job.convert_module = module.name
-        output_file = 'tx/job/{0}.zip'.format(job.job_id)  # All conversions must result in a ZIP of the converted file(s)
+
+        # All conversions must result in a ZIP of the converted file(s)
+        output_file = 'tx/job/{0}.zip'.format(job.job_id)
         job.output = '{0}/{1}'.format(self.cdn_url, output_file)
         job.cdn_file = output_file
 
@@ -107,7 +107,9 @@ class TxManager(object):
         job.status = 'requested'
         job.message = 'Conversion requested...'
 
-        job_id = hashlib.sha256('{0}-{1}-{2}'.format(user.username, user.email, created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
+        job_id = hashlib.sha256('{0}-{1}-{2}'.format(user.username,
+                                                     user.email,
+                                                     created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         job.job_id = job_id
 
         job.links = {
@@ -204,7 +206,9 @@ class TxManager(object):
             print("Payload to {0}:".format(module.name))
             print(payload)
 
-            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(job.converter_module, job.source, job.output))
+            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(job.converter_module,
+                                                                                      job.source,
+                                                                                      job.output))
             response = self.lambda_handler.invoke(module.name, payload)
 
             print("Response from {0}:".format(module.name))
@@ -267,15 +271,17 @@ class TxManager(object):
         if job.callback:
             self.do_callback(job.callback, callback_payload)
 
-    def do_callback(self, url, payload):
+    @staticmethod
+    def do_callback(url, payload):
         if url.startswith('http'):
             headers = {"content-type": "application/json"}
             print('Making callback to {0} with payload:'.format(url))
             print(payload)
-            response = requests.post(url, json=payload, headers=headers)
+            requests.post(url, json=payload, headers=headers)
             print('finished.')
 
-    def make_api_gateway_for_module(self, module):
+    @staticmethod
+    def make_api_gateway_for_module(module):
         # lambda_func_name = module['name']
         # AWS_LAMBDA_API_ID = '7X97xCLPDE16Jep5Zv85N6zy28wcQfJz79E2H3ln'
         # # of 'tx-manager_api_key'
@@ -311,7 +317,8 @@ class TxManager(object):
         #     "lambda-function-name": lambda_func_name,
         # }
         #
-        # uri = "arn:aws:apigateway:{aws-region}:lambda:path/{api-version}/functions/arn:aws:lambda:{aws-region}:{aws-acct-id}:function:{lambda-function-name}/invocations".format(**uri_data)
+        # uri = "arn:aws:apigateway:{aws-region}:lambda:path/{api-version}/functions/arn:aws:lambda:{aws-region}:
+        #        {aws-acct-id}:function:{lambda-function-name}/invocations".format(**uri_data)
         #
         # ## create integration
         # integration_resp = api_client.put_integration(
@@ -340,7 +347,8 @@ class TxManager(object):
         # )
         #
         # uri_data['aws-api-id'] = AWS_LAMBDA_API_ID
-        # source_arn = "arn:aws:execute-api:{aws-region}:{aws-acct-id}:{aws-api-id}/*/POST/{lambda-function-name}".format(**uri_data)
+        # source_arn = "arn:aws:execute-api:{aws-region}:{aws-acct-id}:
+        #               {aws-api-id}/*/POST/{lambda-function-name}".format(**uri_data)
         #
         # aws_lambda.add_permission(
         #     FunctionName=lambda_func_name,
@@ -388,7 +396,7 @@ class TxManager(object):
         return modules
 
     def get_job(self, job_id):
-        return TxJob(self.job_db_handler.get_item({'job_id':job_id}))
+        return TxJob(self.job_db_handler.get_item({'job_id': job_id}))
 
     def update_job(self, job):
         return self.job_db_handler.update_item({'job_id': job.job_id}, job.get_db_data())

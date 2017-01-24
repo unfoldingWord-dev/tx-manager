@@ -1,7 +1,4 @@
-# TxObject class
-
 from __future__ import print_function
-
 from six import iteritems
 
 
