@@ -16,11 +16,13 @@ class TxManager(object):
     MODULE_TABLE_NAME = 'tx-module'
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False, aws_access_key_id=None,
-                 aws_secret_access_key=None, job_table_name=None, module_table_name=None):
+                 aws_secret_access_key=None, job_table_name=None, module_table_name=None,
+                 dynamodb_handler=DynamoDBHandler, logger=None):
         self.api_url = api_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
         self.quiet = quiet
+        self.logger = logger
 
         self.job_db_handler = None
         self.module_db_handler = None
@@ -31,8 +33,8 @@ class TxManager(object):
         if not module_table_name:
             module_table_name = self.MODULE_TABLE_NAME
 
-        self.job_db_handler = DynamoDBHandler(job_table_name)
-        self.module_db_handler = DynamoDBHandler(module_table_name)
+        self.job_db_handler = dynamodb_handler(job_table_name)
+        self.module_db_handler = dynamodb_handler(module_table_name)
 
         if gogs_url:
             self.gogs_handler = GogsHandler(gogs_url)
