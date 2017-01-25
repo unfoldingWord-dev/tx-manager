@@ -1,14 +1,10 @@
+from __future__ import unicode_literals
 import mock
 import unittest
-import json
-import tempfile
-
 import aws_tools.dynamodb_handler
-import aws_tools.lambda_handler
-import aws_tools.s3_handler
 
 
-class DynamoDBHandlerTest(unittest.TestCase):
+class DynamoDBHandlerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -19,14 +15,13 @@ class DynamoDBHandlerTest(unittest.TestCase):
     def setUp(self):
         self.handler.table.reset_mock()
 
-
     def test_get_item(self):
         """
         Test a successful invocation of `get_item`
         """
         expected = dict(field1="1", field2="2")
         self.handler.table.get_item.return_value = {
-            "Item" : expected
+            "Item": expected
         }
         self.assertEqual(self.handler.get_item("key"), expected)
 
@@ -113,28 +108,3 @@ class DynamoDBHandlerTest(unittest.TestCase):
         self.handler.table.scan.return_value = {"Items": data}
         self.assertEqual(self.handler.query_items(), data)
         self.handler.table.scan.assert_called_once_with()
-
-
-class LambdaHandlerTest(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        with mock.patch("aws_tools.lambda_handler.boto3", mock.MagicMock()):
-            cls.handler = aws_tools.lambda_handler.LambdaHandler()
-        cls.handler.client = mock.MagicMock()
-
-    def setUp(self):
-        self.handler.client.reset_mock()
-
-    def test_invoke(self):
-        """
-        Test a successful call of `invoke`
-        """
-        payload = {"arg1": "value1", "arg2": "value2"}
-        response = {"StatusCode": 123, "LogResult": "log"}
-        self.handler.client.invoke.return_value = response
-        self.assertEqual(self.handler.invoke("function_name", payload), response)
-        self.handler.client.invoke.assert_called_once_with(
-            FunctionName="function_name",
-            Payload=json.dumps(payload)
-        )

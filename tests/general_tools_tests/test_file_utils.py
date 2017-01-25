@@ -7,7 +7,7 @@ import zipfile
 from general_tools import file_utils
 
 
-class FileUtilsTest(unittest.TestCase):
+class FileUtilsTests(unittest.TestCase):
 
     def test_unzip(self):
         tmp_dir = tempfile.mkdtemp()
@@ -138,7 +138,7 @@ class FileUtilsTest(unittest.TestCase):
         _, tmp_file2 = tempfile.mkstemp(dir=tmp_dir)
         tmp_subdir = tmp_dir + "/subdir"
         os.mkdir(tmp_subdir)
-        tmp_subsubdir =tmp_subdir + "/subdir"
+        tmp_subsubdir = tmp_subdir + "/subdir"
         os.mkdir(tmp_subsubdir)
 
         subdirs = file_utils.get_subdirs(tmp_dir, relative_paths=False)

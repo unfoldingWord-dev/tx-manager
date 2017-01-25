@@ -1,0 +1,10 @@
+[run]
+source=
+    aws_tools
+    client_tools
+    door43_tools
+    general_tools
+    gogs_tools
+
+omit =
+    */__init__.py

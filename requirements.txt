@@ -1,3 +1,5 @@
+responses
+mock
 boto3
 gogs_client
 bs4
