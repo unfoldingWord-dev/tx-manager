@@ -21,11 +21,11 @@ class ObsHandlerTest(unittest.TestCase):
         #then
         self.verify_results(expected_errors, expected_warnings, inspection)
 
-    def test_errorInvalidChapterType(self):
+    def test_errorInvalidChapterType(self): # should be ignored
 
         # given
         expected_warnings = False
-        expected_errors = True
+        expected_errors = False
         file_name = 'hu_obs_text_obs/header.html'
 
         # when
