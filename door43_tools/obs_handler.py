@@ -34,6 +34,7 @@ class OBSInspection(object):
         :param string chapter: Chapter being processed
         """
         self.filename = filename
+        self.chapter = None # initialize so we don't throw an exception testing for attribute
         if not chapter:
             try:
                 self.chapter = int(os.path.splitext(os.path.basename(filename))[0])
@@ -47,11 +48,11 @@ class OBSInspection(object):
         self.errors = []
 
     def run(self):
-        if not self.chapter:
+        if not self.chapter: # skip over files that are not chapters
             return
 
         if not os.path.isfile(self.filename):
-            self.warnings.append('Chapter {0} does not exist!'.format(self.chapter))
+            self.errors.append('Chapter {0} does not exist!'.format(self.chapter))
             return
 
         with open(self.filename) as chapter_file:
@@ -60,7 +61,7 @@ class OBSInspection(object):
         soup = BeautifulSoup(chapter_html, 'html.parser')
 
         if not soup.find('body'):
-            self.warnings.append('Chapter {0} has no content!'.format(self.chapter))
+            self.warnings.append('Chapter {0} has no body!'.format(self.chapter))
             return
 
         content = soup.body.find(id='content')
@@ -79,5 +80,7 @@ class OBSInspection(object):
                 'Chapter {0} has only {1} frame(s).There should be {2}!'.format(self.chapter, frame_count,
                                                                                 expected_frame_count))
 
-        if len(content.find_all('p')) != (frame_count * 2 + 1):
+        paragraph_count = len(content.find_all('p'))
+        expected_paragraph_count = (frame_count * 2 + 1)
+        if paragraph_count != expected_paragraph_count:
             self.warnings.append('Bible reference not found at end of chapter {0}!'.format(self.chapter))
