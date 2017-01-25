@@ -4,7 +4,7 @@ import unittest
 from door43_tools.obs_handler import OBSInspection
 
 
-class ObsHandlerTest(unittest.TestCase):
+class TestObsHandler(unittest.TestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -118,7 +118,7 @@ class ObsHandlerTest(unittest.TestCase):
         self.verify_results(expected_errors, expected_warnings, inspection)
 
     def inspectFile(self, file_name, chapter=None):
-        file_path = os.path.join(ObsHandlerTest.resources_dir, file_name)
+        file_path = os.path.join(TestObsHandler.resources_dir, file_name)
         inspection = OBSInspection(file_path, chapter)
         inspection.run()
         return inspection
