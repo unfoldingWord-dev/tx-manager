@@ -5,6 +5,7 @@ source=
     door43_tools
     general_tools
     gogs_tools
+    lambda_handlers
 
 omit =
     */__init__.py
