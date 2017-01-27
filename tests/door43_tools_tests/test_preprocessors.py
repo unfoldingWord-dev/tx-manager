@@ -30,7 +30,7 @@ class TestPreprocessor(unittest.TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_TsObsMarkdownPreprocessor(self):
+    def test_TsObsMarkdownPreprocessorComplete(self):
 
         #given
         file_name = 'aab_obs_text_obs.zip'
@@ -43,15 +43,29 @@ class TestPreprocessor(unittest.TestCase):
         #then
         self.verifyTransform(folder)
 
+    def test_TsObsMarkdownPreprocessorMissingChapter(self):
+
+        #given
+        file_name = 'aab_obs_text_obs-missing_chapter_01.zip'
+        repo_name = 'aab_obs_text_obs'
+        missing_chapters = [1]
+        manifest, repo_dir = self.extractObsFiles(file_name, repo_name)
+
+        # when
+        folder = self.runTsObsMarkdownPreprocessor(manifest, repo_dir)
+
+        #then
+        self.verifyTransform(folder, missing_chapters)
+
     def runTsObsMarkdownPreprocessor(self, manifest, repo_dir):
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         compiler = TsObsMarkdownPreprocessor(manifest, repo_dir, self.out_dir)
         compiler.run()
-        folder = self.out_dir
-        return folder
+        return self.out_dir
 
     def extractObsFiles(self, file_name, repo_name):
         file_path = os.path.join(self.resources_dir, file_name)
+
         # 1) unzip the repo files
         self.temp_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(file_path, self.temp_dir)
@@ -72,15 +86,24 @@ class TestPreprocessor(unittest.TestCase):
         manifest = Manifest(file_name=manifest_path, repo_name=repo_name, files_path=repo_dir, meta=meta)
         return manifest, repo_dir
 
-    def verifyTransform(self, folder):
+    def verifyTransform(self, folder, missing_chapters = []):
         files_to_verify = []
+        files_missing = []
         for i in range(1, 51):
-            files_to_verify.append(str(i).zfill(2) + '.md')
+            file_name = str(i).zfill(2) + '.md'
+            if not i in missing_chapters:
+                files_to_verify.append(file_name)
+            else:
+                files_missing.append(file_name)
         files_to_verify.append('front.md')
 
         for file_to_verify in files_to_verify:
             file_name = os.path.join(folder, file_to_verify)
-            self.assertTrue(os.path.isfile(file_name), 'OBS HTML file not found: {0}'.format(file_to_verify))
+            self.assertTrue(os.path.isfile(file_name), 'OBS md file not found: {0}'.format(file_to_verify))
+
+        for file_to_verify in files_missing:
+            file_name = os.path.join(folder, file_to_verify)
+            self.assertFalse(os.path.isfile(file_name), 'OBS md file present, but should not be: {0}'.format(file_to_verify))
 
 
 
