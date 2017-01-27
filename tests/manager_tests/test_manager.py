@@ -3,7 +3,8 @@ import unittest
 import mock
 import responses
 from six import StringIO
-from tests.manager_tests import mock_utils
+
+from manager_tests import mock_utils
 from manager.job import TxJob
 from manager.manager import TxManager
 from manager.module import TxModule
