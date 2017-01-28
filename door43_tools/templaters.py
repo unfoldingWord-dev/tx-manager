@@ -124,14 +124,19 @@ class Templater(object):
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
-            for a_tag in template.body.select('a[rel="dct:source"]'):
-                a_tag.clear()
-                a_tag.append(title)
+            try:
+                sources = template.body.select('a[rel="dct:source"]')
+                for a_tag in sources:
+                    a_tag.clear()
+                    a_tag.append(title)
 
-            # set the page heading
-            heading_span = template.body.find('span', {'id': 'h1'})
-            heading_span.clear()
-            heading_span.append(heading)
+                # set the page heading
+                heading_span = template.body.find('span', {'id': 'h1'})
+                heading_span.clear()
+                heading_span.append(heading)
+
+            except: # file didn't have body, so skip processing it
+                pass
 
             # get the html
             html = unicode(template)
