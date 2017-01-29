@@ -94,7 +94,8 @@ class TestTemplater(unittest.TestCase):
         try:
             templater.run()
         except Exception as e:
-            print("Templater threw exception: " + e)
+            print("Templater threw exception: ")
+            print(e)
             success = False
 
         return templater, success

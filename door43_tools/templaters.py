@@ -118,25 +118,27 @@ class Templater(object):
             if not soup_content:
                 soup_content = body
 
+            try:
+                if str(soup_content).lower().strip().startswith("<?xml"):
+                    soup_content = "" # ignore XML source, will break html template merging
+            except:
+                pass
+
             # insert new HTML into the template
             content_div.clear()
             content_div.append(soup_content)
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
-            try:
-                sources = template.body.select('a[rel="dct:source"]')
-                for a_tag in sources:
-                    a_tag.clear()
-                    a_tag.append(title)
 
-                # set the page heading
-                heading_span = template.body.find('span', {'id': 'h1'})
-                heading_span.clear()
-                heading_span.append(heading)
+            for a_tag in template.body.select('a[rel="dct:source"]'):
+                a_tag.clear()
+                a_tag.append(title)
 
-            except: # file didn't have body, so skip processing it
-                pass
+            # set the page heading
+            heading_span = template.body.find('span', {'id': 'h1'})
+            heading_span.clear()
+            heading_span.append(heading)
 
             # get the html
             html = unicode(template)
