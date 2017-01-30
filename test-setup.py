@@ -12,12 +12,12 @@ setup(
     long_description='Unit test setup file',
     classifiers=[],
     install_requires=[
-        'requests==2.12.5',
+        'requests==2.13.0',
         'responses==0.5.1',
         'boto3==1.4.4',
         'bs4==0.0.1',
         'gogs_client==1.0.3',
-        'mock',
+        'mock', # travis reports syntax error in mock setup.cfg if we give version
         'coveralls==1.1'
     ],
     test_suite='tests'
