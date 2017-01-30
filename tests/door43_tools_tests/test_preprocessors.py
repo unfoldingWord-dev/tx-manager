@@ -33,9 +33,9 @@ class TestPreprocessor(unittest.TestCase):
     def test_TsObsMarkdownPreprocessorComplete(self):
 
         #given
-        file_name = 'aab_obs_text_obs.zip'
+        file_name = 'raw_sources/aab_obs_text_obs.zip'
         repo_name = 'aab_obs_text_obs'
-        manifest, repo_dir = self.extractObsFiles(file_name, repo_name)
+        manifest, repo_dir, self.temp_dir = self.extractObsFiles(file_name, repo_name)
 
         # when
         folder = self.runTsObsMarkdownPreprocessor(manifest, repo_dir)
@@ -46,10 +46,10 @@ class TestPreprocessor(unittest.TestCase):
     def test_TsObsMarkdownPreprocessorMissingChapter(self):
 
         #given
-        file_name = 'aab_obs_text_obs-missing_chapter_01.zip'
+        file_name = 'raw_sources/aab_obs_text_obs-missing_chapter_01.zip'
         repo_name = 'aab_obs_text_obs'
         missing_chapters = [1]
-        manifest, repo_dir = self.extractObsFiles(file_name, repo_name)
+        manifest, repo_dir, self.temp_dir = self.extractObsFiles(file_name, repo_name)
 
         # when
         folder = self.runTsObsMarkdownPreprocessor(manifest, repo_dir)
@@ -63,13 +63,15 @@ class TestPreprocessor(unittest.TestCase):
         compiler.run()
         return self.out_dir
 
+
+    @classmethod
     def extractObsFiles(self, file_name, repo_name):
-        file_path = os.path.join(self.resources_dir, file_name)
+        file_path = os.path.join(TestPreprocessor.resources_dir, file_name)
 
         # 1) unzip the repo files
-        self.temp_dir = tempfile.mkdtemp(prefix='repo_')
-        unzip(file_path, self.temp_dir)
-        repo_dir = os.path.join(self.temp_dir, repo_name)
+        temp_dir = tempfile.mkdtemp(prefix='repo_')
+        unzip(file_path, temp_dir)
+        repo_dir = os.path.join(temp_dir, repo_name)
         if not os.path.isdir(repo_dir):
             repo_dir = file_path
 
@@ -84,7 +86,8 @@ class TestPreprocessor(unittest.TestCase):
         if os.path.isfile(meta_path):
             meta = MetaData(meta_path)
         manifest = Manifest(file_name=manifest_path, repo_name=repo_name, files_path=repo_dir, meta=meta)
-        return manifest, repo_dir
+        return manifest, repo_dir, temp_dir
+
 
     def verifyTransform(self, folder, missing_chapters = []):
         files_to_verify = []

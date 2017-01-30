@@ -12,13 +12,13 @@ setup(
     long_description='Unit test setup file',
     classifiers=[],
     install_requires=[
-        'requests',
-        'responses',
-        'boto3',
-        'bs4',
-        'gogs_client',
-        'mock',
-        'coveralls'
+        'requests==2.12.5',
+        'responses==0.5.1',
+        'boto3==1.4.4',
+        'bs4==0.0.1',
+        'gogs_client==1.0.3',
+        'mock==2.0.0',
+        'coveralls==1.1'
     ],
     test_suite='tests'
 )

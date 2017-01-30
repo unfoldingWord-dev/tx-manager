@@ -22,9 +22,9 @@ setup(
     long_description=read('README.rst'),
     classifiers=[],
     install_requires=[
-        'requests',
-        'gogs_client',
-        'bs4',
-        'boto3'
+        'requests==2.12.5',
+        'gogs_client==1.0.3',
+        'bs4==0.0.1',
+        'boto3==1.4.4'
     ]
 )

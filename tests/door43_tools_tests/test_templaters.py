@@ -32,7 +32,7 @@ class TestTemplater(unittest.TestCase):
 
     def testTemplaterComplete(self):
         # given
-        test_folder_name = "aab_obs_text_obs-complete"
+        test_folder_name = "converted_projects/aab_obs_text_obs-complete"
         expect_success = True
 
         # when
@@ -44,7 +44,7 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43Empty(self):
         # given
-        test_folder_name = "aae_obs_text_obs-empty"
+        test_folder_name = "converted_projects/aae_obs_text_obs-empty"
         expect_success = True
         missing_chapters = range(1, 51)
 
@@ -57,7 +57,7 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43MissingFirstFrame(self):
         # given
-        test_folder_name = "aah_obs_text_obs-missing_first_frame"
+        test_folder_name = "converted_projects/aah_obs_text_obs-missing_first_frame"
         expect_success = True
 
         # when
@@ -69,7 +69,7 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43MissingChapter50(self):
         # given
-        test_folder_name = "aai_obs_text_obs-missing_chapter_50"
+        test_folder_name = "converted_projects/aai_obs_text_obs-missing_chapter_50"
         expect_success = True
         missing_chapters = [50]
 
