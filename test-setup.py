@@ -17,7 +17,7 @@ setup(
         'boto3==1.4.4',
         'bs4==0.0.1',
         'gogs_client==1.0.3',
-        'mock==2.0.0',
+        'mock',
         'coveralls==1.1'
     ],
     test_suite='tests'
