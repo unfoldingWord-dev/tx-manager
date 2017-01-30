@@ -1,1 +1,1 @@
-import manager_tests.mock_utils
+import tests.manager_tests.mock_utils
