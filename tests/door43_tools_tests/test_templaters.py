@@ -1,13 +1,11 @@
 import os
 import tempfile
 import unittest
-import json
-import urllib
 import shutil
-from glob import glob
 
 from door43_tools.templaters import Templater
-from general_tools import file_utils
+from general_tools.file_utils import unzip
+
 
 class TestTemplater(unittest.TestCase):
 
@@ -32,11 +30,12 @@ class TestTemplater(unittest.TestCase):
 
     def testTemplaterComplete(self):
         # given
-        test_folder_name = "converted_projects/aab_obs_text_obs-complete"
+        test_folder_name = "converted_projects/aab_obs_text_obs-complete.zip"
         expect_success = True
+        test_file_path = self.extractZipFiles(test_folder_name)
 
         # when
-        deployer, success = self.doTemplater(test_folder_name)
+        deployer, success = self.doTemplater(test_file_path)
 
         # then
         self.verifyTemplater(success, expect_success, deployer.output_dir)
@@ -44,12 +43,13 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43Empty(self):
         # given
-        test_folder_name = "converted_projects/aae_obs_text_obs-empty"
+        test_folder_name = "converted_projects/aae_obs_text_obs-empty.zip"
         expect_success = True
         missing_chapters = range(1, 51)
+        test_file_path = self.extractZipFiles(test_folder_name)
 
         # when
-        deployer, success = self.doTemplater(test_folder_name)
+        deployer, success = self.doTemplater(test_file_path)
 
         # then
         self.verifyTemplater(success, expect_success, deployer.output_dir, missing_chapters)
@@ -57,11 +57,12 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43MissingFirstFrame(self):
         # given
-        test_folder_name = "converted_projects/aah_obs_text_obs-missing_first_frame"
+        test_folder_name = "converted_projects/aah_obs_text_obs-missing_first_frame.zip"
         expect_success = True
+        test_file_path = self.extractZipFiles(test_folder_name)
 
         # when
-        deployer, success = self.doTemplater(test_folder_name)
+        deployer, success = self.doTemplater(test_file_path)
 
         # then
         self.verifyTemplater(success, expect_success, deployer.output_dir)
@@ -69,12 +70,13 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43MissingChapter50(self):
         # given
-        test_folder_name = "converted_projects/aai_obs_text_obs-missing_chapter_50"
+        test_folder_name = "converted_projects/aai_obs_text_obs-missing_chapter_50.zip"
         expect_success = True
         missing_chapters = [50]
+        test_file_path = self.extractZipFiles(test_folder_name)
 
         # when
-        deployer, success = self.doTemplater(test_folder_name)
+        deployer, success = self.doTemplater(test_file_path)
 
         # then
         self.verifyTemplater(success, expect_success, deployer.output_dir, missing_chapters)
@@ -85,12 +87,17 @@ class TestTemplater(unittest.TestCase):
 
     # <div class="col-md-3 sidebar" id="left-sidebar" role="complementary"><span><select id="page-nav" onchange="window.location.href=this.value"><option value="01.html">01</option><option value="02.html">02</option><option value="03.html">03</option><option value="04.html">04</option><option value="05.html">05</option><option value="06.html">06</option><option value="07.html">07</option><option value="08.html">08</option><option value="09.html">09</option><option value="10.html">10</option><option value="11.html">11</option><option value="12.html">12</option><option value="13.html">13</option><option value="14.html">14</option><option value="15.html">15</option><option value="16.html">16</option><option value="17.html">17</option><option value="18.html">18</option><option value="19.html">19</option><option value="20.html">20</option><option value="21.html">21</option><option value="22.html">22</option><option value="23.html">23</option><option value="24.html">24</option><option value="25.html">25</option><option value="26.html">26</option><option value="27.html">27</option><option value="28.html">28</option><option value="29.html">29</option><option value="30.html">30</option><option value="31.html">31</option><option value="32.html">32</option><option value="33.html">33</option><option value="34.html">34</option><option value="35.html">35</option><option value="36.html">36</option><option value="37.html">37</option><option value="38.html">38</option><option value="39.html">39</option><option value="40.html">40</option><option value="41.html">41</option><option value="42.html">42</option><option value="43.html">43</option><option value="44.html">44</option><option value="45.html">45</option><option value="46.html">46</option><option value="47.html">47</option><option value="48.html">48</option><option value="49.html">49</option><option value="all.html">all</option><option value="front.html">front</option><option value="hide.50.html">hide.50</option></select><div><h1>Revisions</h1><table id="revisions" width="100%"></table></div></span></div>
 
+    def extractZipFiles(self, test_folder_name):
+        file_path = os.path.join(self.resources_dir, test_folder_name)
+        self.temp_dir = tempfile.mkdtemp(prefix='repo_')
+        unzip(file_path, self.temp_dir)
+        return self.temp_dir
+
     def doTemplater(self, test_folder_name):
-        source_dir = os.path.join(self.resources_dir, test_folder_name)
         template_file = os.path.join(self.resources_dir, 'templates/obs.html')
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         success = True
-        templater = Templater(source_dir, self.out_dir, template_file)
+        templater = Templater(test_folder_name, self.out_dir, template_file)
         try:
             templater.run()
         except Exception as e:

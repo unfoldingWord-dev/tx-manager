@@ -6,7 +6,7 @@ import shutil
 
 from door43_tools.manifest_handler import MetaData, Manifest
 from door43_tools.preprocessors import TsObsMarkdownPreprocessor
-from general_tools.file_utils import add_file_to_zip, add_contents_to_zip, unzip
+from general_tools.file_utils import unzip, add_contents_to_zip
 
 
 class TestPreprocessor(unittest.TestCase):
@@ -62,6 +62,32 @@ class TestPreprocessor(unittest.TestCase):
         compiler = TsObsMarkdownPreprocessor(manifest, repo_dir, self.out_dir)
         compiler.run()
         return self.out_dir
+
+
+    # def test_PackageResource(self):
+    #
+    #     #given
+    #     resource = 'converted_projects'
+    #     repo_name = 'aab_obs_text_obs-complete'
+    #
+    #     # when
+    #     zip_file = self.packageResource(resource, repo_name)
+    #
+    #     #then
+    #     print(zip_file)
+
+
+    @classmethod
+    def createZipFile(self, zip_filename, destination_folder, source_folder):
+        zip_filepath = os.path.join(destination_folder, zip_filename)
+        add_contents_to_zip(zip_filepath, source_folder)
+        return zip_filepath
+
+    def packageResource(self, resource, repo_name):
+        source_folder = os.path.join(TestPreprocessor.resources_dir, resource, repo_name)
+        self.temp_dir = tempfile.mkdtemp(prefix='repo_')
+        zip_filepath = TestPreprocessor.createZipFile(repo_name + ".zip", self.temp_dir, source_folder)
+        return zip_filepath
 
 
     @classmethod
