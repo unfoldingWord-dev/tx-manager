@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="tx-manager",
     packages=['aws_tools', 'client_tools', 'door43_tools', 'general_tools', 'gogs_tools', 'lambda_handlers'],
-    version="0.0.2",
+    version="0.2.0",
     author="unfoldingWord",
     author_email="unfoldingword.org",
     description="Unit test setup file.",
