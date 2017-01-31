@@ -12,7 +12,7 @@ def read(f_name):
 setup(
     name="tx-manager",
     packages=['aws_tools', 'client_tools', 'door43_tools', 'general_tools', 'gogs_tools', 'lambda_handlers'],
-    version="0.0.1",
+    version="0.0.2",
     author="unfoldingWord",
     author_email="info@unfoldingword.org",
     description="Classes for executing tX Manager",
@@ -22,9 +22,9 @@ setup(
     long_description=read('README.rst'),
     classifiers=[],
     install_requires=[
-        'requests',
-        'gogs_client',
-        'bs4',
-        'boto3'
+        'requests==2.13.0',
+        'gogs_client==1.0.3',
+        'bs4==0.0.1',
+        'boto3==1.4.4'
     ]
 )

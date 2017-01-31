@@ -13,7 +13,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = False
         expected_errors = False
-        file_name = 'hu_obs_text_obs/01.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/01.html'
 
         # when
         inspection = self.inspectFile(file_name)
@@ -26,7 +26,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = False
         expected_errors = False
-        file_name = 'hu_obs_text_obs/header.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/header.html'
 
         # when
         inspection = self.inspectFile(file_name)
@@ -39,7 +39,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = False
         expected_errors = True
-        file_name = 'hu_obs_text_obs/9999.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/9999.html'
 
         # when
         inspection = self.inspectFile(file_name)
@@ -52,7 +52,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = True
         expected_errors = False
-        file_name = 'hu_obs_text_obs/01-no-body.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/01-no-body.html'
         chapter = 1
 
         # when
@@ -66,7 +66,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = True
         expected_errors = False
-        file_name = 'hu_obs_text_obs/01-no-content.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/01-no-content.html'
         chapter = 1
 
         # when
@@ -80,7 +80,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = True
         expected_errors = False
-        file_name = 'hu_obs_text_obs/01-no-title.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/01-no-title.html'
         chapter = 1
 
         # when
@@ -94,7 +94,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = True
         expected_errors = False
-        file_name = 'hu_obs_text_obs/01-missing-chunk.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/01-missing-chunk.html'
         chapter = 1
 
         # when
@@ -108,7 +108,7 @@ class TestObsHandler(unittest.TestCase):
         # given
         expected_warnings = True
         expected_errors = False
-        file_name = 'hu_obs_text_obs/01-missing-reference.html'
+        file_name = 'obs_chapters/hu_obs_text_obs/01-missing-reference.html'
         chapter = 1
 
         # when

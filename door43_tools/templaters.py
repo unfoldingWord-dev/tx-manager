@@ -118,12 +118,15 @@ class Templater(object):
             if not soup_content:
                 soup_content = body
 
+            soup_content = self.makeSureValidContent(soup_content)
+
             # insert new HTML into the template
             content_div.clear()
             content_div.append(soup_content)
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
+
             for a_tag in template.body.select('a[rel="dct:source"]'):
                 a_tag.clear()
                 a_tag.append(title)
@@ -146,6 +149,25 @@ class Templater(object):
                 print('Writing {0}.'.format(out_file))
 
             write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
+
+
+    def makeSureValidContent(self, soup_content):
+
+        # old converter would output xml on missing chapters, which would cause
+        #       an exception.  So added graceful recovery in case of xml.
+        #
+        # tried using the BeautifulSoup method of testing for xml, but it didn't detect xml tag
+
+        try:
+            # this will still be instance of BeautifulSoup if contents could not be extracted, at this point should be div-content
+            if isinstance(soup_content, BeautifulSoup):
+                content_str = str(soup_content)
+                if content_str.lower().strip().startswith("<?xml"): # check for starting xml tag
+                    soup_content = ""  # ignore XML source, will break html template merging
+        except:
+            pass
+
+        return soup_content
 
 
 class ObsTemplater(Templater):

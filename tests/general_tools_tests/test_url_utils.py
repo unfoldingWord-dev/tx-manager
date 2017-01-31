@@ -1,3 +1,4 @@
+import os
 import tempfile
 from six import BytesIO
 import unittest
@@ -6,6 +7,20 @@ from general_tools import url_utils
 
 
 class UrlUtilsTests(unittest.TestCase):
+
+    def setUp(self):
+        """
+        Runs before each test
+        """
+        self.tmp_file = ""
+
+    def tearDown(self):
+        """
+        Runs after each test
+        """
+        # delete temp files
+        if os.path.isfile(self.tmp_file):
+            os.remove(self.tmp_file)
 
     @staticmethod
     def mock_urlopen(url):
@@ -33,9 +48,9 @@ class UrlUtilsTests(unittest.TestCase):
                           "world", catch_exception=False, urlopen=self.raise_urlopen)
 
     def test_download_file(self):
-        tmp_file = tempfile.mktemp()
-        url_utils._download_file("world", tmp_file, self.mock_urlopen)
-        with open(tmp_file, "r") as tmpf:
+        self.tmp_file = tempfile.mktemp()
+        url_utils._download_file("world", self.tmp_file, self.mock_urlopen)
+        with open(self.tmp_file, "r") as tmpf:
             self.assertEqual(tmpf.read(), "hello world")
 
     def test_join_url_parts_single(self):

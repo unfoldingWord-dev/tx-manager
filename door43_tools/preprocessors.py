@@ -81,6 +81,7 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
                     'id': chapter + '-' + frame.strip('.txt'),
                     'text': text
                 })
+        frames.sort(lambda x,y: cmp(x['id'],y['id'])) # put frames in sequence
         return frames
 
     def get_chapters(self):

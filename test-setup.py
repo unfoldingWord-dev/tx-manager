@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="tx-manager",
     packages=['aws_tools', 'client_tools', 'door43_tools', 'general_tools', 'gogs_tools', 'lambda_handlers'],
-    version="0.0.1",
+    version="0.0.2",
     author="unfoldingWord",
     author_email="unfoldingword.org",
     description="Unit test setup file.",
@@ -12,13 +12,13 @@ setup(
     long_description='Unit test setup file',
     classifiers=[],
     install_requires=[
-        'requests',
-        'responses',
-        'boto3',
-        'bs4',
-        'gogs_client',
-        'mock',
-        'coveralls'
+        'requests==2.13.0',
+        'responses==0.5.1',
+        'boto3==1.4.4',
+        'bs4==0.0.1',
+        'gogs_client==1.0.3',
+        'mock', # travis reports syntax error in mock setup.cfg if we give version
+        'coveralls==1.1'
     ],
     test_suite='tests'
 )
