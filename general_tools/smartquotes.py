@@ -1,19 +1,8 @@
-#!/usr/bin/env python2
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Jesse Griffin <jesse@distantshores.org>
-
 """
 This script accepts a paragraph of input and outputs typographically correct
 text using pandoc.  Note line breaks are not retained.
 """
-
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 import shlex
 from subprocess import *
 import sys

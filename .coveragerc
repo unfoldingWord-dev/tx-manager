@@ -1,11 +1,13 @@
 [run]
 source=
     aws_tools
-    client_tools
+    client
+    converters
     door43_tools
     general_tools
     gogs_tools
     lambda_handlers
+    manager
 
 omit =
     */__init__.py

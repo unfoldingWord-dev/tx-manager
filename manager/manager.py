@@ -1,28 +1,60 @@
 from __future__ import print_function
+import json
 import hashlib
+import requests
+import logging
 from datetime import datetime
 from datetime import timedelta
-import json
-import requests
 from aws_tools.lambda_handler import LambdaHandler
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
+from logging import Logger, StreamHandler
+from pythonjsonlogger.jsonlogger import JsonFormatter
 
 
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
 
-    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False, aws_access_key_id=None,
-                 aws_secret_access_key=None, job_table_name=None, module_table_name=None,
-                 dynamodb_handler=DynamoDBHandler, logger=None):
+    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False,
+                 aws_access_key_id=None, aws_secret_access_key=None,
+                 job_table_name=None, module_table_name=None,
+                 dynamodb_handler_class=DynamoDBHandler, gogs_handler_class=GogsHandler,
+                 lambda_handler_class=LambdaHandler, logger=None):
+        """
+        :param string api_url:
+        :param string gogs_url:
+        :param string cdn_url:
+        :param string cdn_bucket:
+        :param bool quiet:
+        :param string aws_access_key_id:
+        :param string aws_secret_access_key:
+        :param string job_table_name:
+        :param string module_table_name:
+        :param class dynamodb_handler_class:
+        :param class gogs_handler_class:
+        :param class lambda_handler_class:
+        :param Logger logger:
+        """
         self.api_url = api_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
         self.quiet = quiet
-        self.logger = logger
+
+        if logger:
+            self.logger = logger
+        else:
+            logging.basicConfig()
+            logger = logging.getLogger()
+            logger.setLevel(logging.INFO)
+
+        # Add JSON formatter for logger
+        log_handler = StreamHandler()
+        formatter = JsonFormatter()
+        log_handler.setFormatter(formatter)
+        self.logger.addHandler(log_handler)
 
         self.job_db_handler = None
         self.module_db_handler = None
@@ -33,13 +65,13 @@ class TxManager(object):
         if not module_table_name:
             module_table_name = self.MODULE_TABLE_NAME
 
-        self.job_db_handler = dynamodb_handler(job_table_name)
-        self.module_db_handler = dynamodb_handler(module_table_name)
+        self.job_db_handler = dynamodb_handler_class(job_table_name)
+        self.module_db_handler = dynamodb_handler_class(module_table_name)
 
         if gogs_url:
-            self.gogs_handler = GogsHandler(gogs_url)
+            self.gogs_handler = gogs_handler_class(gogs_url)
 
-        self.lambda_handler = LambdaHandler(aws_access_key_id, aws_secret_access_key)
+        self.lambda_handler = lambda_handler_class(aws_access_key_id, aws_secret_access_key)
 
     def debug_print(self, message):
         if not self.quiet:
@@ -59,12 +91,12 @@ class TxManager(object):
 
     def setup_job(self, data):
         if 'user_token' not in data:
-            raise Exception('"user_token" not given.')
+            self.logger.error('"user_token" not given.')
 
         user = self.get_user(data['user_token'])
 
         if not user or not user.username:
-            raise Exception('Invalid user_token. User not found.')
+            self.logger.error('Invalid user_token. User not found.')
 
         del data['user_token']
         data['user'] = user.username
@@ -73,22 +105,22 @@ class TxManager(object):
 
         if not job.cdn_bucket:
             if not self.cdn_bucket:
-                raise Exception('"cdn_bucket" not given.')
+                self.logger.error('"cdn_bucket" not given.')
             else:
                 job.cdn_bucket = self.cdn_bucket
         if not job.source:
-            raise Exception('"source" url not given.')
+            self.logger.error('"source" url not given.')
         if not job.resource_type:
-            raise Exception('"resource_type" not given.')
+            self.logger.error('"resource_type" not given.')
         if not job.input_format:
-            raise Exception('"input_format" not given.')
+            self.logger.error('"input_format" not given.')
         if not job.output_format:
-            raise Exception('"output_format" not given.')
+            self.logger.error('"output_format" not given.')
 
         module = self.get_converter_module(job)
 
         if not module:
-            raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
+            self.logger.error('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
                                                                                            job.input_format,
                                                                                            job.output_format))
 
@@ -143,10 +175,10 @@ class TxManager(object):
     def list_jobs(self, data, must_be_authenticated=True):
         if must_be_authenticated:
             if 'user_token' not in data:
-                raise Exception('"user_token" not given.')
+                self.logger.error('"user_token" not given.')
             user = self.get_user(data['user_token'])
             if not user:
-                raise Exception('Invalid user_token. User not found.')
+                self.logger.error('Invalid user_token. User not found.')
             data['user'] = user
             del data['user_token']
         jobs = self.query_jobs(data)
@@ -194,7 +226,7 @@ class TxManager(object):
 
             module = self.get_converter_module(job)
             if not module:
-                raise Exception('No converter was found to convert {0} from {1} to {2}'
+                self.logger.error('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
 
             job.converter_module = module.name
@@ -371,15 +403,15 @@ class TxManager(object):
         module = TxModule(data, self.quiet)
 
         if not module.name:
-            raise Exception('"name" not given.')
+            self.logger.error('"name" not given.')
         if not module.type:
-            raise Exception('"type" not given.')
+            self.logger.error('"type" not given.')
         if not module.input_format:
-            raise Exception('"input_format" not given.')
+            self.logger.error('"input_format" not given.')
         if not module.output_format:
-            raise Exception('"output_format" not given.')
+            self.logger.error('"output_format" not given.')
         if not module.resource_types:
-            raise Exception('"resource_types" not given.')
+            self.logger.error('"resource_types" not given.')
 
         self.insert_module(module)
         self.make_api_gateway_for_module(module)  # Todo: develop this function

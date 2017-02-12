@@ -1,3 +1,4 @@
+from __future__ import absolute_import, unicode_literals, print_function
 import os
 import unittest
 
@@ -126,4 +127,3 @@ class TestObsHandler(unittest.TestCase):
     def verify_results(self, expected_errors, expected_warnings, inspection):
         self.assertEqual(len(inspection.warnings) > 0, expected_warnings)
         self.assertEqual(len(inspection.errors) > 0, expected_errors)
-
