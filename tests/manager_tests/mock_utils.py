@@ -1,9 +1,8 @@
 """
 Utilities for mocking out AWS handlers
 """
-
+from __future__ import absolute_import, unicode_literals, print_function
 import json
-
 from mock import MagicMock
 
 

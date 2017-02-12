@@ -1,12 +1,4 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Richard Mahn <richard_mahn@wycliffeassociates.org>
-
+from __future__ import unicode_literals, print_function
 from gogs_client import GogsApi
 from gogs_client import Token
 

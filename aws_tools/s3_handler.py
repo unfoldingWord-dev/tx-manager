@@ -1,17 +1,8 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Richard Mahn <richard_mahn@wycliffeassociates.org>
-
+from __future__ import unicode_literals, print_function
 import os
 import json
 import boto3
 import botocore
-
 from boto3.session import Session
 from general_tools.file_utils import get_mime_type
 

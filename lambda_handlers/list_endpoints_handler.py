@@ -1,26 +1,20 @@
 from __future__ import unicode_literals, print_function
-from logging import Logger
 from manager.manager import TxManager
-from aws_tools.dynamodb_handler import DynamoDBHandler
+from lambda_handlers.handler import Handler
 
 
-class ListEndpointsHandler(object):
+class ListEndpointsHandler(Handler):
 
-    @staticmethod
-    def handle_list_endpoints(event, context, dynamodb_handler, logger):
+    def __handle(self, event, context):
         """
         :param dict event:
         :param context:
-        :param DynamoDBHandler dynamodb_handler:
-        :param Logger logger:
-        :return:
+        :return dict:
         """
-        try:
-            env_vars = {}
-            if 'vars' in event and isinstance(event['vars'], dict):
-                env_vars = event['vars']
-            env_vars['dynamodb_handler'] = DynamoDBHandler
-            env_vars['logger'] = logger
-            return TxManager(**env_vars).list_endpoints()
-        except Exception as e:
-            raise Exception('Bad request: {0}'.format(e))
+        vars = {}
+        if 'vars' in event and isinstance(event['vars'], dict):
+            vars = event['vars']
+        vars['dynamodb_handler_class'] = self.dynamodb_handler_class
+        vars['logger'] = self.logger
+        return TxManager(**vars).list_endpoints()
+

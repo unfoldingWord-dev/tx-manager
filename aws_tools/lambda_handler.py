@@ -1,16 +1,8 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Richard Mahn <richard_mahn@wycliffeassociates.org>
-
+from __future__ import unicode_literals, print_function
 import json
 import boto3
-
 from boto3 import Session
+
 
 class LambdaHandler(object):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name='us-west-2'):
