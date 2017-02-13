@@ -10,21 +10,48 @@ def read(f_name):
     return open(os.path.join(os.path.dirname(__file__), f_name)).read()
 
 setup(
-    name="tx-manager",
-    packages=['aws_tools', 'client_tools', 'door43_tools', 'general_tools', 'gogs_tools', 'lambda_handlers'],
-    version="0.2.0",
-    author="unfoldingWord",
-    author_email="info@unfoldingword.org",
-    description="Classes for executing tX Manager",
-    license="MIT",
-    keywords="tX manager",
-    url="https://github.org/unfoldingWord-dev/tx-manager",
+    name='tx-manager',
+    version='0.2.1',
+    packages=[
+        'client',
+        'manager',
+        'converters',
+        'aws_tools',
+        'door43_tools',
+        'general_tools',
+        'gogs_tools',
+        'lambda_handlers'
+    ],
+    author='unfoldingWord',
+    author_email='info@unfoldingword.org',
+    description='Classes for executing tX Manager',
+    license='MIT',
+    keywords=[
+        'tX manager',
+        'unfoldingword',
+        'usfm',
+        'md2html',
+        'usfm2html'
+    ],
+    url='https://github.org/unfoldingWord-dev/tx-manager',
     long_description=read('README.rst'),
-    classifiers=[],
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 2.7',
+    ],
+    dependency_links=[
+        'git+ssh://git@github.com/unfoldingword-dev/usfm-tools.git#egg=usfm_tools-0.0.7'
+    ],
     install_requires=[
         'requests==2.13.0',
         'gogs_client==1.0.3',
         'bs4==0.0.1',
-        'boto3==1.4.4'
+        'boto3==1.4.4',
+        'responses',
+        'python-json-logger',
+        'markdown',
+        'future',
+        'pyparsing',
+        'usfm_tools==0.0.7'
     ]
 )

@@ -1,6 +1,11 @@
+requests
 responses
-mock
-boto3
 gogs_client
 bs4
-requests
+boto3
+python-json-logger
+markdown
+future
+pyparsing
+usfm_tools==0.0.7
+mock
