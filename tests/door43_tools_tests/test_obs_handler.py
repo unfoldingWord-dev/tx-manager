@@ -1,6 +1,6 @@
+from __future__ import absolute_import, unicode_literals, print_function
 import os
 import unittest
-
 from door43_tools.obs_handler import OBSInspection
 
 
@@ -126,4 +126,3 @@ class TestObsHandler(unittest.TestCase):
     def verify_results(self, expected_errors, expected_warnings, inspection):
         self.assertEqual(len(inspection.logger.logs["warning"]) > 0, expected_warnings)
         self.assertEqual(len(inspection.logger.logs["error"]) > 0, expected_errors)
-

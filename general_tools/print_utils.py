@@ -1,12 +1,3 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Phil Hopper <phillip_hopper@wycliffeassociates.org>
-
 from __future__ import print_function, unicode_literals
 
 # console codes

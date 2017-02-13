@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals, print_function
 import mock
 import unittest
 import aws_tools.dynamodb_handler
