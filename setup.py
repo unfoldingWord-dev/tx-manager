@@ -40,18 +40,18 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     dependency_links=[
-        'git+ssh://git@github.com/unfoldingword-dev/usfm-tools.git#egg=usfm_tools-0.0.7'
+        'git+ssh://git@github.com/unfoldingword-dev/usfm-tools.git@0.0.7#egg=usfm_tools-0.0.7'
     ],
     install_requires=[
         'requests==2.13.0',
+        'responses==0.5.1',
         'gogs_client==1.0.3',
         'bs4==0.0.1',
         'boto3==1.4.4',
-        'responses',
-        'python-json-logger',
-        'markdown',
-        'future',
-        'pyparsing',
+        'python-json-logger==0.1.5',
+        'markdown==2.6.8',
+        'future==0.16.0',
+        'pyparsing==2.1.10',
         'usfm_tools==0.0.7'
     ]
 )
