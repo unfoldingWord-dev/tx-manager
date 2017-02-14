@@ -40,7 +40,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     dependency_links=[
-        'git+ssh://git@github.com/unfoldingword-dev/usfm-tools.git@0.0.7#egg=usfm_tools-0.0.7'
+        'git+git://github.com/unfoldingword-dev/usfm-tools.git@0.0.7#egg=usfm_tools-0.0.7'
     ],
     install_requires=[
         'requests==2.13.0',
