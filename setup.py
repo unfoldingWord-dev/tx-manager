@@ -15,7 +15,6 @@ setup(
     packages=[
         'client',
         'manager',
-        'converters',
         'aws_tools',
         'door43_tools',
         'general_tools',
