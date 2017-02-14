@@ -1,4 +1,7 @@
 from __future__ import unicode_literals, print_function
+import os
+import json
+import codecs
 from glob import glob
 from bs4 import BeautifulSoup
 from general_tools.file_utils import write_file
@@ -119,9 +122,12 @@ class Templater(object):
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
-            for a_tag in template.body.select('a[rel="dct:source"]'):
-                a_tag.clear()
-                a_tag.append(title)
+            try:
+                for a_tag in template.body.select('a[rel="dct:source"]'):
+                    a_tag.clear()
+                    a_tag.append(title)
+            except:
+                pass
 
             # set the page heading
             heading_span = template.body.find('span', {'id': 'h1'})

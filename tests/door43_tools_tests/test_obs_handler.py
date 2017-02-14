@@ -37,8 +37,8 @@ class TestObsHandler(unittest.TestCase):
     def test_errorInvalidChapter(self):
 
         # given
-        expected_warnings = False
-        expected_errors = True
+        expected_warnings = True
+        expected_errors = False
         file_name = 'obs_chapters/hu_obs_text_obs/9999.html'
 
         # when
@@ -124,6 +124,6 @@ class TestObsHandler(unittest.TestCase):
         return inspection
 
     def verify_results(self, expected_errors, expected_warnings, inspection):
-        self.assertEqual(len(inspection.warnings) > 0, expected_warnings)
-        self.assertEqual(len(inspection.errors) > 0, expected_errors)
+        self.assertEqual(len(inspection.logger.logs["warning"]) > 0, expected_warnings)
+        self.assertEqual(len(inspection.logger.logs["error"]) > 0, expected_errors)
 

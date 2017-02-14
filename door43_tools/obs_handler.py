@@ -1,7 +1,10 @@
 from __future__ import print_function, unicode_literals
+
 import os
-from logging import Logger
+
 from bs4 import BeautifulSoup
+
+from door43_tools.logger import Door43Logger
 from general_tools.file_utils import load_json_object
 from obs_data import obs_data
 
@@ -25,23 +28,21 @@ class OBSStatus(object):
 
 
 class OBSInspection(object):
-    def __init__(self, logger, filename, chapter=None):
+    def __init__(self, filename, chapter=None):
         """
         Class constructor. Takes a path to an OBS chapter and the chapter of the given file
-        :param Logger logger:
         :param string filename: Path to the OBS chapter file
         :param string chapter: Chapter being processed
         """
-        self.logger = logger
         self.filename = filename
         if not chapter:
             try:
-                self.chapter = int(os.path.splitext(os.path.basename(filename))[0])
+                chapter = int(os.path.splitext(os.path.basename(filename))[0])
             except:
-                pass
-        else:
-            self.chapter = chapter
+                chapter = None
+        self.chapter = chapter
 
+        self.logger = Door43Logger()
         self.manifest = {}
 
     def run(self):
