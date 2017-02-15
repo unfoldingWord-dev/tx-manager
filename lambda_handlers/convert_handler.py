@@ -25,7 +25,7 @@ class ConvertHandler(Handler):
         """
         data = self.retrieve(event, 'data', 'payload')
         job = self.retrieve(data, 'job', 'payload')
-        converter = self.converter_class(logger=self.logger, s3_handler_class=self.s3_handler_class)
+        converter = self.converter_class()
         converter.source = self.retrieve(job, 'source', 'job')
         converter.resource = self.retrieve(job, 'resource_type', 'job')
         converter.cdn_bucket = self.retrieve(job, 'cdn_bucket', 'job')

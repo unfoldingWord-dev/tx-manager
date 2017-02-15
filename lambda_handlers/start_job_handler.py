@@ -13,4 +13,4 @@ class StartJobHandler(Handler):
         for record in event['Records']:
             if record['eventName'] == 'INSERT' and 'job_id' in record['dynamodb']['Keys']:
                 job_id = record['dynamodb']['Keys']['job_id']['S']
-                TxManager(dynamodb_handler_class=self.dynamodb_handler_class, logger=self.logger).start_job(job_id)
+                TxManager().start_job(job_id)

@@ -14,7 +14,5 @@ class ListEndpointsHandler(Handler):
         vars = {}
         if 'vars' in event and isinstance(event['vars'], dict):
             vars = event['vars']
-        vars['dynamodb_handler_class'] = self.dynamodb_handler_class
-        vars['logger'] = self.logger
         return TxManager(**vars).list_endpoints()
 

@@ -10,7 +10,11 @@ from mock import MagicMock
 def mock_db_handler(data, keyname):
     """
     :param dict data: dict from keys to data
+    :param string keyname:
     """
+    def setup_resources():
+        pass
+
     def get_item(keys):
         key = keys[keyname]
         if key in data:
@@ -23,6 +27,7 @@ def mock_db_handler(data, keyname):
     handler = MagicMock()
     handler.get_item = MagicMock(side_effect=get_item)
     handler.query_items = MagicMock(side_effect=query_items)
+    handler.setup_resources = MagicMock(side_effects=setup_resources)
     handler.mock_data = data
     return handler
 

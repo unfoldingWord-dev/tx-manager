@@ -19,15 +19,23 @@ from boto3.dynamodb.conditions import Attr, Key
 class DynamoDBHandler(object):
 
     def __init__(self, table_name, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name='us-west-2'):
-        if aws_access_key_id and aws_secret_access_key:
-            session = Session(aws_access_key_id=aws_access_key_id,
-                                   aws_secret_access_key=aws_secret_access_key,
-                                   region_name=aws_region_name)
+        self.table_name = table_name
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.aws_region_name = aws_region_name
+        self.resource = None
+        self.table = None
+        self.setup_resources()
+
+    def setup_resources(self):
+        if self.aws_access_key_id and self.aws_secret_access_key:
+            session = Session(aws_access_key_id=self.aws_access_key_id,
+                                   aws_secret_access_key=self.aws_secret_access_key,
+                                   region_name=self.aws_region_name)
             self.resource = session.resource('dynamodb')
         else:
             self.resource = boto3.resource('dynamodb')
-
-        self.table = self.resource.Table(table_name)
+        self.table = self.resource.Table(self.table_name)
 
     def get_item(self, keys):
         response = self.table.get_item(

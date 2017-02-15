@@ -20,8 +20,6 @@ class RequestJobHandler(Handler):
         vars = {}
         if 'vars' in event and isinstance(event['vars'], dict):
             vars = event['vars']
-        vars['dynamodb_handler_class'] = self.dynamodb_handler_class
-        vars['logger'] = self.logger
         if 'source' in job and 'job_id' not in job:
             # if 'source' is given, and no job_id, that means to setup a new job for conversion
             job['job_id'] = context.aws_request_id
@@ -29,5 +27,3 @@ class RequestJobHandler(Handler):
         else:
             # Else we just list all jobs based on the given query data
             return TxManager(**vars).list_jobs(job)
-
-

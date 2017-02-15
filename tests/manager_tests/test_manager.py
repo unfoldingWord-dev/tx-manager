@@ -10,9 +10,10 @@ from manager.manager import TxManager
 from manager.module import TxModule
 
 
-@unittest.skip("skipping for travis failures - credentials problems?")
 class ManagerTest(unittest.TestCase):
-    EXAMPLE_URL = "https://www.example.com/"
+    MOCK_API_URL = "https://api.example.com"
+    MOCK_CALLBACK_URL = "https://callback.example.com/"
+    MOCK_GOGS_URL = "https://mock.gogs.io"
 
     mock_job_db = None
     mock_module_db = None
@@ -27,7 +28,7 @@ class ManagerTest(unittest.TestCase):
         """
         Create mock AWS handlers, and apply corresponding monkey patches
         """
-        cls.mock_job_db = mock_utils.mock_db_handler({
+        cls.mock_job_db = mock_utils.mock_db_handler(data={
             0: {
                 "job_id": 0,
                 "status": "started",
@@ -48,7 +49,7 @@ class ManagerTest(unittest.TestCase):
                 "resource_type": "ulb",
                 "input_format": "usfm",
                 "output_format": "html",
-                "callback": ManagerTest.EXAMPLE_URL,
+                "callback": ManagerTest.MOCK_CALLBACK_URL,
             },
             3: {
                 "job_id": 3,
@@ -65,7 +66,7 @@ class ManagerTest(unittest.TestCase):
                 "output_format": "html"
             }
         }, keyname="job_id")
-        cls.mock_module_db = mock_utils.mock_db_handler({
+        cls.mock_module_db = mock_utils.mock_db_handler(data={
             "module1": {
                 "name": "module1",
                 "resource_types": ["obs", "ulb"],
@@ -118,7 +119,7 @@ class ManagerTest(unittest.TestCase):
         """
         Successful call of setup_job
         """
-        tx_manager = TxManager(gogs_url="https://try.gogs.io/")
+        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
         data = {
             "user_token": "token1",
             "cdn_bucket":  "test_cdn_bucket",
@@ -140,7 +141,7 @@ class ManagerTest(unittest.TestCase):
         """
         Call setup_job with malformed data arguments
         """
-        tx_manager = TxManager(gogs_url="https://try.gogs.io/")
+        tx_manager = TxManager()
         data = {
             "user_token": "token1",
             "cdn_bucket": "test_cdn_bucket",
@@ -163,7 +164,7 @@ class ManagerTest(unittest.TestCase):
         """
         Call setup_job when there is no applicable converter.
         """
-        tx_manager = TxManager(gogs_url="https://try.gogs.io/")
+        tx_manager = TxManager()
         data = {
             "user_token": "token1",
             "cdn_bucket": "test_cdn_bucket",
@@ -179,7 +180,7 @@ class ManagerTest(unittest.TestCase):
         Call start job in job 1 from mock data. Should be a successful
         invocation with warnings.
         """
-        tx_manager = TxManager(gogs_url="https://try.gogs.io/")
+        tx_manager = TxManager()
         tx_manager.start_job(1)
         # assert that correct lambda function was invoked
         args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
@@ -210,11 +211,11 @@ class ManagerTest(unittest.TestCase):
         invocation without warnings.
         """
         # mock out job 2's callback
-        responses.add(responses.POST, ManagerTest.EXAMPLE_URL)
-        tx_manager = TxManager(gogs_url="https://try.gogs.io/")
+        responses.add(responses.POST, ManagerTest.MOCK_CALLBACK_URL)
+        tx_manager = TxManager()
         tx_manager.start_job(2)
         self.assertEqual(len(responses.calls), 1)
-        self.assertEqual(responses.calls[0].request.url, ManagerTest.EXAMPLE_URL)
+        self.assertEqual(responses.calls[0].request.url, ManagerTest.MOCK_CALLBACK_URL)
         # assert that correct lambda function was invoked
         args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
         module_name = args[0]
@@ -240,7 +241,7 @@ class ManagerTest(unittest.TestCase):
         """
         Call start_job on job 3 from mock data. Invocation should result in an error
         """
-        manager = TxManager(gogs_url="https://try.gogs.io/")
+        manager = TxManager()
         manager.start_job(3)
         ManagerTest.mock_lambda().invoke.assert_called()
         # assert that correct lambda function was invoked
@@ -268,7 +269,7 @@ class ManagerTest(unittest.TestCase):
         """
         Call start_job with non-runnable/non-existent jobs
         """
-        tx_manager = TxManager(gogs_url="https://try.gogs.io/")
+        tx_manager = TxManager()
         tx_manager.start_job(0)
         tx_manager.start_job(4)
         tx_manager.start_job(5)
@@ -294,8 +295,7 @@ class ManagerTest(unittest.TestCase):
         """
         Test list_jobs and list_endpoint methods
         """
-        api_url = "https://www.example-api.com/"
-        tx_manager = TxManager(api_url=api_url, gogs_url="https://try.gogs.io/")
+        tx_manager = TxManager(api_url=self.MOCK_API_URL, gogs_url=self.MOCK_GOGS_URL)
         jobs = tx_manager.list_jobs({"user_token": "token2"}, True)
         expected = [TxJob(job).get_db_data()
                     for job in ManagerTest.mock_job_db.mock_data.values()]
@@ -313,7 +313,7 @@ class ManagerTest(unittest.TestCase):
         for link_data in endpoints["links"]:
             self.assertIsInstance(link_data, dict)
             self.assertIn("href", link_data)
-            self.assertEqual(api_url + "/tx/job", link_data["href"])
+            self.assertEqual(self.MOCK_API_URL + "/tx/job", link_data["href"])
             self.assertIn("rel", link_data)
             self.assertIsInstance(link_data["rel"], str)
             self.assertIn("method", link_data)
@@ -321,7 +321,7 @@ class ManagerTest(unittest.TestCase):
                           ["GET", "POST", "PUT", "PATCH", "DELETE"])
 
     def test_register_module(self):
-        manager = TxManager(gogs_url="https://try.gogs.io/")
+        manager = TxManager()
 
         data = {
             "name": "module1",
@@ -343,7 +343,7 @@ class ManagerTest(unittest.TestCase):
 
     def test_debug_print(self):
         for quiet in (True, False):
-            manager = TxManager(gogs_url="https://try.gogs.io/", quiet=quiet)
+            manager = TxManager(quiet=quiet)
             mock_stdout = StringIO()
             with mock.patch("sys.stdout", mock_stdout):
                 manager.debug_print("Hello world")
@@ -356,7 +356,7 @@ class ManagerTest(unittest.TestCase):
         """
         Test [get/update/delete]_job methods
         """
-        manager = TxManager(gogs_url="https://try.gogs.io/")
+        manager = TxManager()
 
         # get_job
         job = manager.get_job(0)
@@ -381,7 +381,7 @@ class ManagerTest(unittest.TestCase):
         """
         Test [get/update/delete]_module methods
         """
-        manager = TxManager(gogs_url="https://try.gogs.io/")
+        manager = TxManager()
 
         # get_module
         module = manager.get_module("module1")
