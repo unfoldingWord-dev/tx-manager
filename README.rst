@@ -4,7 +4,7 @@ master:
     :alt: Build Status
     :target: https://travis-ci.org/unfoldingWord-dev/tx-manager
 
-.. image:: https://coveralls.io/repos/github/unfoldingWord-dev/tx-manager/badge.svg?branch=master)
+.. image:: https://coveralls.io/repos/github/unfoldingWord-dev/tx-manager/badge.svg?branch=master
     :alt: Coveralls
     :target: https://coveralls.io/github/unfoldingWord-dev/tx-manager?branch=master
 
@@ -14,7 +14,7 @@ develop:
     :alt: Build Status
     :target: https://travis-ci.org/unfoldingWord-dev/tx-manager
 
-.. image:: https://coveralls.io/repos/github/unfoldingWord-dev/tx-manager/badge.svg?branch=develop)
+.. image:: https://coveralls.io/repos/github/unfoldingWord-dev/tx-manager/badge.svg?branch=develop
     :alt: Coveralls
     :target: https://coveralls.io/github/unfoldingWord-dev/tx-manager?branch=develop
 
