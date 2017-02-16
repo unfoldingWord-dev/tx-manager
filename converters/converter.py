@@ -1,30 +1,26 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
-import logging
-from logging import Logger
 from aws_tools.s3_handler import S3Handler
 from general_tools.url_utils import download_file
-from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, copy_tree
+from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree
+from shutil import copy
 from convert_logger import ConvertLogger
+
 
 class Converter(object):
 
-    def __init__(self, s3_handler_class=S3Handler):
-        """
-        :param Logger logger:
-        :param class s3_handler_class:
-        """
+    def __init__(self, source, resource, cdn_bucket=None, cdn_file=None, options=None):
         self.logger = ConvertLogger()
-        self.s3_handler_class = s3_handler_class
-
-        self.data = {}
         self.options = {}
-        self.job = None
-        self.source = None
-        self.resource = None
-        self.cdn_bucket = None
-        self.cdn_file = None
+        self.source = source
+        self.resource = resource
+        self.cdn_bucket = cdn_bucket
+        self.cdn_file = cdn_file
+        self.options = options
+
+        if not self.options:
+            self.options = {}
 
         self.download_dir = tempfile.mkdtemp(prefix='download_')
         self.files_dir = tempfile.mkdtemp(prefix='files_')
@@ -32,12 +28,11 @@ class Converter(object):
         self.output_dir = tempfile.mkdtemp(prefix='output_')
         self.output_zip_file = tempfile.mktemp('.zip')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def close(self):
         # delete temp files
         remove_tree(self.download_dir)
         remove_tree(self.files_dir)
         remove_tree(self.output_dir)
-        remove_tree(self.output_zip_file)
 
     def run(self):
         # Custom converters need to add a `convert_<resource>(self)` method for every resource it converts
@@ -53,9 +48,9 @@ class Converter(object):
                 convert_method()
                 # zip the output dir to the output archive
                 add_contents_to_zip(self.output_zip_file, self.output_dir)
-                # upload the output archive
+                # upload the output archive either to cdn_bucket or to a file (no cdn_bucket)
                 self.upload_archive()
-            except:
+            except Exception as e:
                 self.logger.error('Conversion process ended abnormally')
         else:
             self.logger.error('Resource "{0}" not currently supported'.format(self.resource))
@@ -79,6 +74,8 @@ class Converter(object):
                     raise Exception("Failed to download {0}".format(archive_url))
 
     def upload_archive(self):
-        cdn_handler = self.s3_handler_class(self.cdn_bucket)
-        cdn_handler.upload_file(self.output_zip_file, self.cdn_file)
-
+        if self.cdn_bucket:
+            cdn_handler = S3Handler(self.cdn_bucket)
+            cdn_handler.upload_file(self.output_zip_file, self.cdn_file)
+        elif self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
+            copy(self.output_zip_file, self.cdn_file)

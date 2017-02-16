@@ -3,7 +3,6 @@ import os
 import string
 import markdown
 import codecs
-import logging
 from glob import glob
 from shutil import copyfile
 from general_tools.file_utils import write_file
@@ -13,14 +12,6 @@ from aws_tools.s3_handler import S3Handler
 
 
 class Md2HtmlConverter(Converter):
-
-    def __init__(self, s3_handler_class=S3Handler):
-        """
-        :param class s3_handler_class:
-        """
-        self.logger = logging.getLogger()
-        Converter.__init__(self, s3_handler_class)
-        self.options = {'line_spacing': '120%'}
 
     def convert_obs(self):
         self.logger.info('Processing the OBS markdown files')
@@ -49,7 +40,7 @@ class Md2HtmlConverter(Converter):
 
                 # Do the OBS inspection (this now operates on a single file instead of folder)
                 # QUESTION: Should this be done separately after conversion????
-                inspector = OBSInspection(self.convert_log, output_file)
+                inspector = OBSInspection(output_file)
                 try:
                     inspector.run()
                 except Exception as e:
@@ -64,7 +55,6 @@ class Md2HtmlConverter(Converter):
                         copyfile(filename, output_file)
                 except Exception:
                     pass
-
         self.logger.info('Finished processing Markdown files.')
 
     def check_for_content_subfolder(self):
@@ -75,9 +65,3 @@ class Md2HtmlConverter(Converter):
                     filepath = os.path.join(root, basename)
                     files.append(filepath)
         return files
-
-    def upload_archive(self):
-        self.logger.info("Uploading {0} to {1}/{2}".format(os.path.basename(self.output_zip_file), self.cdn_bucket, self.cdn_file))
-        cdn_handler = self.s3_handler_class(self.cdn_bucket)
-        cdn_handler.upload_file(self.output_zip_file, self.cdn_file)
-        self.logger.info("Upload successful.")

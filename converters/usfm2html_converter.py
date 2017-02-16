@@ -3,24 +3,15 @@ import os
 import tempfile
 import string
 import codecs
+import logging
 from glob import glob
 from shutil import copyfile
 from general_tools.file_utils import write_file
 from converter import Converter
-from logging import Logger
-from aws_tools.s3_handler import S3Handler
 from usfm_tools.transform import UsfmTransform
 
 
 class Usfm2HtmlConverter(Converter):
-
-    def __init__(self, logger, s3_handler_class=S3Handler):
-        """
-        :param Logger logger:
-        :param class s3_handler_class:
-        """
-        Converter.__init__(logger, s3_handler_class)
-        self.options = {'line_spacing': '120%'}
 
     def convert_udb(self):
         self.convert_bible()
