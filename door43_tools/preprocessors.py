@@ -1,9 +1,7 @@
 from __future__ import unicode_literals, print_function
-
 import os
 import fnmatch
 import bible_books
-
 from general_tools.file_utils import write_file, read_file
 from distutils.dir_util import copy_tree
 
@@ -81,7 +79,6 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
                     'id': chapter + '-' + frame.strip('.txt'),
                     'text': text
                 })
-        frames.sort(lambda x,y: cmp(x['id'],y['id'])) # put frames in sequence
         return frames
 
     def get_chapters(self):

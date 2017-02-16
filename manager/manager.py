@@ -1,9 +1,9 @@
 from __future__ import print_function
+import json
 import hashlib
+import requests
 from datetime import datetime
 from datetime import timedelta
-import json
-import requests
 from aws_tools.lambda_handler import LambdaHandler
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
@@ -15,14 +15,27 @@ class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
 
-    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False, aws_access_key_id=None,
-                 aws_secret_access_key=None, job_table_name=None, module_table_name=None,
-                 dynamodb_handler=DynamoDBHandler, logger=None):
+    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False,
+                 aws_access_key_id=None, aws_secret_access_key=None,
+                 job_table_name="tx-job", module_table_name="tx-module"):
+        """
+        :param string api_url:
+        :param string gogs_url:
+        :param string cdn_url:
+        :param string cdn_bucket:
+        :param bool quiet:
+        :param string aws_access_key_id:
+        :param string aws_secret_access_key:
+        :param string job_table_name:
+        :param string module_table_name:
+        :param class dynamodb_handler_class:
+        :param class gogs_handler_class:
+        :param class lambda_handler_class:
+        """
         self.api_url = api_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
         self.quiet = quiet
-        self.logger = logger
 
         self.job_db_handler = None
         self.module_db_handler = None
@@ -33,8 +46,8 @@ class TxManager(object):
         if not module_table_name:
             module_table_name = self.MODULE_TABLE_NAME
 
-        self.job_db_handler = dynamodb_handler(job_table_name)
-        self.module_db_handler = dynamodb_handler(module_table_name)
+        self.job_db_handler = DynamoDBHandler(job_table_name)
+        self.module_db_handler = DynamoDBHandler(module_table_name)
 
         if gogs_url:
             self.gogs_handler = GogsHandler(gogs_url)
@@ -379,7 +392,7 @@ class TxManager(object):
         if not module.output_format:
             raise Exception('"output_format" not given.')
         if not module.resource_types:
-            raise Exception('"resource_types" not given.')
+            raise Exception('"resource_types" not given.', exc_info=1)
 
         self.insert_module(module)
         self.make_api_gateway_for_module(module)  # Todo: develop this function

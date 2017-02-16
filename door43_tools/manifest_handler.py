@@ -1,17 +1,12 @@
-# -*- coding: utf-8 -*-
-
-# Transforms old versions of manifest.json files to the latest
-
 from __future__ import print_function, unicode_literals
-
 import os
-
 from six import iteritems
 from glob import glob
 from datetime import datetime
 from door43_tools.bible_books import BOOK_NAMES, BOOK_NUMBERS
 from door43_tools.language_handler import Language
 from general_tools.file_utils import load_json_object, get_files, get_subdirs
+
 
 class Manifest(object):
     LATEST_VERSION = 6

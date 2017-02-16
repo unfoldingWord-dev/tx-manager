@@ -126,6 +126,5 @@ class TestTemplater(unittest.TestCase):
             self.assertFalse(os.path.isfile(file_name), 'file present, but should not be: {0}'.format(file_name))
 
 
-
 if __name__ == '__main__':
     unittest.main()
