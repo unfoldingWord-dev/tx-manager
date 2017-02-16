@@ -3,23 +3,23 @@ import os
 import string
 import markdown
 import codecs
+import logging
 from glob import glob
 from shutil import copyfile
 from general_tools.file_utils import write_file
 from converter import Converter
 from door43_tools.obs_handler import OBSInspection
-from logging import Logger
 from aws_tools.s3_handler import S3Handler
 
 
 class Md2HtmlConverter(Converter):
 
-    def __init__(self, logger, s3_handler_class=S3Handler):
+    def __init__(self, s3_handler_class=S3Handler):
         """
-        :param Logger logger:
         :param class s3_handler_class:
         """
-        Converter.__init__(self, logger, s3_handler_class)
+        self.logger = logging.getLogger()
+        Converter.__init__(self, s3_handler_class)
         self.options = {'line_spacing': '120%'}
 
     def convert_obs(self):
