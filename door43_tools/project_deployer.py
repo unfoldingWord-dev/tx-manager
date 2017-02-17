@@ -73,7 +73,7 @@ class ProjectDeployer(object):
         if len(html_files) < 1:
             content = ''
             if len(build_log['errors']) > 0:
-                content += u"""
+                content += """
                     <div style="text-align:center;margin-bottom:20px">
                         <i class="fa fa-times-circle-o" style="font-size: 250px;font-weight: 300;color: red"></i>
                         <br/>
@@ -83,7 +83,7 @@ class ProjectDeployer(object):
                 """
                 content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
             elif len(build_log['warnings']) > 0:
-                content += u"""
+                content += """
                     <div style="text-align:center;margin-bottom:20px">
                         <i class="fa fa-exclamation-circle" style="font-size: 250px;font-weight: 300;color: yellow"></i>
                         <br/>
@@ -96,7 +96,7 @@ class ProjectDeployer(object):
                 content += '<h1>{0}</h1>'.format(build_log['message'])
                 content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
 
-            html = u"""
+            html = """
                 <html lang="en">
                     <head>
                         <title>{0}</title>'

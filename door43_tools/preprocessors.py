@@ -98,11 +98,11 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
         chapters = self.get_chapters()
 
         for chapter in chapters:
-            markdown = u'# {0}\n\n'.format(chapter.get('title'))
+            markdown = '# {0}\n\n'.format(chapter.get('title'))
             for frame in chapter.get('frames'):
-                markdown += u'![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n'.format(frame.get('id'))
+                markdown += '![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n'.format(frame.get('id'))
                 markdown += frame.get('text')+u'\n\n'
-            markdown += u'_{0}_\n'.format(chapter.get('reference'))
+            markdown += '_{0}_\n'.format(chapter.get('reference'))
 
             output_file = os.path.join(self.output_dir, '{0}.md'.format(chapter.get('id')))
             write_file(output_file, markdown)
@@ -114,12 +114,12 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
         self.title = ''
 
     def get_usfm_header(self):
-        header = u'\\id {0} {1}\n'.format(self.manifest.project['id'].upper(), self.manifest.resource['name'])
-        header += u'\\ide UTF-8\n'
-        header += u'\\h {0}\n'.format(self.title)
-        header += u'\\toc1 {0}\n'.format(self.title)
-        header += u'\\toc2 {0}\n'.format(self.title)
-        header += u'\\mt {0}\n\n'.format(self.title)
+        header = '\\id {0} {1}\n'.format(self.manifest.project['id'].upper(), self.manifest.resource['name'])
+        header += '\\ide UTF-8\n'
+        header += '\\h {0}\n'.format(self.title)
+        header += '\\toc1 {0}\n'.format(self.title)
+        header += '\\toc2 {0}\n'.format(self.title)
+        header += '\\mt {0}\n\n'.format(self.title)
         return header
 
     def get_chapters(self):
@@ -135,8 +135,8 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
     def get_chapter(self, chapter):
         chapter_content = ''
         for chapter in sorted(chapter):
-            chapter_content += read_file(chapter) + u'\n'
-        return chapter_content + u'\n\n'
+            chapter_content += read_file(chapter) + '\n'
+        return chapter_content + '\n\n'
 
     # Get the title of the project
     def get_title(self):
