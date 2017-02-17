@@ -173,3 +173,13 @@ def copy_tree(src, dst, symlinks=False, ignore=None):
 def remove_tree(dir_path, ignore_errors=True):
     if os.path.isdir(dir_path):
         shutil.rmtree(dir_path, ignore_errors=ignore_errors)
+
+
+def remove(file_path, ignore_errors=True):
+    if ignore_errors:
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+    else:
+        os.remove(file_path)

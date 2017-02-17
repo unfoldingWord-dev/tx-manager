@@ -8,7 +8,6 @@ from shutil import copyfile
 from general_tools.file_utils import write_file
 from converter import Converter
 from door43_tools.obs_handler import OBSInspection
-from aws_tools.s3_handler import S3Handler
 
 
 class Md2HtmlConverter(Converter):
@@ -16,10 +15,8 @@ class Md2HtmlConverter(Converter):
     def convert_obs(self):
         self.logger.info('Processing the OBS markdown files')
 
-        # first check for files in content folder (useful for testing with OBS source)
-        files = self.check_for_content_subfolder()
-        if len(files) == 0: # if empty, check in flat directory structure
-            files = sorted(glob(os.path.join(self.files_dir, '*')))
+        # find the first directory that has md files.
+        files = self.get_files()
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'obs-template.html')) as template_file:
@@ -56,12 +53,3 @@ class Md2HtmlConverter(Converter):
                 except Exception:
                     pass
         self.logger.info('Finished processing Markdown files.')
-
-    def check_for_content_subfolder(self):
-        files = []
-        for root, dirs, filenames in os.walk(self.files_dir):
-            if root.endswith("content"):  # only care about content subfolder
-                for basename in filenames:
-                    filepath = os.path.join(root, basename)
-                    files.append(filepath)
-        return files

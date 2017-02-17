@@ -3,13 +3,10 @@ import os
 import tempfile
 import string
 import codecs
-import logging
-from glob import glob
 from shutil import copyfile
-from general_tools.file_utils import write_file
+from general_tools.file_utils import write_file, remove_tree
 from converter import Converter
 from usfm_tools.transform import UsfmTransform
-
 
 class Usfm2HtmlConverter(Converter):
 
@@ -22,7 +19,8 @@ class Usfm2HtmlConverter(Converter):
     def convert_bible(self):
         self.logger.info('Processing the Bible USFM files')
 
-        files = sorted(glob(os.path.join(self.files_dir, '*')))
+        # find the first directory that has usfm files.
+        files = self.get_files()
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'bible-template.html')) as template_file:
@@ -45,6 +43,7 @@ class Usfm2HtmlConverter(Converter):
                 write_file(output_file, html)
                 self.logger.info('Converted {0} to {1}.'.format(os.path.basename(filename),
                                                                 os.path.basename(html_filename)))
+                remove_tree(scratch_dir)
             else:
                 # Directly copy over files that are not USFM files
                 try:

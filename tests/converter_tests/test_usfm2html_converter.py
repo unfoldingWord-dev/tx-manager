@@ -3,11 +3,11 @@ import os
 import tempfile
 import unittest
 from contextlib import closing
-from converters.md2html_converter import Md2HtmlConverter
+from converters.usfm2html_converter import Usfm2HtmlConverter
 from general_tools.file_utils import remove_tree, unzip, remove
 
 
-class TestMd2HtmlConverter(unittest.TestCase):
+class TestUsfmHtmlConverter(unittest.TestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -43,7 +43,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         This tests that the temp directories are deleted when the class is closed
         """
 
-        with closing(Md2HtmlConverter('', '', '', '', {})) as tx:
+        with closing(Usfm2HtmlConverter('', '', '', '', {})) as tx:
             download_dir = tx.download_dir
             files_dir = tx.files_dir
             out_dir = tx.output_dir
@@ -53,7 +53,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
             self.assertTrue(os.path.isdir(files_dir))
             self.assertTrue(os.path.isdir(out_dir))
 
-            # now they should have been deleted
+        # now they should have been deleted
         self.assertFalse(os.path.isdir(download_dir))
         self.assertFalse(os.path.isdir(files_dir))
         self.assertFalse(os.path.isdir(out_dir))
@@ -63,23 +63,21 @@ class TestMd2HtmlConverter(unittest.TestCase):
         Runs the converter and verifies the output
         """
         # test with the English OBS
-        zip_file = self.resources_dir+"/en-obs.zip"
-        out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
-        with closing(Md2HtmlConverter('', 'obs', None, out_zip_file)) as tx:
+        zip_file = self.resources_dir+"/eight_bible_books.zip"
+        out_zip_file = tempfile.mktemp('.zip')
+        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             tx.run()
-
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
-        self.out_dir = tempfile.mkdtemp(prefix='obs_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_')
         unzip(out_zip_file, self.out_dir)
         remove(out_zip_file)
-        files_to_verify = []
-        for i in range(1, 51):
-            files_to_verify.append(str(i).zfill(2) + '.html')
+        files_to_verify = ['60-JAS.html', '61-1PE.html', '62-2PE.html', '63-1JN.html', '64-2JN.html', '65-3JN.html',
+                           '66-JUD.html', '67-REV.html']
         for file_to_verify in files_to_verify:
             file_name = os.path.join(self.out_dir, file_to_verify)
-            self.assertTrue(os.path.isfile(file_name), 'OBS HTML file not found: {0}'.format(file_name))
+            self.assertTrue(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))
 
 if __name__ == '__main__':
     unittest.main()

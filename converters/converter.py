@@ -3,12 +3,14 @@ import os
 import tempfile
 from aws_tools.s3_handler import S3Handler
 from general_tools.url_utils import download_file
-from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree
+from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
 from shutil import copy
 from convert_logger import ConvertLogger
 
 
 class Converter(object):
+
+    EXCLUDED_FILES = ["license.md", "manifest.json", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source, resource, cdn_bucket=None, cdn_file=None, options=None):
         self.logger = ConvertLogger()
@@ -26,13 +28,14 @@ class Converter(object):
         self.files_dir = tempfile.mkdtemp(prefix='files_')
         self.input_zip_file = None  # If set, won't download the repo archive. Used for testing
         self.output_dir = tempfile.mkdtemp(prefix='output_')
-        self.output_zip_file = tempfile.mktemp('.zip')
+        self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource), suffix='.zip')
 
     def close(self):
         # delete temp files
         remove_tree(self.download_dir)
         remove_tree(self.files_dir)
         remove_tree(self.output_dir)
+        remove(self.output_zip_file)
 
     def run(self):
         # Custom converters need to add a `convert_<resource>(self)` method for every resource it converts
@@ -79,3 +82,12 @@ class Converter(object):
             cdn_handler.upload_file(self.output_zip_file, self.cdn_file)
         elif self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
             copy(self.output_zip_file, self.cdn_file)
+
+    def get_files(self):
+        files = []
+        for root, dirs, filenames in os.walk(self.files_dir):
+            for filename in filenames:
+                if filename.lower() not in Converter.EXCLUDED_FILES:
+                    filepath = os.path.join(root, filename)
+                    files.append(filepath)
+        return files
