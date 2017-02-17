@@ -315,7 +315,7 @@ class ManagerTest(unittest.TestCase):
             self.assertIn("href", link_data)
             self.assertEqual(self.MOCK_API_URL + "/tx/job", link_data["href"])
             self.assertIn("rel", link_data)
-            self.assertIsInstance(link_data["rel"], str)
+            self.assertIsInstance(link_data["rel"], unicode)
             self.assertIn("method", link_data)
             self.assertIn(link_data["method"],
                           ["GET", "POST", "PUT", "PATCH", "DELETE"])
