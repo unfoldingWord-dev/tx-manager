@@ -101,7 +101,7 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
             markdown = '# {0}\n\n'.format(chapter.get('title'))
             for frame in chapter.get('frames'):
                 markdown += '![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n'.format(frame.get('id'))
-                markdown += frame.get('text')+u'\n\n'
+                markdown += frame.get('text')+'\n\n'
             markdown += '_{0}_\n'.format(chapter.get('reference'))
 
             output_file = os.path.join(self.output_dir, '{0}.md'.format(chapter.get('id')))

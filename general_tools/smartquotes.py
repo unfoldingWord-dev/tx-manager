@@ -16,7 +16,7 @@ def smartquotes(text):
     com = Popen(command, shell=False, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     out, err = com.communicate(text.encode('utf-8'))
     com_out = out.decode('utf-8')
-    text = com_out.replace(u'\n', ' ').strip()
+    text = com_out.replace('\n', ' ').strip()
     return text
 
 
