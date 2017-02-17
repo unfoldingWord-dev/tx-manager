@@ -1,16 +1,5 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Richard Mahn <richard_mahn@wycliffeassociates.org>
-#
-#  DynamoDBHandler
-
+from __future__ import unicode_literals, print_function
 import boto3
-
 from six import iteritems
 from boto3 import Session
 from boto3.dynamodb.conditions import Attr, Key

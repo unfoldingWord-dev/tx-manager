@@ -304,22 +304,22 @@ class Manifest(object):
     def get_resource_name(resource_id):
         resource_id = resource_id.lower()
         if resource_id == 'ulb':
-            return u'Unlocked Literal Bible'
+            return 'Unlocked Literal Bible'
         elif resource_id == 'udb':
-            return u'Unlocked Dynamic Bible'
+            return 'Unlocked Dynamic Bible'
         elif resource_id == 'bible':
-            return u'Bible'
+            return 'Bible'
         elif resource_id == 'obs':
-            return u'Open Bible Stories'
+            return 'Open Bible Stories'
         elif resource_id == 'tn':
-            return u'translationNotes'
+            return 'translationNotes'
         elif resource_id == 'tw':
-            return u'translationWords'
+            return 'translationWords'
         elif resource_id == 'tq':
-            return u'translationQuestions'
+            return 'translationQuestions'
         elif resource_id == 'ta':
-            return u'translationAcademy'
-        return u''
+            return 'translationAcademy'
+        return ''
 
 
 class MetaData(object):

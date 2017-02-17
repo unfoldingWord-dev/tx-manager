@@ -1,19 +1,9 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Phil Hopper <phillip_hopper@wycliffeassociates.org>
-
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 import codecs
 import json
 import os
 import zipfile
 import sys
-
 from mimetypes import MimeTypes
 
 # we need this to check for string versus object
