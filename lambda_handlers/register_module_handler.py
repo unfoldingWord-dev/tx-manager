@@ -20,4 +20,5 @@ class RegisterModuleHandler(Handler):
         vars = {}
         if 'vars' in event and isinstance(event['vars'], dict):
             vars = event['vars']
+        vars['api_id'] = context.api
         return TxManager(**vars).register_module(module)

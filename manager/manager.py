@@ -71,15 +71,15 @@ class TxManager(object):
         return None
 
     def setup_job(self, data):
-        if 'user_token' not in data:
-            raise Exception('"user_token" not given.')
+        if 'gogs_user_token' not in data:
+            raise Exception('"gogs_user_token" not given.')
 
-        user = self.get_user(data['user_token'])
+        user = self.get_user(data['gogs_user_token'])
 
         if not user or not user.username:
             raise Exception('Invalid user_token. User not found.')
 
-        del data['user_token']
+        del data['gogs_user_token']
         data['user'] = user.username
 
         job = TxJob(data, self.quiet)
@@ -155,13 +155,13 @@ class TxManager(object):
 
     def list_jobs(self, data, must_be_authenticated=True):
         if must_be_authenticated:
-            if 'user_token' not in data:
-                raise Exception('"user_token" not given.')
-            user = self.get_user(data['user_token'])
+            if 'gogs_user_token' not in data:
+                raise Exception('"gogs_user_token" not given.')
+            user = self.get_user(data['gogs_user_token'])
             if not user:
                 raise Exception('Invalid user_token. User not found.')
             data['user'] = user
-            del data['user_token']
+            del data['gogs_user_token']
         jobs = self.query_jobs(data)
         ret = []
         if jobs and len(jobs):

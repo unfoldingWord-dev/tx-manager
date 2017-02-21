@@ -22,7 +22,7 @@ class RequestJobHandler(Handler):
             vars = event['vars']
         if 'source' in job and 'job_id' not in job:
             # if 'source' is given, and no job_id, that means to setup a new job for conversion
-            job['job_id'] = context.aws_request_id
+            job['job_id'] = context.aws_
             return TxManager(**vars).setup_job(job)
         else:
             # Else we just list all jobs based on the given query data
