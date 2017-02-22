@@ -60,7 +60,7 @@ NOTE: This gives URLs and bucket names for development. For production, remove t
 
 1. Gogs (Git website)
 
-When a repository is updated on `Gogs <https://test.door43.org:3000>`_, the commit triggers all webhooks in the repo's settings to be triggered. One of those webhooks, which our copy of Gogs sets up automatically for every new repo, is a call to https://test-api.door43.org/client/webhook (API Gateway -> Lambda function).
+When a repository is updated on `Gogs <https://test.door43.org:3000>`_, the commit triggers all webhooks in the repo's settings. One of those webhooks, which our copy of Gogs sets up automatically for every new repo, is a call to https://test-api.door43.org/client/webhook (API Gateway -> Lambda function).
 
 2. Webhook (Lambda function - API Gateway triggered)
 
@@ -81,13 +81,13 @@ The client_webhook function is responsible for standardizing both a manifest.jso
 
 3. Request Job (Lamdbda function - API Gateway triggered)
 
-Request Job is triggered through a call to the AWS API Gateway which triggers the `request_job lambda function <https://github.com/unfoldingWord-dev/tx-manager-lambda/blob/develop/functions/tx-manager_request_job/main.py>`_. This function expects the following variables in the payload:
+Request Job is triggered through a call to the AWS API Gateway, running the `request_job lambda function <https://github.com/unfoldingWord-dev/tx-manager-lambda/blob/develop/functions/tx-manager_request_job/main.py>`_. This function expects the following variables in the payload:
 
 * gogs_url* - the URL to the Gogs site to verify user token (e.g. https://git.door43.org)
 * api_url* - the base URL to the tX Manager API (e.g. https://test-api.door43.org)
 * data - information about the job to performed. It contains the following variables:
 
-   * gogs_user_token - a user token of a valid user to prove they are a user so we can traob requests
+   * gogs_user_token - a user token of a valid Gogs user
    * cdn_bucket - the S3 bucket in which the zip file of the converted files is to placed
    * source - The URL of the archive of files to convert (e.g. https://s3-us-west-2.amazonaws.com/test-tx-webhook/preconvert/0038b1d1-bf3b-11e6-8481-ed2b5603783b.zip)
    * resource_type - The resource type (e.g. obs, ulb, udb, etc.)
@@ -127,7 +127,7 @@ The Door43 Deploy function is what moves the HTML files converted by #5 and plac
 Register Conversion Module
 --------------------------
 
-In order for tX Manager to know about a conversion module and to assign a conversion request to the module, it must be registered. To register a module, it must made a call to the API Gateway with the URL https://test-api.door43.org/tx/register. It expects
+In order for tX Manager to know about a conversion module and to assign a conversion request to the module, it must be registered. To register a module, it must make a call to the API Gateway with the URL https://test-api.door43.org/tx/register. It expects
 the following variables:
 
 * name - the Lambda function name of the converter, usually in the form of tx-<input>2<output>_convert
