@@ -5,7 +5,7 @@ from lambda_handlers.handler import Handler
 
 class RegisterModuleHandler(Handler):
 
-    def __handle(self, event, context):
+    def _handle(self, event, context):
         """
         :param dict event:
         :param context:
