@@ -17,7 +17,7 @@ class ConvertHandler(Handler):
             self.converter_class = args.pop()
         Handler.__init__(self, *args, **kwargs)
 
-    def __handle(self, event, context):
+    def _handle(self, event, context):
         """
         :param dict event:
         :param context:
