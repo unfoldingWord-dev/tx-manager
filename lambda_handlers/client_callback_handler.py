@@ -5,7 +5,7 @@ from client.client_callback import ClientCallback
 
 class ClientCallbackHandler(Handler):
 
-    def __handle(self, event, context):
+    def _handle(self, event, context):
         """
         :param dict event:
         :param context:
