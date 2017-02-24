@@ -1,0 +1,7 @@
+{
+  "api_url": "unit_test_api_url",
+  "pre_convert_bucket": "pre_convert_bucket",
+  "cdn_bucket": "cdn_bucket",
+  "gogs_url": "https://git.door43.org",
+  "gogs_user_token": "unit_test_user_token"
+}
