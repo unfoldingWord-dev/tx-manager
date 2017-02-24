@@ -127,7 +127,7 @@ class ClientWebhook(object):
         # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
         zip_filename = commit_id + '.zip'
         zip_filepath = os.path.join(tempfile.gettempdir(), zip_filename)
-        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath), end=' ')
+        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
         if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
             add_file_to_zip(zip_filepath, manifest_path, 'manifest.json')
@@ -136,7 +136,7 @@ class ClientWebhook(object):
         # 4) Upload zipped file to the S3 bucket
         s3_handler = self.s3_handler_class(self.pre_convert_bucket)
         file_key = "preconvert/" + zip_filename
-        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key), end=' ')
+        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
             s3_handler.upload_file(zip_filepath, file_key)
         except Exception as e:
@@ -162,7 +162,7 @@ class ClientWebhook(object):
             "source": source_url,
             "callback": callback_url
         }
-        
+
         self.logger.info('Telling txManager to setup job.')
         try:
             response = TxManager(api_url=self.api_url, cdn_bucket=self.cdn_bucket, logger=self.logger).setup_job(job)
@@ -249,18 +249,32 @@ class ClientWebhook(object):
         return reduce(getattr, class_name_string.split("."), sys.modules[__name__])
 
     def download_repo(self, commit_url, repo_dir):
+        """
+        Downloads and unzips a git repository from Github or git.door43.org
+        :param str|unicode commit_url: The URL of the repository to download
+        :param str|unicode repo_dir:   The directory where the downloaded file should be unzipped
+        :return: None
+        """
         repo_zip_url = commit_url.replace('commit', 'archive') + '.zip'
         repo_zip_file = os.path.join(tempfile.gettempdir(), repo_zip_url.rpartition('/')[2])
+
         try:
-            self.logger.info('Downloading {0}...'.format(repo_zip_url), end=' ')
-            if not os.path.isfile(repo_zip_file):
-                download_file(repo_zip_url, repo_zip_file)
+            self.logger.info('Downloading {0}...'.format(repo_zip_url))
+
+            # if the file already exists, remove it, we want a fresh copy
+            if os.path.isfile(repo_zip_file):
+                os.remove(repo_zip_file)
+
+            download_file(repo_zip_url, repo_zip_file)
         finally:
             self.logger.info('finished.')
 
         try:
-            self.logger.info('Unzipping {0}...'.format(repo_zip_file), end=' ')
+            self.logger.info('Unzipping {0}...'.format(repo_zip_file))
             unzip(repo_zip_file, repo_dir)
         finally:
             self.logger.info('finished.')
 
+        # clean up the downloaded zip file
+        if os.path.isfile(repo_zip_file):
+            os.remove(repo_zip_file)
