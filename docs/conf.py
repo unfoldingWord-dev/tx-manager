@@ -85,13 +85,13 @@ todo_include_todos = False
 #
 #html_theme = 'alabaster'
 
-import os
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+#import os
+#on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
-if not on_rtd:
-    import sphinx_rtd_theme
-    html_theme = "sphinx_rtd_theme"
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+#if not on_rtd:
+import sphinx_rtd_theme
+html_theme = "sphinx_rtd_theme"
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -191,7 +191,7 @@ html_static_path = ['_static']
 #   'da', 'de', 'en', 'es', 'fi', 'fr', 'hu', 'it', 'ja'
 #   'nl', 'no', 'pt', 'ro', 'ru', 'sv', 'tr', 'zh'
 #
-# html_search_language = 'en'
+# html_search_language = None
 
 # A dictionary with options for the search language support, empty by default.
 # 'ja' uses this config value.
