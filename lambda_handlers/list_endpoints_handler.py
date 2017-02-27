@@ -11,8 +11,8 @@ class ListEndpointsHandler(Handler):
         :param context:
         :return dict:
         """
-        vars = {}
+        env_vars = {}
         if 'vars' in event and isinstance(event['vars'], dict):
-            vars = event['vars']
-        return TxManager(**vars).list_endpoints()
+            env_vars = event['vars']
+        return TxManager(**env_vars).list_endpoints()
 
