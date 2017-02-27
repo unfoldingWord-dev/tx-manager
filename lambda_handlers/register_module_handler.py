@@ -17,7 +17,8 @@ class RegisterModuleHandler(Handler):
             module = event['data']
         if 'body-json' in event and event['body-json'] and isinstance(event['body-json'], dict):
             module.update(event['body-json'])
-        vars = {}
+        env_vars = {}
         if 'vars' in event and isinstance(event['vars'], dict):
-            vars = event['vars']
-        return TxManager(**vars).register_module(module)
+            env_vars = event['vars']
+        env_vars['api_id'] = context.api
+        return TxManager(**env_vars).register_module(module)
