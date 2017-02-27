@@ -5,7 +5,7 @@ tx-manager documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   README.rst
+   README
 
 Indices and tables
 ==================
