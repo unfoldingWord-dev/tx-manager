@@ -2,7 +2,9 @@ from __future__ import print_function, unicode_literals
 import os
 import sys
 import tempfile
+import requests
 import logging
+import json
 from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
@@ -10,7 +12,6 @@ from general_tools.url_utils import download_file
 from door43_tools import preprocessors
 from door43_tools.manifest_handler import Manifest, MetaData
 from aws_tools.s3_handler import S3Handler
-from manager.manager import TxManager
 
 
 class ClientWebhook(object):
@@ -153,9 +154,9 @@ class ClientWebhook(object):
                                           commit_id)  # The way to know which repo/commit goes to this job request
         if input_format == 'markdown':
             input_format = 'md'
-        job = {
+        payload = {
             "identifier": identifier,
-            "user_token": self.gogs_user_token,
+            "gogs_user_token": self.gogs_user_token,
             "resource_type": manifest.resource['id'],
             "input_format": input_format,
             "output_format": "html",
@@ -163,29 +164,58 @@ class ClientWebhook(object):
             "callback": callback_url
         }
 
-        self.logger.info('Telling txManager to setup job.')
-        try:
-            response = TxManager(api_url=self.api_url, cdn_bucket=self.cdn_bucket, logger=self.logger).setup_job(job)
-        except Exception as e:
-            # Fake job so we can still build the build_log.json
-            job = {
-                'job_id': None,
-                'identifier': identifier,
-                'resource_type': manifest.resource['id'],
-                'input_format': input_format,
-                'output_format': 'html',
-                'source': source_url,
-                'callback': callback_url,
-                'message': 'Failed to convert',
-                'status': 'failed',
-                'success': False,
-                'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                'log': [],
-                'warnings': [],
-                'errors': [e.message]
-            }
+        headers = {"content-type": "application/json"}
+
+        print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
+        print(payload)
+        response = requests.post(tx_manager_job_url, json=payload, headers=headers)
+        print('finished.')
+
+        # Fake job in case tx-manager returns an error, can still build the build_log.json
+        job = {
+            'job_id': None,
+            'identifier': identifier,
+            'resource_type': manifest.resource['id'],
+            'input_format': input_format,
+            'output_format': 'html',
+            'source': source_url,
+            'callback': callback_url,
+            'message': 'Conversion started...',
+            'status': 'requested',
+            'success': None,
+            'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'log': [],
+            'warnings': [],
+            'errors': []
+        }
+
+        if response.status_code != requests.codes.ok:
+            job['status'] = 'failed'
+            job['success'] = False
+            job['message'] = 'Failed to convert!'
+
+            if response.text:
+                # noinspection PyBroadException
+                try:
+                    json_data = json.loads(response.text)
+                    if 'errorMessage' in json_data:
+                        error = json_data['errorMessage']
+                        if error.startswith('Bad Request: '):
+                            error = error[len('Bad Request: '):]
+
+                        job['errors'].append(error)
+                except:
+                    pass
         else:
-                job = response['job']
+            json_data = json.loads(response.text)
+
+            if 'job' not in json_data:
+                job['status'] = 'failed'
+                job['success'] = False
+                job['message'] = 'Failed to convert'
+                job['errors'].append('tX Manager did not return any info about the job request.')
+            else:
+                job = json_data['job']
 
         cdn_handler = self.s3_handler_class(self.cdn_bucket)
 
