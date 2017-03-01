@@ -2,10 +2,10 @@ tx-manager documentation!
 ======================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
-   README
+   overview
 
 Indices and tables
 ==================
