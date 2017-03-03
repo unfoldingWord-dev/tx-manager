@@ -15,7 +15,7 @@ class Handler(object):
             return self._handle(event, context)
         except Exception as e:
             e.message = 'Bad Request: {0}'.format(e.message)
-            raise e
+            raise
 
     @abstractmethod
     def _handle(self, event, context):
