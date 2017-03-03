@@ -8,7 +8,7 @@ python-json-logger==0.1.5
 markdown==2.6.8
 future==0.16.0
 pyparsing==2.1.10
-usfm-tools==0.0.7
+usfm-tools==0.0.8
 mock==2.0.0
 sphinx==1.5.2
 sphinx-autobuild==0.6.0
