@@ -40,7 +40,7 @@ setup(
         'markdown==2.6.8',
         'future==0.16.0',
         'pyparsing==2.1.10',
-        'usfm-tools==0.0.7',
+        'usfm-tools==0.0.8',
         'mock'  # travis reports syntax error in mock setup.cfg if we give version
     ],
     test_suite='tests'
