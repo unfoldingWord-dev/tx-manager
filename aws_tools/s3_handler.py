@@ -51,7 +51,7 @@ class S3Handler(object):
             if e.response['Error']['Code'] == "404":
                 exists = False
             else:
-                raise e
+                raise
         else:
             exists = True
 
