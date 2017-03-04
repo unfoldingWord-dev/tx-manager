@@ -11,7 +11,7 @@ def read(f_name):
 
 setup(
     name='tx-manager',
-    version='0.2.3',
+    version='0.2.60',
     packages=[
         'client',
         'manager',
@@ -22,6 +22,7 @@ setup(
         'gogs_tools',
         'lambda_handlers'
     ],
+    package_data={'converters': ['templates/*.html']},
     author='unfoldingWord',
     author_email='info@unfoldingword.org',
     description='Classes for executing tX Manager',

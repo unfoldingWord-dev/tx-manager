@@ -1,8 +1,8 @@
+from __future__ import absolute_import, unicode_literals, print_function
 import os
 import tempfile
 import unittest
 import shutil
-
 from door43_tools.templaters import Templater
 from general_tools.file_utils import unzip
 
