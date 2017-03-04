@@ -13,6 +13,7 @@ setup(
         'gogs_tools',
         'lambda_handlers'
     ],
+    package_data={'converters': ['templates/*.html']},
     author='unfoldingWord',
     author_email='unfoldingword.org',
     description='Unit test setup file.',

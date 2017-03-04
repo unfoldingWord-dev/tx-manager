@@ -22,6 +22,7 @@ setup(
         'gogs_tools',
         'lambda_handlers'
     ],
+    package_data={'converters': ['templates/*.html']},
     author='unfoldingWord',
     author_email='info@unfoldingword.org',
     description='Classes for executing tX Manager',

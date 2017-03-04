@@ -132,7 +132,7 @@ class ManagerTest(unittest.TestCase):
         """
         Successful call of setup_job
         """
-        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL, cdn_bucket="test_bucket")
         data = {
             "gogs_user_token": "token1",
             "cdn_bucket":  "test_cdn_bucket",
@@ -422,7 +422,7 @@ class ManagerTest(unittest.TestCase):
                           ["GET", "POST", "PUT", "PATCH", "DELETE"])
 
     def test_register_module(self):
-        manager = TxManager()
+        manager = TxManager(api_url=self.MOCK_API_URL)
 
         data = {
             "name": "module1",
@@ -434,6 +434,7 @@ class ManagerTest(unittest.TestCase):
         manager.register_module(data)
         ManagerTest.mock_module_db.insert_item.assert_called()
         args, kwargs = self.call_args(ManagerTest.mock_module_db.insert_item, num_args=1)
+        data['public_links'] = ['{0}/tx/convert/{1}'.format(self.MOCK_API_URL, data['name'])]
         self.assertEqual(args[0], TxModule(data).get_db_data())
 
         for key in data:
