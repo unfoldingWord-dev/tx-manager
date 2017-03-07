@@ -121,7 +121,7 @@ class ManagerTest(unittest.TestCase):
         """
         tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
         data = {
-            "user_token": "token1",
+            "gogs_user_token": "token1",
             "cdn_bucket":  "test_cdn_bucket",
             "source": "test_source",
             "resource_type": "obs",
@@ -143,7 +143,7 @@ class ManagerTest(unittest.TestCase):
         """
         tx_manager = TxManager()
         data = {
-            "user_token": "token1",
+            "gogs_user_token": "token1",
             "cdn_bucket": "test_cdn_bucket",
             "source": "test_source",
             "resource_type": "obs",
@@ -157,7 +157,7 @@ class ManagerTest(unittest.TestCase):
             self.assertRaises(Exception, tx_manager.setup_job, missing)
         # should raise an exception if called with an invalid user_token
         bad_token = data.copy()
-        bad_token["user_token"] = "bad_token"
+        bad_token["gogs_user_token"] = "bad_token"
         self.assertRaises(Exception, tx_manager.setup_job, bad_token)
 
     def test_setup_job_no_converter(self):
@@ -166,7 +166,7 @@ class ManagerTest(unittest.TestCase):
         """
         tx_manager = TxManager()
         data = {
-            "user_token": "token1",
+            "gogs_user_token": "token1",
             "cdn_bucket": "test_cdn_bucket",
             "source": "test_source",
             "resource_type": "unrecognized_resource_type",
@@ -296,13 +296,13 @@ class ManagerTest(unittest.TestCase):
         Test list_jobs and list_endpoint methods
         """
         tx_manager = TxManager(api_url=self.MOCK_API_URL, gogs_url=self.MOCK_GOGS_URL)
-        jobs = tx_manager.list_jobs({"user_token": "token2"}, True)
+        jobs = tx_manager.list_jobs({"gogs_user_token": "token2"}, True)
         expected = [TxJob(job).get_db_data()
                     for job in ManagerTest.mock_job_db.mock_data.values()]
         self.assertEqual(jobs, expected)
 
         self.assertRaises(Exception, tx_manager.list_jobs, {"bad_key": "token1"})
-        self.assertRaises(Exception, tx_manager.list_jobs, {"user_token": "bad_token"})
+        self.assertRaises(Exception, tx_manager.list_jobs, {"gogs_user_token": "bad_token"})
 
         endpoints = tx_manager.list_endpoints()
         self.assertIsInstance(endpoints, dict)

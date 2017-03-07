@@ -2,7 +2,9 @@ from __future__ import print_function, unicode_literals
 import os
 import sys
 import tempfile
+import requests
 import logging
+import json
 from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
@@ -10,7 +12,6 @@ from general_tools.url_utils import download_file
 from door43_tools import preprocessors
 from door43_tools.manifest_handler import Manifest, MetaData
 from aws_tools.s3_handler import S3Handler
-from manager.manager import TxManager
 
 
 class ClientWebhook(object):
@@ -127,7 +128,7 @@ class ClientWebhook(object):
         # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
         zip_filename = commit_id + '.zip'
         zip_filepath = os.path.join(tempfile.gettempdir(), zip_filename)
-        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath), end=' ')
+        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
         if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
             add_file_to_zip(zip_filepath, manifest_path, 'manifest.json')
@@ -136,7 +137,7 @@ class ClientWebhook(object):
         # 4) Upload zipped file to the S3 bucket
         s3_handler = self.s3_handler_class(self.pre_convert_bucket)
         file_key = "preconvert/" + zip_filename
-        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key), end=' ')
+        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
             s3_handler.upload_file(zip_filepath, file_key)
         except Exception as e:
@@ -153,39 +154,68 @@ class ClientWebhook(object):
                                           commit_id)  # The way to know which repo/commit goes to this job request
         if input_format == 'markdown':
             input_format = 'md'
-        job = {
+        payload = {
             "identifier": identifier,
-            "user_token": self.gogs_user_token,
+            "gogs_user_token": self.gogs_user_token,
             "resource_type": manifest.resource['id'],
             "input_format": input_format,
             "output_format": "html",
             "source": source_url,
             "callback": callback_url
         }
-        
-        self.logger.info('Telling txManager to setup job.')
-        try:
-            response = TxManager(api_url=self.api_url, cdn_bucket=self.cdn_bucket, logger=self.logger).setup_job(job)
-        except Exception as e:
-            # Fake job so we can still build the build_log.json
-            job = {
-                'job_id': None,
-                'identifier': identifier,
-                'resource_type': manifest.resource['id'],
-                'input_format': input_format,
-                'output_format': 'html',
-                'source': source_url,
-                'callback': callback_url,
-                'message': 'Failed to convert',
-                'status': 'failed',
-                'success': False,
-                'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                'log': [],
-                'warnings': [],
-                'errors': [e.message]
-            }
+
+        headers = {"content-type": "application/json"}
+
+        print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
+        print(payload)
+        response = requests.post(tx_manager_job_url, json=payload, headers=headers)
+        print('finished.')
+
+        # Fake job in case tx-manager returns an error, can still build the build_log.json
+        job = {
+            'job_id': None,
+            'identifier': identifier,
+            'resource_type': manifest.resource['id'],
+            'input_format': input_format,
+            'output_format': 'html',
+            'source': source_url,
+            'callback': callback_url,
+            'message': 'Conversion started...',
+            'status': 'requested',
+            'success': None,
+            'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'log': [],
+            'warnings': [],
+            'errors': []
+        }
+
+        if response.status_code != requests.codes.ok:
+            job['status'] = 'failed'
+            job['success'] = False
+            job['message'] = 'Failed to convert!'
+
+            if response.text:
+                # noinspection PyBroadException
+                try:
+                    json_data = json.loads(response.text)
+                    if 'errorMessage' in json_data:
+                        error = json_data['errorMessage']
+                        if error.startswith('Bad Request: '):
+                            error = error[len('Bad Request: '):]
+
+                        job['errors'].append(error)
+                except:
+                    pass
         else:
-                job = response['job']
+            json_data = json.loads(response.text)
+
+            if 'job' not in json_data:
+                job['status'] = 'failed'
+                job['success'] = False
+                job['message'] = 'Failed to convert'
+                job['errors'].append('tX Manager did not return any info about the job request.')
+            else:
+                job = json_data['job']
 
         cdn_handler = self.s3_handler_class(self.cdn_bucket)
 
@@ -249,18 +279,32 @@ class ClientWebhook(object):
         return reduce(getattr, class_name_string.split("."), sys.modules[__name__])
 
     def download_repo(self, commit_url, repo_dir):
+        """
+        Downloads and unzips a git repository from Github or git.door43.org
+        :param str|unicode commit_url: The URL of the repository to download
+        :param str|unicode repo_dir:   The directory where the downloaded file should be unzipped
+        :return: None
+        """
         repo_zip_url = commit_url.replace('commit', 'archive') + '.zip'
         repo_zip_file = os.path.join(tempfile.gettempdir(), repo_zip_url.rpartition('/')[2])
+
         try:
-            self.logger.info('Downloading {0}...'.format(repo_zip_url), end=' ')
-            if not os.path.isfile(repo_zip_file):
-                download_file(repo_zip_url, repo_zip_file)
+            self.logger.info('Downloading {0}...'.format(repo_zip_url))
+
+            # if the file already exists, remove it, we want a fresh copy
+            if os.path.isfile(repo_zip_file):
+                os.remove(repo_zip_file)
+
+            download_file(repo_zip_url, repo_zip_file)
         finally:
             self.logger.info('finished.')
 
         try:
-            self.logger.info('Unzipping {0}...'.format(repo_zip_file), end=' ')
+            self.logger.info('Unzipping {0}...'.format(repo_zip_file))
             unzip(repo_zip_file, repo_dir)
         finally:
             self.logger.info('finished.')
 
+        # clean up the downloaded zip file
+        if os.path.isfile(repo_zip_file):
+            os.remove(repo_zip_file)

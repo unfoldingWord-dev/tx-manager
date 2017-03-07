@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='tx-manager',
-    version='0.2.1',
+    version='0.2.3',
     packages=[
         'client',
         'manager',
@@ -29,9 +29,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
     ],
-    dependency_links=[
-        'git+git://github.com/unfoldingword-dev/usfm-tools.git@0.0.7#egg=usfm_tools-0.0.7'
-   ],
     install_requires=[
         'requests==2.13.0',
         'responses==0.5.1',
@@ -43,7 +40,7 @@ setup(
         'markdown==2.6.8',
         'future==0.16.0',
         'pyparsing==2.1.10',
-        'usfm_tools==0.0.7',
+        'usfm-tools==0.0.8',
         'mock'  # travis reports syntax error in mock setup.cfg if we give version
     ],
     test_suite='tests'

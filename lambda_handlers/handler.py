@@ -1,7 +1,9 @@
 from __future__ import unicode_literals, print_function
+from abc import ABCMeta, abstractmethod
 
 
 class Handler(object):
+    __metaclass__ = ABCMeta
 
     def handle(self, event, context):
         """
@@ -10,19 +12,20 @@ class Handler(object):
         :return dict:
         """
         try:
-            return self.__handle(event, context)
+            return self._handle(event, context)
         except Exception as e:
             e.message = 'Bad Request: {0}'.format(e.message)
-            raise e
+            raise
 
-    def __handle(self, event, context):
+    @abstractmethod
+    def _handle(self, event, context):
         """
         Dummy function for handlers. Override this so handle() will catch the exception and make it a "Bad Request: "
         :param dict event:
         :param context:
         :return dict:
         """
-        pass
+        raise NotImplementedError()
 
     @staticmethod
     def retrieve(dictionary, key, dict_name=None):

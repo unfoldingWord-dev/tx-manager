@@ -5,14 +5,14 @@ from lambda_handlers.handler import Handler
 
 class ListEndpointsHandler(Handler):
 
-    def __handle(self, event, context):
+    def _handle(self, event, context):
         """
         :param dict event:
         :param context:
         :return dict:
         """
-        vars = {}
+        env_vars = {}
         if 'vars' in event and isinstance(event['vars'], dict):
-            vars = event['vars']
-        return TxManager(**vars).list_endpoints()
+            env_vars = event['vars']
+        return TxManager(**env_vars).list_endpoints()
 

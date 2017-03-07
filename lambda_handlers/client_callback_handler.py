@@ -5,16 +5,16 @@ from client.client_callback import ClientCallback
 
 class ClientCallbackHandler(Handler):
 
-    def __handle(self, event, context):
+    def _handle(self, event, context):
         """
         :param dict event:
         :param context:
         :return dict:
         """
         job = self.retrieve(event, 'data', 'payload')
-        vars = self.retrieve(event, 'vars', 'payload')
+        env_vars = self.retrieve(event, 'vars', 'payload')
         # Check vars exist
-        self.retrieve(vars, 'gogs_url', 'payload')
-        self.retrieve(vars, 'cdn_bucket', 'payload')
+        self.retrieve(env_vars, 'gogs_url', 'payload')
+        self.retrieve(env_vars, 'cdn_bucket', 'payload')
         self.retrieve(job, 'identifier', 'job')
-        return ClientCallback(**vars).process_callback()
+        return ClientCallback(**env_vars).process_callback()
