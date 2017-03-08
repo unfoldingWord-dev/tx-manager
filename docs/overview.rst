@@ -11,8 +11,8 @@ Issue for its creation at https://github.com/unfoldingWord-dev/door43.org/issues
 tX Pipeline
 ===========
 
-1. webhook
-2. job_request
+1. webhook <webhook>
+2. job_request <job_request>
 3. job_handle
 4. [CONVERTER]
 5. callback
