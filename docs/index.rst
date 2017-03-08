@@ -1,11 +1,12 @@
 tx-manager documentation!
-======================================
+=========================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   overview
+   readme
+   license
 
 Indices and tables
 ==================
