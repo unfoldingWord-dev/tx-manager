@@ -5,6 +5,7 @@ import tempfile
 import requests
 import logging
 import json
+import shutil
 from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
@@ -264,6 +265,32 @@ class ClientWebhook(object):
         cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
 
         cdn_handler.upload_file(manifest_path, s3_commit_key + '/manifest.json', 0)
+
+        # remove temp files/directories
+        try:
+            shutil.rmtree(output_dir, ignore_errors=True)
+        except:
+            pass
+
+        try:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except:
+            pass
+
+        try:
+            os.remove(build_log_file)
+        except:
+            pass
+
+        try:
+            os.remove(zip_filepath)
+        except:
+            pass
+
+        try:
+            os.remove(project_file)
+        except:
+            pass
 
         if len(job['errors']) > 0:
             raise Exception('; '.join(job['errors']))
