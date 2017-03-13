@@ -60,3 +60,6 @@ class UrlUtilsTests(unittest.TestCase):
     def test_join_url_parts_multiple(self):
         self.assertEqual(url_utils.join_url_parts("foo/", "bar", "baz/qux/"),
                          "foo/bar/baz/qux/")
+
+    def test_get_languages(self):
+        self.assertGreater(len(url_utils.get_languages()), 7000)
