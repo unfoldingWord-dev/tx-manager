@@ -14,7 +14,6 @@ from door43_tools import preprocessors
 from door43_tools.manifest_handler import Manifest, MetaData
 from aws_tools.s3_handler import S3Handler
 
-
 class ClientWebhook(object):
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
@@ -50,247 +49,242 @@ class ClientWebhook(object):
             self.source_url_base = None
 
     def process_webhook(self):
-        commit_id = self.commit_data['after']
-        commit = None
-        for commit in self.commit_data['commits']:
-            if commit['id'] == commit_id:
-                break
-        commit_id = commit_id[:10]  # Only use the short form
+        try:
+            commit_id = self.commit_data['after']
+            commit = None
+            for commit in self.commit_data['commits']:
+                if commit['id'] == commit_id:
+                    break
+            commit_id = commit_id[:10]  # Only use the short form
 
-        commit_url = commit['url']
-        commit_message = commit['message']
+            commit_url = commit['url']
+            commit_message = commit['message']
 
-        if self.gogs_url not in commit_url:
-            raise Exception('Repos can only belong to {0} to use this webhook client.'.format(self.gogs_url))
+            if self.gogs_url not in commit_url:
+                raise Exception('Repos can only belong to {0} to use this webhook client.'.format(self.gogs_url))
 
-        repo_name = self.commit_data['repository']['name']
-        repo_owner = self.commit_data['repository']['owner']['username']
-        compare_url = self.commit_data['compare_url']
+            repo_name = self.commit_data['repository']['name']
+            repo_owner = self.commit_data['repository']['owner']['username']
+            compare_url = self.commit_data['compare_url']
 
-        if 'pusher' in self.commit_data:
-            pusher = self.commit_data['pusher']
-        else:
-            pusher = {'username': commit['author']['username']}
-        pusher_username = pusher['username']
+            if 'pusher' in self.commit_data:
+                pusher = self.commit_data['pusher']
+            else:
+                pusher = {'username': commit['author']['username']}
+            pusher_username = pusher['username']
 
-        # 1) Download and unzip the repo files
-        temp_dir = tempfile.mkdtemp(prefix='repo_')
-        self.download_repo(commit_url, temp_dir)
-        repo_dir = os.path.join(temp_dir, repo_name)
-        if not os.path.isdir(repo_dir):
-            repo_dir = temp_dir
+            # 1) Download and unzip the repo files
+            temp_dir = tempfile.mkdtemp(prefix='repo_')
+            self.download_repo(commit_url, temp_dir)
+            repo_dir = os.path.join(temp_dir, repo_name)
+            if not os.path.isdir(repo_dir):
+                repo_dir = temp_dir
 
-        # 2) Get the manifest file or make one if it doesn't exist based on meta.json, repo_name and file extensions
-        manifest_path = os.path.join(repo_dir, 'manifest.json')
-        if not os.path.isfile(manifest_path):
-            manifest_path = os.path.join(repo_dir, 'project.json')
+            # 2) Get the manifest file or make one if it doesn't exist based on meta.json, repo_name and file extensions
+            manifest_path = os.path.join(repo_dir, 'manifest.json')
             if not os.path.isfile(manifest_path):
-                manifest_path = None
-        meta_path = os.path.join(repo_dir, 'meta.json')
-        meta = None
-        if os.path.isfile(meta_path):
-            meta = MetaData(meta_path)
-        manifest = Manifest(file_name=manifest_path, repo_name=repo_name, files_path=repo_dir, meta=meta)
+                manifest_path = os.path.join(repo_dir, 'project.json')
+                if not os.path.isfile(manifest_path):
+                    manifest_path = None
+            meta_path = os.path.join(repo_dir, 'meta.json')
+            meta = None
+            if os.path.isfile(meta_path):
+                meta = MetaData(meta_path)
+            manifest = Manifest(file_name=manifest_path, repo_name=repo_name, files_path=repo_dir, meta=meta)
 
-        # determining how the repo was generated/created:
-        generator = ''
-        if manifest.generator and manifest.generator['name'] and manifest.generator['name'].startswith('ts'):
-            generator = 'ts'
-        if not generator:
-            dirs = sorted(get_subdirs(repo_dir, True))
-            if 'content' in dirs:
-                repo_dir = os.path.join(repo_dir, 'content')
-            elif 'usfm' in dirs:
-                repo_dir = os.path.join(repo_dir, 'usfm')
+            # determining how the repo was generated/created:
+            generator = ''
+            if manifest.generator and manifest.generator['name'] and manifest.generator['name'].startswith('ts'):
+                generator = 'ts'
+            if not generator:
+                dirs = sorted(get_subdirs(repo_dir, True))
+                if 'content' in dirs:
+                    repo_dir = os.path.join(repo_dir, 'content')
+                elif 'usfm' in dirs:
+                    repo_dir = os.path.join(repo_dir, 'usfm')
 
-        manifest_path = os.path.join(repo_dir, 'manifest.json')
-        write_file(manifest_path, manifest.__dict__)  # Write it back out so it's using the latest manifest format
+            manifest_path = os.path.join(repo_dir, 'manifest.json')
+            write_file(manifest_path, manifest.__dict__)  # Write it back out so it's using the latest manifest format
 
-        input_format = manifest.format
-        resource_type = manifest.resource['id']
-        if resource_type == 'ulb' or resource_type == 'udb':
-            resource_type = 'bible'
+            input_format = manifest.format
+            resource_type = manifest.resource['id']
+            if resource_type == 'ulb' or resource_type == 'udb':
+                resource_type = 'bible'
 
-        try:
-            preprocessor_class = self.str_to_class(
-                'preprocessors.{0}{1}{2}Preprocessor'.format(generator.capitalize(),
-                                                             resource_type.capitalize(),
-                                                             input_format.capitalize()))
-        except AttributeError as e:
-            self.logger.info('Got AttributeError: {0}'.format(e.message))
-            preprocessor_class = preprocessors.Preprocessor
+            try:
+                preprocessor_class = self.str_to_class(
+                    'preprocessors.{0}{1}{2}Preprocessor'.format(generator.capitalize(),
+                                                                 resource_type.capitalize(),
+                                                                 input_format.capitalize()))
+            except AttributeError as e:
+                self.logger.info('Got AttributeError: {0}'.format(e.message))
+                preprocessor_class = preprocessors.Preprocessor
 
-        # merge the source files with the template
-        output_dir = tempfile.mkdtemp(prefix='output_')
-        preprocessor = preprocessor_class(manifest, repo_dir, output_dir)
-        preprocessor.run()
+            # merge the source files with the template
+            output_dir = tempfile.mkdtemp(prefix='output_')
+            preprocessor = preprocessor_class(manifest, repo_dir, output_dir)
+            preprocessor.run()
 
-        # 3) Zip up the massaged files
-        # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
-        zip_filename = commit_id + '.zip'
-        zip_filepath = os.path.join(tempfile.gettempdir(), zip_filename)
-        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
-        add_contents_to_zip(zip_filepath, output_dir)
-        if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
-            add_file_to_zip(zip_filepath, manifest_path, 'manifest.json')
-        self.logger.info('finished.')
-
-        # 4) Upload zipped file to the S3 bucket
-        s3_handler = self.s3_handler_class(self.pre_convert_bucket)
-        file_key = "preconvert/" + zip_filename
-        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
-        try:
-            s3_handler.upload_file(zip_filepath, file_key)
-        except Exception as e:
-            self.logger.error('Failed to upload zipped repo up to server')
-            self.logger.exception(e)
-        finally:
+            # 3) Zip up the massaged files
+            # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
+            zip_filename = commit_id + '.zip'
+            zip_filepath = os.path.join(tempfile.gettempdir(), zip_filename)
+            self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
+            add_contents_to_zip(zip_filepath, output_dir)
+            if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
+                add_file_to_zip(zip_filepath, manifest_path, 'manifest.json')
             self.logger.info('finished.')
 
-        # Send job request to tx-manager
-        source_url = self.source_url_base+"/"+file_key
-        callback_url = self.api_url + '/client/callback'
-        tx_manager_job_url = self.api_url + '/tx/job'
-        identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
-                                          commit_id)  # The way to know which repo/commit goes to this job request
-        if input_format == 'markdown':
-            input_format = 'md'
-        payload = {
-            "identifier": identifier,
-            "gogs_user_token": self.gogs_user_token,
-            "resource_type": manifest.resource['id'],
-            "input_format": input_format,
-            "output_format": "html",
-            "source": source_url,
-            "callback": callback_url
-        }
+            # 4) Upload zipped file to the S3 bucket
+            s3_handler = self.s3_handler_class(self.pre_convert_bucket)
+            file_key = "preconvert/" + zip_filename
+            self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
+            try:
+                s3_handler.upload_file(zip_filepath, file_key)
+            except Exception as e:
+                self.logger.error('Failed to upload zipped repo up to server')
+                self.logger.exception(e)
+            finally:
+                self.logger.info('finished.')
 
-        headers = {"content-type": "application/json"}
+            # Send job request to tx-manager
+            source_url = self.source_url_base+"/"+file_key
+            callback_url = self.api_url + '/client/callback'
+            tx_manager_job_url = self.api_url + '/tx/job'
+            identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
+                                              commit_id)  # The way to know which repo/commit goes to this job request
+            if input_format == 'markdown':
+                input_format = 'md'
+            payload = {
+                "identifier": identifier,
+                "gogs_user_token": self.gogs_user_token,
+                "resource_type": manifest.resource['id'],
+                "input_format": input_format,
+                "output_format": "html",
+                "source": source_url,
+                "callback": callback_url
+            }
 
-        print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
-        print(payload)
-        response = requests.post(tx_manager_job_url, json=payload, headers=headers)
-        print('finished.')
+            headers = {"content-type": "application/json"}
 
-        # Fake job in case tx-manager returns an error, can still build the build_log.json
-        job = {
-            'job_id': None,
-            'identifier': identifier,
-            'resource_type': manifest.resource['id'],
-            'input_format': input_format,
-            'output_format': 'html',
-            'source': source_url,
-            'callback': callback_url,
-            'message': 'Conversion started...',
-            'status': 'requested',
-            'success': None,
-            'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            'log': [],
-            'warnings': [],
-            'errors': []
-        }
+            print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
+            print(payload)
+            response = requests.post(tx_manager_job_url, json=payload, headers=headers)
+            print('finished.')
 
-        if response.status_code != requests.codes.ok:
-            job['status'] = 'failed'
-            job['success'] = False
-            job['message'] = 'Failed to convert!'
+            # Fake job in case tx-manager returns an error, can still build the build_log.json
+            job = {
+                'job_id': None,
+                'identifier': identifier,
+                'resource_type': manifest.resource['id'],
+                'input_format': input_format,
+                'output_format': 'html',
+                'source': source_url,
+                'callback': callback_url,
+                'message': 'Conversion started...',
+                'status': 'requested',
+                'success': None,
+                'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'log': [],
+                'warnings': [],
+                'errors': []
+            }
 
-            if response.text:
-                # noinspection PyBroadException
-                try:
-                    json_data = json.loads(response.text)
-                    if 'errorMessage' in json_data:
-                        error = json_data['errorMessage']
-                        if error.startswith('Bad Request: '):
-                            error = error[len('Bad Request: '):]
-
-                        job['errors'].append(error)
-                except:
-                    pass
-        else:
-            json_data = json.loads(response.text)
-
-            if 'job' not in json_data:
+            if response.status_code != requests.codes.ok:
                 job['status'] = 'failed'
                 job['success'] = False
-                job['message'] = 'Failed to convert'
-                job['errors'].append('tX Manager did not return any info about the job request.')
+                job['message'] = 'Failed to convert!'
+
+                if response.text:
+                    # noinspection PyBroadException
+                    try:
+                        json_data = json.loads(response.text)
+                        if 'errorMessage' in json_data:
+                            error = json_data['errorMessage']
+                            if error.startswith('Bad Request: '):
+                                error = error[len('Bad Request: '):]
+
+                            job['errors'].append(error)
+                    except:
+                        pass
             else:
-                job = json_data['job']
+                json_data = json.loads(response.text)
 
-        cdn_handler = self.s3_handler_class(self.cdn_bucket)
+                if 'job' not in json_data:
+                    job['status'] = 'failed'
+                    job['success'] = False
+                    job['message'] = 'Failed to convert'
+                    job['errors'].append('tX Manager did not return any info about the job request.')
+                else:
+                    job = json_data['job']
 
-        # Download the project.json file for this repo (create it if doesn't exist) and update it
-        project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
-        project_json = cdn_handler.get_json(project_json_key)
-        project_json['user'] = repo_owner
-        project_json['repo'] = repo_name
-        project_json['repo_url'] = 'https://git.door43.org/{0}/{1}'.format(repo_owner, repo_name)
-        commit = {
-            'id': commit_id,
-            'created_at': job['created_at'],
-            'status': job['status'],
-            'success': job['success'],
-            'started_at': None,
-            'ended_at': None
-        }
-        if 'commits' not in project_json:
-            project_json['commits'] = []
-        commits = []
-        for c in project_json['commits']:
-            if c['id'] != commit_id:
-                commits.append(c)
-        commits.append(commit)
-        project_json['commits'] = commits
-        project_file = os.path.join(tempfile.gettempdir(), 'project.json')
-        write_file(project_file, project_json)
-        cdn_handler.upload_file(project_file, project_json_key, 0)
+            cdn_handler = self.s3_handler_class(self.cdn_bucket)
 
-        # Compile data for build_log.json
-        build_log_json = job
-        build_log_json['repo_name'] = repo_name
-        build_log_json['repo_owner'] = repo_owner
-        build_log_json['commit_id'] = commit_id
-        build_log_json['committed_by'] = pusher_username
-        build_log_json['commit_url'] = commit_url
-        build_log_json['compare_url'] = compare_url
-        build_log_json['commit_message'] = commit_message
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
+            project_json = cdn_handler.get_json(project_json_key)
+            project_json['user'] = repo_owner
+            project_json['repo'] = repo_name
+            project_json['repo_url'] = 'https://git.door43.org/{0}/{1}'.format(repo_owner, repo_name)
+            commit = {
+                'id': commit_id,
+                'created_at': job['created_at'],
+                'status': job['status'],
+                'success': job['success'],
+                'started_at': None,
+                'ended_at': None
+            }
+            if 'commits' not in project_json:
+                project_json['commits'] = []
+            commits = []
+            for c in project_json['commits']:
+                if c['id'] != commit_id:
+                    commits.append(c)
+            commits.append(commit)
+            project_json['commits'] = commits
+            project_file = os.path.join(tempfile.gettempdir(), 'project.json')
+            write_file(project_file, project_json)
+            cdn_handler.upload_file(project_file, project_json_key, 0)
 
-        # Upload build_log.json and manifest.json to S3:
-        s3_commit_key = 'u/{0}'.format(identifier)
-        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
-            cdn_handler.delete_file(obj.key)
-        build_log_file = os.path.join(tempfile.gettempdir(), 'build_log.json')
-        write_file(build_log_file, build_log_json)
-        cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
+            # Compile data for build_log.json
+            build_log_json = job
+            build_log_json['repo_name'] = repo_name
+            build_log_json['repo_owner'] = repo_owner
+            build_log_json['commit_id'] = commit_id
+            build_log_json['committed_by'] = pusher_username
+            build_log_json['commit_url'] = commit_url
+            build_log_json['compare_url'] = compare_url
+            build_log_json['commit_message'] = commit_message
 
-        cdn_handler.upload_file(manifest_path, s3_commit_key + '/manifest.json', 0)
+            # Upload build_log.json and manifest.json to S3:
+            s3_commit_key = 'u/{0}'.format(identifier)
+            for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+                cdn_handler.delete_file(obj.key)
+            build_log_file = os.path.join(tempfile.gettempdir(), 'build_log.json')
+            write_file(build_log_file, build_log_json)
+            cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
 
-        # remove temp files/directories
-        try:
+            cdn_handler.upload_file(manifest_path, s3_commit_key + '/manifest.json', 0)
+
+        finally:
+            # remove temp files/directories
             shutil.rmtree(output_dir, ignore_errors=True)
-        except:
-            pass
-
-        try:
             shutil.rmtree(temp_dir, ignore_errors=True)
-        except:
-            pass
 
-        try:
-            os.remove(build_log_file)
-        except:
-            pass
+            try:
+                os.remove(build_log_file)
+            except:
+                pass
 
-        try:
-            os.remove(zip_filepath)
-        except:
-            pass
+            try:
+                os.remove(zip_filepath)
+            except:
+                pass
 
-        try:
-            os.remove(project_file)
-        except:
-            pass
+            try:
+                os.remove(project_file)
+            except:
+                pass
 
         if len(job['errors']) > 0:
             raise Exception('; '.join(job['errors']))
