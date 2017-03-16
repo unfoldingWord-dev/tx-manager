@@ -9,14 +9,14 @@ from client.client_webhook import ClientWebhook
 
 
 class TestClientWebhook(unittest.TestCase):
-    baseTemp = "/tmp/repo"
+    #baseTemp = "/tmp/repo"
 
-    try:
-        os.makedirs(baseTemp)
-    except:
-        pass
+    #try:
+    #    os.makedirs(baseTemp)
+    #except:
+    #    pass
 
-    tempfile.tempdir = baseTemp
+    #tempfile.tempdir = baseTemp
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     temp_dir = None
 
