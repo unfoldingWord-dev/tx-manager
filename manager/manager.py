@@ -4,7 +4,6 @@ import hashlib
 import requests
 from datetime import datetime
 from datetime import timedelta
-from aws_tools.lambda_handler import LambdaHandler
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
@@ -28,14 +27,13 @@ class TxManager(object):
         :param string aws_secret_access_key:
         :param string job_table_name:
         :param string module_table_name:
-        :param class dynamodb_handler_class:
-        :param class gogs_handler_class:
-        :param class lambda_handler_class:
         """
         self.api_url = api_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
         self.quiet = quiet
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
 
         self.job_db_handler = None
         self.module_db_handler = None
@@ -51,8 +49,6 @@ class TxManager(object):
 
         if gogs_url:
             self.gogs_handler = GogsHandler(gogs_url)
-
-        self.lambda_handler = LambdaHandler(aws_access_key_id, aws_secret_access_key)
 
     def debug_print(self, message):
         if not self.quiet:
@@ -214,28 +210,37 @@ class TxManager(object):
             self.update_job(job)
 
             payload = {
-                'data': {
-                    'job': job.get_db_data(),
-                }
+                'job': job.get_db_data(),
             }
-            print("Payload to {0}:".format(module.name))
-            print(payload)
 
-            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(job.converter_module,
+            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(module.name,
                                                                                       job.source,
                                                                                       job.output))
-            response = self.lambda_handler.invoke(module.name, payload)
+
+            headers = {"content-type": "application/json"}
+            url = module.public_links[0]
+            print("Payload to {0}:".format(url))
+            print(json.dumps(payload))
+            response = requests.post(url, json=payload, headers=headers)
+            print('finished.')
 
             print("Response from {0}:".format(module.name))
             print(response)
 
-            if 'errorMessage' in response:
-                job.error_message(response['errorMessage'])
-            elif 'Payload' in response:
-                payload = json.loads(response['Payload'].read())
+            json_data = response.json()
+            if json_data:
+                json_data = response.json()
+                if 'errorMessage' in json_data:
+                    error = json_data['errorMessage']
+                    if error.startswith('Bad Request: '):
+                        error = error[len('Bad Request: '):]
+                    job.error_message(error)
 
-                print('Payload from payload:')
-                print(payload)
+            if 'Payload' in json_data:
+                payload = json_data['Payload']
+
+                print('Payload:')
+                print(json.dumps(payload))
 
                 for message in payload['log']:
                     if message:
