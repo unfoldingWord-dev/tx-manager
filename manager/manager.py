@@ -185,12 +185,15 @@ class TxManager(object):
     def start_job(self, job_id):
         job = self.get_job(job_id)
 
-        if not job:
-            return  # Job doesn't exist, return
+        if not job.job_id:
+            job.job_id = job_id
+            job.success = False
+            job.message = 'No job with ID {} has been requested'.format(job_id)
+            return job.get_db_data()  # Job doesn't exist, return
 
         # Only start the job if the status is 'requested' and a started timestamp hasn't been set
         if job.status != 'requested' or job.started_at:
-            return  # Job already started, return
+            return job.get_db_data()  # Job already started, return
 
         job.started_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         job.status = 'started'
@@ -290,6 +293,8 @@ class TxManager(object):
 
         if job.callback:
             self.do_callback(job.callback, callback_payload)
+
+        return job.get_db_data()
 
     @staticmethod
     def do_callback(url, payload):

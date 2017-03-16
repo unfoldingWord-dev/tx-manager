@@ -140,72 +140,6 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(arg["resource_type"], "obs")
         self.assertEqual(arg["cdn_bucket"], "test_cdn_bucket")
 
-    # noinspection PyUnusedLocal
-    def mock_requests_post_good(*args, **kwargs):
-        """
-        This method will be used by the mock to replace requests.post() when the job is good
-        :param tuple args:   Contains the request URL and query string
-        :param tuple kwargs: Contains the request headers
-        :return: MockResponse|None
-        """
-
-        # remember for later
-        ManagerTest.requested_urls.append(args[0])
-
-        # get the last segment of the URL
-        requested_page = args[0].rpartition('/')[2]
-
-        # response to send back for md2html and usfm2html
-        response = MockResponse({
-            'Payload': {
-                "log": [],
-                "warnings": ['Missing something'],
-                "errors": [],
-                "success": True,
-                "message": "All good"
-            }
-        }, 200)
-
-        if requested_page == 'md2html':
-            return response
-        elif requested_page == 'usfm2html':
-            return response
-        else:
-            return MockResponse({}, 200)
-
-    # noinspection PyUnusedLocal
-    def mock_requests_post_bad(*args, **kwargs):
-        """
-        This method will be used by the mock to replace requests.post() when the job is bad
-        :param tuple args:   Contains the request URL and query string
-        :param tuple kwargs: Contains the request headers
-        :return: MockResponse|None
-        """
-
-        # remember for later
-        ManagerTest.requested_urls.append(args[0])
-
-        # get the last segment of the URL
-        requested_page = args[0].rpartition('/')[2]
-
-        # response to send back for md2html and usfm2html
-        response = MockResponse({
-            'Payload': {
-                "log": [],
-                "warnings": ['Missing something'],
-                "errors": ['Some error'],
-                "success": False,
-                "message": "All bad"
-            }
-        }, 200)
-
-        if requested_page == 'md2html':
-            return response
-        elif requested_page == 'usfm2html':
-            return response
-        else:
-            return MockResponse({}, 200)
-
     def test_setup_job_malformed_input(self):
         """
         Call setup_job with malformed data arguments
@@ -245,12 +179,22 @@ class ManagerTest(unittest.TestCase):
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
     # noinspection PyUnusedLocal
-    @mock.patch('requests.post', side_effect=mock_requests_post_good)
-    def test_start_job1(self, mock_requests_post_good):
+    @mock.patch('requests.post')
+    def test_start_job1(self, mock_requests_post):
         """
         Call start job in job 1 from mock data. Should be a successful
         invocation with warnings.
         """
+        mock_requests_post.return_value = MockResponse({
+            'Payload': {
+                "log": ['Converted!'],
+                "warnings": ['Missing something'],
+                "errors": [],
+                "success": True,
+                "message": "Has some warnings"
+            }
+        }, 200)
+
         tx_manager = TxManager()
         tx_manager.start_job(1)
 
@@ -268,18 +212,23 @@ class ManagerTest(unittest.TestCase):
         self.assertTrue(len(data["warnings"]) > 0)
 
     # noinspection PyUnusedLocal
-    @mock.patch('requests.post', side_effect=mock_requests_post_good)
-    def test_start_job2(self, mock_requests_post_good):
+    @mock.patch('requests.post')
+    def test_start_job2(self, mock_requests_post):
         """
         Call start_job in job 2 from mock data. Should be a successful
         invocation without warnings.
         """
-
+        mock_requests_post.return_value = MockResponse({
+            'Payload': {
+                "log": ['Converted!'],
+                "warnings": [],
+                "errors": [],
+                "success": True,
+                "message": "All good"
+            }
+        }, 200)
         tx_manager = TxManager()
         tx_manager.start_job(2)
-
-        self.assertEqual(len(ManagerTest.requested_urls), 2)
-        self.assertIn(ManagerTest.MOCK_CALLBACK_URL, ManagerTest.requested_urls)
 
         # job2's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
@@ -294,13 +243,23 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(len(data["errors"]), 0)
 
     # noinspection PyUnusedLocal
-    @mock.patch('requests.post', side_effect=mock_requests_post_bad)
-    def test_start_job3(self, mock_requests_post_bad):
+    @mock.patch('requests.post')
+    def test_start_job3(self, mock_requests_post):
         """
         Call start_job on job 3 from mock data. Invocation should result in an error
         :param mock_requests_post mock.MagicMock:
         :return:
         """
+        mock_requests_post.return_value = MockResponse({
+            'Payload': {
+                "log": ['Conversion failed!'],
+                "warnings": [],
+                "errors": ['Some error'],
+                "success": False,
+                "message": "Has errors, failed"
+            }
+        }, 200)
+
         manager = TxManager()
         manager.start_job(3)
 
@@ -321,9 +280,9 @@ class ManagerTest(unittest.TestCase):
         Call start_job with non-runnable/non-existent jobs
         """
         tx_manager = TxManager()
-        tx_manager.start_job(0)
-        tx_manager.start_job(4)
-        tx_manager.start_job(5)
+        ret0 = tx_manager.start_job(0)
+        ret4 = tx_manager.start_job(4)
+        ret5 = tx_manager.start_job(5)
 
         # last existent job (4) should be updated in database to include error
         # messages
@@ -338,6 +297,9 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(data["job_id"], 4)
         self.assertIn("errors", data)
         self.assertTrue(len(data["errors"]) > 0)
+
+        self.assertFalse(ret5['success'])
+        self.assertEqual(ret5['message'], 'No job with ID 5 has been requested')
 
     def test_list(self):
         """
