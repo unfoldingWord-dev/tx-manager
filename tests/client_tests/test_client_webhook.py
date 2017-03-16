@@ -9,7 +9,7 @@ from client.client_webhook import ClientWebhook
 
 
 class TestClientWebhook(unittest.TestCase):
-    baseTemp = "/temp/repo"
+    baseTemp = "/tmp/repo"
     os.makedirs(baseTemp)
     tempfile.tempdir = baseTemp
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
