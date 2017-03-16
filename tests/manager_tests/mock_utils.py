@@ -57,9 +57,19 @@ class MockResponse:
         return self.json_data
 
 
-# This method will be used by the mock to replace requests.post() when the job is good
 def mock_requests_post_good(*args, **kwargs):
-    return MockResponse({
+    """
+    This method will be used by the mock to replace requests.post() when the job is good
+    :param tuple args:   Contains the request URL and query string
+    :param tuple kwargs: Contains the request headers
+    :return: MockResponse|None
+    """
+
+    # get the last segment of the URL
+    requested_page = args[0].rpartition('/')[2]
+
+    # response to send back for md2html and usfm2html
+    response = MockResponse({
         'Payload': {
             "log": [],
             "warnings": ['Missing something'],
@@ -68,6 +78,17 @@ def mock_requests_post_good(*args, **kwargs):
             "message": "All good"
         }
     }, 200)
+
+    if requested_page == 'md2html':
+        return response
+    elif requested_page == 'usfm2html':
+        return response
+    elif requested_page == 'job':
+        return response
+    elif requested_page == 'callback':
+        return response
+    else:
+        pass
 
 
 # This method will be used by the mock to replace requests.post() when the job is bad
