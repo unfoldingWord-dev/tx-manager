@@ -5,6 +5,7 @@ import tempfile
 import requests
 import logging
 import json
+import shutil
 from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
@@ -28,6 +29,7 @@ class ClientWebhook(object):
         :param Logger logger:
         :param class s3_handler_class:
         """
+
         if not logger:
             self.logger = logging.getLogger()
             self.logger.setLevel(logging.INFO)
@@ -48,7 +50,13 @@ class ClientWebhook(object):
         else:
             self.source_url_base = None
 
+        # remove all files from previous process_webhook during testing
+        # files are available after run for audit
+        tempfile.tempdir = '/temp/repo'
+        shutil.rmtree(tempfile.tempdir, ignore_errors=True)
+
     def process_webhook(self):
+        tempfile.tempdir = '/temp/repo'
         commit_id = self.commit_data['after']
         commit = None
         for commit in self.commit_data['commits']:
