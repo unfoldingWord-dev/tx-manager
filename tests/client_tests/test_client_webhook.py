@@ -10,10 +10,14 @@ from client.client_webhook import ClientWebhook
 
 class TestClientWebhook(unittest.TestCase):
     baseTemp = "/tmp/repo"
-    os.makedirs(baseTemp)
+
+    if not os.path.isdir(baseTemp):
+        os.makedirs(baseTemp)
+
     tempfile.tempdir = baseTemp
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     temp_dir = None
+
 
     @staticmethod
     def mock_download_repo(source, target):
