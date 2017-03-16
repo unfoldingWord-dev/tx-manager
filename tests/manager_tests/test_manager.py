@@ -2,10 +2,9 @@ from __future__ import absolute_import, unicode_literals, print_function
 import itertools
 import unittest
 import mock
-import responses
-import json
 from six import StringIO
 from tests.manager_tests import mock_utils
+from tests.manager_tests.mock_utils import MockResponse
 from manager.job import TxJob
 from manager.manager import TxManager
 from manager.module import TxModule
@@ -22,6 +21,7 @@ class ManagerTest(unittest.TestCase):
     mock_gogs = None
 
     patches = []
+    requested_urls = []
 
     @classmethod
     def setUpClass(cls):
@@ -111,6 +111,7 @@ class ManagerTest(unittest.TestCase):
         ManagerTest.mock_module_db.reset_mock()
         ManagerTest.mock_db.reset_mock()
         ManagerTest.mock_gogs.reset_mock()
+        ManagerTest.requested_urls = []
 
     @classmethod
     def tearDownClass(cls):
@@ -138,6 +139,72 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(arg["convert_module"], "module1")
         self.assertEqual(arg["resource_type"], "obs")
         self.assertEqual(arg["cdn_bucket"], "test_cdn_bucket")
+
+    # noinspection PyUnusedLocal
+    def mock_requests_post_good(*args, **kwargs):
+        """
+        This method will be used by the mock to replace requests.post() when the job is good
+        :param tuple args:   Contains the request URL and query string
+        :param tuple kwargs: Contains the request headers
+        :return: MockResponse|None
+        """
+
+        # remember for later
+        ManagerTest.requested_urls.append(args[0])
+
+        # get the last segment of the URL
+        requested_page = args[0].rpartition('/')[2]
+
+        # response to send back for md2html and usfm2html
+        response = MockResponse({
+            'Payload': {
+                "log": [],
+                "warnings": ['Missing something'],
+                "errors": [],
+                "success": True,
+                "message": "All good"
+            }
+        }, 200)
+
+        if requested_page == 'md2html':
+            return response
+        elif requested_page == 'usfm2html':
+            return response
+        else:
+            return MockResponse({}, 200)
+
+    # noinspection PyUnusedLocal
+    def mock_requests_post_bad(*args, **kwargs):
+        """
+        This method will be used by the mock to replace requests.post() when the job is bad
+        :param tuple args:   Contains the request URL and query string
+        :param tuple kwargs: Contains the request headers
+        :return: MockResponse|None
+        """
+
+        # remember for later
+        ManagerTest.requested_urls.append(args[0])
+
+        # get the last segment of the URL
+        requested_page = args[0].rpartition('/')[2]
+
+        # response to send back for md2html and usfm2html
+        response = MockResponse({
+            'Payload': {
+                "log": [],
+                "warnings": ['Missing something'],
+                "errors": ['Some error'],
+                "success": False,
+                "message": "All bad"
+            }
+        }, 200)
+
+        if requested_page == 'md2html':
+            return response
+        elif requested_page == 'usfm2html':
+            return response
+        else:
+            return MockResponse({}, 200)
 
     def test_setup_job_malformed_input(self):
         """
@@ -177,7 +244,8 @@ class ManagerTest(unittest.TestCase):
         }
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
-    @mock.patch('requests.post', side_effect=mock_utils.mock_requests_post_good)
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post', side_effect=mock_requests_post_good)
     def test_start_job1(self, mock_requests_post_good):
         """
         Call start job in job 1 from mock data. Should be a successful
@@ -199,19 +267,19 @@ class ManagerTest(unittest.TestCase):
         self.assertIn("warnings", data)
         self.assertTrue(len(data["warnings"]) > 0)
 
-    @responses.activate
-    @mock.patch('requests.post', side_effect=mock_utils.mock_requests_post_good)
-    def test_start_job2(self, mock_requets_post_good):
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post', side_effect=mock_requests_post_good)
+    def test_start_job2(self, mock_requests_post_good):
         """
         Call start_job in job 2 from mock data. Should be a successful
         invocation without warnings.
         """
-        responses.add(responses.POST, ManagerTest.MOCK_CALLBACK_URL)
+
         tx_manager = TxManager()
         tx_manager.start_job(2)
-        # mock out job 2's callback - Not working since I mock responses.post - Rich
-        # self.assertEqual(len(responses.calls), 1)
-        # self.assertEqual(responses.calls[0].request.url, ManagerTest.MOCK_CALLBACK_URL)
+
+        self.assertEqual(len(ManagerTest.requested_urls), 2)
+        self.assertIn(ManagerTest.MOCK_CALLBACK_URL, ManagerTest.requested_urls)
 
         # job2's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
@@ -225,7 +293,8 @@ class ManagerTest(unittest.TestCase):
         self.assertIn("errors", data)
         self.assertEqual(len(data["errors"]), 0)
 
-    @mock.patch('requests.post', side_effect=mock_utils.mock_requests_post_bad)
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post', side_effect=mock_requests_post_bad)
     def test_start_job3(self, mock_requests_post_bad):
         """
         Call start_job on job 3 from mock data. Invocation should result in an error
