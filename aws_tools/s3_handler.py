@@ -30,14 +30,15 @@ class S3Handler(object):
     # Downloads all the files in S3 that have a prefix of `key_prefix` from `bucket` to the `local` directory
     def download_dir(self, key_prefix, local):
         paginator = self.client.get_paginator('list_objects')
-        result = paginator.paginate(Bucket=self.bucket_name, Delimiter='/', Prefix=key_prefix)
-        for subdir in result['CommonPrefixes']:
-            self.download_dir(subdir['Prefix'], local)
-        for f in result['Contents']:
-            dir = local + os.sep + f['Key']
-            if not os.path.exists(os.path.dirname(dir)):
-                os.makedirs(os.path.dirname(dir))
-            self.download_file(f['Key'], dir)
+        for result in paginator.paginate(Bucket=self.bucket_name, Delimiter='/', Prefix=key_prefix):
+            if result.get('CommonPrefixes') is not None:
+                for subdir in result.get('CommonPrefixes'):
+                    self.download_dir(subdir.get('Prefix'), local)
+            if result.get('Contents') is not None:
+                for file in result.get('Contents'):
+                    if not os.path.exists(os.path.dirname(local + os.sep + file.get('Key'))):
+                        os.makedirs(os.path.dirname(local + os.sep + file.get('Key')))
+                    self.resource.meta.client.download_file(self.bucket_name, file.get('Key'), local + os.sep + file.get('Key'))
 
     def key_exists(self, key, bucket_name=None):
         if not bucket_name:
