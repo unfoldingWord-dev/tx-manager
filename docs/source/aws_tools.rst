@@ -12,14 +12,6 @@ aws_tools.dynamodb_handler module
     :undoc-members:
     :show-inheritance:
 
-aws_tools.lambda_handler module
--------------------------------
-
-.. automodule:: aws_tools.lambda_handler
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 aws_tools.s3_handler module
 ---------------------------
 

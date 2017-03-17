@@ -47,39 +47,11 @@ def mock_gogs_handler(tokens):
     return handler
 
 
-def mock_lambda_handler(success_names, warning_names):
-    """
-    :param success_names: collection of function names that will have successful
-    invocations
-    :param warning_names: collection of warning names that will have warnings
-    during their invocations
-    """
-    def invoke(name, payload):
-        if name in success_names:
-            result_payload = {
-                "log": ["log1", "log2"],
-                "errors": [],
-                "warnings": [],
-                "success": True
-            }
-        elif name in warning_names:
-            result_payload = {
-                "log": ["log1", "log2"],
-                "errors": [],
-                "warnings": ["warning1"],
-                "success": True
-            }
-        else:
-            result_payload = {
-                "log": ["log1", "log2"],
-                "errors": ["error1", "error1"],
-                "warnings": [],
-                "success": False
-            }
-        result = MagicMock()
-        result.read.return_value = json.dumps(result_payload)
-        return {"Payload": result}
+class MockResponse:
+    def __init__(self, json_data, status_code):
+        self.json_data = json_data
+        self.text = json.dumps(json_data)
+        self.status_code = status_code
 
-    handler = MagicMock()
-    handler.invoke = MagicMock(side_effect=invoke)
-    return handler
+    def json(self):
+        return self.json_data
