@@ -29,26 +29,33 @@ class TxManager(object):
         :param string module_table_name:
         """
         self.api_url = api_url
+        self.gogs_url = gogs_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
         self.quiet = quiet
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
+        self.job_table_name = job_table_name
+        self.module_table_name = module_table_name
+
+        if not self.job_table_name:
+            self.job_table_name = TxManager.JOB_TABLE_NAME
+        if not self.module_table_name:
+            self.module_table_name = TxManager.MODULE_TABLE_NAME
 
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
 
-        if not job_table_name:
-            job_table_name = self.JOB_TABLE_NAME
-        if not module_table_name:
-            module_table_name = self.MODULE_TABLE_NAME
+        self.setup_resources()
 
-        self.job_db_handler = DynamoDBHandler(job_table_name)
-        self.module_db_handler = DynamoDBHandler(module_table_name)
-
-        if gogs_url:
-            self.gogs_handler = GogsHandler(gogs_url)
+    def setup_resources(self):
+        if self.job_table_name:
+            self.job_db_handler = DynamoDBHandler(self.job_table_name)
+        if self.module_table_name:
+            self.module_db_handler = DynamoDBHandler(self.module_table_name)
+        if self.gogs_url:
+            self.gogs_handler = GogsHandler(self.gogs_url)
 
     def debug_print(self, message):
         if not self.quiet:
