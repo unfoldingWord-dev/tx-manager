@@ -18,7 +18,7 @@ class TestClientWebhook(unittest.TestCase):
     tempfile.tempdir = baseTemp
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     temp_dir = None
-
+    print(resources_dir)
 
     @staticmethod
     def mock_download_repo(source, target):
