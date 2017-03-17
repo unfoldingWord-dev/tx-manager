@@ -52,18 +52,18 @@ class ClientWebhook(object):
 
         # remove all files from previous process_webhook during testing
         # files are available after run for audit
-        tempfile.tempdir = "/tmp/repo"
-        shutil.rmtree(tempfile.tempdir, ignore_errors=True)
+        #tempfile.tempdir = "/tmp/repo"
+        #shutil.rmtree(tempfile.tempdir, ignore_errors=True)
 
     def process_webhook(self):
-        baseTemp = "/tmp/repo"
+        #baseTemp = "/tmp/repo"
 
-        try:
-            os.makedirs(baseTemp)
-        except:
-            pass
+        #try:
+        #    os.makedirs(baseTemp)
+        #except:
+        #    pass
 
-        tempfile.tempdir = baseTemp
+        #tempfile.tempdir = baseTemp
 
         commit_id = self.commit_data['after']
         commit = None
