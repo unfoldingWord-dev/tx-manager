@@ -52,18 +52,21 @@ class ClientWebhook(object):
 
         # remove all files from previous process_webhook during testing
         # files are available after run for audit
-        tempfile.tempdir = "/tmp/repo"
-        shutil.rmtree(tempfile.tempdir, ignore_errors=True)
+        #tempfile.tempdir = "/tmp/repo"
+        self.intermediate_dir =  'tx-manager'
+        self.base_temp_dir = os.path.join(tempfile.tempdir, self.intermediate_dir)
+        shutil.rmtree(self.base_temp_dir, ignore_errors=True)
 
     def process_webhook(self):
-        baseTemp = "/tmp/repo"
+        #self.base_temp_dir = os.path.join(tempfile.tempdir, 'tx-manager')
+        #baseTemp = "/tmp/repo"
 
         try:
-            os.makedirs(baseTemp)
+            os.makedirs(self.base_temp_dir)
         except:
             pass
 
-        tempfile.tempdir = baseTemp
+        #tempfile.tempdir = baseTemp
 
         commit_id = self.commit_data['after']
         commit = None
@@ -89,7 +92,7 @@ class ClientWebhook(object):
         pusher_username = pusher['username']
 
         # 1) Download and unzip the repo files
-        temp_dir = tempfile.mkdtemp(prefix='repo_')
+        temp_dir = tempfile.mkdtemp(dir=self.intermediate_dir, prefix='repo_')
         self.download_repo(commit_url, temp_dir)
         repo_dir = os.path.join(temp_dir, repo_name)
         if not os.path.isdir(repo_dir):
@@ -136,14 +139,14 @@ class ClientWebhook(object):
             preprocessor_class = preprocessors.Preprocessor
 
         # merge the source files with the template
-        output_dir = tempfile.mkdtemp(prefix='output_')
+        output_dir = tempfile.mkdtemp(dir=self.intermediate_dir, prefix='output_')
         preprocessor = preprocessor_class(manifest, repo_dir, output_dir)
         preprocessor.run()
 
         # 3) Zip up the massaged files
         # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
         zip_filename = commit_id + '.zip'
-        zip_filepath = os.path.join(tempfile.gettempdir(), zip_filename)
+        zip_filepath = os.path.join(tempfile.gettempdir(), self.intermediate_dir,  zip_filename)
         self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
         if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
@@ -257,7 +260,7 @@ class ClientWebhook(object):
                 commits.append(c)
         commits.append(commit)
         project_json['commits'] = commits
-        project_file = os.path.join(tempfile.gettempdir(), 'project.json')
+        project_file = os.path.join(tempfile.gettempdir(), self.intermediate_dir, 'project.json')
         write_file(project_file, project_json)
         cdn_handler.upload_file(project_file, project_json_key, 0)
 
@@ -275,7 +278,7 @@ class ClientWebhook(object):
         s3_commit_key = 'u/{0}'.format(identifier)
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
             cdn_handler.delete_file(obj.key)
-        build_log_file = os.path.join(tempfile.gettempdir(), 'build_log.json')
+        build_log_file = os.path.join(tempfile.gettempdir(), self.intermediate_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
         cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
 
@@ -302,7 +305,7 @@ class ClientWebhook(object):
         :return: None
         """
         repo_zip_url = commit_url.replace('commit', 'archive') + '.zip'
-        repo_zip_file = os.path.join(tempfile.gettempdir(), repo_zip_url.rpartition('/')[2])
+        repo_zip_file = os.path.join(tempfile.gettempdir(), self.intermediate_dir, repo_zip_url.rpartition('/')[2])
 
         try:
             self.logger.info('Downloading {0}...'.format(repo_zip_url))

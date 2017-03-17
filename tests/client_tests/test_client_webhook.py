@@ -8,10 +8,12 @@ from mock import patch
 from client.client_webhook import ClientWebhook
 
 class TestClientWebhook(unittest.TestCase):
-    baseTemp = "/tmp/repo"
+    intermediate_dir = 'tx-manager'
+    base_temp_dir = os.path.join(tempfile.tempdir, intermediate_dir)
+    #baseTemp = "/tmp/repo"
 
     try:
-        os.makedirs(baseTemp)
+        os.makedirs(base_temp_dir)
     except:
         pass
 
@@ -27,7 +29,7 @@ class TestClientWebhook(unittest.TestCase):
         print('finished.')
 
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp(prefix='webhookTest_')
+        self.temp_dir = tempfile.mkdtemp(dir=self.intermediate_dir, prefix='webhookTest_')
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
