@@ -36,7 +36,7 @@ class ClientCallback(object):
                                                commit_id)  # The identifier is how to know which username/repo/commit this callback goes to
 
         # Download the ZIP file of the converted files
-        converted_zip_url = self.self.job.output
+        converted_zip_url = self.job.output
         converted_zip_file = os.path.join(tempfile.gettempdir(), converted_zip_url.rpartition('/')[2])
         try:
             print('Downloading converted zip file from {0}...'.format(converted_zip_url))
