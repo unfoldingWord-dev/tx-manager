@@ -63,7 +63,7 @@ class ClientWebhook(object):
         except:
             pass
 
-        #tempfile.tempdir = baseTemp
+        tempfile.tempdir = baseTemp
 
         commit_id = self.commit_data['after']
         commit = None
