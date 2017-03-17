@@ -56,7 +56,7 @@ class ClientWebhook(object):
         shutil.rmtree(tempfile.tempdir, ignore_errors=True)
 
     def process_webhook(self):
-        #baseTemp = "/tmp/repo"
+        baseTemp = "/tmp/repo"
 
         #try:
         #    os.makedirs(baseTemp)
