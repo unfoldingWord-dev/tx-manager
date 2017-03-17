@@ -7,7 +7,6 @@ from mock import patch
 
 from client.client_webhook import ClientWebhook
 
-
 class TestClientWebhook(unittest.TestCase):
     #baseTemp = "/tmp/repo"
 
