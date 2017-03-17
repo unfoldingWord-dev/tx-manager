@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, print_function
+from __future__ import absolute_import, unicode_literals, print_function
 from unittest import TestCase
 from mock import patch
 from lambda_handlers.handler import Handler
