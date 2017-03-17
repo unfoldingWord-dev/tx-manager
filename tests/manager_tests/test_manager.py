@@ -140,11 +140,23 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(arg["resource_type"], "obs")
         self.assertEqual(arg["cdn_bucket"], "test_cdn_bucket")
 
-    def test_setup_job_bad_token(self):
+    def test_setup_job_bad_requests(self):
         """
-        Successful call of setup_job
+        Tests bad calls of setup_job due to missing or bad input
         """
         tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+
+        # Missing gogs_user_token
+        data = {
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Bad gogs_user_token
         data = {
             "gogs_user_token": "bad_token",
             "cdn_bucket":  "test_cdn_bucket",
@@ -152,6 +164,57 @@ class ManagerTest(unittest.TestCase):
             "resource_type": "obs",
             "input_format": "md",
             "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing cdn_bucket
+        data = {
+            "gogs_user_token": "token1",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing source
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing resource_type
+        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing input_format
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing output_format
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md"
         }
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
