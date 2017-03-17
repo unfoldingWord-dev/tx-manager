@@ -16,7 +16,7 @@ class TxManager(object):
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False,
                  aws_access_key_id=None, aws_secret_access_key=None,
-                 job_table_name="tx-job", module_table_name="tx-module"):
+                 job_table_name=None, module_table_name=None):
         """
         :param string api_url:
         :param string gogs_url:

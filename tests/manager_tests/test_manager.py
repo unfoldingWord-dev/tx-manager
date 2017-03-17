@@ -140,6 +140,21 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(arg["resource_type"], "obs")
         self.assertEqual(arg["cdn_bucket"], "test_cdn_bucket")
 
+    def test_setup_job_bad_token(self):
+        """
+        Successful call of setup_job
+        """
+        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        data = {
+            "gogs_user_token": "bad_token",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
     def test_setup_job_malformed_input(self):
         """
         Call setup_job with malformed data arguments
@@ -284,6 +299,12 @@ class ManagerTest(unittest.TestCase):
         ret4 = tx_manager.start_job(4)
         ret5 = tx_manager.start_job(5)
 
+        self.assertEqual(ret0['job_id'], 0)
+        self.assertEqual(ret4['job_id'], 4)
+        self.assertEqual(ret5['job_id'], 5)
+        self.assertFalse(ret5['success'])
+        self.assertEqual(ret5['message'], 'No job with ID 5 has been requested')
+
         # last existent job (4) should be updated in database to include error
         # messages
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
@@ -297,9 +318,6 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(data["job_id"], 4)
         self.assertIn("errors", data)
         self.assertTrue(len(data["errors"]) > 0)
-
-        self.assertFalse(ret5['success'])
-        self.assertEqual(ret5['message'], 'No job with ID 5 has been requested')
 
     def test_list(self):
         """
