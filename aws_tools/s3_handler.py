@@ -9,20 +9,30 @@ from general_tools.file_utils import get_mime_type
 
 class S3Handler(object):
     def __init__(self, bucket_name=None, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name='us-west-2'):
-        if aws_access_key_id and aws_secret_access_key:
-            session = Session(aws_access_key_id=aws_access_key_id,
-                                   aws_secret_access_key=aws_secret_access_key,
-                                   region_name=aws_region_name)
+        self.bucket_name = bucket_name
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.aws_region_name = aws_region_name
+        self.bucket = None
+        self.client = None
+        self.resource = None
+        self.setup_resources()
+
+    def setup_resources(self):
+        if self.aws_access_key_id and self.aws_secret_access_key:
+            session = Session(aws_access_key_id=self.aws_access_key_id,
+                              aws_secret_access_key=self.aws_secret_access_key,
+                              region_name=self.aws_region_name)
             self.resource = session.resource('s3')
             self.client = session.client('s3')
         else:
             self.resource = boto3.resource('s3')
             self.client = boto3.client('s3')
 
-        self.bucket_name = bucket_name
+        self.bucket_name = self.bucket_name
         self.bucket = None
-        if bucket_name:
-            self.bucket = self.resource.Bucket(bucket_name)
+        if self.bucket_name:
+            self.bucket = self.resource.Bucket(self.bucket_name)
 
     def download_file(self, key, local_file):
         self.resource.meta.client.download_file(self.bucket_name, key, local_file)
@@ -36,9 +46,14 @@ class S3Handler(object):
                     self.download_dir(subdir.get('Prefix'), local)
             if result.get('Contents') is not None:
                 for file in result.get('Contents'):
-                    if not os.path.exists(os.path.dirname(local + os.sep + file.get('Key'))):
-                        os.makedirs(os.path.dirname(local + os.sep + file.get('Key')))
-                    self.resource.meta.client.download_file(self.bucket_name, file.get('Key'), local + os.sep + file.get('Key'))
+                    local_file = os.path.join(local, file.get('Key').replace('/', os.path.sep))
+                    print(local_file)
+                    if local_file.endswith(os.path.sep):
+                        pass
+                    else:
+                        if not os.path.exists(os.path.dirname(local_file)):
+                            os.makedirs(os.path.dirname(local_file))
+                        self.resource.meta.client.download_file(self.bucket_name, file.get('Key'), local_file)
 
     def key_exists(self, key, bucket_name=None):
         if not bucket_name:
