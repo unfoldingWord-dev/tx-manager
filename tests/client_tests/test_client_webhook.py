@@ -7,11 +7,13 @@ from mock import patch
 
 from client.client_webhook import ClientWebhook
 
-
 class TestClientWebhook(unittest.TestCase):
-
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     temp_dir = None
+    print(resources_dir)
+
+    base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
+    shutil.rmtree(base_temp_dir, ignore_errors=True)
 
     @staticmethod
     def mock_download_repo(source, target):
@@ -20,7 +22,12 @@ class TestClientWebhook(unittest.TestCase):
         print('finished.')
 
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp(prefix='webhookTest_')
+        try:
+            os.makedirs(TestClientWebhook.base_temp_dir)
+        except:
+            pass
+
+        self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
@@ -31,4 +38,5 @@ class TestClientWebhook(unittest.TestCase):
 
         mock_download_file.side_effect = self.mock_download_repo
         cwh = ClientWebhook()
-        cwh.download_repo('bible_bundle_master', self.temp_dir)
+        #cwh.download_repo('bible_bundle_master', self.temp_dir)
+        cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
