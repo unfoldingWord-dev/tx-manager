@@ -82,7 +82,7 @@ class S3Handler(object):
             try:
                 return self.resource.Object(self.bucket_name, to_key).copy_from(
                     CopySource='{0}/{1}'.format(from_bucket, from_key))
-            except Exception as e:
+            except Exception:
                 return False
         else:
             return self.resource.Object(self.bucket_name, to_key).copy_from(
