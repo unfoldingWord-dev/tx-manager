@@ -2,9 +2,9 @@ from __future__ import absolute_import, unicode_literals, print_function
 import itertools
 import unittest
 import mock
-import responses
 from six import StringIO
 from tests.manager_tests import mock_utils
+from tests.manager_tests.mock_utils import MockResponse
 from manager.job import TxJob
 from manager.manager import TxManager
 from manager.module import TxModule
@@ -19,9 +19,9 @@ class ManagerTest(unittest.TestCase):
     mock_module_db = None
     mock_db = None
     mock_gogs = None
-    mock_lambda = None
 
     patches = []
+    requested_urls = []
 
     @classmethod
     def setUpClass(cls):
@@ -33,14 +33,14 @@ class ManagerTest(unittest.TestCase):
                 "job_id": 0,
                 "status": "started",
                 "resource_type": "obs",
-                "input_format": "markdown",
+                "input_format": "md",
                 "output_format": "html"
             },
             1: {
                 "job_id": 1,
                 "status": "requested",
                 "resource_type": "obs",
-                "input_format": "markdown",
+                "input_format": "md",
                 "output_format": "html"
             },
             2: {
@@ -55,14 +55,14 @@ class ManagerTest(unittest.TestCase):
                 "job_id": 3,
                 "status": "requested",
                 "resource_type": "other",
-                "input_format": "markdown",
+                "input_format": "md",
                 "output_format": "html"
             },
             4: {
                 "job_id": 4,
                 "status": "requested",
                 "resource_type": "unsupported",
-                "input_format": "markdown",
+                "input_format": "md",
                 "output_format": "html"
             }
         }, keyname="job_id")
@@ -70,20 +70,26 @@ class ManagerTest(unittest.TestCase):
             "module1": {
                 "name": "module1",
                 "resource_types": ["obs", "ulb"],
-                "input_format": "markdown",
-                "output_format": "html"
+                "input_format": "md",
+                "output_format": "html",
+                "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
+                "private_links": []
             },
             "module2": {
                 "name": "module2",
                 "resource_types": ["ulb"],
                 "input_format": "usfm",
-                "output_format": "html"
+                "output_format": "html",
+                "public_links": ["{0}/tx/convert/usfm2html".format(cls.MOCK_API_URL)],
+                "private_links": []
             },
             "module3": {
                 "name": "module3",
                 "resource_types": ["other", "yet_another"],
-                "input_format": "markdown",
-                "output_format": "html"
+                "input_format": "md",
+                "output_format": "html",
+                "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
+                "private_links": []
             }
         }, keyname="name")
 
@@ -91,13 +97,10 @@ class ManagerTest(unittest.TestCase):
             side_effect=itertools.cycle([cls.mock_job_db, cls.mock_module_db]))
         cls.mock_gogs = mock.MagicMock(
             return_value=mock_utils.mock_gogs_handler(["token1", "token2"]))
-        cls.mock_lambda = mock.MagicMock(
-            return_value=mock_utils.mock_lambda_handler(["module2"], ["module1"]))
 
         ManagerTest.patches = (
             mock.patch("manager.manager.DynamoDBHandler", cls.mock_db),
             mock.patch("manager.manager.GogsHandler", cls.mock_gogs),
-            mock.patch("manager.manager.LambdaHandler", cls.mock_lambda)
         )
 
         for patch in ManagerTest.patches:
@@ -108,7 +111,7 @@ class ManagerTest(unittest.TestCase):
         ManagerTest.mock_module_db.reset_mock()
         ManagerTest.mock_db.reset_mock()
         ManagerTest.mock_gogs.reset_mock()
-        ManagerTest.mock_lambda.reset_mock()
+        ManagerTest.requested_urls = []
 
     @classmethod
     def tearDownClass(cls):
@@ -125,7 +128,7 @@ class ManagerTest(unittest.TestCase):
             "cdn_bucket":  "test_cdn_bucket",
             "source": "test_source",
             "resource_type": "obs",
-            "input_format": "markdown",
+            "input_format": "md",
             "output_format": "html"
         }
         tx_manager.setup_job(data)
@@ -137,6 +140,84 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(arg["resource_type"], "obs")
         self.assertEqual(arg["cdn_bucket"], "test_cdn_bucket")
 
+    def test_setup_job_bad_requests(self):
+        """
+        Tests bad calls of setup_job due to missing or bad input
+        """
+        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+
+        # Missing gogs_user_token
+        data = {
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Bad gogs_user_token
+        data = {
+            "gogs_user_token": "bad_token",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing cdn_bucket
+        data = {
+            "gogs_user_token": "token1",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing source
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "resource_type": "obs",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing resource_type
+        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "input_format": "md",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing input_format
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "output_format": "html"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
+        # Missing output_format
+        data = {
+            "gogs_user_token": "token1",
+            "cdn_bucket":  "test_cdn_bucket",
+            "source": "test_source",
+            "resource_type": "obs",
+            "input_format": "md"
+        }
+        self.assertRaises(Exception, tx_manager.setup_job, data)
+
     def test_setup_job_malformed_input(self):
         """
         Call setup_job with malformed data arguments
@@ -147,7 +228,7 @@ class ManagerTest(unittest.TestCase):
             "cdn_bucket": "test_cdn_bucket",
             "source": "test_source",
             "resource_type": "obs",
-            "input_format": "markdown",
+            "input_format": "md",
             "output_format": "html"
         }
         for key in data:
@@ -170,26 +251,30 @@ class ManagerTest(unittest.TestCase):
             "cdn_bucket": "test_cdn_bucket",
             "source": "test_source",
             "resource_type": "unrecognized_resource_type",
-            "input_format": "markdown",
+            "input_format": "md",
             "output_format": "html"
         }
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
-    def test_start_job1(self):
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post')
+    def test_start_job1(self, mock_requests_post):
         """
         Call start job in job 1 from mock data. Should be a successful
         invocation with warnings.
         """
+        mock_requests_post.return_value = MockResponse({
+            'Payload': {
+                "log": ['Converted!'],
+                "warnings": ['Missing something'],
+                "errors": [],
+                "success": True,
+                "message": "Has some warnings"
+            }
+        }, 200)
+
         tx_manager = TxManager()
         tx_manager.start_job(1)
-        # assert that correct lambda function was invoked
-        args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
-        module_name = args[0]
-        self.assertEqual(module_name, "module1")
-        payload = args[1]
-        self.assertIsInstance(payload, dict)
-        self.assertIn("data", payload)
-        self.assertIn("job", payload["data"])
 
         # job1's entry in database should have been updated
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
@@ -204,26 +289,24 @@ class ManagerTest(unittest.TestCase):
         self.assertIn("warnings", data)
         self.assertTrue(len(data["warnings"]) > 0)
 
-    @responses.activate
-    def test_start_job2(self):
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post')
+    def test_start_job2(self, mock_requests_post):
         """
         Call start_job in job 2 from mock data. Should be a successful
         invocation without warnings.
         """
-        # mock out job 2's callback
-        responses.add(responses.POST, ManagerTest.MOCK_CALLBACK_URL)
+        mock_requests_post.return_value = MockResponse({
+            'Payload': {
+                "log": ['Converted!'],
+                "warnings": [],
+                "errors": [],
+                "success": True,
+                "message": "All good"
+            }
+        }, 200)
         tx_manager = TxManager()
         tx_manager.start_job(2)
-        self.assertEqual(len(responses.calls), 1)
-        self.assertEqual(responses.calls[0].request.url, ManagerTest.MOCK_CALLBACK_URL)
-        # assert that correct lambda function was invoked
-        args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
-        module_name = args[0]
-        self.assertEqual(module_name, "module2")
-        payload = args[1]
-        self.assertIsInstance(payload, dict)
-        self.assertIn("data", payload)
-        self.assertIn("job", payload["data"])
 
         # job2's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
@@ -237,21 +320,26 @@ class ManagerTest(unittest.TestCase):
         self.assertIn("errors", data)
         self.assertEqual(len(data["errors"]), 0)
 
-    def test_start_job3(self):
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post')
+    def test_start_job3(self, mock_requests_post):
         """
         Call start_job on job 3 from mock data. Invocation should result in an error
+        :param mock_requests_post mock.MagicMock:
+        :return:
         """
+        mock_requests_post.return_value = MockResponse({
+            'Payload': {
+                "log": ['Conversion failed!'],
+                "warnings": [],
+                "errors": ['Some error'],
+                "success": False,
+                "message": "Has errors, failed"
+            }
+        }, 200)
+
         manager = TxManager()
         manager.start_job(3)
-        ManagerTest.mock_lambda().invoke.assert_called()
-        # assert that correct lambda function was invoked
-        args, kwargs = self.call_args(ManagerTest.mock_lambda().invoke, num_args=2)
-        module_name = args[0]
-        self.assertEqual(module_name, "module3")
-        payload = args[1]
-        self.assertIsInstance(payload, dict)
-        self.assertIn("data", payload)
-        self.assertIn("job", payload["data"])
 
         # job3's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
@@ -270,12 +358,15 @@ class ManagerTest(unittest.TestCase):
         Call start_job with non-runnable/non-existent jobs
         """
         tx_manager = TxManager()
-        tx_manager.start_job(0)
-        tx_manager.start_job(4)
-        tx_manager.start_job(5)
+        ret0 = tx_manager.start_job(0)
+        ret4 = tx_manager.start_job(4)
+        ret5 = tx_manager.start_job(5)
 
-        # no lambda function should have been invoked
-        ManagerTest.mock_lambda().invoke.assert_not_called()
+        self.assertEqual(ret0['job_id'], 0)
+        self.assertEqual(ret4['job_id'], 4)
+        self.assertEqual(ret5['job_id'], 5)
+        self.assertFalse(ret5['success'])
+        self.assertEqual(ret5['message'], 'No job with ID 5 has been requested')
 
         # last existent job (4) should be updated in database to include error
         # messages
@@ -327,7 +418,7 @@ class ManagerTest(unittest.TestCase):
             "name": "module1",
             "type": "conversion",
             "resource_types": ["obs"],
-            "input_format": "markdown",
+            "input_format": "md",
             "output_format": "html"
         }
         manager.register_module(data)
@@ -387,7 +478,7 @@ class ManagerTest(unittest.TestCase):
         module = manager.get_module("module1")
         self.assertIsInstance(module, TxModule)
         self.assertEqual(module.name, "module1")
-        self.assertEqual(module.input_format, "markdown")
+        self.assertEqual(module.input_format, "md")
 
         # update_module
         manager.update_module(module)

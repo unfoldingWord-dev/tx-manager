@@ -4,7 +4,6 @@ import hashlib
 import requests
 from datetime import datetime
 from datetime import timedelta
-from aws_tools.lambda_handler import LambdaHandler
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
@@ -17,7 +16,7 @@ class TxManager(object):
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False,
                  aws_access_key_id=None, aws_secret_access_key=None,
-                 job_table_name="tx-job", module_table_name="tx-module"):
+                 job_table_name=None, module_table_name=None):
         """
         :param string api_url:
         :param string gogs_url:
@@ -28,31 +27,35 @@ class TxManager(object):
         :param string aws_secret_access_key:
         :param string job_table_name:
         :param string module_table_name:
-        :param class dynamodb_handler_class:
-        :param class gogs_handler_class:
-        :param class lambda_handler_class:
         """
         self.api_url = api_url
+        self.gogs_url = gogs_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
         self.quiet = quiet
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.job_table_name = job_table_name
+        self.module_table_name = module_table_name
+
+        if not self.job_table_name:
+            self.job_table_name = TxManager.JOB_TABLE_NAME
+        if not self.module_table_name:
+            self.module_table_name = TxManager.MODULE_TABLE_NAME
 
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
 
-        if not job_table_name:
-            job_table_name = self.JOB_TABLE_NAME
-        if not module_table_name:
-            module_table_name = self.MODULE_TABLE_NAME
+        self.setup_resources()
 
-        self.job_db_handler = DynamoDBHandler(job_table_name)
-        self.module_db_handler = DynamoDBHandler(module_table_name)
-
-        if gogs_url:
-            self.gogs_handler = GogsHandler(gogs_url)
-
-        self.lambda_handler = LambdaHandler(aws_access_key_id, aws_secret_access_key)
+    def setup_resources(self):
+        if self.job_table_name:
+            self.job_db_handler = DynamoDBHandler(self.job_table_name)
+        if self.module_table_name:
+            self.module_db_handler = DynamoDBHandler(self.module_table_name)
+        if self.gogs_url:
+            self.gogs_handler = GogsHandler(self.gogs_url)
 
     def debug_print(self, message):
         if not self.quiet:
@@ -189,12 +192,15 @@ class TxManager(object):
     def start_job(self, job_id):
         job = self.get_job(job_id)
 
-        if not job:
-            return  # Job doesn't exist, return
+        if not job.job_id:
+            job.job_id = job_id
+            job.success = False
+            job.message = 'No job with ID {} has been requested'.format(job_id)
+            return job.get_db_data()  # Job doesn't exist, return
 
         # Only start the job if the status is 'requested' and a started timestamp hasn't been set
         if job.status != 'requested' or job.started_at:
-            return  # Job already started, return
+            return job.get_db_data()  # Job already started, return
 
         job.started_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         job.status = 'started'
@@ -214,28 +220,37 @@ class TxManager(object):
             self.update_job(job)
 
             payload = {
-                'data': {
-                    'job': job.get_db_data(),
-                }
+                'job': job.get_db_data(),
             }
-            print("Payload to {0}:".format(module.name))
-            print(payload)
 
-            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(job.converter_module,
+            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(module.name,
                                                                                       job.source,
                                                                                       job.output))
-            response = self.lambda_handler.invoke(module.name, payload)
+
+            headers = {"content-type": "application/json"}
+            url = module.public_links[0]
+            print("Payload to {0}:".format(url))
+            print(json.dumps(payload))
+            response = requests.post(url, json=payload, headers=headers)
+            print('finished.')
 
             print("Response from {0}:".format(module.name))
             print(response)
 
-            if 'errorMessage' in response:
-                job.error_message(response['errorMessage'])
-            elif 'Payload' in response:
-                payload = json.loads(response['Payload'].read())
+            json_data = response.json()
+            if json_data:
+                json_data = response.json()
+                if 'errorMessage' in json_data:
+                    error = json_data['errorMessage']
+                    if error.startswith('Bad Request: '):
+                        error = error[len('Bad Request: '):]
+                    job.error_message(error)
 
-                print('Payload from payload:')
-                print(payload)
+            if 'Payload' in json_data:
+                payload = json_data['Payload']
+
+                print('Payload:')
+                print(json.dumps(payload))
 
                 for message in payload['log']:
                     if message:
@@ -285,6 +300,8 @@ class TxManager(object):
 
         if job.callback:
             self.do_callback(job.callback, callback_payload)
+
+        return job.get_db_data()
 
     @staticmethod
     def do_callback(url, payload):
