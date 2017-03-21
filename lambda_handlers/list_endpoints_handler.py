@@ -11,8 +11,14 @@ class ListEndpointsHandler(Handler):
         :param context:
         :return dict:
         """
-        env_vars = {}
-        if 'vars' in event and isinstance(event['vars'], dict):
-            env_vars = event['vars']
+        # Get all params, both POST and GET and JSON from the request event
+        data = {}
+        if 'data' in event and isinstance(event['data'], dict):
+            data = event['data']
+        if 'body-json' in event and isinstance(event['body-json'], dict):
+            data.update(event['body-json'])
+        # Set required env_vars
+        env_vars = {
+            'api_url': self.retrieve(event['vars'], 'api_url', 'Environment Vars')
+        }
         return TxManager(**env_vars).list_endpoints()
-

@@ -11,13 +11,18 @@ class ClientWebhookHandler(Handler):
         :param context:
         :return dict:
         """
-        env_vars = self.retrieve(event, 'vars', 'payload')
-        # Perform checks that we have these vars:
-        self.retrieve(env_vars, 'api_url', 'Environment Vars')
-        self.retrieve(env_vars, 'pre_convert_bucket', 'Environment Vars')
-        self.retrieve(env_vars, 'cdn_bucket', 'Environment Vars')
-        self.retrieve(env_vars, 'gogs_url', 'Environment Vars')
-        self.retrieve(env_vars, 'gogs_user_token', 'Environment Vars')
-        # Make the commit data a var in vars
-        env_vars['commit_data'] = self.retrieve(event, 'data', 'payload')
+        data = {}
+        if 'data' in event and isinstance(event['data'], dict):
+            data = event['data']
+        if 'body-json' in event and isinstance(event['body-json'], dict):
+            data.update(event['body-json'])
+        # Set required env_vars
+        env_vars = {
+            'api_url': self.retrieve(event['vars'], 'api_url', 'Environment Vars'),
+            'pre_convert_bucket': self.retrieve(event['vars'], 'pre_convert_bucket', 'Environment Vars'),
+            'cdn_bucket': self.retrieve(event['vars'], 'cdn_bucket', 'Environment Vars'),
+            'gogs_url': self.retrieve(event['vars'], 'gogs_url', 'Environment Vars'),
+            'gogs_user_token': self.retrieve(event['vars'], 'gogs_user_token', 'Environment Vars'),
+            'commit_data': self.retrieve(event, 'data', 'payload')
+        }
         return ClientWebhook(**env_vars).process_webhook()
