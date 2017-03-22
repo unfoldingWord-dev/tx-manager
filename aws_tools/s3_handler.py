@@ -47,13 +47,12 @@ class S3Handler(object):
             if result.get('Contents') is not None:
                 for file in result.get('Contents'):
                     local_file = os.path.join(local, file.get('Key').replace('/', os.path.sep))
-                    print(local_file)
                     if local_file.endswith(os.path.sep):
                         pass
                     else:
                         if not os.path.exists(os.path.dirname(local_file)):
                             os.makedirs(os.path.dirname(local_file))
-                        self.resource.meta.client.download_file(self.bucket_name, file.get('Key'), local_file)
+                        self.download_file(file.get('Key'), local_file)
 
     def key_exists(self, key, bucket_name=None):
         if not bucket_name:
@@ -95,19 +94,10 @@ class S3Handler(object):
     def get_object(self, key):
         return self.resource.Object(bucket_name=self.bucket_name, key=key)
 
-    def get_contents(self, key, catch_exception=True):
-        if catch_exception:
-            try:
-                return self.get_object(key).get()['Body'].read()
-            except:
-                return ''
-        else:
-            return self.get_object(key)['Body'].read()
-
     def redirect(self, key, location):
         self.bucket.put_object(Key=key, WebsiteRedirectLocation=location, CacheControl='max-age=0')
 
-    def get_file_contents(self, key, catch_exception = True):
+    def get_file_contents(self, key, catch_exception=True):
         if catch_exception:
             try:
                 return self.get_object(key).get()['Body'].read()
