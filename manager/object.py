@@ -13,9 +13,8 @@ class TxObject(object):
 
     def populate(self, data):
         for key, value in iteritems(data):
-            if not hasattr(self, key):
-                raise Exception('Invalid field given: {0}'.format(key))
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def get_db_data(self):
         data = {}
