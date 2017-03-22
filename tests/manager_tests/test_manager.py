@@ -69,27 +69,36 @@ class ManagerTest(unittest.TestCase):
         cls.mock_module_db = mock_utils.mock_db_handler(data={
             "module1": {
                 "name": "module1",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["obs", "ulb"],
                 "input_format": "md",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": [],
+                "options": {"pageSize": "A4"}
             },
             "module2": {
                 "name": "module2",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["ulb"],
                 "input_format": "usfm",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/usfm2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": [],
+                "options": {"pageSize": "A4"}
             },
             "module3": {
                 "name": "module3",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["other", "yet_another"],
                 "input_format": "md",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": ["{0}/tx/private/md2html"],
+                "options": {}
             }
         }, keyname="name")
 
@@ -492,6 +501,15 @@ class ManagerTest(unittest.TestCase):
         args, kwargs = self.call_args(ManagerTest.mock_module_db.delete_item,
                                       num_args=1)
         self.assertEqual(args[0], {"name": "module1"})
+
+    def test_generate_dashboard(self):
+        manager = TxManager()
+        dashboard = manager.generate_dashboard()
+        title_expected = 'Tx-Manager Dashboard'
+        message_expected = '<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table>\n            <tr><td class="hdr" colspan="2">module3</td></tr>\n            <tr><td class="lbl" >Type:</td><td>conversion</td></tr>\n            <tr><td class="lbl" >Input Format:</td><td>md</td></tr>\n            <tr><td class="lbl" >Output Format:</td><td>html</td></tr>\n            <tr><td class="lbl" >Resource Types:</td><td>other, yet_another</td></tr>\n            <tr><td class="lbl" >Version:</td><td>1</td></tr>\n            <tr><td class="lbl" >Private Links:</td><td>{0}/tx/private/md2html</td></tr>\n            <tr><td class="lbl" >Public Links:</td><td>https://api.example.com/tx/convert/md2html</td></tr>\n            <tr><td class="hdr" colspan="2">module2</td></tr>\n            <tr><td class="lbl" >Type:</td><td>conversion</td></tr>\n            <tr><td class="lbl" >Input Format:</td><td>usfm</td></tr>\n            <tr><td class="lbl" >Output Format:</td><td>html</td></tr>\n            <tr><td class="lbl" >Resource Types:</td><td>ulb</td></tr>\n            <tr><td class="lbl" >Version:</td><td>1</td></tr>\n            <tr><td class="lbl" >Options:</td><td>{"pageSize": "A4"}</td></tr>\n            <tr><td class="lbl" >Public Links:</td><td>https://api.example.com/tx/convert/usfm2html</td></tr>\n            <tr><td class="hdr" colspan="2">module1</td></tr>\n            <tr><td class="lbl" >Type:</td><td>conversion</td></tr>\n            <tr><td class="lbl" >Input Format:</td><td>md</td></tr>\n            <tr><td class="lbl" >Output Format:</td><td>html</td></tr>\n            <tr><td class="lbl" >Resource Types:</td><td>obs, ulb</td></tr>\n            <tr><td class="lbl" >Version:</td><td>1</td></tr>\n            <tr><td class="lbl" >Options:</td><td>{"pageSize": "A4"}</td></tr>\n            <tr><td class="lbl" >Public Links:</td><td>https://api.example.com/tx/convert/md2html</td></tr>\n        </table>'
+        self.assertEqual(dashboard['title'], title_expected)
+        self.assertEqual(dashboard['message'], message_expected)
+
 
     # helper methods #
 

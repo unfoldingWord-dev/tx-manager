@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 import json
 import hashlib
 import requests
+import logging
 from datetime import datetime
 from datetime import timedelta
 from aws_tools.dynamodb_handler import DynamoDBHandler
@@ -46,6 +47,7 @@ class TxManager(object):
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
+        self.logger = logging.getLogger()
 
         self.setup_resources()
 
@@ -457,15 +459,7 @@ class TxManager(object):
     def delete_module(self, module):
         return self.module_db_handler.delete_item({'name': module.name})
 
-    def get_stats(self):
-         dbModule = DynamoDBHandler("tx-module")
-    items = dbModule.query_items()
-
-    if items and len(items):
-        rec = "<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table>\n"
-        return self.module_db_handler.
-
-    def generateDashboard(event, context, DynamoDBHandler, logger):
+    def generate_dashboard(self):
         """
         Generate page with metrics indicating configuration of tx-manager
         :param dict event:
@@ -473,47 +467,47 @@ class TxManager(object):
         :param DynamicDBHandler:
         :param logger:
         """
-        logger.info("Start: generateDashboard")
+        self.logger.info("Start: generateDashboard")
 
-        dbModule = DynamoDBHandler("tx-module")
-        items = dbModule.query_items()
+        items = self.module_db_handler.query_items()
 
         if items and len(items):
-            logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
+            self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
             rec = "<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table>\n"
 
             for item in items:
-                #logger.info(json.dumps(item))
-                logger.info(item["name"])
-                rec +=        '            <tr><td class="hdr" colspan="2">'                 + str(item["name"])           + "</td></tr>\n"
+                # self.logger.info(json.dumps(item))
+                self.logger.info(item["name"])
+                rec += '            <tr><td class="hdr" colspan="2">'                 + str(item["name"])           + "</td></tr>\n"
 
                 # TBD the following code almosts walks the db record replacing next 11 lines
-                #for attr, val in item:
+                # for attr, val in item:
                 #    if (attr != 'name') and (len(attr) > 0):
-                #      rec += '            <tr><td class="lbl" >' + attr.replace("_", " ").title() + ':</td><td>' + "lst(val)" + "</td></tr>\n"
-                #rec += '<tr><td colspan="2"></td></tr>'
+                #       rec += '            <tr><td class="lbl" >' + attr.replace("_", " ").title() + ':</td><td>' + "lst(val)" + "</td></tr>\n"
+                # rec += '<tr><td colspan="2"></td></tr>'
 
                 rec += '            <tr><td class="lbl" >Type:</td><td>'              + str(item["type"])           + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Input Format:</td><td>'      + lst(item["input_format"])   + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Output Format:</td><td>'     + lst(item["output_format"])  + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Resource Types:</td><td>'    + lst(item["resource_types"]) + "</td></tr>\n"
+                rec += '            <tr><td class="lbl" >Input Format:</td><td>'      + self.lst(item["input_format"])   + "</td></tr>\n"
+                rec += '            <tr><td class="lbl" >Output Format:</td><td>'     + self.lst(item["output_format"])  + "</td></tr>\n"
+                rec += '            <tr><td class="lbl" >Resource Types:</td><td>'    + self.lst(item["resource_types"]) + "</td></tr>\n"
                 rec += '            <tr><td class="lbl" >Version:</td><td>'           + str(item["version"])        + "</td></tr>\n"
 
                 if len(item["options"]) > 0:
-                    rec += '            <tr><td class="lbl" >Options:</td><td>'       + lst(item["options"])        + "</td></tr>\n"
+                    rec += '            <tr><td class="lbl" >Options:</td><td>'       + self.lst(item["options"])        + "</td></tr>\n"
     
                 if len(item["private_links"]) > 0:
-                    rec += '            <tr><td class="lbl" >Private Links:</td><td>' + lst(item["private_links"])  + "</td></tr>\n"
+                    rec += '            <tr><td class="lbl" >Private Links:</td><td>' + self.lst(item["private_links"])  + "</td></tr>\n"
 
                 if len(item["public_links"]) > 0:
-                    rec += '            <tr><td class="lbl" >Public Links:</td><td>'  + lst(item["public_links"])   + "</td></tr>\n"
+                    rec += '            <tr><td class="lbl" >Public Links:</td><td>'  + self.lst(item["public_links"])   + "</td></tr>\n"
 
             rec += "        </table>"
-            return { 'title': 'Tx-Manager Dashboard', 'message': rec }
+            return {'title': 'Tx-Manager Dashboard', 'message': rec}
         else:
-            logger.info("No tx-modules found.")
-            return  "No tx-modules found" 
+            self.logger.info("No tx-modules found.")
+            return "No tx-modules found"
 
+    @staticmethod
     def lst(listing):
         """
         create comma separated list of items if argument is a list
@@ -522,6 +516,8 @@ class TxManager(object):
 
         if type(listing) == list:
             return ", ".join(listing)
+        if type(listing) == dict:
+            return json.dumps(listing)
         else:
             return listing
 
