@@ -3,6 +3,7 @@ import itertools
 import unittest
 import mock
 from six import StringIO
+from bs4 import BeautifulSoup
 from tests.manager_tests import mock_utils
 from tests.manager_tests.mock_utils import MockResponse
 from manager.job import TxJob
@@ -75,7 +76,7 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": [],
+                "private_links": ["{0}/tx/private/module1".format(cls.MOCK_API_URL)],
                 "options": {"pageSize": "A4"}
             },
             "module2": {
@@ -96,8 +97,8 @@ class ManagerTest(unittest.TestCase):
                 "resource_types": ["other", "yet_another"],
                 "input_format": "md",
                 "output_format": "html",
-                "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": ["{0}/tx/private/md2html"],
+                "public_links": [],
+                "private_links": [],
                 "options": {}
             }
         }, keyname="name")
@@ -505,11 +506,17 @@ class ManagerTest(unittest.TestCase):
     def test_generate_dashboard(self):
         manager = TxManager()
         dashboard = manager.generate_dashboard()
-        title_expected = 'Tx-Manager Dashboard'
-        message_expected = '<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table>\n            <tr><td class="hdr" colspan="2">module3</td></tr>\n            <tr><td class="lbl" >Type:</td><td>conversion</td></tr>\n            <tr><td class="lbl" >Input Format:</td><td>md</td></tr>\n            <tr><td class="lbl" >Output Format:</td><td>html</td></tr>\n            <tr><td class="lbl" >Resource Types:</td><td>other, yet_another</td></tr>\n            <tr><td class="lbl" >Version:</td><td>1</td></tr>\n            <tr><td class="lbl" >Private Links:</td><td>{0}/tx/private/md2html</td></tr>\n            <tr><td class="lbl" >Public Links:</td><td>https://api.example.com/tx/convert/md2html</td></tr>\n            <tr><td class="hdr" colspan="2">module2</td></tr>\n            <tr><td class="lbl" >Type:</td><td>conversion</td></tr>\n            <tr><td class="lbl" >Input Format:</td><td>usfm</td></tr>\n            <tr><td class="lbl" >Output Format:</td><td>html</td></tr>\n            <tr><td class="lbl" >Resource Types:</td><td>ulb</td></tr>\n            <tr><td class="lbl" >Version:</td><td>1</td></tr>\n            <tr><td class="lbl" >Options:</td><td>{"pageSize": "A4"}</td></tr>\n            <tr><td class="lbl" >Public Links:</td><td>https://api.example.com/tx/convert/usfm2html</td></tr>\n            <tr><td class="hdr" colspan="2">module1</td></tr>\n            <tr><td class="lbl" >Type:</td><td>conversion</td></tr>\n            <tr><td class="lbl" >Input Format:</td><td>md</td></tr>\n            <tr><td class="lbl" >Output Format:</td><td>html</td></tr>\n            <tr><td class="lbl" >Resource Types:</td><td>obs, ulb</td></tr>\n            <tr><td class="lbl" >Version:</td><td>1</td></tr>\n            <tr><td class="lbl" >Options:</td><td>{"pageSize": "A4"}</td></tr>\n            <tr><td class="lbl" >Public Links:</td><td>https://api.example.com/tx/convert/md2html</td></tr>\n        </table>'
-        self.assertEqual(dashboard['title'], title_expected)
-        self.assertEqual(dashboard['message'], message_expected)
-
+        # the title should be tX-Manager Dashboard
+        self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
+        soup = BeautifulSoup(dashboard['body'], 'html.parser')
+        # there should be a table tag
+        self.assertIsNotNone(soup.find('table'))
+        # module1 should have 8 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module1-'))), 8)
+        # module2 should have 7 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module2-'))), 7)
+        # module3 should have 5 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module3-'))), 5)
 
     # helper methods #
 

@@ -9,7 +9,7 @@ from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
-
+from bs4 import BeautifulSoup
 
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
@@ -473,36 +473,34 @@ class TxManager(object):
 
         if items and len(items):
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
-            rec = "<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table>\n"
 
+            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table></table>', 'html.parser')
             for item in items:
                 # self.logger.info(json.dumps(item))
                 self.logger.info(item["name"])
-                rec += '            <tr><td class="hdr" colspan="2">'                 + str(item["name"])           + "</td></tr>\n"
+                body.table.append(BeautifulSoup('<tr id="'+item['name']+'"><td class="hdr" colspan="2">'                 + str(item["name"])           + '</td></tr>', 'html.parser'))
 
                 # TBD the following code almosts walks the db record replacing next 11 lines
                 # for attr, val in item:
                 #    if (attr != 'name') and (len(attr) > 0):
-                #       rec += '            <tr><td class="lbl" >' + attr.replace("_", " ").title() + ':</td><td>' + "lst(val)" + "</td></tr>\n"
+                #       rec += '            <tr><td class="lbl">' + attr.replace("_", " ").title() + ':</td><td>' + "lst(val)" + "</td></tr>\n"
                 # rec += '<tr><td colspan="2"></td></tr>'
 
-                rec += '            <tr><td class="lbl" >Type:</td><td>'              + str(item["type"])           + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Input Format:</td><td>'      + self.lst(item["input_format"])   + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Output Format:</td><td>'     + self.lst(item["output_format"])  + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Resource Types:</td><td>'    + self.lst(item["resource_types"]) + "</td></tr>\n"
-                rec += '            <tr><td class="lbl" >Version:</td><td>'           + str(item["version"])        + "</td></tr>\n"
+                body.table.append(BeautifulSoup('<tr id="'+item['name']+'-type" class="module-type"><td class="lbl">Type:</td><td>'              + str(item["type"])           + '</td></tr>', 'html.parser'))
+                body.table.append(BeautifulSoup('<tr id="'+item['name']+'-input" class="module-input"><td class="lbl">Input Format:</td><td>'      + self.lst(item["input_format"])   + '</td></tr>', 'html.parser'))
+                body.table.append(BeautifulSoup('<tr id="'+item['name']+'-output" class="module-output"><td class="lbl">Output Format:</td><td>'     + self.lst(item["output_format"])  + '</td></tr>', 'html.parser'))
+                body.table.append(BeautifulSoup('<tr id="'+item['name']+'-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>'    + self.lst(item["resource_types"]) + '</td></tr>', 'html.parser'))
+                body.table.append(BeautifulSoup('<tr id="'+item['name']+'-version" class="module-version"><td class="lbl">Version:</td><td>'           + str(item["version"])        + '</td></tr>', 'html.parser'))
 
                 if len(item["options"]) > 0:
-                    rec += '            <tr><td class="lbl" >Options:</td><td>'       + self.lst(item["options"])        + "</td></tr>\n"
+                    body.table.append(BeautifulSoup('<tr id="'+item['name']+'-options" class="module-options"><td class="lbl">Options:</td><td>'       + self.lst(item["options"])        + '</td></tr>', 'html.parser'))
     
                 if len(item["private_links"]) > 0:
-                    rec += '            <tr><td class="lbl" >Private Links:</td><td>' + self.lst(item["private_links"])  + "</td></tr>\n"
+                    body.table.append(BeautifulSoup('<tr id="'+item['name']+'-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' + self.lst(item["private_links"])  + '</td></tr>', 'html.parser'))
 
                 if len(item["public_links"]) > 0:
-                    rec += '            <tr><td class="lbl" >Public Links:</td><td>'  + self.lst(item["public_links"])   + "</td></tr>\n"
-
-            rec += "        </table>"
-            return {'title': 'Tx-Manager Dashboard', 'message': rec}
+                    body.table.append(BeautifulSoup('<tr id="'+item['name']+'-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>'  + self.lst(item["public_links"])   + '</td></tr>', 'html.parser'))
+            return {'title': 'tX-Manager Dashboard', 'body': body.prettify('UTF-8')}
         else:
             self.logger.info("No tx-modules found.")
             return "No tx-modules found"
