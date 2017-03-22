@@ -123,7 +123,7 @@ class ProjectDeployer(object):
         # Copy all other files over that don't already exist in output_dir, like css files
         for filename in sorted(glob(os.path.join(source_dir, '*'))):
             output_file = os.path.join(output_dir, os.path.basename(filename))
-            if not os.path.isfile(output_file):
+            if not os.path.exists(output_file) and not os.path.isdir(filename):
                 copyfile(filename, output_file)
 
         # Upload all files to the door43.org bucket

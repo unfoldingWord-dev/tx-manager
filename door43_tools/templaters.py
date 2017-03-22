@@ -153,15 +153,6 @@ class ObsTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(ObsTemplater, self).__init__(*args, **kwargs)
 
-    def build_page_nav(self):
-        html = '<h1 id="page-nav">Navigation</h1>' \
-               '<ul>'
-        for filename in self.files:
-            name = os.path.splitext(os.path.basename(filename))[0]
-            html += '<a href="{0}">{1}</a>'.format(os.path.basename(filename), name)
-        html += '</ul>'
-        return html
-
 
 class BibleTemplater(Templater):
     def __init__(self, *args, **kwargs):
