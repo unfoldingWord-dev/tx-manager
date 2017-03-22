@@ -84,7 +84,6 @@ class DynamoDBHandler(object):
                     if condition_str == "between":
                         value, value2 = value["value"], value["value2"]
                 else:
-                    value = None
                     condition_str = 'eq'
 
                 if not value and only_fields_with_values:
