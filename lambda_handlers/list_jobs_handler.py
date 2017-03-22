@@ -15,7 +15,7 @@ class ListJobsHandler(Handler):
         data = {}
         if 'data' in event and isinstance(event['data'], dict):
             data = event['data']
-        if 'body-json' in event and event['body-json'] and isinstance(event['body-json'], dict):
+        if 'body-json' in event and isinstance(event['body-json'], dict):
             data.update(event['body-json'])
         # Set required env_vars
         env_vars = {
