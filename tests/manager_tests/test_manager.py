@@ -3,6 +3,7 @@ import itertools
 import unittest
 import mock
 from six import StringIO
+from bs4 import BeautifulSoup
 from tests.manager_tests import mock_utils
 from tests.manager_tests.mock_utils import MockResponse
 from manager.job import TxJob
@@ -69,27 +70,36 @@ class ManagerTest(unittest.TestCase):
         cls.mock_module_db = mock_utils.mock_db_handler(data={
             "module1": {
                 "name": "module1",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["obs", "ulb"],
                 "input_format": "md",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": ["{0}/tx/private/module1".format(cls.MOCK_API_URL)],
+                "options": {"pageSize": "A4"}
             },
             "module2": {
                 "name": "module2",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["ulb"],
                 "input_format": "usfm",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/usfm2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": [],
+                "options": {"pageSize": "A4"}
             },
             "module3": {
                 "name": "module3",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["other", "yet_another"],
                 "input_format": "md",
                 "output_format": "html",
-                "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "public_links": [],
+                "private_links": [],
+                "options": {}
             }
         }, keyname="name")
 
@@ -492,6 +502,21 @@ class ManagerTest(unittest.TestCase):
         args, kwargs = self.call_args(ManagerTest.mock_module_db.delete_item,
                                       num_args=1)
         self.assertEqual(args[0], {"name": "module1"})
+
+    def test_generate_dashboard(self):
+        manager = TxManager()
+        dashboard = manager.generate_dashboard()
+        # the title should be tX-Manager Dashboard
+        self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
+        soup = BeautifulSoup(dashboard['body'], 'html.parser')
+        # there should be a table tag
+        self.assertIsNotNone(soup.find('table'))
+        # module1 should have 8 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module1-'))), 8)
+        # module2 should have 7 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module2-'))), 7)
+        # module3 should have 5 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module3-'))), 5)
 
     # helper methods #
 
