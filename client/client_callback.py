@@ -66,7 +66,7 @@ class ClientCallback(object):
         project_json = cdn_handler.get_json(project_json_key)
         project_json['user'] = owner_name
         project_json['repo'] = repo_name
-        project_json['repo_url'] = 'https://{0]/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
         commit = {
             'id': commit_id,
             'created_at': self.job.created_at,

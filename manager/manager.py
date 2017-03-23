@@ -114,11 +114,6 @@ class TxManager(object):
 
         job.convert_module = module.name
 
-        # All conversions must result in a ZIP of the converted file(s)
-        output_file = 'tx/job/{0}.zip'.format(job.job_id)
-        job.output = '{0}/{1}'.format(self.cdn_url, output_file)
-        job.cdn_file = output_file
-
         created_at = datetime.utcnow()
         expires_at = created_at + timedelta(days=1)
         eta = created_at + timedelta(seconds=20)
@@ -133,6 +128,11 @@ class TxManager(object):
                                                      user.email,
                                                      created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         job.job_id = job_id
+
+        # All conversions must result in a ZIP of the converted file(s)
+        output_file = 'tx/job/{0}.zip'.format(job.job_id)
+        job.output = '{0}/{1}'.format(self.cdn_url, output_file)
+        job.cdn_file = output_file
 
         job.links = {
             "href": "{0}/tx/job/{1}".format(self.api_url, job_id),
@@ -167,7 +167,7 @@ class TxManager(object):
             user = self.get_user(data['gogs_user_token'])
             if not user:
                 raise Exception('Invalid user_token. User not found.')
-            data['user'] = user
+            data['user'] = user.username
             del data['gogs_user_token']
         jobs = self.query_jobs(data)
         ret = []
@@ -415,6 +415,7 @@ class TxManager(object):
         if not module.resource_types:
             raise Exception('"resource_types" not given.', exc_info=1)
 
+        module.public_links.append("{0}/tx/convert/{1}".format(self.api_url, module.name))
         self.insert_module(module)
         self.make_api_gateway_for_module(module)  # Todo: develop this function
         return module.get_db_data()
@@ -425,11 +426,11 @@ class TxManager(object):
 
     def query_jobs(self, data=None):
         items = self.job_db_handler.query_items(data)
-        modules = []
+        jobs = []
         if items and len(items):
             for item in items:
-                modules.append(TxJob(item))
-        return modules
+                jobs.append(TxJob(item))
+        return jobs
 
     def get_job(self, job_id):
         return TxJob(self.job_db_handler.get_item({'job_id': job_id}))
