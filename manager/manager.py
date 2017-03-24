@@ -34,6 +34,8 @@ class TxManager(object):
         self.gogs_url = gogs_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
         self.quiet = quiet
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
