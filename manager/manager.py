@@ -503,11 +503,11 @@ class TxManager(object):
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + item['name'] + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
-                    str(item["input_format"]) + '</td></tr>',
+                    json.dumps(item["input_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + item['name'] + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
-                    str(item["output_format"]) + '</td></tr>',
+                    json.dumps(item["output_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + item['name'] + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
