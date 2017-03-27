@@ -14,6 +14,7 @@ class TestStartJobHandler(TestCase):
             'Records': [
                 {
                     'eventName': 'INSERT',
+                    'eventSourceARN': 'arn:aws:dynamodb:us-west-2:111111111111:table/tx-job/stream/2020-10-10T08:18:22.385',
                     'dynamodb': {
                         'Keys': {'job_id':{'S': '1234'}}
                     }
