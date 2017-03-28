@@ -1,9 +1,7 @@
 """
 Utilities for mocking out AWS handlers
 """
-
 import json
-
 from mock import MagicMock
 
 

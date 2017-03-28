@@ -1,5 +1,7 @@
 from __future__ import unicode_literals, print_function
 from abc import ABCMeta, abstractmethod
+import json
+from exceptions import EnvironmentError
 
 
 class Handler(object):
@@ -11,11 +13,12 @@ class Handler(object):
         :param context:
         :return dict:
         """
+        print("EVENT:")
+        print(json.dumps(event))
         try:
             return self._handle(event, context)
         except Exception as e:
-            e.message = 'Bad Request: {0}'.format(e.message)
-            raise
+            raise EnvironmentError('Bad Request: {}'.format(e.message))
 
     @abstractmethod
     def _handle(self, event, context):

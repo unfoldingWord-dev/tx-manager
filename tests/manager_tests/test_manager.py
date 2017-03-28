@@ -3,6 +3,7 @@ import itertools
 import unittest
 import mock
 from six import StringIO
+from bs4 import BeautifulSoup
 from tests.manager_tests import mock_utils
 from tests.manager_tests.mock_utils import MockResponse
 from manager.job import TxJob
@@ -12,13 +13,26 @@ from manager.module import TxModule
 
 class ManagerTest(unittest.TestCase):
     MOCK_API_URL = "https://api.example.com"
+    MOCK_CDN_URL = "https://cdn.example.com"
     MOCK_CALLBACK_URL = "https://callback.example.com/"
     MOCK_GOGS_URL = "https://mock.gogs.io"
+    MOCK_CDN_BUCKET = 'mock_bucket'
+    MOCK_JOB_TABLE_NAME = 'mock-job'
+    MOCK_MODULE_TABLE_NAME = 'mock-module'
 
     mock_job_db = None
     mock_module_db = None
     mock_db = None
     mock_gogs = None
+    
+    tx_manager_env_vars = {
+        'api_url': MOCK_API_URL,
+        'cdn_url': MOCK_CDN_URL,
+        'gogs_url': MOCK_GOGS_URL,
+        'cdn_bucket': MOCK_CDN_BUCKET,
+        'job_table_name': MOCK_JOB_TABLE_NAME,
+        'module_table_name': MOCK_MODULE_TABLE_NAME
+    }
 
     patches = []
     requested_urls = []
@@ -69,27 +83,36 @@ class ManagerTest(unittest.TestCase):
         cls.mock_module_db = mock_utils.mock_db_handler(data={
             "module1": {
                 "name": "module1",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["obs", "ulb"],
                 "input_format": "md",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": ["{0}/tx/private/module1".format(cls.MOCK_API_URL)],
+                "options": {"pageSize": "A4"}
             },
             "module2": {
                 "name": "module2",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["ulb"],
                 "input_format": "usfm",
                 "output_format": "html",
                 "public_links": ["{0}/tx/convert/usfm2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "private_links": [],
+                "options": {"pageSize": "A4"}
             },
             "module3": {
                 "name": "module3",
+                "type": "conversion",
+                "version": "1",
                 "resource_types": ["other", "yet_another"],
                 "input_format": "md",
                 "output_format": "html",
-                "public_links": ["{0}/tx/convert/md2html".format(cls.MOCK_API_URL)],
-                "private_links": []
+                "public_links": [],
+                "private_links": [],
+                "options": {}
             }
         }, keyname="name")
 
@@ -122,7 +145,7 @@ class ManagerTest(unittest.TestCase):
         """
         Successful call of setup_job
         """
-        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         data = {
             "gogs_user_token": "token1",
             "cdn_bucket":  "test_cdn_bucket",
@@ -144,7 +167,8 @@ class ManagerTest(unittest.TestCase):
         """
         Tests bad calls of setup_job due to missing or bad input
         """
-        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager.cdn_bucket = None
 
         # Missing gogs_user_token
         data = {
@@ -188,7 +212,7 @@ class ManagerTest(unittest.TestCase):
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
         # Missing resource_type
-        tx_manager = TxManager(gogs_url=self.MOCK_GOGS_URL)
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         data = {
             "gogs_user_token": "token1",
             "cdn_bucket":  "test_cdn_bucket",
@@ -245,7 +269,7 @@ class ManagerTest(unittest.TestCase):
         """
         Call setup_job when there is no applicable converter.
         """
-        tx_manager = TxManager()
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         data = {
             "gogs_user_token": "token1",
             "cdn_bucket": "test_cdn_bucket",
@@ -273,7 +297,7 @@ class ManagerTest(unittest.TestCase):
             }
         }, 200)
 
-        tx_manager = TxManager()
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.start_job(1)
 
         # job1's entry in database should have been updated
@@ -305,7 +329,7 @@ class ManagerTest(unittest.TestCase):
                 "message": "All good"
             }
         }, 200)
-        tx_manager = TxManager()
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.start_job(2)
 
         # job2's entry in database should have been updated
@@ -338,7 +362,7 @@ class ManagerTest(unittest.TestCase):
             }
         }, 200)
 
-        manager = TxManager()
+        manager = TxManager(**self.tx_manager_env_vars)
         manager.start_job(3)
 
         # job3's entry in database should have been updated
@@ -357,7 +381,7 @@ class ManagerTest(unittest.TestCase):
         """
         Call start_job with non-runnable/non-existent jobs
         """
-        tx_manager = TxManager()
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         ret0 = tx_manager.start_job(0)
         ret4 = tx_manager.start_job(4)
         ret5 = tx_manager.start_job(5)
@@ -382,11 +406,11 @@ class ManagerTest(unittest.TestCase):
         self.assertIn("errors", data)
         self.assertTrue(len(data["errors"]) > 0)
 
-    def test_list(self):
+    def test_list_jobs(self):
         """
         Test list_jobs and list_endpoint methods
         """
-        tx_manager = TxManager(api_url=self.MOCK_API_URL, gogs_url=self.MOCK_GOGS_URL)
+        tx_manager = TxManager(**self.tx_manager_env_vars)
         jobs = tx_manager.list_jobs({"gogs_user_token": "token2"}, True)
         expected = [TxJob(job).get_db_data()
                     for job in ManagerTest.mock_job_db.mock_data.values()]
@@ -412,7 +436,7 @@ class ManagerTest(unittest.TestCase):
                           ["GET", "POST", "PUT", "PATCH", "DELETE"])
 
     def test_register_module(self):
-        manager = TxManager()
+        manager = TxManager(**self.tx_manager_env_vars)
 
         data = {
             "name": "module1",
@@ -424,10 +448,12 @@ class ManagerTest(unittest.TestCase):
         manager.register_module(data)
         ManagerTest.mock_module_db.insert_item.assert_called()
         args, kwargs = self.call_args(ManagerTest.mock_module_db.insert_item, num_args=1)
+        data['public_links'] = ['{0}/tx/convert/{1}'.format(self.MOCK_API_URL, data['name'])]
         self.assertEqual(args[0], TxModule(data).get_db_data())
 
-        for key in data:
-            # should raise an expection if data is missing a required field
+        test_missing_keys = ['name', 'type', 'input_format', 'output_format', 'resource_types']
+        for key in test_missing_keys:
+            # should raise an exception if data is missing a required field
             missing = data.copy()
             del missing[key]
             self.assertRaises(Exception, manager.register_module, missing)
@@ -447,7 +473,7 @@ class ManagerTest(unittest.TestCase):
         """
         Test [get/update/delete]_job methods
         """
-        manager = TxManager()
+        manager = TxManager(**self.tx_manager_env_vars)
 
         # get_job
         job = manager.get_job(0)
@@ -472,7 +498,7 @@ class ManagerTest(unittest.TestCase):
         """
         Test [get/update/delete]_module methods
         """
-        manager = TxManager()
+        manager = TxManager(**self.tx_manager_env_vars)
 
         # get_module
         module = manager.get_module("module1")
@@ -492,6 +518,21 @@ class ManagerTest(unittest.TestCase):
         args, kwargs = self.call_args(ManagerTest.mock_module_db.delete_item,
                                       num_args=1)
         self.assertEqual(args[0], {"name": "module1"})
+
+    def test_generate_dashboard(self):
+        manager = TxManager()
+        dashboard = manager.generate_dashboard()
+        # the title should be tX-Manager Dashboard
+        self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
+        soup = BeautifulSoup(dashboard['body'], 'html.parser')
+        # there should be a table tag
+        self.assertIsNotNone(soup.find('table'))
+        # module1 should have 8 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module1-'))), 8)
+        # module2 should have 7 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module2-'))), 7)
+        # module3 should have 5 rows of info
+        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module3-'))), 5)
 
     # helper methods #
 

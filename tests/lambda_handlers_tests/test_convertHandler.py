@@ -11,7 +11,8 @@ class TestConvertHandler(TestCase):
     def test_handle_for_obs(self, mock_convert_run):
         mock_convert_run.return_value = None
         event = {
-            'data': {
+            'data': {},
+            'body-json': {
                 'job': {
                     'input_format': 'md',
                     'convert_module': 'md2html',
@@ -35,7 +36,8 @@ class TestConvertHandler(TestCase):
                     'eta': '2017-03-08T18:58:11Z',
                     'output': 'https://cdn.example.com/tx/job/a07116859e82e4596798cf81349a445e3dcecef463913f762cc5210aebe93db0.zip',
                     'identifier': 'richmahn/en-obs/705948ab00',
-                    'resource_type': 'obs'
+                    'resource_type': 'obs',
+                    'options': {'pageSize': 'A4'}
                 }
             },
             'vars': {
@@ -51,7 +53,8 @@ class TestConvertHandler(TestCase):
     def test_handle_for_usfm(self, mock_convert_run):
         mock_convert_run.return_value = None
         event = {
-            'data': {
+            'data': {},
+            'body-json': {
                 'job': {
                     "input_format": "usfm",
                     "convert_module": "usfm2html",
@@ -77,7 +80,8 @@ class TestConvertHandler(TestCase):
                     'eta': '2017-03-08T18:58:11Z',
                     'output': 'https://cdn.example.com/tx/job/a07116859e82e4596798cf81349a445e3dcecef463913f762cc5210aebe93db0.zip',
                     'identifier': 'richmahn/en-obs/705948ab00',
-                    'resource_type': 'obs'
+                    'resource_type': 'obs',
+                    'options': {'pageSize': 'A4'}
                 }
             },
             'vars': {
@@ -87,4 +91,4 @@ class TestConvertHandler(TestCase):
                 'cdn_bucket': 'cdn_test_bucket'
             }
         }
-        self.assertIsNone(ConvertHandler(Usfm2HtmlConverter).handle(event, None))
+        self.assertIsNone(ConvertHandler(converter_class=Usfm2HtmlConverter).handle(event, None))

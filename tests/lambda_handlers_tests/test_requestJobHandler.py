@@ -1,20 +1,24 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
-from lambda_handlers.list_jobs_handler import ListJobsHandler
+from lambda_handlers.request_job_handler import RequestJobHandler
 
 
-class TestListJobsHandler(TestCase):
+class TestRequestJobHandler(TestCase):
 
     @mock.patch('manager.manager.TxManager.setup_resources')
-    @mock.patch('manager.manager.TxManager.list_jobs')
-    def test_handle(self, mock_list_jobs, mock_setup_resources):
-        mock_list_jobs.return_value = None
+    @mock.patch('manager.manager.TxManager.setup_job')
+    def test_handle(self, mock_setup_job, mock_setup_resources):
+        mock_setup_job.return_value = None
         event = {
             'data': {},
             'body-json': {
-                'gogs_user_token': 'token1',
-                'job_id': '1'
+                "gogs_user_token": "token1",
+                "cdn_bucket": "test_cdn_bucket",
+                "source": "test_source",
+                "resource_type": "obs",
+                "input_format": "md",
+                "output_format": "html"
             },
             'vars': {
                 'gogs_url': 'https://git.example.com',
@@ -25,5 +29,5 @@ class TestListJobsHandler(TestCase):
                 'module_table_name': 'test-tx-module'
             }
         }
-        handler = ListJobsHandler()
+        handler = RequestJobHandler()
         self.assertIsNone(handler.handle(event, None))

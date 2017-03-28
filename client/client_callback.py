@@ -36,7 +36,7 @@ class ClientCallback(object):
                                                commit_id)  # The identifier is how to know which username/repo/commit this callback goes to
 
         # Download the ZIP file of the converted files
-        converted_zip_url = self.self.job.output
+        converted_zip_url = self.job.output
         converted_zip_file = os.path.join(tempfile.gettempdir(), converted_zip_url.rpartition('/')[2])
         try:
             print('Downloading converted zip file from {0}...'.format(converted_zip_url))
@@ -66,7 +66,7 @@ class ClientCallback(object):
         project_json = cdn_handler.get_json(project_json_key)
         project_json['user'] = owner_name
         project_json['repo'] = repo_name
-        project_json['repo_url'] = 'https://{0]/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
         commit = {
             'id': commit_id,
             'created_at': self.job.created_at,

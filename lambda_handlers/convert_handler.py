@@ -26,7 +26,7 @@ class ConvertHandler(Handler):
         data = {}
         if 'data' in event and isinstance(event['data'], dict):
             data = event['data']
-        if 'body-json' in event and event['body-json'] and isinstance(event['body-json'], dict):
+        if 'body-json' in event and isinstance(event['body-json'], dict):
             data.update(event['body-json'])
         job = self.retrieve(data, 'job', 'payload')
         source = self.retrieve(job, 'source', 'job')

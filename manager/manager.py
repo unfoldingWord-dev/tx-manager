@@ -2,8 +2,10 @@ from __future__ import unicode_literals, print_function
 import json
 import hashlib
 import requests
+import logging
 from datetime import datetime
 from datetime import timedelta
+from bs4 import BeautifulSoup
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
@@ -46,6 +48,8 @@ class TxManager(object):
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
+
+        self.logger = logging.getLogger('tx-manager')
 
         self.setup_resources()
 
@@ -110,11 +114,6 @@ class TxManager(object):
 
         job.convert_module = module.name
 
-        # All conversions must result in a ZIP of the converted file(s)
-        output_file = 'tx/job/{0}.zip'.format(job.job_id)
-        job.output = '{0}/{1}'.format(self.cdn_url, output_file)
-        job.cdn_file = output_file
-
         created_at = datetime.utcnow()
         expires_at = created_at + timedelta(days=1)
         eta = created_at + timedelta(seconds=20)
@@ -129,6 +128,11 @@ class TxManager(object):
                                                      user.email,
                                                      created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         job.job_id = job_id
+
+        # All conversions must result in a ZIP of the converted file(s)
+        output_file = 'tx/job/{0}.zip'.format(job.job_id)
+        job.output = '{0}/{1}'.format(self.cdn_url, output_file)
+        job.cdn_file = output_file
 
         job.links = {
             "href": "{0}/tx/job/{1}".format(self.api_url, job_id),
@@ -163,7 +167,7 @@ class TxManager(object):
             user = self.get_user(data['gogs_user_token'])
             if not user:
                 raise Exception('Invalid user_token. User not found.')
-            data['user'] = user
+            data['user'] = user.username
             del data['gogs_user_token']
         jobs = self.query_jobs(data)
         ret = []
@@ -411,6 +415,7 @@ class TxManager(object):
         if not module.resource_types:
             raise Exception('"resource_types" not given.', exc_info=1)
 
+        module.public_links.append("{0}/tx/convert/{1}".format(self.api_url, module.name))
         self.insert_module(module)
         self.make_api_gateway_for_module(module)  # Todo: develop this function
         return module.get_db_data()
@@ -421,11 +426,11 @@ class TxManager(object):
 
     def query_jobs(self, data=None):
         items = self.job_db_handler.query_items(data)
-        modules = []
+        jobs = []
         if items and len(items):
             for item in items:
-                modules.append(TxJob(item))
-        return modules
+                jobs.append(TxJob(item))
+        return jobs
 
     def get_job(self, job_id):
         return TxJob(self.job_db_handler.get_item({'job_id': job_id}))
@@ -456,3 +461,82 @@ class TxManager(object):
 
     def delete_module(self, module):
         return self.module_db_handler.delete_item({'name': module.name})
+
+    def generate_dashboard(self):
+        """
+        Generate page with metrics indicating configuration of tx-manager
+        :param dict event:
+        :param context:
+        :param DynamicDBHandler:
+        :param logger:
+        """
+        self.logger.info("Start: generateDashboard")
+
+        dashboard = {
+            'title': 'tX-Manager Dashboard',
+            'body': 'No modules found'
+        }
+
+        items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
+
+        if items and len(items):
+            self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
+
+            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table></table>',
+                                 'html.parser')
+            for item in items:
+                # self.logger.info(json.dumps(item))
+                self.logger.info(item["name"])
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2">' + str(item["name"]) + '</td></tr>',
+                    'html.parser'))
+
+                # TBD the following code almosts walks the db record replacing next 11 lines
+                # for attr, val in item:
+                #    if (attr != 'name') and (len(attr) > 0):
+                #       rec += '            <tr><td class="lbl">' + attr.replace("_", " ").title() + ':</td><td>' + "lst(val)" + "</td></tr>\n"
+                # rec += '<tr><td colspan="2"></td></tr>'
+
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + item['name'] + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
+                    str(item["type"]) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + item['name'] + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
+                    json.dumps(item["input_format"]) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + item['name'] + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
+                    json.dumps(item["output_format"]) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + item['name'] + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
+                    json.dumps(item["resource_types"]) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + item['name'] + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
+                    str(item["version"]) + '</td></tr>',
+                    'html.parser'))
+
+                if len(item["options"]) > 0:
+                    body.table.append(BeautifulSoup(
+                        '<tr id="' + item['name'] + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
+                        json.dumps(item["options"]) + '</td></tr>',
+                        'html.parser'))
+
+                if len(item["private_links"]) > 0:
+                    body.table.append(BeautifulSoup(
+                        '<tr id="' + item['name'] + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
+                        json.dumps(item["private_links"]) + '</td></tr>',
+                        'html.parser'))
+
+                if len(item["public_links"]) > 0:
+                    body.table.append(BeautifulSoup(
+                        '<tr id="' + item['name'] + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
+                        json.dumps(item["public_links"]) + '</td></tr>',
+                        'html.parser'))
+            dashboard['body'] = body.prettify('UTF-8')
+        else:
+            self.logger.info("No modules found.")
+
+        return dashboard

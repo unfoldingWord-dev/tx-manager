@@ -12,5 +12,8 @@ class StartJobHandler(Handler):
         """
         for record in event['Records']:
             if record['eventName'] == 'INSERT' and 'job_id' in record['dynamodb']['Keys']:
+                ddbARN = record['eventSourceARN']
+                ddbTable = ddbARN.split(':')[5].split('/')[1]
+                env_vars = {'job_table_name': ddbTable}
                 job_id = record['dynamodb']['Keys']['job_id']['S']
-                TxManager().start_job(job_id)
+                TxManager(**env_vars).start_job(job_id)
