@@ -8,6 +8,7 @@ from shutil import copyfile
 from general_tools.file_utils import write_file
 from converter import Converter
 from door43_tools.obs_handler import OBSInspection
+from door43_tools.obs_data import obs_data
 
 
 class Md2HtmlConverter(Converter):
@@ -22,6 +23,8 @@ class Md2HtmlConverter(Converter):
         with open(os.path.join(current_dir, 'templates', 'obs-template.html')) as template_file:
             html_template = string.Template(template_file.read())
 
+        found_chapters = {}
+
         for filename in files:
             if filename.endswith('.md'):
                 # Convert files that are markdown files
@@ -30,6 +33,7 @@ class Md2HtmlConverter(Converter):
                 html = markdown.markdown(md)
                 html = html_template.safe_substitute(content=html)
                 base_name = os.path.splitext(os.path.basename(filename))[0]
+                found_chapters[base_name] = True
                 html_filename = base_name + ".html"
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, html)
@@ -60,4 +64,10 @@ class Md2HtmlConverter(Converter):
                         copyfile(filename, output_file)
                 except Exception:
                     pass
+
+        for chapter in sorted(obs_data['chapters']): # verify all expected chapters are present
+            found_chapter = found_chapters.get(chapter)
+            if not found_chapter:
+                self.logger.warning('Chapter {0} is missing!'.format(chapter))
+
         self.logger.info('Finished processing Markdown files.')
