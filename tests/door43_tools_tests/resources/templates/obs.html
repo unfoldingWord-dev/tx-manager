@@ -78,10 +78,13 @@
             </header>
             <div class="page-content row">
                 <div id="left-sidebar" class="col-md-3 sidebar" role="complementary">
-                    { sidebar }
+                    { left-sidebar }
                 </div>
-                <div class="col-md-9" role="main" id="content">
+                <div class="col-md-6 obs-outer-content" role="main" id="outer-content">
                     { content }
+                </div>
+                <div id="right-sidebar" class="col-md-3 sidebar" role="complementary">
+                    { right-sidebar }
                 </div>
             </div>
         </article>
@@ -125,11 +128,23 @@
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
   })();
 </script>
-
-
 <script type="text/javascript" src="/js/general-tools.js"></script>
 <script type="text/javascript" src="/js/commit-page.js"></script>
-
+<script type="text/javascript">
+/**
+ * Setup global javascript
+ */
+$(document).ready(function() {
+  /**
+   * Handle the sidebar nav
+   */
+  $('#sidebar-nav').affix({
+    offset: {
+      top: 250
+    }
+  });
+});
+</script>
 </body>
 
 </html>

@@ -41,17 +41,31 @@ class Templater(object):
 
         self.apply_template()
 
-    def build_left_sidebar(self):
-        html = self.build_page_nav()
-        html += '<div><h1>Revisions</h1><table width="100%" id="revisions"></table></div>'
+    def build_left_sidebar(self, filename=None):
+        html = '<div><h1>Revisions</h1><table width="100%" id="revisions"></table></div>'
         return html
 
-    def build_page_nav(self):
-        html = '<select id="page-nav" onchange="window.location.href=this.value">'
-        for filename in self.files:
-            name = os.path.splitext(os.path.basename(filename))[0]
-            html += '<option value="{0}">{1}</option>'.format(os.path.basename(filename), name)
-        html += '</select>'
+    def build_right_sidebar(self, filename=None):
+        html = self.build_page_nav(filename)
+        return html
+
+    def build_page_nav(self, filename=None):
+        html = '<nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">' \
+               '  <ul id="sidebar-nav" class="nav nav-stacked affix">' \
+               '    <li><h1>Navigation</h1></li>'
+        for fname in self.files:
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f, 'html.parser')
+            if soup.find('h1'):
+                title = soup.h1.text
+            else:
+                title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
+            html += '    <li>{0}{1}{2}</li>'.\
+                format('<a href="{0}">'.format(os.path.basename(fname)) if filename != fname else '',
+                       title,
+                       '</a>' if filename != fname else '')
+        html += '  </ul>' \
+                '</nav>'
         return html
 
     def apply_template(self):
@@ -67,16 +81,16 @@ class Templater(object):
         template = BeautifulSoup(self.template_html, 'html.parser')
 
         # find the target div in the template
-        content_div = template.body.find('div', {'id': 'content'})
+        content_div = template.body.find('div', {'id': 'outer-content'})
         if not content_div:
-            raise Exception('No div tag with id "content" was found in the template')
+            raise Exception('No div tag with id "outer-content" was found in the template')
 
         left_sidebar_div = template.body.find('div', {'id': 'left-sidebar'})
         if left_sidebar_div:
             left_sidebar_html = '<span>'+self.build_left_sidebar()+'</span>'
             left_sidebar_soup = BeautifulSoup(left_sidebar_html, 'html.parser')
             left_sidebar_div.clear()
-            left_sidebar_div.append(left_sidebar_soup.span)
+            left_sidebar_div.append(left_sidebar_soup.span.contents[0])
 
         # loop through the html files
         for filename in self.files:
@@ -122,30 +136,30 @@ class Templater(object):
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
-            try:
-                for a_tag in template.body.select('a[rel="dct:source"]'):
-                    a_tag.clear()
-                    a_tag.append(title)
-            except:
-                pass
+            for a_tag in template.body.select('a[rel="dct:source"]'):
+                a_tag.clear()
+                a_tag.append(title)
 
             # set the page heading
             heading_span = template.body.find('span', {'id': 'h1'})
             heading_span.clear()
             heading_span.append(heading)
 
-            # get the html
-            html = unicode(template)
+            right_sidebar_div = template.body.find('div', {'id': 'right-sidebar'})
+            if right_sidebar_div:
+                right_sidebar_html = '<span>'+self.build_right_sidebar(filename)+'</span>'
+                right_sidebar_soup = BeautifulSoup(right_sidebar_html, 'html.parser')
+                right_sidebar_div.clear()
+                right_sidebar_div.append(right_sidebar_soup.span)
 
+            # render the html as a string
+            html = unicode(template)
             # update the canonical URL - it is in several different locations
             html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
-
             # write to output directory
             out_file = os.path.join(self.output_dir, os.path.basename(filename))
-
             if not self.quiet:
                 print('Writing {0}.'.format(out_file))
-
             write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
 

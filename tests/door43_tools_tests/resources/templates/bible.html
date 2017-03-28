@@ -13,15 +13,15 @@
 
   <link rel="stylesheet" type="text/css" href="/css/main.css" media="screen">
   <link rel="stylesheet" type="text/css" href="/css/print.css" media="print">
+  <link rel="stylesheet" type="text/css" href="/css/commit-page.css">
+  <link rel="stylesheet" type="text/css" href="/css/bible.css">
 
   <link rel="canonical" href="https://live.door43.org/templates/bible.html">
   <!-- <link rel="" href="/favicon.ico" type="image/x-icon"> -->
 </head>
 
 
-<body itemscope="itemscope" itemtype="http://schema.org/WebPage">
-<link rel="stylesheet" type="text/css" href="/css/commit-page.css">
-<link rel="stylesheet" type="text/css" href="/css/bible.css">
+<body itemscope="itemscope" itemtype="http://schema.org/WebPage" data-spy="scroll" data-target="#right-sidebar-nav" data-offset="50">
 
 <header class="site-header" role="banner" itemscope="itemscope" itemtype="http://schema.org/WPHeader">
   <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" itemscope="itemscope" itemtype="http://schema.org/SiteNavigationElement">
@@ -78,10 +78,13 @@
             </header>
             <div class="page-content row">
                 <div id="left-sidebar" class="col-md-3 sidebar" role="complementary">
-                    { sidebar }
+                    { left-sidebar }
                 </div>
-                <div class="col-md-9" role="main" id="content">
+                <div class="col-md-6 bible-outer-content" role="main" id="outer-content">
                     { content }
+                </div>
+                <div id="right-sidebar" class="col-md-3 sidebar" role="complementary">
+                    { right-sidebar }
                 </div>
             </div>
         </article>
@@ -111,8 +114,9 @@
     <div class="clearfix"></div>
   </div>
 </footer>
-<script type="text/javascript" src="/js/jquery.min.js"></script>
-<script type="text/javascript" src="/js/bootstrap/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="/js/parallax.min.js"></script>
 <script type="text/javascript" src="/js/application.js"></script>
 <script type="text/javascript">
@@ -129,6 +133,26 @@
 
 <script type="text/javascript" src="/js/general-tools.js"></script>
 <script type="text/javascript" src="/js/commit-page.js"></script>
+<script type="text/javascript">
+/**
+ * Setup global javascript
+ */
+$(document).ready(function() {
+  /**
+   * Handle the sidebar nav
+   */
+  $('#sidebar-nav').affix({
+    offset: {
+      top: 250
+    }
+  });
+
+  $('.chapter > a').click(function(){
+    $(this).parent().parent().find('a').removeClass('selected');
+    $(this).addClass('selected');
+  });
+});
+</script>
 
 </body>
 

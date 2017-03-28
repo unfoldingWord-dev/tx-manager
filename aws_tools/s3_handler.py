@@ -41,7 +41,7 @@ class S3Handler(object):
         :param string key: object to download
         :param string local_file: file to download to
         """
-        body = self.resource.Object(self.bucket_name, key).get()['Body']
+        body = self.resource.Object(bucket_name=self.bucket_name, key=key).get()['Body']
         with open(local_file, 'wb') as f:
             for chunk in iter(lambda: body.read(1024), b''):
                 f.write(chunk)
@@ -70,7 +70,7 @@ class S3Handler(object):
             bucket = self.resource.Bucket(bucket_name)
 
         try:
-            bucket.Object(key).load()
+            bucket.Object(key=key).load()
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 exists = False
@@ -89,12 +89,12 @@ class S3Handler(object):
 
         if catch_exception:
             try:
-                return self.resource.Object(self.bucket_name, to_key).copy_from(
+                return self.resource.Object(bucket_name=self.bucket_name, key=to_key).copy_from(
                     CopySource='{0}/{1}'.format(from_bucket, from_key))
             except:
                 return False
         else:
-            return self.resource.Object(self.bucket_name, to_key).copy_from(
+            return self.resource.Object(bucket_name=self.bucket_name, key=to_key).copy_from(
                 CopySource='{0}/{1}'.format(from_bucket, from_key))
 
     def upload_file(self, path, key, cache_time=600):
@@ -161,11 +161,11 @@ class S3Handler(object):
     def delete_file(self, key, catch_exception=True):
         if catch_exception:
             try:
-                return self.resource.Object(self.bucket_name, key).delete()
+                return self.resource.Object(bucket_name=self.bucket_name, key=key).delete()
             except:
                 return False
         else:
-            return self.resource.Object(self.bucket_name, key).delete()
+            return self.resource.Object(bucket_name=self.bucket_name, key=key).delete()
 
     def create_bucket(self, bucket_name=None, catch_exception=True):
         if not bucket_name:

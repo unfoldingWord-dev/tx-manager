@@ -5,7 +5,6 @@ import tempfile
 import requests
 import logging
 import json
-import shutil
 from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
@@ -203,7 +202,7 @@ class ClientWebhook(object):
         if response.status_code != requests.codes.ok:
             job['status'] = 'failed'
             job['success'] = False
-            job['message'] = 'Failed to convert!'
+            job['message'] = 'Failed to convert'
 
             if response.text:
                 # noinspection PyBroadException
