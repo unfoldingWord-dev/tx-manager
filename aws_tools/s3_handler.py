@@ -91,7 +91,7 @@ class S3Handler(object):
             try:
                 return self.resource.Object(self.bucket_name, to_key).copy_from(
                     CopySource='{0}/{1}'.format(from_bucket, from_key))
-            except Exception:
+            except:
                 return False
         else:
             return self.resource.Object(self.bucket_name, to_key).copy_from(
@@ -123,7 +123,7 @@ class S3Handler(object):
         if catch_exception:
             try:
                 return self.get_object(key).get()['Body'].read()
-            except Exception:
+            except:
                 return None
         else:
             return self.get_object(key).get()['Body'].read()
@@ -132,7 +132,7 @@ class S3Handler(object):
         if catch_exception:
             try:
                 return json.loads(self.get_file_contents(key))
-            except Exception as e:
+            except:
                 return {}
         else:
             return json.loads(self.get_file_contents(key, catch_exception))
@@ -153,7 +153,7 @@ class S3Handler(object):
         if catch_exception:
             try:
                 return self.get_object(key).put(Body=body)
-            except Exception:
+            except:
                 return None
         else:
             return self.get_object(key).put(Body=body)
@@ -162,7 +162,7 @@ class S3Handler(object):
         if catch_exception:
             try:
                 return self.resource.Object(self.bucket_name, key).delete()
-            except Exception:
+            except:
                 return False
         else:
             return self.resource.Object(self.bucket_name, key).delete()
