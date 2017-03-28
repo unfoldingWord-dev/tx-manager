@@ -101,7 +101,26 @@ class TestMd2HtmlConverter(unittest.TestCase):
         tx = self.doTransformObs(file_name)
 
         #then
-        self.verifyTransform(expected_success, expected_errors, expected_warnings, tx)
+        self.verifyTransform(tx)
+
+    def test_MissingChapter01(self):
+        """
+        Runs the converter and verifies the output
+        """
+
+        # given
+        file_name = 'en-obs-missing_chapter_01.zip'
+        self.expected_warnings = 1
+        self.expected_errors = 0
+        self.expected_success = True
+        self.expected_info_empty = False;
+        missing_chapters = [1]
+
+        # when
+        tx = self.doTransformObs(file_name)
+
+        #then
+        self.verifyTransform(tx, missing_chapters)
 
 
 
@@ -114,7 +133,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
             self.return_val = tx.run()
         return tx
 
-    def verifyTransform(self, expected_success, expected_errors, expected_warnings, tx, missing_chapters = []):
+    def verifyTransform(self, tx, missing_chapters = []):
         self.assertTrue(os.path.isfile(self.out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(self.return_val, "There was no return value.")
         self.out_dir = tempfile.mkdtemp(prefix='obs_')
@@ -140,13 +159,14 @@ class TestMd2HtmlConverter(unittest.TestCase):
             contents = self.getContents(file_path)
             self.assertIsNone(contents, 'OBS HTML body contents present, but should not be: {0}'.format(os.path.basename(file_path)))
 
-        self.assertEqual(self.return_val['status'], expected_success)
+        self.assertEqual(self.return_val['status'], self.expected_success, "Mismatch in status")
+        self.assertEqual(len(self.return_val['info']) == 0, self.expected_info_empty, "Mismatch in expected info empty")
         for warning in self.return_val['warnings']:
             print("Warning: " + warning)
         for error in self.return_val['errors']:
             print("Error: " + error)
-        self.assertEqual(len(self.return_val['warnings']), expected_warnings)
-        self.assertEqual(len(self.return_val['errors']), expected_errors)
+        self.assertEqual(len(self.return_val['warnings']), self.expected_warnings, "Mismatch in expected warnings")
+        self.assertEqual(len(self.return_val['errors']), self.expected_errors, "Mismatch in expected errors")
 
     def getContents(self, file_path):
         if not os.path.isfile(file_path):
