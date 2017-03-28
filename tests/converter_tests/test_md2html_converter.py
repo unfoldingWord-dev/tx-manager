@@ -123,7 +123,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
         #then
         self.verifyTransform(tx, missing_chapters)
 
-
     def test_MissingFirstChunk(self):
         """
         Runs the converter and verifies the output
@@ -143,7 +142,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
         #then
         self.verifyTransform(tx, missing_chapters)
 
-
     def test_MissingChapter01(self):
         """
         Runs the converter and verifies the output
@@ -162,8 +160,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
 
         #then
         self.verifyTransform(tx, missing_chapters)
-
-
 
     def doTransformObs(self, file_name):
         zip_file_path = os.path.join(self.resources_dir, file_name)
