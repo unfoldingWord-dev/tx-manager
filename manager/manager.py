@@ -464,7 +464,8 @@ class TxManager(object):
 
     def generate_dashboard(self):
         """
-        Generate page with metrics indicating configuration of tx-manager
+        Generate page with metrics indicating configuration of tx-manager.
+
         :param dict event:
         :param context:
         :param DynamicDBHandler:

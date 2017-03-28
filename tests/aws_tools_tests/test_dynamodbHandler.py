@@ -16,9 +16,7 @@ class DynamoDBHandlerTests(unittest.TestCase):
         self.handler.table.reset_mock()
 
     def test_get_item(self):
-        """
-        Test a successful invocation of `get_item`
-        """
+        """Test a successful invocation of `get_item`."""
         expected = dict(field1="1", field2="2")
         self.handler.table.get_item.return_value = {
             "Item": expected
@@ -26,26 +24,20 @@ class DynamoDBHandlerTests(unittest.TestCase):
         self.assertEqual(self.handler.get_item("key"), expected)
 
     def test_get_item_malformed(self):
-        """
-        Test an unsuccessful invocation of `get_item`
-        """
+        """Test an unsuccessful invocation of `get_item`."""
         self.handler.table.get_item.return_value = {
             "TheWrongKey": dict(field1="1", field2="2")
         }
         self.assertIsNone(self.handler.get_item("key"))
 
     def test_insert_item(self):
-        """
-        Test a successful invocation of `insert_item`
-        """
+        """Test a successful invocation of `insert_item`."""
         data = dict(x="x", y="y", three=3)
         self.handler.insert_item(data)
         self.handler.table.put_item.assert_called_once_with(Item=data)
 
     def test_update_item(self):
-        """
-        Test a successful invocation of `update_item`
-        """
+        """Test a successful invocation of `update_item`."""
         key = {"id": 1}
         data = {"age": 40, "name": "John Doe"}
         self.handler.update_item(key, data)
@@ -71,17 +63,13 @@ class DynamoDBHandlerTests(unittest.TestCase):
                          {"#item_name": "name"})
 
     def test_delete_item(self):
-        """
-        Test a successful invocation of `delete_item`
-        """
+        """Test a successful invocation of `delete_item`."""
         key = {"id": 1234}
         self.handler.delete_item(key)
         self.handler.table.delete_item.assert_called_once_with(Key=key)
 
     def test_query_item(self):
-        """
-        Test a successful invocation of `query_item`
-        """
+        """ Test a successful invocation of `query_item`."""
         for cond in ("ne", "lt", "lte", "gt", "gte",
                      "begins_with", "is_in", "contains"):
             self.handler.table.reset_mock()
@@ -101,9 +89,7 @@ class DynamoDBHandlerTests(unittest.TestCase):
             self.handler.table.scan.assert_called_once()
 
     def test_query_item_no_query(self):
-        """
-        Test a invocation of `query_item` with no query
-        """
+        """Test a invocation of `query_item` with no query."""
         data = {"age": 30, "full_name": "John Doe"}
         self.handler.table.scan.return_value = {"Items": data}
         self.assertEqual(self.handler.query_items(), data)

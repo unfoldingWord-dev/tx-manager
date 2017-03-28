@@ -285,6 +285,7 @@ class ClientWebhook(object):
     def str_to_class(class_name_string):
         """
         Gets a class from a string.
+
         :param str|unicode class_name_string: The string of the class name
         """
         return reduce(getattr, class_name_string.split("."), sys.modules[__name__])
@@ -292,6 +293,7 @@ class ClientWebhook(object):
     def download_repo(self, commit_url, repo_dir):
         """
         Downloads and unzips a git repository from Github or git.door43.org
+
         :param str|unicode commit_url: The URL of the repository to download
         :param str|unicode repo_dir:   The directory where the downloaded file should be unzipped
         :return: None
