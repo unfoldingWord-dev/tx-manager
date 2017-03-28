@@ -35,7 +35,16 @@ class S3Handler(object):
             self.bucket = self.resource.Bucket(self.bucket_name)
 
     def download_file(self, key, local_file):
-        self.resource.meta.client.download_file(self.bucket_name, key, local_file)
+        """
+        Download file from S3 bucket. Similar to s3.download_file except that does
+        not play nicely with moto, this however, does.
+        :param string key: object to download
+        :param string local_file: file to download to
+        """
+        body = self.resource.Object(self.bucket_name, key).get()['Body']
+        with open(local_file, 'wb') as f:
+            for chunk in iter(lambda: body.read(1024), b''):
+                f.write(chunk)
 
     # Downloads all the files in S3 that have a prefix of `key_prefix` from `bucket` to the `local` directory
     def download_dir(self, key_prefix, local):
@@ -89,7 +98,20 @@ class S3Handler(object):
                 CopySource='{0}/{1}'.format(from_bucket, from_key))
 
     def upload_file(self, path, key, cache_time=600):
-        self.bucket.upload_file(path, key, ExtraArgs={'ContentType': get_mime_type(path), 'CacheControl': 'max-age={0}'.format(cache_time)})
+        """
+        Upload file to S3 storage. Similar to the s3.upload_file, however, that
+        does not work nicely with moto, whereas this function does.
+        :param string path: file to upload
+        :param string key: name of the object in the bucket
+        """
+        with open(path, 'rb') as f:
+            binary = f.read()
+        self.bucket.put_object(
+            Key=key,
+            Body=binary,
+            ContentType=get_mime_type(path),
+            CacheControl='max-age={0}'.format(cache_time)
+        )
 
     def get_object(self, key):
         return self.resource.Object(bucket_name=self.bucket_name, key=key)
@@ -109,8 +131,8 @@ class S3Handler(object):
     def get_json(self, key, catch_exception = True):
         if catch_exception:
             try:
-               return json.loads(self.get_file_contents(key))
-            except Exception:
+                return json.loads(self.get_file_contents(key))
+            except Exception as e:
                 return {}
         else:
             return json.loads(self.get_file_contents(key, catch_exception))
@@ -127,6 +149,15 @@ class S3Handler(object):
                 filtered = objects
         return filtered
 
+    def put_contents(self, key, body, catch_exception=True):
+        if catch_exception:
+            try:
+                return self.get_object(key).put(Body=body)
+            except Exception:
+                return None
+        else:
+            return self.get_object(key).put(Body=body)
+
     def delete_file(self, key, catch_exception=True):
         if catch_exception:
             try:
@@ -135,3 +166,14 @@ class S3Handler(object):
                 return False
         else:
             return self.resource.Object(self.bucket_name, key).delete()
+
+    def create_bucket(self, bucket_name=None, catch_exception=True):
+        if not bucket_name:
+            bucket_name = self.bucket_name
+        if catch_exception:
+            try:
+                return self.resource.create_bucket(Bucket=bucket_name)
+            except:
+                return None
+        else:
+            return self.resource.create_bucket(Bucket=bucket_name)
