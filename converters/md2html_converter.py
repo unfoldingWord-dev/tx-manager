@@ -24,7 +24,7 @@ class Md2HtmlConverter(Converter):
 
         for filename in files:
             if filename.endswith('.md'):
-                # Convert files tat are markdown files
+                # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
                 html = markdown.markdown(md)
@@ -42,6 +42,14 @@ class Md2HtmlConverter(Converter):
                     inspector.run()
                 except Exception as e:
                     self.logger.warning('Chapter {0}: failed to run OBS inspector: {1}'.format(base_name, e.message))
+
+                # copy over warnings and errors
+                for warning in inspector.logger.logs["warning"]:
+                    self.logger.warning(warning)
+                for error in inspector.logger.logs["error"]:
+                    self.logger.error(error)
+
+
             else:
                 # Directly copy over files that are not markdown files
                 try:
