@@ -55,19 +55,6 @@ class TestUsfmPreprocessor(unittest.TestCase):
         return self.out_dir
 
 
-    # def test_PackageResource(self):
-    #
-    #     #given
-    #     resource = 'converted_projects'
-    #     repo_name = 'aab_obs_text_obs-complete'
-    #
-    #     # when
-    #     zip_file = self.packageResource(resource, repo_name)
-    #
-    #     #then
-    #     print(zip_file)
-
-
     @classmethod
     def createZipFile(self, zip_filename, destination_folder, source_folder):
         zip_filepath = os.path.join(destination_folder, zip_filename)
