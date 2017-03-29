@@ -42,14 +42,9 @@ class Converter(object):
         Custom converters
 
         need to add a `convert_<resource>(self)` method for every resource it converts
-<<<<<<< HEAD
         """
         convert_method = getattr(self, "convert_{0}".format(self.resource), None)
 
-=======
-        convert_method = getattr(self, "convert_{0}".format(self.resource), None)
-        """
->>>>>>> 5f13249020c697be2006a2b27746662ee85ecedd
         if convert_method and callable(convert_method):
             try:
                 if not self.input_zip_file or not os.path.exists(self.input_zip_file):
