@@ -11,7 +11,9 @@ from door43_tools import templaters
 
 class ProjectDeployer(object):
     """
-    Deploys a project's revision to the door43.org bucket from the project's user dir in the cdn.door43.org bucket
+    Deploys a project's revision to the door43.org bucket
+
+    Read from the project's user dir in the cdn.door43.org bucket
     by applying the door43.org template to the raw html files
     """
 
@@ -157,6 +159,7 @@ class ProjectDeployer(object):
     def str_to_class(str):
         """
         Gets a class from a string.
+
         :param str|unicode str: The string of the class name
         """
         return reduce(getattr, str.split("."), sys.modules[__name__])

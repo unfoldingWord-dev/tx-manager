@@ -12,9 +12,7 @@ from general_tools import file_utils
 class FileUtilsTests(unittest.TestCase):
 
     def setUp(self):
-        """
-        Runs before each test
-        """
+        """Runs before each test."""
         self.tmp_dir = ""
         self.tmp_dir1 = ""
         self.tmp_dir2 = ""
@@ -25,9 +23,10 @@ class FileUtilsTests(unittest.TestCase):
 
     def tearDown(self):
         """
-        Runs after each test
+        Runs after each test.
+
+        Delete temp files
         """
-        # delete temp files
         if os.path.isdir(self.tmp_dir):
             shutil.rmtree(self.tmp_dir, ignore_errors=True)
         if os.path.isdir(self.tmp_dir1):

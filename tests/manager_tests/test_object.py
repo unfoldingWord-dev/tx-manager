@@ -18,9 +18,7 @@ class MyObject(TxObject):
 class ObjectTest(unittest.TestCase):
 
     def test_populate(self):
-        """
-        Test populate method
-        """
+        """Test populate method."""
         obj = MyObject()
         data = {
             'field1': 'value1',

@@ -12,16 +12,12 @@ class TestTemplater(unittest.TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
-        """
-        Runs before each test
-        """
+        """Runs before each test."""
         self.out_dir = ''
         self.temp_dir = ""
 
     def tearDown(self):
-        """
-        Runs after each test
-        """
+        """Runs after each test."""
         # delete temp files
         if os.path.isdir(self.out_dir):
             shutil.rmtree(self.out_dir, ignore_errors=True)

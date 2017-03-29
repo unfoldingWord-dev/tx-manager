@@ -49,9 +49,13 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
     def __init__(self, *args, **kwargs):
         super(TsObsMarkdownPreprocessor, self).__init__(*args, **kwargs)
 
-    # Get a chapter title, if the title file does not exist, it will hand back the number with a period only.
-    #
+
     def get_chapter_title(self, chapter):
+        """
+        Get a chapter title.
+
+        if the title file does not exist, it will hand back the number with a period only.
+        """
         title_file = os.path.join(self.source_dir, chapter, 'title.txt')
         title = chapter.lstrip('0') + '. '
         if os.path.exists(title_file):
@@ -59,9 +63,9 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
             title = contents.strip()
         return title
 
-    # Get the chapters reference text
-    #
+
     def get_chapter_reference(self, chapter):
+        """Get the chapters reference text"""
         reference_file = os.path.join(self.source_dir, chapter, 'reference.txt')
         reference = ''
         if os.path.exists(reference_file):
@@ -138,8 +142,9 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
             chapter_content += read_file(chapter) + '\n'
         return chapter_content + '\n\n'
 
-    # Get the title of the project
+
     def get_title(self):
+        """ Get the title of the project"""
         for root, dirnames, filenames in os.walk(self.source_dir):
             for filename in fnmatch.filter(filenames, 'title.txt'):
                 return read_file(os.path.join(root, filename))

@@ -39,9 +39,7 @@ class ManagerTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """
-        Create mock AWS handlers, and apply corresponding monkey patches
-        """
+        """Create mock AWS handlers, and apply corresponding monkey patches."""
         cls.mock_job_db = mock_utils.mock_db_handler(data={
             0: {
                 "job_id": 0,
@@ -142,9 +140,7 @@ class ManagerTest(unittest.TestCase):
             patch.stop()
 
     def test_setup_job(self):
-        """
-        Successful call of setup_job
-        """
+        """Successful call of setup_job."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
         data = {
             "gogs_user_token": "token1",
@@ -164,9 +160,7 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(arg["cdn_bucket"], "test_cdn_bucket")
 
     def test_setup_job_bad_requests(self):
-        """
-        Tests bad calls of setup_job due to missing or bad input
-        """
+        """Tests bad calls of setup_job due to missing or bad input."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.cdn_bucket = None
 
@@ -243,9 +237,7 @@ class ManagerTest(unittest.TestCase):
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
     def test_setup_job_malformed_input(self):
-        """
-        Call setup_job with malformed data arguments
-        """
+        """Call setup_job with malformed data arguments."""
         tx_manager = TxManager()
         data = {
             "gogs_user_token": "token1",
@@ -266,9 +258,7 @@ class ManagerTest(unittest.TestCase):
         self.assertRaises(Exception, tx_manager.setup_job, bad_token)
 
     def test_setup_job_no_converter(self):
-        """
-        Call setup_job when there is no applicable converter.
-        """
+        """Call setup_job when there is no applicable converter."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
         data = {
             "gogs_user_token": "token1",
@@ -284,8 +274,9 @@ class ManagerTest(unittest.TestCase):
     @mock.patch('requests.post')
     def test_start_job1(self, mock_requests_post):
         """
-        Call start job in job 1 from mock data. Should be a successful
-        invocation with warnings.
+        Call start job in job 1 from mock data.
+
+        Should be a successful invocation with warnings.
         """
         mock_requests_post.return_value = MockResponse({
             'Payload': {
@@ -317,8 +308,9 @@ class ManagerTest(unittest.TestCase):
     @mock.patch('requests.post')
     def test_start_job2(self, mock_requests_post):
         """
-        Call start_job in job 2 from mock data. Should be a successful
-        invocation without warnings.
+        Call start_job in job 2 from mock data.
+
+        Should be a successful invocation without warnings.
         """
         mock_requests_post.return_value = MockResponse({
             'Payload': {
@@ -348,7 +340,10 @@ class ManagerTest(unittest.TestCase):
     @mock.patch('requests.post')
     def test_start_job3(self, mock_requests_post):
         """
-        Call start_job on job 3 from mock data. Invocation should result in an error
+        Call start_job on job 3 from mock data.
+
+        Invocation should result in an error
+
         :param mock_requests_post mock.MagicMock:
         :return:
         """
@@ -378,9 +373,7 @@ class ManagerTest(unittest.TestCase):
         self.assertTrue(len(data["errors"]) > 0)
 
     def test_start_job_failure(self):
-        """
-        Call start_job with non-runnable/non-existent jobs
-        """
+        """Call start_job with non-runnable/non-existent jobs."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
         ret0 = tx_manager.start_job(0)
         ret4 = tx_manager.start_job(4)
@@ -407,9 +400,7 @@ class ManagerTest(unittest.TestCase):
         self.assertTrue(len(data["errors"]) > 0)
 
     def test_list_jobs(self):
-        """
-        Test list_jobs and list_endpoint methods
-        """
+        """Test list_jobs and list_endpoint methods."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
         jobs = tx_manager.list_jobs({"gogs_user_token": "token2"}, True)
         expected = [TxJob(job).get_db_data()
@@ -470,9 +461,7 @@ class ManagerTest(unittest.TestCase):
                     self.assertEqual(mock_stdout.getvalue(), "Hello world\n")
 
     def test_get_update_delete_job(self):
-        """
-        Test [get/update/delete]_job methods
-        """
+        """Test [get/update/delete]_job methods."""
         manager = TxManager(**self.tx_manager_env_vars)
 
         # get_job
@@ -495,9 +484,7 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(args[0], {"job_id": 0})
 
     def test_get_update_delete_module(self):
-        """
-        Test [get/update/delete]_module methods
-        """
+        """Test [get/update/delete]_module methods."""
         manager = TxManager(**self.tx_manager_env_vars)
 
         # get_module

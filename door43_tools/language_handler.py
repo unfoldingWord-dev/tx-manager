@@ -6,7 +6,8 @@ from general_tools.url_utils import get_url
 class Language(object):
     def __init__(self, json_obj=None):
         """
-        Class constructor. Optionally accepts an object for initialization.
+        Optionally accepts an object for initialization.
+
         :param object json_obj: An object to initialize the instance member variables
         """
         # deserialize

@@ -31,15 +31,19 @@ class Converter(object):
         self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource), suffix='.zip')
 
     def close(self):
-        # delete temp files
+        """delete temp files"""
         remove_tree(self.download_dir)
         remove_tree(self.files_dir)
         remove_tree(self.output_dir)
         remove(self.output_zip_file)
 
     def run(self):
-        # Custom converters need to add a `convert_<resource>(self)` method for every resource it converts
+        """
+        Custom converters
+
+        need to add a `convert_<resource>(self)` method for every resource it converts
         convert_method = getattr(self, "convert_{0}".format(self.resource), None)
+        """
         if convert_method and callable(convert_method):
             try:
                 if not self.input_zip_file or not os.path.exists(self.input_zip_file):

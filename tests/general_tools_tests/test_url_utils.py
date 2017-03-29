@@ -9,15 +9,11 @@ from general_tools import url_utils
 class UrlUtilsTests(unittest.TestCase):
 
     def setUp(self):
-        """
-        Runs before each test
-        """
+        """Runs before each test."""
         self.tmp_file = ""
 
     def tearDown(self):
-        """
-        Runs after each test
-        """
+        """Runs after each test."""
         # delete temp files
         if os.path.isfile(self.tmp_file):
             os.remove(self.tmp_file)

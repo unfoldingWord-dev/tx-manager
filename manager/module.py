@@ -17,7 +17,7 @@ class TxModule(TxObject):
     ]
 
     def __init__(self, data, quiet=False):
-        # Init attributes
+        """Init attributes"""
         self.name = None
         self.input_format = None
         self.options = []

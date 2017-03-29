@@ -8,7 +8,8 @@ class MockHandler(Handler):
 
     def _handle(self, event, context):
         """
-        Test if this method is called
+        Test if this method is called.
+
         :param event:
         :param context:
         :return:
@@ -20,7 +21,8 @@ class TestHandler(TestCase):
 
     def test_inheritance(self):
         """
-        This tests if the inheritance from Handler is working correctly
+        This tests if the inheritance from Handler is working correctly.
+
         :return: None
         """
 
