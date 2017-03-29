@@ -42,7 +42,8 @@ setup(
         'future==0.16.0',
         'pyparsing==2.1.10',
         'usfm-tools==0.0.8',
-        'mock'  # travis reports syntax error in mock setup.cfg if we give version
+        'mock',  # travis reports syntax error in mock setup.cfg if we give version
+        'moto==0.4.31'
     ],
     test_suite='tests'
 )
