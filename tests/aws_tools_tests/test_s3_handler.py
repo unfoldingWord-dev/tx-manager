@@ -6,12 +6,19 @@ import unittest
 from botocore.exceptions import ClientError
 from unittest import TestCase
 from aws_tools.s3_handler import S3Handler
+from moto import mock_s3
 
 
+@mock_s3
 class S3HandlerTests(TestCase):
+    MOCK_BUCKET_NAME = "test-bucket"
+
+    resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
+
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp(prefix='s3HandlerTest_')
-        self.handler = S3Handler(bucket_name='test-tx-manager')
+        self.handler = S3Handler(bucket_name=self.MOCK_BUCKET_NAME)
+        self.handler.create_bucket()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir+'asdfa', ignore_errors=True)
@@ -22,41 +29,58 @@ class S3HandlerTests(TestCase):
         self.assertEqual(myHandler.aws_secret_access_key, 'secret_key')
         self.assertEqual(myHandler.aws_region_name, 'us-west-1')
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
     def test_download_dir(self):
-        self.handler.download_dir('test-s3-handler-download-dir', self.temp_dir)
-        self.assertTrue(os.path.isfile(os.path.join(self.temp_dir, 'test-s3-handler-download-dir', 'test.json')))
-        shutil.rmtree(os.path.join(self.temp_dir, 'test-s3-handler-download-dir'), ignore_errors=True)
+        key = 'from_dir/from_subdir/from_file.txt'
+        self.handler.put_contents(key, 'this exists')
+        self.handler.download_dir(key.split('/')[0], self.temp_dir)
+        self.assertTrue(os.path.isfile(os.path.join(self.temp_dir, key)))
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
+    def test_upload_file(self):
+        self.handler.upload_file(os.path.join(self.resources_dir, 'test_file.zip'), 'test/me/out.zip')
+
     def test_key_exists(self):
-        self.assertTrue(self.handler.key_exists('test-s3-handler-key-exists/exists.json'))
+        self.handler.put_contents('exists.json', 'this exists')
+        self.assertTrue(self.handler.key_exists('exists.json'))
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
     def test_key_does_not_exists(self):
-        self.assertFalse(self.handler.key_exists(key='test-s3-handler-key-exists/does_not_exists.json', bucket_name='test-tx-manager'))
+        self.assertFalse(self.handler.key_exists(key='does_not_exists.json', bucket_name=self.MOCK_BUCKET_NAME))
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
-    def test_key_exists_bad_bucket(self):
-        self.assertRaises(ClientError, self.handler.key_exists, key='test-s3-handler-key-exists/does_not_exists.json', bucket_name='bad_bucket')
-
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
     def test_copy_good(self):
-        ret = self.handler.copy(from_key="from_dir/from_file", to_key="to_dir/to_file", from_bucket="test-tx-manager2")
+        self.handler.put_contents('from/file.txt', 'this exists')
+        ret = self.handler.copy(from_key="from/file.txt", to_key="to/file.txt", from_bucket=self.MOCK_BUCKET_NAME)
         self.assertTrue(ret)
+        contents = self.handler.get_file_contents('from/file.txt')
+        self.assertEqual(contents, 'this exists')
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
     def test_copy_bad(self):
-        ret = self.handler.copy(from_key="from_bad_dir/from_bad_file")
+        ret = self.handler.copy(from_key="from/not_exist.txt")
         self.assertFalse(ret)
-        self.assertRaises(Exception, self.handler.copy, from_key="from_bad_dir/from_bad_file", catch_exception=False)
+        self.assertRaises(Exception, self.handler.copy, from_key="from/not_exist.txt", catch_exception=False)
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
     def test_get_file_contents_good(self):
-        self.assertEqual('test\n', self.handler.get_file_contents("test-s3-handler-get-file-contents/test.txt"))
+        self.handler.put_contents('exists.json', 'this exists')
+        self.assertEqual('this exists', self.handler.get_file_contents('exists.json'))
 
-    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true", "Skipping this test on Travis CI.")
     def test_get_file_contents_bad(self):
-        ret = self.handler.get_file_contents("from_bad_dir/from_bad_file")
+        ret = self.handler.get_file_contents("from/from_bad.txt")
         self.assertFalse(ret)
         self.assertRaises(Exception, self.handler.get_file_contents, key="from_bad_dir/from_bad_file", catch_exception=False)
+
+    def test_create_bucket(self):
+        handler = S3Handler()
+        bucket_name = "my_test_bucket"
+        handler.create_bucket(bucket_name)
+        try:
+            handler.resource.meta.client.head_bucket(Bucket=bucket_name)
+        except ClientError:
+            self.fail("Was not able to create bucket!")
+
+    def test_put_contents(self):
+        bucket_name = "my_test_bucket"
+        handler = S3Handler(bucket_name)
+        handler.create_bucket()
+        key = "contents/goes/here"
+        contents = "This is a test"
+        handler.put_contents(key, contents)
+        file_contents = handler.get_file_contents(key)
+        self.assertEqual(file_contents, contents)

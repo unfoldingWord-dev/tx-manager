@@ -19,6 +19,10 @@ class ListEndpointsHandler(Handler):
             data.update(event['body-json'])
         # Set required env_vars
         env_vars = {
-            'api_url': self.retrieve(event['vars'], 'api_url', 'Environment Vars')
+            'api_url': self.retrieve(event['vars'], 'api_url', 'Environment Vars'),
+            'gogs_url': self.retrieve(event['vars'], 'gogs_url', 'Environment Vars'),
+            'cdn_url': self.retrieve(event['vars'], 'cdn_url', 'Environment Vars'),
+            'job_table_name': self.retrieve(event['vars'], 'job_table_name', 'Environment Vars'),
+            'module_table_name': self.retrieve(event['vars'], 'module_table_name', 'Environment Vars')
         }
         return TxManager(**env_vars).list_endpoints()

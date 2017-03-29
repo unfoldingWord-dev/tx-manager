@@ -23,7 +23,10 @@ class Handler(object):
     @abstractmethod
     def _handle(self, event, context):
         """
-        Dummy function for handlers. Override this so handle() will catch the exception and make it a "Bad Request: "
+        Dummy function for handlers.
+
+        Override this so handle() will catch the exception and make it a "Bad Request: "
+
         :param dict event:
         :param context:
         :return dict:
@@ -33,8 +36,10 @@ class Handler(object):
     @staticmethod
     def retrieve(dictionary, key, dict_name=None):
         """
-        Retrieves a value from a dictionary, raising an error message if the
-        specified key is not valid
+        Retrieves a value from a dictionary.
+
+        raises an error message if the specified key is not valid
+
         :param dict dictionary:
         :param any key:
         :param str|unicode dict_name: name of dictionary, for error message

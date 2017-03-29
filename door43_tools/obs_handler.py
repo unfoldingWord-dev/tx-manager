@@ -12,7 +12,8 @@ from obs_data import obs_data
 class OBSStatus(object):
     def __init__(self, content_dir=None):
         """
-        Class constructor. Takes a path to a directory
+        Takes a path to a directory
+
         :param object content_dir: Path to the directory of OBS manifest file
         """
         self.content_dir = content_dir
@@ -30,7 +31,8 @@ class OBSStatus(object):
 class OBSInspection(object):
     def __init__(self, filename, chapter=None):
         """
-        Class constructor. Takes a path to an OBS chapter and the chapter of the given file
+        Takes a path to an OBS chapter and the chapter of the given file.
+
         :param string filename: Path to the OBS chapter file
         :param string chapter: Chapter being processed
         """

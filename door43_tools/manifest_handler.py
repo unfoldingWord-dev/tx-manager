@@ -13,7 +13,8 @@ class Manifest(object):
 
     def __init__(self, file_name=None, meta=None, repo_name=None, files_path=None):
         """
-        Class constructor. Optionally accepts the name of a file to deserialize.
+        Optionally accepts the name of a file to deserialize.
+
         :param str file_name: The name of a file to deserialize into a Manifest object
         """
         # Defaults

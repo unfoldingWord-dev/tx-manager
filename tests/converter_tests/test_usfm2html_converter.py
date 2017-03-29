@@ -15,36 +15,26 @@ class TestUsfmHtmlConverter(unittest.TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
-        """
-        Runs before each test
-        """
+        """Runs before each test."""
         self.out_dir = ''
 
     def tearDown(self):
-        """
-        Runs after each test
-        """
+        """Runs after each test."""
         # delete temp files
         remove_tree(self.out_dir)
 
     @classmethod
     def setUpClass(cls):
-        """
-        Called before tests in this class are run
-        """
+        """Called before tests in this class are run."""
         pass
 
     @classmethod
     def tearDownClass(cls):
-        """
-        Called after tests in this class are run
-        """
+        """Called after tests in this class are run."""
         pass
 
     def test_close(self):
-        """
-        This tests that the temp directories are deleted when the class is closed
-        """
+        """This tests that the temp directories are deleted when the class is closed."""
 
         with closing(Usfm2HtmlConverter('', '', '', '', {})) as tx:
             download_dir = tx.download_dir
@@ -62,9 +52,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.assertFalse(os.path.isdir(out_dir))
 
     def test_run(self):
-        """
-        Runs the converter and verifies the output
-        """
+        """Runs the converter and verifies the output."""
         # test with the English OBS
         zip_file = self.resources_dir+"/eight_bible_books.zip"
         out_zip_file = tempfile.mktemp('.zip')

@@ -11,9 +11,7 @@ UNDERLINE = '\033[4m'
 
 
 def print_with_header(header, message, color, indent=0):
-    """
-    Use one of the functions below for printing, not this one.
-    """
+    """Use one of the functions below for printing, not this one."""
     print()
     padding = ' ' * indent
     print(padding + color + BOLD + header + ENDC + color + message + ENDC)

@@ -27,7 +27,9 @@ class TestRegisterModuleHandler(TestCase):
                 'gogs_url': 'https://git.example.com',
                 'cdn_url': 'https://cdn.exmaple.com',
                 'api_url': 'https://api.example.com',
-                'cdn_bucket': 'cdn_test_bucket'
+                'cdn_bucket': 'cdn_test_bucket',
+                'job_table_name': 'test-tx-job',
+                'module_table_name': 'test-tx-module'
             }
         }
         handler = RegisterModuleHandler()
