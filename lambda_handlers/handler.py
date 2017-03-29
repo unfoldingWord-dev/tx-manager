@@ -18,8 +18,7 @@ class Handler(object):
         try:
             return self._handle(event, context)
         except Exception as e:
-            raise
-#            raise EnvironmentError('Bad Request: {}'.format(e.message))
+            raise EnvironmentError('Bad Request: {}'.format(e.message))
 
     @abstractmethod
     def _handle(self, event, context):

@@ -50,9 +50,11 @@ class Templater(object):
         return html
 
     def build_page_nav(self, filename=None):
-        html = '<nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">' \
-               '  <ul id="sidebar-nav" class="nav nav-stacked affix">' \
-               '    <li><h1>Navigation</h1></li>'
+        html = """
+            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+              <ul id="sidebar-nav" class="nav nav-stacked affix">
+                <li><h1>Navigation</h1></li>
+            """
         for fname in self.files:
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
                 soup = BeautifulSoup(f, 'html.parser')
@@ -60,12 +62,14 @@ class Templater(object):
                 title = soup.h1.text
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
-            html += '    <li>{0}{1}{2}</li>'.\
-                format('<a href="{0}">'.format(os.path.basename(fname)) if filename != fname else '',
-                       title,
-                       '</a>' if filename != fname else '')
-        html += '  </ul>' \
-                '</nav>'
+            if filename != fname:
+                html += '<li><a href="{0}">{1}</a></li>'.format(os.path.basename(fname),title)
+            else:
+                html += '<li>{0}</li>'.format(title)
+        html += """
+                </ul>
+            </nav>
+            """
         return html
 
     def apply_template(self):
@@ -136,7 +140,7 @@ class Templater(object):
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
-            for a_tag in template.body.find_all('a[rel="dct:source"]'):
+            for a_tag in template.body.select('a[rel="dct:source"]'):
                 a_tag.clear()
                 a_tag.append(title)
 
@@ -171,3 +175,46 @@ class ObsTemplater(Templater):
 class BibleTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(BibleTemplater, self).__init__(*args, **kwargs)
+
+    def build_page_nav(self, filename=None):
+
+        html = """
+        <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
+            """
+        for fname in self.files:
+            base = os.path.splitext(os.path.basename(fname))[0]
+            (ch_num, ch_name) = base.split('-')
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f.read(), 'html.parser')
+            if soup.find('h1'):
+                title = soup.find('h1').text
+            else:
+                title = '{0}.'.format(ch_name)
+            html += """
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            <a class="accordion-toggle" data-toggle="collapse" data-parent="#sidebar-nav" href="#collapse{0}">{1}</a>
+                        </h4>
+                    </div>
+                    <div id="collapse{0}" class="panel-collapse collapse{2}">
+                        <ul class="panel-body chapters">
+                    """.format(ch_name, title, ' in' if fname == filename else '')
+            for chapter in soup.find_all('h2', {'c-num'}):
+                print(chapter['id'])
+                html += """
+                       <li class="chapter"><a href="{0}#{1}">{2}</a></li>
+                    """.format(os.path.basename(fname) if fname != filename else '', chapter['id'],
+                               chapter['id'].split('-')[1].lstrip('0'))
+            html += """
+                        </ul>
+                    </div>
+                </div>
+                    """
+        html += """
+            </ul>
+        </nav>
+            """
+        print(html)
+        return html
