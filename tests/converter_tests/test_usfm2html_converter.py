@@ -1,4 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
+
+import codecs
+
 import os
 import tempfile
 import unittest
@@ -78,6 +81,37 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         for file_to_verify in files_to_verify:
             file_name = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))
+
+    def test_PhpComplete(self):
+        """
+        Runs the converter and verifies the output
+        """
+        # test with the English OBS
+        zip_file = self.resources_dir+"/51-PHP.zip"
+        out_zip_file = tempfile.mktemp('.zip')
+        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
+            tx.input_zip_file = zip_file
+            tx.run()
+        # verify the output
+        self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
+        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        unzip(out_zip_file, self.out_dir)
+        remove(out_zip_file)
+        files_to_verify = ['51-PHP.html']
+        self.verifyFiles(files_to_verify)
+
+    def verifyFiles(self, files_to_verify):
+        for file_to_verify in files_to_verify:
+            file_name = os.path.join(self.out_dir, file_to_verify)
+            self.assertTrue(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))
+
+            usfm = None
+            with codecs.open(file_name, 'r', 'utf-8-sig') as usfm_file:
+                usfm = usfm_file.read()
+
+            self.assertIsNotNone(usfm);
+            self.assertTrue(len(usfm) > 10, 'Bible usfm file contents missing: {0}'.format(file_to_verify))
+
 
 if __name__ == '__main__':
     unittest.main()
