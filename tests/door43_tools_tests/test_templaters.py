@@ -36,10 +36,9 @@ class TestTemplater(unittest.TestCase):
         # then
         self.verifyTemplater(success, expect_success, deployer.output_dir)
 
-
     def testCommitToDoor43Empty(self):
         # given
-        test_folder_name = "converted_projects/aae_obs_text_obs-empty.zip"
+        test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
         expect_success = True
         missing_chapters = range(1, 51)
         test_file_path = self.extractZipFiles(test_folder_name)
@@ -66,7 +65,7 @@ class TestTemplater(unittest.TestCase):
 
     def testCommitToDoor43MissingChapter50(self):
         # given
-        test_folder_name = "converted_projects/aai_obs_text_obs-missing_chapter_50.zip"
+        test_folder_name = os.path.join('converted_projects', 'aai_obs_text_obs-missing_chapter_50.zip')
         expect_success = True
         missing_chapters = [50]
         test_file_path = self.extractZipFiles(test_folder_name)
@@ -90,7 +89,7 @@ class TestTemplater(unittest.TestCase):
         return self.temp_dir
 
     def doTemplater(self, test_folder_name):
-        template_file = os.path.join(self.resources_dir, 'templates/obs.html')
+        template_file = os.path.join(self.resources_dir, 'templates', 'obs.html')
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         success = True
         templater = Templater(test_folder_name, self.out_dir, template_file)

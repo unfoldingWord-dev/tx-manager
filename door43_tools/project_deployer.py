@@ -138,7 +138,7 @@ class ProjectDeployer(object):
         for root, dirs, files in os.walk(output_dir):
             for f in sorted(files):
                 path = os.path.join(root, f)
-                key = s3_commit_key + path.replace(output_dir, '')
+                key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
                 print("Uploading {0} to {1}".format(path, key))
                 self.door43_handler.upload_file(path, key, 0)
 
@@ -148,7 +148,6 @@ class ProjectDeployer(object):
             self.door43_handler.copy(from_key='{0}/manifest.json'.format(s3_commit_key), to_key='{0}/manifest.json'.format(s3_repo_key))
             self.door43_handler.redirect(s3_repo_key, '/' + s3_commit_key)
             self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
-
         except Exception:
             pass
 

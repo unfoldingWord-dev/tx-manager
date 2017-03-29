@@ -136,7 +136,7 @@ class Templater(object):
             template.html['lang'] = language_code
             template.head.title.clear()
             template.head.title.append(heading+' - '+title)
-            for a_tag in template.body.select('a[rel="dct:source"]'):
+            for a_tag in template.body.find_all('a[rel="dct:source"]'):
                 a_tag.clear()
                 a_tag.append(title)
 

@@ -111,7 +111,6 @@ class TestObsPreprocessor(unittest.TestCase):
         manifest = Manifest(file_name=manifest_path, repo_name=repo_name, files_path=repo_dir, meta=meta)
         return manifest, repo_dir, temp_dir
 
-
     def verifyTransform(self, folder, missing_chapters = []):
         files_to_verify = []
         files_missing = []
@@ -130,7 +129,3 @@ class TestObsPreprocessor(unittest.TestCase):
         for file_to_verify in files_missing:
             file_name = os.path.join(folder, file_to_verify)
             self.assertFalse(os.path.isfile(file_name), 'OBS md file present, but should not be: {0}'.format(file_to_verify))
-
-
-
-
