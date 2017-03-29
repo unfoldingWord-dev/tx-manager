@@ -54,20 +54,6 @@ class TestUsfmPreprocessor(unittest.TestCase):
         compiler.run()
         return self.out_dir
 
-
-    @classmethod
-    def createZipFile(self, zip_filename, destination_folder, source_folder):
-        zip_filepath = os.path.join(destination_folder, zip_filename)
-        add_contents_to_zip(zip_filepath, source_folder)
-        return zip_filepath
-
-    def packageResource(self, resource, repo_name):
-        source_folder = os.path.join(TestUsfmPreprocessor.resources_dir, resource, repo_name)
-        self.temp_dir = tempfile.mkdtemp(prefix='repo_')
-        zip_filepath = TestUsfmPreprocessor.createZipFile(repo_name + ".zip", self.temp_dir, source_folder)
-        return zip_filepath
-
-
     @classmethod
     def extractObsFiles(self, file_name, repo_name):
         file_path = os.path.join(TestUsfmPreprocessor.resources_dir, file_name)
