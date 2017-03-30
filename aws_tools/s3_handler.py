@@ -55,8 +55,8 @@ class S3Handler(object):
                     self.download_dir(subdir.get('Prefix'), local)
             if result.get('Contents') is not None:
                 for file in result.get('Contents'):
-                    local_file = os.path.join(local, file.get('Key').replace('/', os.path.sep))
-                    if local_file.endswith(os.path.sep):
+                    local_file = os.path.join(local, file.get('Key'))
+                    if local_file.endswith('/'):
                         pass
                     else:
                         if not os.path.exists(os.path.dirname(local_file)):

@@ -59,7 +59,7 @@ class ProjectDeployer(object):
         template_dir = tempfile.mkdtemp(prefix='template_')
 
         self.cdn_handler.download_dir(s3_commit_key, source_dir)
-        source_dir = os.path.join(source_dir, s3_commit_key.replace('/', os.path.sep))
+        source_dir = os.path.join(source_dir, s3_commit_key)
 
         resource_type = build_log['resource_type']
         if resource_type == 'ulb' or resource_type == 'udb':
@@ -138,7 +138,7 @@ class ProjectDeployer(object):
         for root, dirs, files in os.walk(output_dir):
             for f in sorted(files):
                 path = os.path.join(root, f)
-                key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
+                key = s3_commit_key + path.replace(output_dir, '')
                 print("Uploading {0} to {1}".format(path, key))
                 self.door43_handler.upload_file(path, key, 0)
 

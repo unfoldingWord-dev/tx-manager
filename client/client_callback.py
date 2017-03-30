@@ -57,7 +57,7 @@ class ClientCallback(object):
         for root, dirs, files in os.walk(unzip_dir):
             for f in sorted(files):
                 path = os.path.join(root, f)
-                key = s3_commit_key + path.replace(unzip_dir, '').replace(os.path.sep, '/')
+                key = s3_commit_key + path.replace(unzip_dir, '')
                 print('Uploading {0} to {1}'.format(f, key))
                 cdn_handler.upload_file(path, key)
 
