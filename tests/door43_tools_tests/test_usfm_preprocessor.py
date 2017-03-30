@@ -73,10 +73,10 @@ class TestUsfmPreprocessor(unittest.TestCase):
         return manifest, repo_dir, temp_dir
 
     def runTsUsfmMarkdownPreprocessor(self, manifest, repo_dir):
-            self.out_dir = tempfile.mkdtemp(prefix='output_')
-            compiler = TsBibleUsfmPreprocessor(manifest, repo_dir, self.out_dir)
-            compiler.run()
-            return self.out_dir
+        self.out_dir = tempfile.mkdtemp(prefix='output_')
+        compiler = TsBibleUsfmPreprocessor(manifest, repo_dir, self.out_dir)
+        compiler.run()
+        return self.out_dir
 
     def verifyTransform(self, folder, expectedName):
         file_name = os.path.join(folder, expectedName)
