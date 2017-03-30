@@ -44,6 +44,9 @@ class Usfm2HtmlConverter(Converter):
                 self.logger.info('Converted {0} to {1}.'.format(os.path.basename(filename),
                                                                 os.path.basename(html_filename)))
                 remove_tree(scratch_dir)
+
+                # TODO 3/30/17 BLM - should be an inspection here like OBS has?
+
             else:
                 # Directly copy over files that are not USFM files
                 try:
