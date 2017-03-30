@@ -10,7 +10,7 @@ from door43_tools.preprocessors import TsObsMarkdownPreprocessor
 from general_tools.file_utils import unzip, add_contents_to_zip
 
 
-class TestPreprocessor(unittest.TestCase):
+class TestObsPreprocessor(unittest.TestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -81,15 +81,15 @@ class TestPreprocessor(unittest.TestCase):
         return zip_filepath
 
     def packageResource(self, resource, repo_name):
-        source_folder = os.path.join(TestPreprocessor.resources_dir, resource, repo_name)
+        source_folder = os.path.join(TestObsPreprocessor.resources_dir, resource, repo_name)
         self.temp_dir = tempfile.mkdtemp(prefix='repo_')
-        zip_filepath = TestPreprocessor.createZipFile(repo_name + ".zip", self.temp_dir, source_folder)
+        zip_filepath = TestObsPreprocessor.createZipFile(repo_name + ".zip", self.temp_dir, source_folder)
         return zip_filepath
 
 
     @classmethod
     def extractObsFiles(self, file_name, repo_name):
-        file_path = os.path.join(TestPreprocessor.resources_dir, file_name)
+        file_path = os.path.join(TestObsPreprocessor.resources_dir, file_name)
 
         # 1) unzip the repo files
         temp_dir = tempfile.mkdtemp(prefix='repo_')

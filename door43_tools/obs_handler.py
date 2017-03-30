@@ -48,7 +48,7 @@ class OBSInspection(object):
         self.manifest = {}
 
     def run(self):
-        if not self.chapter:
+        if not self.chapter: # skip over files that are not chapters
             return
 
         if not os.path.isfile(self.filename):
@@ -61,7 +61,7 @@ class OBSInspection(object):
         soup = BeautifulSoup(chapter_html, 'html.parser')
 
         if not soup.find('body'):
-            self.logger.warning('Chapter {0} has no content!'.format(self.chapter))
+            self.logger.warning('Chapter {0} has no body!'.format(self.chapter))
             return
 
         content = soup.body.find(id='content')

@@ -136,8 +136,8 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
                 chapters[chapter_key].append(os.path.join(root, filename))
         return chapters
 
-    def get_chapter(self, chapter):
-        chapter_content = ''
+    def get_chapter(self, key, chapter):
+        chapter_content = '\\c ' + key + '\n' # put in chapter number
         for chapter in sorted(chapter):
             chapter_content += read_file(chapter) + '\n'
         return chapter_content + '\n\n'
@@ -157,7 +157,7 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
         chapters = self.get_chapters()
 
         for key in sorted(chapters):
-            usfm_content += self.get_chapter(chapters[key])
+            usfm_content += self.get_chapter(key, chapters[key])
 
         usfm_file = os.path.join(self.output_dir, '{0}-{1}.usfm'.format(bible_books.BOOK_NUMBERS[self.manifest.project['id']], self.manifest.project['id'].upper()))
         write_file(usfm_file, usfm_content)
