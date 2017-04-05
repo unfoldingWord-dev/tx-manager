@@ -24,54 +24,41 @@ class TestTemplater(unittest.TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def testTemplaterComplete(self):
-        # given
+    def testTemplaterBibleTorah(self):
+        test_folder_name = "converted_projects/en-ulb-torah.zip"
+        expect_success = True
+        test_file_path = self.extractZipFiles(test_folder_name)
+        deployer, success = self.doTemplater(test_file_path)
+        self.verifyTemplater(success, expect_success, deployer.output_dir)
+
+    def testTemplaterObsComplete(self):
         test_folder_name = "converted_projects/aab_obs_text_obs-complete.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
-
-        # when
         deployer, success = self.doTemplater(test_file_path)
-
-        # then
         self.verifyTemplater(success, expect_success, deployer.output_dir)
 
     def testCommitToDoor43Empty(self):
-        # given
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
         expect_success = True
         missing_chapters = range(1, 51)
         test_file_path = self.extractZipFiles(test_folder_name)
-
-        # when
         deployer, success = self.doTemplater(test_file_path)
-
-        # then
         self.verifyTemplater(success, expect_success, deployer.output_dir, missing_chapters)
 
     def testCommitToDoor43MissingFirstFrame(self):
-        # given
         test_folder_name = "converted_projects/aah_obs_text_obs-missing_first_frame.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
-
-        # when
         deployer, success = self.doTemplater(test_file_path)
-
-        # then
         self.verifyTemplater(success, expect_success, deployer.output_dir)
 
     def testCommitToDoor43MissingChapter50(self):
-        # given
         test_folder_name = os.path.join('converted_projects', 'aai_obs_text_obs-missing_chapter_50.zip')
         expect_success = True
         missing_chapters = [50]
         test_file_path = self.extractZipFiles(test_folder_name)
-
-        # when
         deployer, success = self.doTemplater(test_file_path)
-
-        # then
         self.verifyTemplater(success, expect_success, deployer.output_dir, missing_chapters)
 
     def extractZipFiles(self, test_folder_name):

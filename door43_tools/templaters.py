@@ -88,19 +88,13 @@ class Templater(object):
 
         # soup is the template that we will replace content of for every file
         soup = BeautifulSoup(self.template_html, 'html.parser')
+        left_sidebar_div = soup.body.find('div', id='left-sidebar')
+        outer_content_div = soup.body.find('div', id='outer-content')
+        right_sidebar_div = soup.body.find('div', id='right-sidebar')
 
         # find the outer-content div in the template
-        content = soup.body.find('div', id='outer-content')
-        if not content:
+        if not outer_content_div:
             raise Exception('No div tag with id "outer-content" was found in the template')
-
-        # Left Sidebar is the same for every file, just an empty Revisions section to be populated by JavaScript
-        leftSidebar = soup.body.find('div', id='left-sidebar')
-        if leftSidebar:
-            left_sidebar_html = '<span>' + self.build_left_sidebar() + '</span>'
-            left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
-            leftSidebar.clear()
-            leftSidebar.append(left_sidebar)
 
         # get the canonical UTL
         if not canonical:
@@ -110,6 +104,9 @@ class Templater(object):
 
         # loop through the html files
         for filename in self.files:
+            if os.path.basename(filename) != "04-NUM.html":
+                continue
+
             if not self.quiet:
                 print('Applying template to {0}.'.format(filename))
 
@@ -137,8 +134,8 @@ class Templater(object):
                 body = fileSoup.body.extract()
 
             # insert new HTML into the template
-            content.clear()
-            content.append(body)
+            outer_content_div.clear()
+            outer_content_div.append(body)
             soup.html['lang'] = language_code
             soup.head.title.clear()
             soup.head.title.append(heading+' - '+title)
@@ -152,14 +149,19 @@ class Templater(object):
             heading_span.clear()
             heading_span.append(heading)
 
-            right_sidebar_div = soup.body.find('div', id='right-sidebar')
+            if left_sidebar_div:
+                left_sidebar_html = '<span>' + self.build_left_sidebar(filename) + '</span>'
+                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
+                left_sidebar_div.clear()
+                left_sidebar_div.append(left_sidebar)
+
             if right_sidebar_div:
                 right_sidebar_html = '<span>'+self.build_right_sidebar(filename)+'</span>'
                 right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').span.extract()
                 right_sidebar_div.clear()
                 right_sidebar_div.append(right_sidebar)
 
-            # render the html as a string
+            # render the html as an unicode string
             html = unicode(soup)
             # update the canonical URL - it is in several different locations
             html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))

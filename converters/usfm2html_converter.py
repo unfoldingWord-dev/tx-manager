@@ -3,6 +3,7 @@ import os
 import tempfile
 import string
 import codecs
+from bs4 import BeautifulSoup
 from shutil import copyfile
 from general_tools.file_utils import write_file, remove_tree
 from converter import Converter
@@ -25,9 +26,8 @@ class Usfm2HtmlConverter(Converter):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'bible-template.html')) as template_file:
-            html_template = string.Template(template_file.read())
+            template_html = template_file.read()
 
-        complete_html = ''
         for filename in files:
             if filename.endswith('.usfm'):
                 # Covert the USFM file
@@ -37,11 +37,15 @@ class Usfm2HtmlConverter(Converter):
                 UsfmTransform.buildSingleHtml(scratch_dir, scratch_dir, filebase)
                 html_filename = filebase+".html"
                 with codecs.open(os.path.join(scratch_dir, html_filename), 'r', 'utf-8-sig') as html_file:
-                    html = html_file.read()
-                complete_html += html
-                html = html_template.safe_substitute(content=html)
+                    converted_html = html_file.read()
+                template_soup = BeautifulSoup(template_html, 'html.parser')
+                converted_soup = BeautifulSoup(converted_html, 'html.parser')
+                content_div = template_soup.find('div', id='content')
+                content_div.clear()
+                content_div.append(converted_soup.body)
+                content_div.body.unwrap()
                 output_file = os.path.join(self.output_dir, html_filename)
-                write_file(output_file, html)
+                write_file(output_file, template_soup.prettify())
                 self.logger.info('Converted {0} to {1}.'.format(os.path.basename(filename),
                                                                 os.path.basename(html_filename)))
                 remove_tree(scratch_dir)

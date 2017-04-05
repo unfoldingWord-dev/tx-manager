@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-
 import codecs
-
 import os
 import tempfile
 import unittest
