@@ -86,6 +86,28 @@ class Templater(object):
         title = ''
         canonical = ''
 
+        # soup is the template that we will replace content of for every file
+        soup = BeautifulSoup(self.template_html, 'html.parser')
+
+        # find the outer-content div in the template
+        content = soup.body.find('div', id='outer-content')
+        if not content:
+            raise Exception('No div tag with id "outer-content" was found in the template')
+
+        # Left Sidebar is the same for every file, just an empty Revisions section to be populated by JavaScript
+        leftSidebar = soup.body.find('div', id='left-sidebar')
+        if leftSidebar:
+            left_sidebar_html = '<span>' + self.build_left_sidebar() + '</span>'
+            left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
+            leftSidebar.clear()
+            leftSidebar.append(left_sidebar)
+
+        # get the canonical UTL
+        if not canonical:
+            links = soup.head.find_all('link[rel="canonical"]')
+            if len(links) == 1:
+                canonical = links[0]['href']
+
         # loop through the html files
         for filename in self.files:
             if not self.quiet:
@@ -114,32 +136,13 @@ class Templater(object):
             else:
                 body = fileSoup.body.extract()
 
-            # Inject the title and body we got from the raw html file into the template and add navigation
-            soup = BeautifulSoup(self.template_html, 'html.parser')
-
-            # find the target div in the template
-            content = soup.body.find('div', id='outer-content')
-            if not content:
-                raise Exception('No div tag with id "outer-content" was found in the template')
-
-            leftSidebar = soup.body.find('div', id='left-sidebar')
-            if leftSidebar:
-                left_sidebar_html = '<span>'+self.build_left_sidebar()+'</span>'
-                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
-                leftSidebar.clear()
-                leftSidebar.append(left_sidebar)
-
-            # get the canonical UTL, if we haven't
-            if not canonical:
-                links = soup.head.find_all('link[rel="canonical"]')
-                if len(links) == 1:
-                    canonical = links[0]['href']
-
             # insert new HTML into the template
             content.clear()
             content.append(body)
             soup.html['lang'] = language_code
-            soup.head.title.replace_with(heading+' - '+title)
+            soup.head.title.clear()
+            soup.head.title.append(heading+' - '+title)
+
             for a_tag in soup.body.find_all('a[rel="dct:source"]'):
                 a_tag.clear()
                 a_tag.append(title)
@@ -177,20 +180,27 @@ class BibleTemplater(Templater):
         super(BibleTemplater, self).__init__(*args, **kwargs)
 
     def build_page_nav(self, filename=None):
-
         html = """
         <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
             <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
-            base = os.path.splitext(os.path.basename(fname))[0]
-            (ch_num, ch_name) = base.split('-')
+            filebase = os.path.splitext(os.path.basename(fname))[0]
+            # Getting the book code for HTML tag references
+            fileparts = filebase.split('-')
+            if len(fileparts) == 2:
+                # Assuming filename of ##-<name>.usfm, such as 01-GEN.usfm
+                book_code = fileparts[1].lower()
+            else:
+                # Assuming filename of <name.usfm, such as GEN.usfm
+                book_code = fileparts[0].lower()
+            book_code.replace(' ', '-').replace('.', '-')  # replacing spaces and periods since used as tag class
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
                 soup = BeautifulSoup(f.read(), 'html.parser')
             if soup.find('h1'):
                 title = soup.find('h1').text
             else:
-                title = '{0}.'.format(ch_name)
+                title = '{0}.'.format(book_code)
             html += """
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -200,7 +210,7 @@ class BibleTemplater(Templater):
                     </div>
                     <div id="collapse{0}" class="panel-collapse collapse{2}">
                         <ul class="panel-body chapters">
-                    """.format(ch_name, title, ' in' if fname == filename else '')
+                    """.format(book_code, title, ' in' if fname == filename else '')
             for chapter in soup.find_all('h2', {'c-num'}):
                 print(chapter['id'])
                 html += """
