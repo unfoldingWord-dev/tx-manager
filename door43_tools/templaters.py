@@ -42,7 +42,12 @@ class Templater(object):
         self.apply_template()
 
     def build_left_sidebar(self, filename=None):
-        html = '<div><h1>Revisions</h1><table width="100%" id="revisions"></table></div>'
+        html = """
+            <div>
+                <h1>Revisions</h1>
+                <table width="100%" id="revisions"></table>
+            </div>
+            """
         return html
 
     def build_right_sidebar(self, filename=None):
@@ -81,21 +86,6 @@ class Templater(object):
         title = ''
         canonical = ''
 
-        # apply the template
-        template = BeautifulSoup(self.template_html, 'html.parser')
-
-        # find the target div in the template
-        content_div = template.body.find('div', {'id': 'outer-content'})
-        if not content_div:
-            raise Exception('No div tag with id "outer-content" was found in the template')
-
-        left_sidebar_div = template.body.find('div', {'id': 'left-sidebar'})
-        if left_sidebar_div:
-            left_sidebar_html = '<span>'+self.build_left_sidebar()+'</span>'
-            left_sidebar_soup = BeautifulSoup(left_sidebar_html, 'html.parser')
-            left_sidebar_div.clear()
-            left_sidebar_div.append(left_sidebar_soup.span.contents[0])
-
         # loop through the html files
         for filename in self.files:
             if not self.quiet:
@@ -103,61 +93,71 @@ class Templater(object):
 
             # read the downloaded file into a dom abject
             with codecs.open(filename, 'r', 'utf-8-sig') as f:
-                soup = BeautifulSoup(f, 'html.parser')
+                fileSoup = BeautifulSoup(f, 'html.parser')
 
-            # get the language code, if we haven't yet
-            if not language_code:
-                if 'lang' in soup.html:
-                    language_code = soup.html['lang']
-                else:
-                    language_code = 'en'
-
-            # get the title, if we haven't
-            if not title and soup.head and soup.head.title:
-                title = soup.head.title.text
+            # get the title from the raw html file
+            if not title and fileSoup.head and fileSoup.head.title:
+                title = fileSoup.head.title.text
             else:
                 title = os.path.basename(filename)
 
+            # get the language code, if we haven't yet
+            if not language_code:
+                if 'lang' in fileSoup.html:
+                    language_code = fileSoup.html['lang']
+                else:
+                    language_code = 'en'
+
+            # get the body of the raw html file
+            if not fileSoup.body:
+                body = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
+            else:
+                body = fileSoup.body.extract()
+
+            # Inject the title and body we got from the raw html file into the template and add navigation
+            soup = BeautifulSoup(self.template_html, 'html.parser')
+
+            # find the target div in the template
+            content = soup.body.find('div', id='outer-content')
+            if not content:
+                raise Exception('No div tag with id "outer-content" was found in the template')
+
+            leftSidebar = soup.body.find('div', id='left-sidebar')
+            if leftSidebar:
+                left_sidebar_html = '<span>'+self.build_left_sidebar()+'</span>'
+                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
+                leftSidebar.clear()
+                leftSidebar.append(left_sidebar)
+
             # get the canonical UTL, if we haven't
             if not canonical:
-                links = template.head.select('link[rel="canonical"]')
+                links = soup.head.find_all('link[rel="canonical"]')
                 if len(links) == 1:
                     canonical = links[0]['href']
 
-            if soup.body:
-                body = soup.body
-            else:
-                body = soup
-
-            # get the content div from the temp file
-            soup_content = body.find('div', {'id': 'content'})
-            if not soup_content:
-                soup_content = body
-
             # insert new HTML into the template
-            content_div.clear()
-            content_div.append(soup_content)
-            template.html['lang'] = language_code
-            template.head.title.clear()
-            template.head.title.append(heading+' - '+title)
-            for a_tag in template.body.select('a[rel="dct:source"]'):
+            content.clear()
+            content.append(body)
+            soup.html['lang'] = language_code
+            soup.head.title.replace_with(heading+' - '+title)
+            for a_tag in soup.body.find_all('a[rel="dct:source"]'):
                 a_tag.clear()
                 a_tag.append(title)
 
             # set the page heading
-            heading_span = template.body.find('span', {'id': 'h1'})
+            heading_span = soup.body.find('span', id='h1')
             heading_span.clear()
             heading_span.append(heading)
 
-            right_sidebar_div = template.body.find('div', {'id': 'right-sidebar'})
+            right_sidebar_div = soup.body.find('div', id='right-sidebar')
             if right_sidebar_div:
                 right_sidebar_html = '<span>'+self.build_right_sidebar(filename)+'</span>'
-                right_sidebar_soup = BeautifulSoup(right_sidebar_html, 'html.parser')
+                right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').span.extract()
                 right_sidebar_div.clear()
-                right_sidebar_div.append(right_sidebar_soup.span)
+                right_sidebar_div.append(right_sidebar)
 
             # render the html as a string
-            html = unicode(template)
+            html = unicode(soup)
             # update the canonical URL - it is in several different locations
             html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
             # write to output directory
