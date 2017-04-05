@@ -8,6 +8,7 @@ from general_tools.file_utils import write_file, remove_tree
 from converter import Converter
 from usfm_tools.transform import UsfmTransform
 
+
 class Usfm2HtmlConverter(Converter):
 
     def convert_udb(self):
@@ -50,12 +51,10 @@ class Usfm2HtmlConverter(Converter):
             else:
                 # Directly copy over files that are not USFM files
                 try:
-                    output_file = os.path.join(self.output_dir, filename[len(self.files_dir)+1:])
+                    output_file = os.path.join(self.output_dir, os.path.basename(filename))
                     if not os.path.exists(output_file):
-                        if not os.path.exists(os.path.dirname(output_file)):
-                            os.makedirs(os.path.dirname(output_file))
                         copyfile(filename, output_file)
-                except Exception:
+                except:
                     pass
 
         manifest_file = os.path.join(self.files_dir, 'manifest.json')

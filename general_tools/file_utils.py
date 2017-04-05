@@ -35,7 +35,7 @@ def add_contents_to_zip(zip_file, path):
     :param str|unicode zip_file: The file name of the zip file
     :param str|unicode path: Full path of the directory to zip up
     """
-    path = path.rstrip(os.sep)
+    path = path.rstrip(os.path.sep)
     with zipfile.ZipFile(zip_file, 'a') as zf:
         for root, dirs, files in os.walk(path):
             for file in files:

@@ -35,8 +35,6 @@ class TestClientWebhook(unittest.TestCase):
 
     @patch('client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
-
         mock_download_file.side_effect = self.mock_download_repo
         cwh = ClientWebhook()
-        #cwh.download_repo('bible_bundle_master', self.temp_dir)
         cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)

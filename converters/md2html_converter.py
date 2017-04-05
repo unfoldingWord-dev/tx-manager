@@ -57,12 +57,10 @@ class Md2HtmlConverter(Converter):
             else:
                 # Directly copy over files that are not markdown files
                 try:
-                    output_file = os.path.join(self.output_dir, filename[len(self.files_dir)+1:])
+                    output_file = os.path.join(self.output_dir, os.path.basename(filename))
                     if not os.path.exists(output_file):
-                        if not os.path.exists(os.path.dirname(output_file)):
-                            os.makedirs(os.path.dirname(output_file))
                         copyfile(filename, output_file)
-                except Exception:
+                except:
                     pass
 
         for chapter in sorted(obs_data['chapters']): # verify all expected chapters are present
