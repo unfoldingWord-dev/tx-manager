@@ -59,11 +59,7 @@ class TestTemplater(unittest.TestCase):
         expect_success = True
         missing_chapters = [50]
         test_file_path = self.extractZipFiles(test_folder_name)
-
-        # when
         deployer, success = self.doTemplater(test_file_path)
-
-        # then
         self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
 
     def extractZipFiles(self, test_folder_name):
