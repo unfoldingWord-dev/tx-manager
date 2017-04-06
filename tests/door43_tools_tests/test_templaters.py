@@ -24,19 +24,20 @@ class TestTemplater(unittest.TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def testTemplaterBibleTorah(self):
-        test_folder_name = "converted_projects/en-ulb-torah.zip"
+    def testTemplaterBibleFourBooks(self):
+        test_folder_name = "converted_projects/en-ulb-4-books.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
         deployer, success = self.doTemplater(test_file_path)
-        self.verifyTemplater(success, expect_success, deployer.output_dir)
+        self.verifyBibleTemplater(success, expect_success, deployer.output_dir,
+                                  ['01-GEN.html', '02-EXO.html', '03-LEV.html', '05-DEU.html'])
 
     def testTemplaterObsComplete(self):
         test_folder_name = "converted_projects/aab_obs_text_obs-complete.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
         deployer, success = self.doTemplater(test_file_path)
-        self.verifyTemplater(success, expect_success, deployer.output_dir)
+        self.verifyObsTemplater(success, expect_success, deployer.output_dir)
 
     def testCommitToDoor43Empty(self):
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
@@ -44,22 +45,26 @@ class TestTemplater(unittest.TestCase):
         missing_chapters = range(1, 51)
         test_file_path = self.extractZipFiles(test_folder_name)
         deployer, success = self.doTemplater(test_file_path)
-        self.verifyTemplater(success, expect_success, deployer.output_dir, missing_chapters)
+        self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
 
     def testCommitToDoor43MissingFirstFrame(self):
         test_folder_name = "converted_projects/aah_obs_text_obs-missing_first_frame.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
         deployer, success = self.doTemplater(test_file_path)
-        self.verifyTemplater(success, expect_success, deployer.output_dir)
+        self.verifyObsTemplater(success, expect_success, deployer.output_dir)
 
     def testCommitToDoor43MissingChapter50(self):
         test_folder_name = os.path.join('converted_projects', 'aai_obs_text_obs-missing_chapter_50.zip')
         expect_success = True
         missing_chapters = [50]
         test_file_path = self.extractZipFiles(test_folder_name)
+
+        # when
         deployer, success = self.doTemplater(test_file_path)
-        self.verifyTemplater(success, expect_success, deployer.output_dir, missing_chapters)
+
+        # then
+        self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
 
     def extractZipFiles(self, test_folder_name):
         file_path = os.path.join(self.resources_dir, test_folder_name)
@@ -81,7 +86,7 @@ class TestTemplater(unittest.TestCase):
 
         return templater, success
 
-    def verifyTemplater(self, success, expect_success, output_folder, missing_chapters = []):
+    def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters = []):
         self.assertIsNotNone(output_folder)
         self.assertEqual(success, expect_success)
 
@@ -99,6 +104,12 @@ class TestTemplater(unittest.TestCase):
             file_name = os.path.join(output_folder, file_to_verify)
             self.assertFalse(os.path.isfile(file_name), 'file present, but should not be: {0}'.format(file_name))
 
+    def verifyBibleTemplater(self, success, expect_success, output_folder, files_to_verify):
+        self.assertIsNotNone(output_folder)
+        self.assertEqual(success, expect_success)
+        for file_to_verify in files_to_verify:
+            file_name = os.path.join(output_folder, file_to_verify)
+            self.assertTrue(os.path.isfile(file_name), 'file not found: {0}'.format(file_name))
 
 if __name__ == '__main__':
     unittest.main()

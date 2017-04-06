@@ -104,9 +104,6 @@ class Templater(object):
 
         # loop through the html files
         for filename in self.files:
-            if os.path.basename(filename) != "04-NUM.html":
-                continue
-
             if not self.quiet:
                 print('Applying template to {0}.'.format(filename))
 
