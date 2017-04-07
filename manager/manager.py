@@ -249,31 +249,22 @@ class TxManager(object):
                     if error.startswith('Bad Request: '):
                         error = error[len('Bad Request: '):]
                     job.error_message(error)
-
-            if 'Payload' in json_data:
-                payload = json_data['Payload']
-
-                print('Payload:')
-                print(json.dumps(payload))
-
-                for message in payload['log']:
-                    if message:
-                        job.log_message(message)
-                for message in payload['errors']:
-                    if message:
-                        job.error_message(message)
-                for message in payload['warnings']:
-                    if message:
-                        job.warning_message(message)
-
-                success = payload['success']
-
-                if payload['errors']:
-                    job.log_message('{0} function returned with errors.'.format(module.name))
-                elif payload['warnings']:
-                    job.log_message('{0} function returned with warnings.'.format(module.name))
-                elif payload['log']:
-                    job.log_message('{0} function returned.'.format(module.name))
+            for message in json_data['info']:
+                if message:
+                    job.log_message(message)
+            for message in json_data['errors']:
+                if message:
+                    job.error_message(message)
+            for message in json_data['warnings']:
+                if message:
+                    job.warning_message(message)
+            success = json_data['success']
+            if json_data['errors']:
+                job.log_message('{0} function returned with errors.'.format(module.name))
+            elif json_data['warnings']:
+                job.log_message('{0} function returned with warnings.'.format(module.name))
+            elif json_data['log']:
+                job.log_message('{0} function returned.'.format(module.name))
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
