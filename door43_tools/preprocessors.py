@@ -3,8 +3,8 @@ import os
 import fnmatch
 import bible_books
 from general_tools.file_utils import write_file, read_file
-from distutils.dir_util import copy_tree
-
+from general_tools.file_utils import copy_tree
+from shutil import copy
 
 class Preprocessor(object):
     def __init__(self, manifest, source_dir, output_dir, quiet=False):
@@ -40,6 +40,25 @@ class MarkdownPreprocessor(Preprocessor):
 class ObsMarkdownPreprocessor(MarkdownPreprocessor):
     def __init__(self, *args, **kwargs):
         super(ObsMarkdownPreprocessor, self).__init__(*args, **kwargs)
+
+    def run(self):
+        content_dir = self.source_dir
+        if os.path.isdir(os.path.join(self.source_dir, 'content')):
+            content_dir = os.path.join(self.source_dir, 'content')
+            # if it is a RC v0.2 container with ##/01.md, we copy each 01.md file (or intro.md file) into output_dir
+            if os.path.isfile(os.path.join(self.source_dir, 'manifest.yaml')):
+                dirs = [name for name in os.listdir(content_dir) if os.path.isdir(os.path.join(content_dir, name))]
+                for d in dirs:
+                    f = None
+                    if os.path.isfile(os.path.join(content_dir, d, "01.md")):
+                        f = os.path.join(content_dir, d, '01.md')
+                    elif os.path.isfile(os.path.join(content_dir, d, 'intro.md')):
+                        f = os.path.join(content_dir, d, 'intro.md')
+                    if f:
+                        copy(f, os.path.join(self.output_dir, '{0}.md'.format(d)))
+                return
+        # otherwise we just copy the content_dir to output_dir
+        copy_tree(content_dir, self.output_dir)
 
 
 class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):

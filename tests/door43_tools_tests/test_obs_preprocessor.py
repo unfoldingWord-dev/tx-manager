@@ -6,7 +6,7 @@ import unittest
 import shutil
 
 from door43_tools.manifest_handler import MetaData, Manifest
-from door43_tools.preprocessors import TsObsMarkdownPreprocessor
+from door43_tools.preprocessors import TsObsMarkdownPreprocessor, ObsMarkdownPreprocessor
 from general_tools.file_utils import unzip, add_contents_to_zip
 
 
@@ -40,6 +40,18 @@ class TestObsPreprocessor(unittest.TestCase):
         #then
         self.verifyTransform(folder)
 
+    def test_ObsRC20MarkdownPreprocessor(self):
+        #given
+        file_name = 'raw_sources/en-obs-rc-0.2.zip'
+        repo_name = 'en-obs-rc-0.2'
+        manifest, repo_dir, self.temp_dir = self.extractObsFiles(file_name, repo_name)
+
+        # when
+        folder = self.runObsMarkdownPreprocessor(manifest, repo_dir)
+
+        #then
+        self.verifyTransform(folder)
+
     def test_TsObsMarkdownPreprocessorMissingChapter(self):
 
         #given
@@ -53,6 +65,12 @@ class TestObsPreprocessor(unittest.TestCase):
 
         #then
         self.verifyTransform(folder, missing_chapters)
+
+    def runObsMarkdownPreprocessor(self, manifest, repo_dir):
+        self.out_dir = tempfile.mkdtemp(prefix='output_')
+        compiler = ObsMarkdownPreprocessor(manifest, repo_dir, self.out_dir)
+        compiler.run()
+        return self.out_dir
 
     def runTsObsMarkdownPreprocessor(self, manifest, repo_dir):
         self.out_dir = tempfile.mkdtemp(prefix='output_')
