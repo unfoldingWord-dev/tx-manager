@@ -76,6 +76,20 @@ class ManagerTest(unittest.TestCase):
                 "resource_type": "unsupported",
                 "input_format": "md",
                 "output_format": "html"
+            },
+            6: {
+                "job_id": 6,
+                "status": "requested",
+                "resource_type": "obs",
+                "input_format": "md",
+                "output_format": "html"
+            },
+            7: {
+                "job_id": 7,
+                "status": "requested",
+                "resource_type": "obs",
+                "input_format": "md",
+                "output_format": "html"
             }
         }, keyname="job_id")
         cls.mock_module_db = mock_utils.mock_db_handler(data={
@@ -279,13 +293,11 @@ class ManagerTest(unittest.TestCase):
         Should be a successful invocation with warnings.
         """
         mock_requests_post.return_value = MockResponse({
-            'Payload': {
-                "log": ['Converted!'],
-                "warnings": ['Missing something'],
-                "errors": [],
-                "success": True,
-                "message": "Has some warnings"
-            }
+            "info": ['Converted!'],
+            "warnings": ['Missing something'],
+            "errors": [],
+            "success": True,
+            "message": "Has some warnings"
         }, 200)
 
         tx_manager = TxManager(**self.tx_manager_env_vars)
@@ -313,13 +325,11 @@ class ManagerTest(unittest.TestCase):
         Should be a successful invocation without warnings.
         """
         mock_requests_post.return_value = MockResponse({
-            'Payload': {
-                "log": ['Converted!'],
-                "warnings": [],
-                "errors": [],
-                "success": True,
-                "message": "All good"
-            }
+            "info": ['Converted!'],
+            "warnings": [],
+            "errors": [],
+            "success": True,
+            "message": "All good"
         }, 200)
         tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.start_job(2)
@@ -348,13 +358,11 @@ class ManagerTest(unittest.TestCase):
         :return:
         """
         mock_requests_post.return_value = MockResponse({
-            'Payload': {
-                "log": ['Conversion failed!'],
-                "warnings": [],
-                "errors": ['Some error'],
-                "success": False,
-                "message": "Has errors, failed"
-            }
+            "info": ['Conversion failed!'],
+            "warnings": [],
+            "errors": ['Some error'],
+            "success": False,
+            "message": "Has errors, failed"
         }, 200)
 
         manager = TxManager(**self.tx_manager_env_vars)
@@ -398,6 +406,65 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(data["job_id"], 4)
         self.assertIn("errors", data)
         self.assertTrue(len(data["errors"]) > 0)
+
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post')
+    def test_start_job_bad_error(self, mock_requests_post):
+        """
+        Call start_job in job 6 from mock data.
+
+        Should fail due to the response having an errorMessage
+        """
+        error_to_check = "something bad happened!"
+        mock_requests_post.return_value = MockResponse({"errorMessage": 'Bad Request: {0}'.format(error_to_check)}, 400)
+        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager.start_job(6)
+        # job 0's entry in database should have been updated
+        ManagerTest.mock_job_db.update_item.assert_called()
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
+        keys = args[0]
+        self.assertIsInstance(keys, dict)
+        self.assertIn("job_id", keys)
+        self.assertEqual(keys["job_id"], 6)
+        data = args[1]
+        self.assertIsInstance(data, dict)
+        self.assertIn("errors", data)
+        self.assertEqual(len(data["errors"]), 1)
+        self.assertEqual(data["errors"][0], error_to_check)
+
+    # noinspection PyUnusedLocal
+    @mock.patch('requests.post')
+    def test_start_job_with_errors(self, mock_requests_post):
+        """
+        Call start_job on job 7 from mock data.
+
+        Invocation should result in an errors
+
+        :param mock_requests_post mock.MagicMock:
+        :return:
+        """
+        mock_requests_post.return_value = MockResponse({
+            "info": ['Conversion failed!'],
+            "warnings": [],
+            "errors": ['Some error', 'another error'],
+            "success": False,
+            "message": "Has errors, failed"
+        }, 200)
+
+        manager = TxManager(**self.tx_manager_env_vars)
+        manager.start_job(7)
+
+        # job 7's entry in database should have been updated
+        ManagerTest.mock_job_db.update_item.assert_called()
+        args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
+        keys = args[0]
+        self.assertIn("job_id", keys)
+        self.assertEqual(keys["job_id"], 7)
+        self.assertIsInstance(keys, dict)
+        data = args[1]
+        self.assertIsInstance(data, dict)
+        self.assertIn("errors", data)
+        self.assertEqual(len(data["errors"]), 2)
 
     def test_list_jobs(self):
         """Test list_jobs and list_endpoint methods."""
