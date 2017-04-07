@@ -41,51 +41,51 @@ class ManagerTest(unittest.TestCase):
     def setUpClass(cls):
         """Create mock AWS handlers, and apply corresponding monkey patches."""
         cls.mock_job_db = mock_utils.mock_db_handler(data={
-            0: {
-                "job_id": 0,
+            "0": {
+                "job_id": "0",
                 "status": "started",
                 "resource_type": "obs",
                 "input_format": "md",
                 "output_format": "html"
             },
-            1: {
-                "job_id": 1,
+            "1": {
+                "job_id": "1",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
                 "output_format": "html"
             },
-            2: {
-                "job_id": 2,
+            "2": {
+                "job_id": "2",
                 "status": "requested",
                 "resource_type": "ulb",
                 "input_format": "usfm",
                 "output_format": "html",
                 "callback": ManagerTest.MOCK_CALLBACK_URL,
             },
-            3: {
-                "job_id": 3,
+            "3": {
+                "job_id": "3",
                 "status": "requested",
                 "resource_type": "other",
                 "input_format": "md",
                 "output_format": "html"
             },
-            4: {
-                "job_id": 4,
+            "4": {
+                "job_id": "4",
                 "status": "requested",
                 "resource_type": "unsupported",
                 "input_format": "md",
                 "output_format": "html"
             },
-            6: {
-                "job_id": 6,
+            "6": {
+                "job_id": "6",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
                 "output_format": "html"
             },
-            7: {
-                "job_id": 7,
+            "7": {
+                "job_id": "7",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
@@ -301,14 +301,14 @@ class ManagerTest(unittest.TestCase):
         }, 200)
 
         tx_manager = TxManager(**self.tx_manager_env_vars)
-        tx_manager.start_job(1)
+        tx_manager.start_job("1")
 
         # job1's entry in database should have been updated
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
-        self.assertEqual(keys["job_id"], 1)
+        self.assertEqual(keys["job_id"], "1")
         data = args[1]
         self.assertIsInstance(data, dict)
         self.assertIn("errors", data)
@@ -332,7 +332,7 @@ class ManagerTest(unittest.TestCase):
             "message": "All good"
         }, 200)
         tx_manager = TxManager(**self.tx_manager_env_vars)
-        tx_manager.start_job(2)
+        tx_manager.start_job("2")
 
         # job2's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
@@ -340,7 +340,7 @@ class ManagerTest(unittest.TestCase):
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
-        self.assertEqual(keys["job_id"], 2)
+        self.assertEqual(keys["job_id"], "2")
         data = args[1]
         self.assertIsInstance(data, dict)
         self.assertIn("errors", data)
@@ -366,14 +366,14 @@ class ManagerTest(unittest.TestCase):
         }, 200)
 
         manager = TxManager(**self.tx_manager_env_vars)
-        manager.start_job(3)
+        manager.start_job("3")
 
         # job3's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIn("job_id", keys)
-        self.assertEqual(keys["job_id"], 3)
+        self.assertEqual(keys["job_id"], "3")
         self.assertIsInstance(keys, dict)
         data = args[1]
         self.assertIsInstance(data, dict)
@@ -383,13 +383,13 @@ class ManagerTest(unittest.TestCase):
     def test_start_job_failure(self):
         """Call start_job with non-runnable/non-existent jobs."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
-        ret0 = tx_manager.start_job(0)
-        ret4 = tx_manager.start_job(4)
-        ret5 = tx_manager.start_job(5)
+        ret0 = tx_manager.start_job("0")
+        ret4 = tx_manager.start_job("4")
+        ret5 = tx_manager.start_job("5")
 
-        self.assertEqual(ret0['job_id'], 0)
-        self.assertEqual(ret4['job_id'], 4)
-        self.assertEqual(ret5['job_id'], 5)
+        self.assertEqual(ret0['job_id'], "0")
+        self.assertEqual(ret4['job_id'], "4")
+        self.assertEqual(ret5['job_id'], "5")
         self.assertFalse(ret5['success'])
         self.assertEqual(ret5['message'], 'No job with ID 5 has been requested')
 
@@ -399,11 +399,11 @@ class ManagerTest(unittest.TestCase):
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
-        self.assertEqual(keys["job_id"], 4)
+        self.assertEqual(keys["job_id"], "4")
         data = args[1]
         self.assertIsInstance(data, dict)
         self.assertIn("job_id", data)
-        self.assertEqual(data["job_id"], 4)
+        self.assertEqual(data["job_id"], "4")
         self.assertIn("errors", data)
         self.assertTrue(len(data["errors"]) > 0)
 
@@ -418,14 +418,14 @@ class ManagerTest(unittest.TestCase):
         error_to_check = "something bad happened!"
         mock_requests_post.return_value = MockResponse({"errorMessage": 'Bad Request: {0}'.format(error_to_check)}, 400)
         tx_manager = TxManager(**self.tx_manager_env_vars)
-        tx_manager.start_job(6)
+        tx_manager.start_job("6")
         # job 0's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIsInstance(keys, dict)
         self.assertIn("job_id", keys)
-        self.assertEqual(keys["job_id"], 6)
+        self.assertEqual(keys["job_id"], "6")
         data = args[1]
         self.assertIsInstance(data, dict)
         self.assertIn("errors", data)
@@ -452,14 +452,14 @@ class ManagerTest(unittest.TestCase):
         }, 200)
 
         manager = TxManager(**self.tx_manager_env_vars)
-        manager.start_job(7)
+        manager.start_job("7")
 
         # job 7's entry in database should have been updated
         ManagerTest.mock_job_db.update_item.assert_called()
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item, num_args=2)
         keys = args[0]
         self.assertIn("job_id", keys)
-        self.assertEqual(keys["job_id"], 7)
+        self.assertEqual(keys["job_id"], "7")
         self.assertIsInstance(keys, dict)
         data = args[1]
         self.assertIsInstance(data, dict)
@@ -532,23 +532,23 @@ class ManagerTest(unittest.TestCase):
         manager = TxManager(**self.tx_manager_env_vars)
 
         # get_job
-        job = manager.get_job(0)
+        job = manager.get_job("0")
         self.assertIsInstance(job, TxJob)
-        self.assertEqual(job.job_id, 0)
+        self.assertEqual(job.job_id, "0")
         self.assertEqual(job.status, "started")
 
         # update_job
         manager.update_job(job)
         args, kwargs = self.call_args(ManagerTest.mock_job_db.update_item,
                                       num_args=2)
-        self.assertEqual(args[0], {"job_id": 0})
+        self.assertEqual(args[0], {"job_id": "0"})
         self.assertEqual(args[1], job.get_db_data())
 
         # delete_job
         manager.delete_job(job)
         args, kwargs = self.call_args(ManagerTest.mock_job_db.delete_item,
                                       num_args=1)
-        self.assertEqual(args[0], {"job_id": 0})
+        self.assertEqual(args[0], {"job_id": "0"})
 
     def test_get_update_delete_module(self):
         """Test [get/update/delete]_module methods."""
