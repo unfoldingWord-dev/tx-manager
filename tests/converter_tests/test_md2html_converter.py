@@ -184,7 +184,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
             contents = self.getContents(file_path)
             self.assertIsNone(contents, 'OBS HTML body contents present, but should not be: {0}'.format(os.path.basename(file_path)))
 
-        self.assertEqual(self.return_val['status'], self.expected_success, "Mismatch in status")
+        self.assertEqual(self.return_val['success'], self.expected_success, "Mismatch in for success boolean")
         self.assertEqual(len(self.return_val['info']) == 0, self.expected_info_empty, "Mismatch in expected info empty")
         for warning in self.return_val['warnings']:
             print("Warning: " + warning)

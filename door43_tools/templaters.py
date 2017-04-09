@@ -57,7 +57,7 @@ class Templater(object):
     def build_page_nav(self, filename=None):
         html = """
             <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
-              <ul id="sidebar-nav" class="nav nav-stacked affix">
+              <ul id="sidebar-nav" class="nav nav-stacked">
                 <li><h1>Navigation</h1></li>
             """
         for fname in self.files:
