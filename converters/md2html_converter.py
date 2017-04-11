@@ -52,8 +52,6 @@ class Md2HtmlConverter(Converter):
                     self.logger.warning(warning)
                 for error in inspector.logger.logs["error"]:
                     self.logger.error(error)
-
-
             else:
                 # Directly copy over files that are not markdown files
                 try:

@@ -244,36 +244,36 @@ class TxManager(object):
             json_data = response.json()
             if json_data:
                 json_data = response.json()
+                # The json_data of the response could result in a few different formats:
+                # 1) It could be that an exception was thrown in the converter code, which the API Gateway puts
+                #    into a json array with "errorMessage" containing the exception message.
+                # 2) If a "success" key is in the payload, that means our code finished with
+                #    the expected results (see converters/converter.py's run() return value).
+                # 3) The other possibility is for the Lambda function to not finish executing
+                #    (e.g. exceeds its 5 minute execution limit). We don't currently handle this possibility.
+                # Todo: Handle lambda function returning due to exceeding 5 minutes execution limit
                 if 'errorMessage' in json_data:
                     error = json_data['errorMessage']
                     if error.startswith('Bad Request: '):
                         error = error[len('Bad Request: '):]
                     job.error_message(error)
-
-            if 'Payload' in json_data:
-                payload = json_data['Payload']
-
-                print('Payload:')
-                print(json.dumps(payload))
-
-                for message in payload['log']:
-                    if message:
-                        job.log_message(message)
-                for message in payload['errors']:
-                    if message:
-                        job.error_message(message)
-                for message in payload['warnings']:
-                    if message:
-                        job.warning_message(message)
-
-                success = payload['success']
-
-                if payload['errors']:
-                    job.log_message('{0} function returned with errors.'.format(module.name))
-                elif payload['warnings']:
-                    job.log_message('{0} function returned with warnings.'.format(module.name))
-                elif payload['log']:
-                    job.log_message('{0} function returned.'.format(module.name))
+                elif 'success' in json_data:
+                    success = json_data['success']
+                    for message in json_data['info']:
+                        if message:
+                            job.log_message(message)
+                    for message in json_data['errors']:
+                        if message:
+                            job.error_message(message)
+                    for message in json_data['warnings']:
+                        if message:
+                            job.warning_message(message)
+                    if json_data['errors']:
+                        job.log_message('{0} function returned with errors.'.format(module.name))
+                    elif json_data['warnings']:
+                        job.log_message('{0} function returned with warnings.'.format(module.name))
+                    else:
+                        job.log_message('{0} function returned successfully.'.format(module.name))
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 

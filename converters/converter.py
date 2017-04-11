@@ -64,7 +64,7 @@ class Converter(object):
             self.logger.error('Resource "{0}" not currently supported'.format(self.resource))
 
         return {
-            'status': len(self.logger.logs['error']) == 0,
+            'success': len(self.logger.logs['error']) == 0,
             'info': self.logger.logs['info'],
             'warnings': self.logger.logs['warning'],
             'errors': self.logger.logs['error']
