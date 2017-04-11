@@ -107,8 +107,7 @@ class ProjectDeployer(object):
             html = """
                 <html lang="en">
                     <head>
-                        <title>{0}</title>'
-
+                        <title>{0}</title>
                     </head>
                     <body>
                         <div id="content">{1}</div>

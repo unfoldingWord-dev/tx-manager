@@ -67,6 +67,8 @@ class Templater(object):
                 title = soup.h1.text
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
+            if title == "Conversion requested...":
+                continue
             if filename != fname:
                 html += '<li><a href="{0}">{1}</a></li>'.format(os.path.basename(fname),title)
             else:
@@ -200,6 +202,8 @@ class BibleTemplater(Templater):
                 title = soup.find('h1').text
             else:
                 title = '{0}.'.format(book_code)
+            if title == "Conversion requested...":
+                continue
             html += """
                 <div class="panel panel-default">
                     <div class="panel-heading">
