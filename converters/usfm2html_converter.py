@@ -1,7 +1,6 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
-import string
 import codecs
 from bs4 import BeautifulSoup
 from shutil import copyfile

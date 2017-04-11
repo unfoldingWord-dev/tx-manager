@@ -58,7 +58,7 @@ class Converter(object):
                 add_contents_to_zip(self.output_zip_file, self.output_dir)
                 # upload the output archive either to cdn_bucket or to a file (no cdn_bucket)
                 self.upload_archive()
-            except Exception as e:
+            except:
                 self.logger.error('Conversion process ended abnormally')
         else:
             self.logger.error('Resource "{0}" not currently supported'.format(self.resource))
