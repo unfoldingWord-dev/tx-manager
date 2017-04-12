@@ -119,7 +119,7 @@ class TestObsHandler(unittest.TestCase):
 
     def inspectFile(self, file_name, chapter=None):
         file_path = os.path.join(TestObsHandler.resources_dir, file_name)
-        inspection = OBSInspection(file_path, chapter)
+        inspection = OBSInspection(file_path, None, chapter)
         inspection.run()
         return inspection
 
