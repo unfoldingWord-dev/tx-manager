@@ -1,11 +1,5 @@
-# -*- coding: utf-8 -*-
-
-# Transforms old versions of manifest.json files to the latest
-
 from __future__ import print_function, unicode_literals
-
 import os
-
 from six import iteritems
 from glob import glob
 from datetime import datetime
@@ -13,12 +7,14 @@ from door43_tools.bible_books import BOOK_NAMES, BOOK_NUMBERS
 from door43_tools.language_handler import Language
 from general_tools.file_utils import load_json_object, get_files, get_subdirs
 
+
 class Manifest(object):
     LATEST_VERSION = 6
 
     def __init__(self, file_name=None, meta=None, repo_name=None, files_path=None):
         """
-        Class constructor. Optionally accepts the name of a file to deserialize.
+        Optionally accepts the name of a file to deserialize.
+
         :param str file_name: The name of a file to deserialize into a Manifest object
         """
         # Defaults
@@ -309,22 +305,22 @@ class Manifest(object):
     def get_resource_name(resource_id):
         resource_id = resource_id.lower()
         if resource_id == 'ulb':
-            return u'Unlocked Literal Bible'
+            return 'Unlocked Literal Bible'
         elif resource_id == 'udb':
-            return u'Unlocked Dynamic Bible'
+            return 'Unlocked Dynamic Bible'
         elif resource_id == 'bible':
-            return u'Bible'
+            return 'Bible'
         elif resource_id == 'obs':
-            return u'Open Bible Stories'
+            return 'Open Bible Stories'
         elif resource_id == 'tn':
-            return u'translationNotes'
+            return 'translationNotes'
         elif resource_id == 'tw':
-            return u'translationWords'
+            return 'translationWords'
         elif resource_id == 'tq':
-            return u'translationQuestions'
+            return 'translationQuestions'
         elif resource_id == 'ta':
-            return u'translationAcademy'
-        return u''
+            return 'translationAcademy'
+        return ''
 
 
 class MetaData(object):

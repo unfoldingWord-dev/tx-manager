@@ -1,16 +1,5 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Richard Mahn <richard_mahn@wycliffeassociates.org>
-#
-#  DynamoDBHandler
-
+from __future__ import unicode_literals, print_function
 import boto3
-
 from six import iteritems
 from boto3 import Session
 from boto3.dynamodb.conditions import Attr, Key
@@ -19,15 +8,23 @@ from boto3.dynamodb.conditions import Attr, Key
 class DynamoDBHandler(object):
 
     def __init__(self, table_name, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name='us-west-2'):
-        if aws_access_key_id and aws_secret_access_key:
-            session = Session(aws_access_key_id=aws_access_key_id,
-                                   aws_secret_access_key=aws_secret_access_key,
-                                   region_name=aws_region_name)
+        self.table_name = table_name
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.aws_region_name = aws_region_name
+        self.resource = None
+        self.table = None
+        self.setup_resources()
+
+    def setup_resources(self):
+        if self.aws_access_key_id and self.aws_secret_access_key:
+            session = Session(aws_access_key_id=self.aws_access_key_id,
+                                   aws_secret_access_key=self.aws_secret_access_key,
+                                   region_name=self.aws_region_name)
             self.resource = session.resource('dynamodb')
         else:
             self.resource = boto3.resource('dynamodb')
-
-        self.table = self.resource.Table(table_name)
+        self.table = self.resource.Table(self.table_name)
 
     def get_item(self, keys):
         response = self.table.get_item(
@@ -87,7 +84,6 @@ class DynamoDBHandler(object):
                     if condition_str == "between":
                         value, value2 = value["value"], value["value2"]
                 else:
-                    value = None
                     condition_str = 'eq'
 
                 if not value and only_fields_with_values:

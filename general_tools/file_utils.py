@@ -1,19 +1,10 @@
-# -*- coding: utf8 -*-
-#
-#  Copyright (c) 2016 unfoldingWord
-#  http://creativecommons.org/licenses/MIT/
-#  See LICENSE file for details.
-#
-#  Contributors:
-#  Phil Hopper <phillip_hopper@wycliffeassociates.org>
-
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 import codecs
 import json
 import os
 import zipfile
 import sys
-
+import shutil
 from mimetypes import MimeTypes
 
 # we need this to check for string versus object
@@ -29,6 +20,7 @@ else:
 def unzip(source_file, destination_dir):
     """
     Unzips <source_file> into <destination_dir>.
+
     :param str|unicode source_file: The name of the file to read
     :param str|unicode destination_dir: The name of the directory to write the unzipped files
     """
@@ -39,10 +31,11 @@ def unzip(source_file, destination_dir):
 def add_contents_to_zip(zip_file, path):
     """
     Zip the contents of <path> into <zip_file>.
+
     :param str|unicode zip_file: The file name of the zip file
     :param str|unicode path: Full path of the directory to zip up
     """
-    path = path.rstrip(os.sep)
+    path = path.rstrip(os.path.sep)
     with zipfile.ZipFile(zip_file, 'a') as zf:
         for root, dirs, files in os.walk(path):
             for file in files:
@@ -50,22 +43,26 @@ def add_contents_to_zip(zip_file, path):
                 zf.write(file_path, file_path[len(path)+1:])
 
 
-def add_file_to_zip(zip_file, filename, archname=None, compress_type=None):
+def add_file_to_zip(zip_file, file_name, arc_name=None, compress_type=None):
     """
-    Zip <filename> into <zip_file> as <archname>.
+    Zip <file_name> into <zip_file> as <arc_name>.
+
     :param str|unicode zip_file: The file name of the zip file
-    :param str|unicode filename: The name of the file to add, including the path
-    :param str|unicode archname: The new name, with directories, of the file, the same as filename if not given
-    :param str|unicode compress_type: The compression type
+    :param str|unicode file_name: The name of the file to add, including the path
+    :param str|unicode arc_name: The new name, with directories, of the file, the same as filename if not given
+    :param str|unicode compress_type:
     """
     with zipfile.ZipFile(zip_file, 'a') as zf:
-        zf.write(filename, archname, compress_type)
+        zf.write(file_name, arc_name, compress_type)
 
 
 def make_dir(dir_name, linux_mode=0o755, error_if_not_writable=False):
     """
-    Creates a directory, if it doesn't exist already. If the directory does exist, and <error_if_not_writable> is True,
+    Creates a directory, if it doesn't exist already.
+
+    If the directory does exist, and <error_if_not_writable> is True,
     the directory will be checked for writability.
+
     :param str|unicode dir_name: The name of the directory to create
     :param int linux_mode: The mode/permissions to set for the new directory expressed as an octal integer (ex. 0o755)
     :param bool error_if_not_writable: The name of the file to read
@@ -79,7 +76,8 @@ def make_dir(dir_name, linux_mode=0o755, error_if_not_writable=False):
 
 def load_json_object(file_name, default=None):
     """
-    Deserialized <file_name> into a Python object
+    Deserialized <file_name> into a Python object.
+
     :param str|unicode file_name: The name of the file to read
     :param default: The value to return if the file is not found
     """
@@ -105,7 +103,10 @@ def read_file(file_name, encoding='utf-8-sig'):
 
 def write_file(file_name, file_contents, indent=None):
     """
-    Writes the <file_contents> to <file_name>. If <file_contents> is not a string, it is serialized as JSON.
+    Writes the <file_contents> to <file_name>.
+
+    If <file_contents> is not a string, it is serialized as JSON.
+
     :param str|unicode file_name: The name of the file to write
     :param str|unicode|object file_contents: The string to write or the object to serialize
     :param int indent: Specify a value if you want the output formatted to be more easily readable
@@ -120,7 +121,6 @@ def write_file(file_name, file_contents, indent=None):
 
     with codecs.open(file_name, 'w', encoding='utf-8') as out_file:
         out_file.write(text_to_write)
-
 
 def get_mime_type(path):
     mime = MimeTypes()
@@ -157,5 +157,42 @@ def get_subdirs(dir, relative_paths=False, topdown=False):
             dir_list.append(os.path.join(path, dirname))
     return dir_list
 
-if __name__ == '__main__':
-    pass
+
+def copy_tree(src, dst, symlinks=False, ignore=None):
+    """
+    Recursively copy a directory and all subdirectories.
+
+    Parameters same as shutil.copytree
+
+    :param src:
+    :param dst:
+    :param symlinks:
+    :param ignore:
+    :return:
+    """
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            copy_tree(s, d, symlinks, ignore)
+        else:
+            # only replace file if modified
+            if not os.path.exists(d) or os.stat(s).st_mtime - os.stat(d).st_mtime > 1:
+                shutil.copy2(s, d)
+
+
+def remove_tree(dir_path, ignore_errors=True):
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path, ignore_errors=ignore_errors)
+
+
+def remove(file_path, ignore_errors=True):
+    if ignore_errors:
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+    else:
+        os.remove(file_path)

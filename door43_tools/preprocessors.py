@@ -1,12 +1,10 @@
 from __future__ import unicode_literals, print_function
-
 import os
 import fnmatch
 import bible_books
-
 from general_tools.file_utils import write_file, read_file
-from distutils.dir_util import copy_tree
-
+from general_tools.file_utils import copy_tree
+from shutil import copy
 
 class Preprocessor(object):
     def __init__(self, manifest, source_dir, output_dir, quiet=False):
@@ -43,6 +41,25 @@ class ObsMarkdownPreprocessor(MarkdownPreprocessor):
     def __init__(self, *args, **kwargs):
         super(ObsMarkdownPreprocessor, self).__init__(*args, **kwargs)
 
+    def run(self):
+        content_dir = self.source_dir
+        if os.path.isdir(os.path.join(self.source_dir, 'content')):
+            content_dir = os.path.join(self.source_dir, 'content')
+            # if it is a RC v0.2 container with ##/01.md, we copy each 01.md file (or intro.md file) into output_dir
+            if os.path.isfile(os.path.join(self.source_dir, 'manifest.yaml')):
+                dirs = [name for name in os.listdir(content_dir) if os.path.isdir(os.path.join(content_dir, name))]
+                for d in dirs:
+                    f = None
+                    if os.path.isfile(os.path.join(content_dir, d, "01.md")):
+                        f = os.path.join(content_dir, d, '01.md')
+                    elif os.path.isfile(os.path.join(content_dir, d, 'intro.md')):
+                        f = os.path.join(content_dir, d, 'intro.md')
+                    if f:
+                        copy(f, os.path.join(self.output_dir, '{0}.md'.format(d)))
+                return
+        # otherwise we just copy the content_dir to output_dir
+        copy_tree(content_dir, self.output_dir)
+
 
 class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
     ignoreDirectories = ['.git', '00']
@@ -51,9 +68,13 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
     def __init__(self, *args, **kwargs):
         super(TsObsMarkdownPreprocessor, self).__init__(*args, **kwargs)
 
-    # Get a chapter title, if the title file does not exist, it will hand back the number with a period only.
-    #
+
     def get_chapter_title(self, chapter):
+        """
+        Get a chapter title.
+
+        if the title file does not exist, it will hand back the number with a period only.
+        """
         title_file = os.path.join(self.source_dir, chapter, 'title.txt')
         title = chapter.lstrip('0') + '. '
         if os.path.exists(title_file):
@@ -61,9 +82,9 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
             title = contents.strip()
         return title
 
-    # Get the chapters reference text
-    #
+
     def get_chapter_reference(self, chapter):
+        """Get the chapters reference text"""
         reference_file = os.path.join(self.source_dir, chapter, 'reference.txt')
         reference = ''
         if os.path.exists(reference_file):
@@ -100,11 +121,11 @@ class TsObsMarkdownPreprocessor(ObsMarkdownPreprocessor):
         chapters = self.get_chapters()
 
         for chapter in chapters:
-            markdown = u'# {0}\n\n'.format(chapter.get('title'))
+            markdown = '# {0}\n\n'.format(chapter.get('title'))
             for frame in chapter.get('frames'):
-                markdown += u'![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n'.format(frame.get('id'))
-                markdown += frame.get('text')+u'\n\n'
-            markdown += u'_{0}_\n'.format(chapter.get('reference'))
+                markdown += '![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n'.format(frame.get('id'))
+                markdown += frame.get('text')+'\n\n'
+            markdown += '_{0}_\n'.format(chapter.get('reference'))
 
             output_file = os.path.join(self.output_dir, '{0}.md'.format(chapter.get('id')))
             write_file(output_file, markdown)
@@ -116,12 +137,12 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
         self.title = ''
 
     def get_usfm_header(self):
-        header = u'\\id {0} {1}\n'.format(self.manifest.project['id'].upper(), self.manifest.resource['name'])
-        header += u'\\ide UTF-8\n'
-        header += u'\\h {0}\n'.format(self.title)
-        header += u'\\toc1 {0}\n'.format(self.title)
-        header += u'\\toc2 {0}\n'.format(self.title)
-        header += u'\\mt {0}\n\n'.format(self.title)
+        header = '\\id {0} {1}\n'.format(self.manifest.project['id'].upper(), self.manifest.resource['name'])
+        header += '\\ide UTF-8\n'
+        header += '\\h {0}\n'.format(self.title)
+        header += '\\toc1 {0}\n'.format(self.title)
+        header += '\\toc2 {0}\n'.format(self.title)
+        header += '\\mt {0}\n\n'.format(self.title)
         return header
 
     def get_chapters(self):
@@ -134,14 +155,15 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
                 chapters[chapter_key].append(os.path.join(root, filename))
         return chapters
 
-    def get_chapter(self, chapter):
-        chapter_content = ''
+    def get_chapter(self, key, chapter):
+        chapter_content = '\\c ' + key + '\n' # put in chapter number
         for chapter in sorted(chapter):
-            chapter_content += read_file(chapter) + u'\n'
-        return chapter_content + u'\n\n'
+            chapter_content += read_file(chapter) + '\n'
+        return chapter_content + '\n\n'
 
-    # Get the title of the project
+
     def get_title(self):
+        """ Get the title of the project"""
         for root, dirnames, filenames in os.walk(self.source_dir):
             for filename in fnmatch.filter(filenames, 'title.txt'):
                 return read_file(os.path.join(root, filename))
@@ -154,7 +176,7 @@ class TsBibleUsfmPreprocessor(UsfmPreprocessor):
         chapters = self.get_chapters()
 
         for key in sorted(chapters):
-            usfm_content += self.get_chapter(chapters[key])
+            usfm_content += self.get_chapter(key, chapters[key])
 
         usfm_file = os.path.join(self.output_dir, '{0}-{1}.usfm'.format(bible_books.BOOK_NUMBERS[self.manifest.project['id']], self.manifest.project['id'].upper()))
         write_file(usfm_file, usfm_content)

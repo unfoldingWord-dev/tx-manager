@@ -1,4 +1,0 @@
-boto3
-gogs_client
-bs4
-requests

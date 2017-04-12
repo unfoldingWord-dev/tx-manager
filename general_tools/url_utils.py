@@ -38,9 +38,7 @@ def _get_url(url, catch_exception, urlopen):
 
 
 def download_file(url, outfile):
-    """
-    Downloads a file and saves it.
-    """
+    """Downloads a file and saves it."""
     _download_file(url, outfile, urlopen=urllib2.urlopen)
 
 
@@ -58,7 +56,7 @@ def _download_file(url, outfile, urlopen):
 
 def get_languages():
     """
-    Returns an array of over 7000 dictionaries
+    Returns an array of over 7000 dictionaries.
 
     Structure:
     [
@@ -82,7 +80,8 @@ def get_languages():
 
 def join_url_parts(*args):
     """
-    Joins a list of segments into a URL-like string
+    Joins a list of segments into a URL-like string.
+
     :type args: List<string>
     """
     # check for edge case
