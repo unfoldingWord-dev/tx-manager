@@ -105,45 +105,36 @@ class TxManager(object):
         if not job.output_format:
             raise Exception('"output_format" not given.')
 
-        module = self.get_converter_module(job)
+        converter_module = self.get_converter_module(job)
 
-        if not module:
+        if not converter_module:
             raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
                                                                                            job.input_format,
                                                                                            job.output_format))
-
-        job.convert_module = module.name
-
+        job.convert_module = converter_module.name
         created_at = datetime.utcnow()
         expires_at = created_at + timedelta(days=1)
         eta = created_at + timedelta(seconds=20)
-
         job.created_at = created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         job.expires_at = expires_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         job.eta = eta.strftime("%Y-%m-%dT%H:%M:%SZ")
         job.status = 'requested'
         job.message = 'Conversion requested...'
-
-        job_id = hashlib.sha256('{0}-{1}-{2}'.format(user.username,
-                                                     user.email,
-                                                     created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
-        job.job_id = job_id
-
+        job.job_id = hashlib.sha256('{0}-{1}-{2}'.format(user.username,
+                                                         user.email,
+                                                         created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         # All conversions must result in a ZIP of the converted file(s)
         output_file = 'tx/job/{0}.zip'.format(job.job_id)
         job.output = '{0}/{1}'.format(self.cdn_url, output_file)
         job.cdn_file = output_file
-
         job.links = {
-            "href": "{0}/tx/job/{1}".format(self.api_url, job_id),
+            "href": "{0}/tx/job/{1}".format(self.api_url, job.job_id),
             "rel": "self",
             "method": "GET"
         }
-
         # Saving this to the DynamoDB will start trigger a DB stream which will call
         # tx-manager again with the job info (see run() function)
         self.insert_job(job)
-
         return {
             "job": job.get_db_data(),
             "links": [
