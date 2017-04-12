@@ -41,17 +41,11 @@ class Md2HtmlConverter(Converter):
 
                 # Do the OBS inspection (this now operates on a single file instead of folder)
                 # QUESTION: Should this be done separately after conversion????
-                inspector = OBSInspection(output_file)
+                inspector = OBSInspection(output_file, self.logger)
                 try:
                     inspector.run()
                 except Exception as e:
                     self.logger.warning('Chapter {0}: failed to run OBS inspector: {1}'.format(base_name, e.message))
-
-                # copy over warnings and errors
-                for warning in inspector.logger.logs["warning"]:
-                    self.logger.warning(warning)
-                for error in inspector.logger.logs["error"]:
-                    self.logger.error(error)
             else:
                 # Directly copy over files that are not markdown files
                 try:

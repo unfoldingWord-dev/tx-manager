@@ -65,13 +65,8 @@ class Usfm2HtmlConverter(Converter):
             copyfile(manifest_file, os.path.join(self.output_dir, 'manifest.json'))
 
         # Do the Bible inspection HERE
-        #        inspector = BibleInspection(self.output_dir)
+        #        inspector = BibleInspection(self.output_dir, self.logger)
         #        inspector.run()
-        #        for warning in inspector.warnings:
-        #            self.warning_message(warning)
-        #        for error in inspector.errors:
-        #            self.error_message(error)
-
         #        complete_html = html_template.safe_substitute(content=complete_html)
         #        write_file(os.path.join(self.output_dir, 'all.html'), complete_html)
         #        self.log_message('Made one HTML of all bibles in all.html.')

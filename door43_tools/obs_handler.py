@@ -1,10 +1,7 @@
 from __future__ import print_function, unicode_literals
-
 import os
-
 from bs4 import BeautifulSoup
-
-from door43_tools.logger import Door43Logger
+from converters.convert_logger import ConvertLogger
 from general_tools.file_utils import load_json_object
 from obs_data import obs_data
 
@@ -29,7 +26,7 @@ class OBSStatus(object):
 
 
 class OBSInspection(object):
-    def __init__(self, filename, chapter=None):
+    def __init__(self, filename, logger=None, chapter=None):
         """
         Takes a path to an OBS chapter and the chapter of the given file.
 
@@ -43,9 +40,10 @@ class OBSInspection(object):
             except:
                 chapter = None
         self.chapter = chapter
-
-        self.logger = Door43Logger()
+        self.logger = logger
         self.manifest = {}
+        if not self.logger:
+            self.logger = ConvertLogger()
 
     def run(self):
         if not self.chapter: # skip over files that are not chapters
