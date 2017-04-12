@@ -3,7 +3,11 @@ from six import iteritems
 
 
 class TxObject(object):
-    db_fields = []
+    db_fields = [
+        'log',
+        'warnings',
+        'errors'
+    ]
 
     def __init__(self, quiet=False):
         self.quiet = quiet
