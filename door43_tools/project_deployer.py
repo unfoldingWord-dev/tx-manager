@@ -137,6 +137,8 @@ class ProjectDeployer(object):
         for root, dirs, files in os.walk(output_dir):
             for f in sorted(files):
                 path = os.path.join(root, f)
+                if os.path.isdir(path):
+                    continue
                 key = s3_commit_key + path.replace(output_dir, '')
                 print("Uploading {0} to {1}".format(path, key))
                 self.door43_handler.upload_file(path, key, 0)
