@@ -42,16 +42,16 @@ class ClientCallback(object):
         try:
             print('Downloading converted zip file from {0}...'.format(converted_zip_url))
             tries = 0
-            # Going to try to get the file every second for 300 seconds just in case there is a delay in the upload
+            # Going to try to get the file every second for 200 seconds just in case there is a delay in the upload
             # (For example, 3.6MB takes at least one minute to be seen on S3!)
             time.sleep(5)
-            while not os.path.isfile(converted_zip_file) and tries < 300:
+            while not os.path.isfile(converted_zip_file) and tries < 200:
                 tries += 1
                 time.sleep(1)
                 try:
                     download_file(converted_zip_url, converted_zip_file)
                 except:
-                    if tries >= 300:
+                    if tries >= 200:
                         raise
         finally:
             print('finished.')
