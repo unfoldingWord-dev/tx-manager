@@ -205,31 +205,30 @@ class TxManager(object):
 
         try:
             self.update_job(job)
-
-            module = self.get_converter_module(job)
-            if not module:
+            converter_module = self.get_converter_module(job)
+            if not converter_module:
                 raise Exception('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
 
-            job.converter_module = module.name
+            job.converter_module = converter_module.name
             self.update_job(job)
 
             payload = {
                 'job': job.get_db_data(),
             }
 
-            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(module.name,
+            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(converter_module.name,
                                                                                       job.source,
                                                                                       job.output))
 
             headers = {"content-type": "application/json"}
-            url = module.public_links[0]
+            url = converter_module.public_links[0]
             print("Payload to {0}:".format(url))
             print(json.dumps(payload))
             response = requests.post(url, json=payload, headers=headers)
             print('finished.')
 
-            print("Response from {0}:".format(module.name))
+            print("Response from {0}:".format(converter_module.name))
             print(response)
 
             json_data = response.json()
@@ -260,11 +259,11 @@ class TxManager(object):
                         if message:
                             job.warning_message(message)
                     if json_data['errors']:
-                        job.log_message('{0} function returned with errors.'.format(module.name))
+                        job.log_message('{0} function returned with errors.'.format(converter_module.name))
                     elif json_data['warnings']:
-                        job.log_message('{0} function returned with warnings.'.format(module.name))
+                        job.log_message('{0} function returned with warnings.'.format(converter_module.name))
                     else:
-                        job.log_message('{0} function returned successfully.'.format(module.name))
+                        job.log_message('{0} function returned successfully.'.format(converter_module.name))
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
