@@ -22,6 +22,9 @@ class Door43DeployHandler(Handler):
                     if bucket_name.startswith('test-'):
                         cdn_bucket = 'test-{0}'.format(cdn_bucket)
                         door43_bucket = 'test-{0}'.format(door43_bucket)
+                    elif bucket_name.startswith('dev-'):
+                        cdn_bucket = 'dev-{0}'.format(cdn_bucket)
+                        door43_bucket = 'dev-{0}'.format(door43_bucket)
                     if key.endswith('.html'):
                         # If the file ends with .html, it was a change in template, so all projects are redeployed
                         ProjectDeployer(cdn_bucket, door43_bucket).redeploy_all_commits()
