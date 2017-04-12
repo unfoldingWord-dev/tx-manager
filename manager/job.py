@@ -56,13 +56,10 @@ class TxJob(TxObject):
         self.message = None
         self.api_base_url = None
         self.cdn_base_url = None
-        self.log = []
-        self.errors = []
-        self.warnings = []
+
+        super(TxJob, self).__init__(quiet)
 
         if isinstance(data, dict):
             self.populate(data)
         elif isinstance(data, string_types):
             self.populate({'job_id': data})
-
-        super(TxJob, self).__init__(quiet)

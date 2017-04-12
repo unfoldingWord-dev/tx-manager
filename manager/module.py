@@ -28,9 +28,9 @@ class TxModule(TxObject):
         self.type = None
         self.version = 1
 
+        super(TxModule, self).__init__(quiet)
+
         if isinstance(data, dict):
             self.populate(data)
         elif isinstance(data, string_types):
             self.populate({'name': data})
-
-        super(TxModule, self).__init__(quiet)
