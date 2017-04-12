@@ -183,7 +183,7 @@ class BibleTemplater(Templater):
     def build_page_nav(self, filename=None):
         html = """
         <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
-            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
+            <ul id="sidebar-nav" class="affix affix-top nav nav-stacked books panel-group">
             """
         for fname in self.files:
             filebase = os.path.splitext(os.path.basename(fname))[0]
