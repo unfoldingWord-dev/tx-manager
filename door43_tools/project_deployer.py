@@ -2,15 +2,15 @@ from __future__ import print_function, unicode_literals
 import os
 import sys
 import tempfile
+import boto3
+import json
 from glob import glob
 from shutil import copyfile
 from aws_tools.s3_handler import S3Handler
 from general_tools.file_utils import write_file
 from door43_tools import templaters
-from moto import mock_s3
 
 
-@mock_s3
 class ProjectDeployer(object):
     """
     Deploys a project's revision to the door43.org bucket
@@ -156,11 +156,22 @@ class ProjectDeployer(object):
 
         return True
 
-    def redeploy_all_projects(self):
-        success = True
+    def redeploy_all_projects(self, deploy_function):
+        i = 0
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
-            success = (success and self.cdn_handler.replace(obj.key))
-        return success
+            i += 1
+            print("{0}: {1}".format(i, obj.key))
+            client = boto3.client('lambda')
+            client.invoke(
+                FunctionName=deploy_function,
+                InvocationType='Event',
+                LogType='Tail',
+                Payload=json.dumps({
+                    'cdn_bucket': self.cdn_bucket,
+                    'build_log_key': obj.key
+                })
+            )
+        return True
 
     def str_to_class(self, str):
         """
