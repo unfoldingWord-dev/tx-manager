@@ -9,6 +9,7 @@ from shutil import copyfile
 from aws_tools.s3_handler import S3Handler
 from general_tools.file_utils import write_file
 from door43_tools import templaters
+from datetime import datetime, timedelta
 
 
 class ProjectDeployer(object):
@@ -158,10 +159,16 @@ class ProjectDeployer(object):
 
     def redeploy_all_projects(self, deploy_function):
         i = 0
+        client = boto3.client('lambda')
+        one_day_ago = datetime.utcnow() - timedelta(hours=24)
+        print(one_day_ago)
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
             i += 1
-            print("{0}: {1}".format(i, obj.key))
-            client = boto3.client('lambda')
+            last_modified = obj.last_modified.replace(tzinfo=None)
+            print("{0}: {1} {2}".format(i, obj.key, last_modified))
+            if one_day_ago <= last_modified:
+                print("skipping...")
+                continue
             client.invoke(
                 FunctionName=deploy_function,
                 InvocationType='Event',
