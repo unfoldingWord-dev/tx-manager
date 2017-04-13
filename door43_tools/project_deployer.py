@@ -29,11 +29,13 @@ class ProjectDeployer(object):
         self.door43_bucket = door43_bucket
         self.cdn_handler = None
         self.door43_handler = None
+        self.lambda_client = None
         self.setup_resources()
 
     def setup_resources(self):
         self.cdn_handler = S3Handler(self.cdn_bucket)
         self.door43_handler = S3Handler(self.door43_bucket)
+        self.lambda_client = boto3.client('lambda', region_name='us-west-2')
 
     def deploy_revision_to_door43(self, build_log_key):
         """
@@ -159,7 +161,6 @@ class ProjectDeployer(object):
 
     def redeploy_all_projects(self, deploy_function):
         i = 0
-        client = boto3.client('lambda')
         one_day_ago = datetime.utcnow() - timedelta(hours=24)
         print(one_day_ago)
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
@@ -169,7 +170,7 @@ class ProjectDeployer(object):
             if one_day_ago <= last_modified:
                 print("skipping...")
                 continue
-            client.invoke(
+            self.lambda_client.invoke(
                 FunctionName=deploy_function,
                 InvocationType='Event',
                 LogType='Tail',
