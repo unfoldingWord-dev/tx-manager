@@ -2,10 +2,12 @@ from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import os
 import tempfile
+import mock
 from moto import mock_s3
 from door43_tools.project_deployer import ProjectDeployer
 from general_tools.file_utils import unzip
 from shutil import rmtree
+
 
 @mock_s3
 class ProjectDeployerTests(unittest.TestCase):
@@ -35,6 +37,13 @@ class ProjectDeployerTests(unittest.TestCase):
         bad_key = 'u/test_user/test_repo/12345678/bad_build_log.json'
         ret = self.deployer.deploy_revision_to_door43(bad_key)
         self.assertFalse(ret)
+
+    @mock.patch('door43_tools.project_deployer.ProjectDeployer.deploy_revision_to_door43')
+    def test_redeploy_all_projects(self, mock_deploy_revision_to_door43):
+        mock_deploy_revision_to_door43.return_value = True
+        self.deployer.cdn_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
+        self.deployer.cdn_handler.put_contents('u/user2/project2/revision2/build_log.json', '{}')
+        self.assertTrue(self.deployer.redeploy_all_projects())
 
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')

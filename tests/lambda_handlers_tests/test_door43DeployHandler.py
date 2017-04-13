@@ -12,24 +12,6 @@ class TestDoor43DeployerHandler(TestCase):
         mock_redeploy_all_commits.return_value = None
         mock_deploy_revision_to_door43.return_value = None
 
-        # Test redeploy if a template change
-        event = {
-            'Records': [
-                {
-                    's3': {
-                        'bucket': {
-                            'name': 'test-my_bucket'
-                        },
-                        'object': {
-                            'key': 'obs.html'
-                        }
-                    }
-                }
-            ]
-        }
-        handler = Door43DeployHandler()
-        self.assertIsNone(handler.handle(event, None))
-
         # Test deploy if a build_log.json added
         event = {
             'Records': [
@@ -44,6 +26,13 @@ class TestDoor43DeployerHandler(TestCase):
                     }
                 },
             ]
+        }
+        handler = Door43DeployHandler()
+        self.assertIsNone(handler.handle(event, None))
+
+        # Test redeploy all
+        event = {
+            'cdn_bucket': 'test-cdn.door43.org'
         }
         handler = Door43DeployHandler()
         self.assertIsNone(handler.handle(event, None))

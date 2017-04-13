@@ -25,9 +25,13 @@ class Door43DeployHandler(Handler):
                     elif bucket_name.startswith('dev-'):
                         cdn_bucket = 'dev-{0}'.format(cdn_bucket)
                         door43_bucket = 'dev-{0}'.format(door43_bucket)
-                    if key.endswith('.html'):
-                        # If the file ends with .html, it was a change in template, so all projects are redeployed
-                        ProjectDeployer(cdn_bucket, door43_bucket).redeploy_all_commits()
-                    elif key.endswith('build_log.json'):
-                        # Just a build_log.json file was uploaded, so we deploy this one revision
-                        ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
+                    ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
+        elif 'cdn_bucket' in event:
+            # this is triggered manually through AWS Lambda console to update all projects
+            cdn_bucket = event['cdn.door43.org']
+            door43_bucket = 'door43.org'
+            if cdn_bucket.startswith('test-'):
+                door43_bucket = 'test-{0}'.format(door43_bucket)
+            elif cdn_bucket.startswith('dev-'):
+                door43_bucket = 'dev-{0}'.format(door43_bucket)
+            ProjectDeployer(cdn_bucket, door43_bucket).redeploy_all_projects()
