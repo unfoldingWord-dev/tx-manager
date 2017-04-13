@@ -7,8 +7,10 @@ from shutil import copyfile
 from aws_tools.s3_handler import S3Handler
 from general_tools.file_utils import write_file
 from door43_tools import templaters
+from moto import mock_s3
 
 
+@mock_s3
 class ProjectDeployer(object):
     """
     Deploys a project's revision to the door43.org bucket
@@ -154,14 +156,13 @@ class ProjectDeployer(object):
 
         return True
 
-    def redeploy_all_commits(self):
+    def redeploy_all_projects(self):
         success = True
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
             success = (success and self.deploy_revision_to_door43(obj.key))
         return success
 
-    @staticmethod
-    def str_to_class(str):
+    def str_to_class(self, str):
         """
         Gets a class from a string.
 
