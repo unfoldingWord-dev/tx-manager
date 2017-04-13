@@ -156,7 +156,10 @@ class ProjectDeployer(object):
 
     def redeploy_all_projects(self):
         success = True
+        i = 1
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
+            print("{0}: {1}".format(i, obj.key))
+            i += 1
             success = (success and self.cdn_handler.replace(obj.key))
         return success
 
