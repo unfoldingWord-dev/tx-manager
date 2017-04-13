@@ -28,10 +28,7 @@ class Door43DeployHandler(Handler):
                     ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
         elif 'cdn_bucket' in event:
             # this is triggered manually through AWS Lambda console to update all projects
-            cdn_bucket = event['cdn.door43.org']
-            door43_bucket = 'door43.org'
-            if cdn_bucket.startswith('test-'):
-                door43_bucket = 'test-{0}'.format(door43_bucket)
-            elif cdn_bucket.startswith('dev-'):
-                door43_bucket = 'dev-{0}'.format(door43_bucket)
+            cdn_bucket = event['cdn_bucket']
+            prefix = cdn_bucket[:-(len('cdn.door43.org'))]
+            door43_bucket = '{0}door43.org'.format(prefix)
             ProjectDeployer(cdn_bucket, door43_bucket).redeploy_all_projects()

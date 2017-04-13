@@ -31,8 +31,5 @@ class TestDoor43DeployerHandler(TestCase):
         self.assertIsNone(handler.handle(event, None))
 
         # Test redeploy all
-        event = {
-            'cdn_bucket': 'test-cdn.door43.org'
-        }
-        handler = Door43DeployHandler()
-        self.assertIsNone(handler.handle(event, None))
+        self.assertIsNone(handler.handle({'cdn_bucket': 'test-cdn.door43.org'}, None))
+        self.assertIsNone(handler.handle({'cdn_bucket': 'dev-cdn.door43.org'}, None))
