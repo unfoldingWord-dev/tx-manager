@@ -44,17 +44,29 @@ class S3HandlerTests(TestCase):
     def test_key_does_not_exists(self):
         self.assertFalse(self.handler.key_exists(key='does_not_exists.json', bucket_name=self.MOCK_BUCKET_NAME))
 
-    def test_copy_good(self):
+    def test_copy(self):
+        # test good copy
         self.handler.put_contents('from/file.txt', 'this exists')
         ret = self.handler.copy(from_key="from/file.txt", to_key="to/file.txt", from_bucket=self.MOCK_BUCKET_NAME)
         self.assertTrue(ret)
         contents = self.handler.get_file_contents('from/file.txt')
         self.assertEqual(contents, 'this exists')
 
-    def test_copy_bad(self):
+        # Test bad copy
         ret = self.handler.copy(from_key="from/not_exist.txt")
         self.assertFalse(ret)
         self.assertRaises(Exception, self.handler.copy, from_key="from/not_exist.txt", catch_exception=False)
+
+    def test_replace(self):
+        # Test replace
+        self.handler.put_contents('path/file.txt', 'this exists')
+        ret = self.handler.replace(key="path/file.txt")
+        self.assertTrue(ret)
+        contents = self.handler.get_file_contents('path/file.txt')
+        self.assertEqual(contents, 'this exists')
+        # Do not catch exception
+        ret = self.handler.replace(key="path/file.txt", catch_exception=False)
+        self.assertTrue(ret)
 
     def test_get_file_contents_good(self):
         self.handler.put_contents('exists.json', 'this exists')

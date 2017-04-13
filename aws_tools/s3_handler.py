@@ -97,6 +97,17 @@ class S3Handler(object):
             return self.resource.Object(bucket_name=self.bucket_name, key=to_key).copy_from(
                 CopySource='{0}/{1}'.format(from_bucket, from_key))
 
+    def replace(self, key, catch_exception=True):
+        if catch_exception:
+            try:
+                return self.resource.Object(bucket_name=self.bucket_name, key=key).copy_from(
+                    CopySource='{0}/{1}'.format(self.bucket_name, key), MetadataDirective='REPLACE')
+            except:
+                return False
+        else:
+            return self.resource.Object(bucket_name=self.bucket_name, key=key).copy_from(
+                CopySource='{0}/{1}'.format(self.bucket_name, key), MetadataDirective='REPLACE')
+
     def upload_file(self, path, key, cache_time=600):
         """
         Upload file to S3 storage. Similar to the s3.upload_file, however, that

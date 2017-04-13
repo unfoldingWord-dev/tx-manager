@@ -38,9 +38,7 @@ class ProjectDeployerTests(unittest.TestCase):
         ret = self.deployer.deploy_revision_to_door43(bad_key)
         self.assertFalse(ret)
 
-    @mock.patch('door43_tools.project_deployer.ProjectDeployer.deploy_revision_to_door43')
-    def test_redeploy_all_projects(self, mock_deploy_revision_to_door43):
-        mock_deploy_revision_to_door43.return_value = True
+    def test_redeploy_all_projects(self):
         self.deployer.cdn_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
         self.deployer.cdn_handler.put_contents('u/user2/project2/revision2/build_log.json', '{}')
         self.assertTrue(self.deployer.redeploy_all_projects())

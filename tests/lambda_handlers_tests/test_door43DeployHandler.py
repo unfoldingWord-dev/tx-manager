@@ -18,7 +18,7 @@ class TestDoor43DeployerHandler(TestCase):
                 {
                     's3': {
                         'bucket': {
-                            'name': 'test-my_bucket'
+                            'name': 'test-cdn.door43.org'
                         },
                         'object': {
                             'key': 'build_log.json'
