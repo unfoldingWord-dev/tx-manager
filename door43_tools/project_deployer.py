@@ -7,10 +7,8 @@ from shutil import copyfile
 from aws_tools.s3_handler import S3Handler
 from general_tools.file_utils import write_file
 from door43_tools import templaters
-from moto import mock_s3
 
 
-@mock_s3
 class ProjectDeployer(object):
     """
     Deploys a project's revision to the door43.org bucket
