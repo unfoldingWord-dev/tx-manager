@@ -19,12 +19,10 @@ class Door43DeployHandler(Handler):
                     key = record['s3']['object']['key']
                     cdn_bucket = 'cdn.door43.org'
                     door43_bucket = 'door43.org'
-                    if bucket_name.startswith('test-'):
-                        cdn_bucket = 'test-{0}'.format(cdn_bucket)
-                        door43_bucket = 'test-{0}'.format(door43_bucket)
-                    elif bucket_name.startswith('dev-'):
-                        cdn_bucket = 'dev-{0}'.format(cdn_bucket)
-                        door43_bucket = 'dev-{0}'.format(door43_bucket)
+                    if '-' in bucket_name:
+                        prefix = bucket_name.split('-')[0] + '-'
+                        cdn_bucket = '{0}-{1}'.format(prefix, cdn_bucket)
+                        door43_bucket = '{0}-{1}'.format(prefix, door43_bucket)
                     ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
         elif 'cdn_bucket' in event:
             # this is triggered manually through AWS Lambda console to update all projects

@@ -18,7 +18,7 @@ class TestRequestJobHandler(TestCase):
                 "source": "test_source",
                 "resource_type": "obs",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "hstml"
             },
             'vars': {
                 'gogs_url': 'https://git.example.com',
