@@ -166,10 +166,9 @@ class ProjectDeployer(object):
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
             i += 1
             last_modified = obj.last_modified.replace(tzinfo=None)
-            print("{0}: {1} {2}".format(i, obj.key, last_modified))
             if one_day_ago <= last_modified:
-                print("skipping...")
                 continue
+            print("{0}: {1} {2}".format(i, obj.key, last_modified))
             self.lambda_client.invoke(
                 FunctionName=deploy_function,
                 InvocationType='Event',
