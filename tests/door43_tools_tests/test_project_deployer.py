@@ -41,7 +41,7 @@ class ProjectDeployerTests(unittest.TestCase):
     def test_redeploy_all_projects(self):
         self.deployer.cdn_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
         self.deployer.cdn_handler.put_contents('u/user2/project2/revision2/build_log.json', '{}')
-        self.assertTrue(self.deployer.redeploy_all_projects())
+        self.assertTrue(self.deployer.redeploy_all_projects('test-door43_deployer'))
 
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')
