@@ -2,6 +2,8 @@ from __future__ import print_function, unicode_literals
 import os
 import sys
 import tempfile
+import boto3
+import json
 from glob import glob
 from shutil import copyfile
 from aws_tools.s3_handler import S3Handler
@@ -44,8 +46,13 @@ class ProjectDeployer(object):
         except:
             pass
 
+        print("1 "+build_log_key)
+        print(build_log)
+
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log or 'repo_name' not in build_log:
             return False
+
+        print("2 "+build_log_key)
 
         user = build_log['repo_owner']
         repo_name = build_log['repo_name']
@@ -154,14 +161,22 @@ class ProjectDeployer(object):
 
         return True
 
-    def redeploy_all_projects(self):
-        success = True
-        i = 1
+    def redeploy_all_projects(self, deploy_function):
+        i = 0
         for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
-            print("{0}: {1}".format(i, obj.key))
             i += 1
-            success = (success and self.deploy_revision_to_door43(obj.key))
-        return success
+            print("{0}: {1}".format(i, obj.key))
+            client = boto3.client('lambda')
+            client.invoke(
+                FunctionName=deploy_function,
+                InvocationType='Event',
+                LogType='Tail',
+                Payload=json.dumps({
+                    'cdn_bucket': self.cdn_bucket,
+                    'build_log_key': obj.key
+                })
+            )
+        return True
 
     def str_to_class(self, str):
         """

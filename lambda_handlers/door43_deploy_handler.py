@@ -17,16 +17,26 @@ class Door43DeployHandler(Handler):
                 if 's3' in record:
                     bucket_name = record['s3']['bucket']['name']
                     key = record['s3']['object']['key']
-                    cdn_bucket = 'cdn.door43.org'
-                    door43_bucket = 'door43.org'
-                    if '-' in bucket_name:
-                        prefix = bucket_name.split('-')[0] + '-'
-                        cdn_bucket = '{0}-{1}'.format(prefix, cdn_bucket)
-                        door43_bucket = '{0}-{1}'.format(prefix, door43_bucket)
-                    ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
+                    self.deploy(bucket_name, key)
+        elif 'build_log_key' in event:
+            if 'cdn_bucket' in event:
+                self.deploy(event['cdn_bucket'], event['build_log_key'])
         elif 'cdn_bucket' in event:
             # this is triggered manually through AWS Lambda console to update all projects
             cdn_bucket = event['cdn_bucket']
             prefix = cdn_bucket[:-(len('cdn.door43.org'))]
             door43_bucket = '{0}door43.org'.format(prefix)
-            ProjectDeployer(cdn_bucket, door43_bucket).redeploy_all_projects()
+            deploy_function = '{0}tx_door43_deploy'.format(prefix)
+            ProjectDeployer(cdn_bucket, door43_bucket).redeploy_all_projects(deploy_function)
+
+    @staticmethod
+    def deploy(bucket_name, key):
+        print("DEPLOY {0} {1}".format(bucket_name, key))
+        cdn_bucket = 'cdn.door43.org'
+        door43_bucket = 'door43.org'
+        if '-' in bucket_name:
+            prefix = bucket_name.split('-')[0] + '-'
+            cdn_bucket = '{0}{1}'.format(prefix, cdn_bucket)
+            door43_bucket = '{0}{1}'.format(prefix, door43_bucket)
+        print("DEPLOY2 {0} {1}".format(cdn_bucket, door43_bucket))
+        ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
