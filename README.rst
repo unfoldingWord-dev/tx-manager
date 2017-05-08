@@ -20,7 +20,7 @@ develop:
 
 
 
-**NOTE: Find high level Architecture documentation\:** `tX Architecture`_.
+**NOTE: High level Architecture documentation is here\:** `tX Architecture`_.
 
 
 

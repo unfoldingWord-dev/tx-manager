@@ -37,12 +37,11 @@ Infrastructure
 Overview
 ~~~~~~~~
 
-All code for tX is run by `AWS
-Lambda <https://aws.amazon.com/lambda/>`__. The `AWS API
+All code for tX is run by `AWS Lambda <https://aws.amazon.com/lambda/>`__. The `AWS API
 Gateway <https://aws.amazon.com/api-gateway/>`__ service is what
 provides routing from URL requests to Lambda functions. Data and any
-required persistent metadata are stored in `AWS
-S3 <https://aws.amazon.com/s3/>`__ buckets. This is a "serverless" API.
+required persistent metadata are stored in `AWS S3 <https://aws.amazon.com/s3/>`__ buckets.
+This is a "serverless" API.
 
 Developers use `Apex <http://apex.run/>`__, `Travis
 CI <https://travis-ci.org/>`__, and
@@ -223,8 +222,7 @@ Conversion modules include (some are still to be implemented):
 
 Each conversion module accepts a specific type of text format as its
 input and the module returns a specific type of output document. For
-example, there is a
-```md2pdf`` <https://github.com/unfoldingWord-dev/tx-md2pdf>`__ module
+example, there is a `md2pdf <https://github.com/unfoldingWord-dev/tx-md2pdf>`__ module
 that converts Markdown text into a rendered PDF. The conversion modules
 also require that you specify the resource type (e.g. obs, ta, tn, tw or
 tq), which affects the formatting of the output document.
