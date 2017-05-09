@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='tx-manager',
-    version='0.2.61',
+    version='0.2.62',
     packages=[
         'client',
         'manager',
