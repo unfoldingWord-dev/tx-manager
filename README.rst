@@ -27,7 +27,7 @@ develop:
 tx-manager
 ==========
 
-This is a python module used with tx-manager-lambda. See the `tx-manager-lambda documentation <http://tx-manager-lambda.readthedocs.io/en/latest/readme.html>`_ for details on setting up and deploying the Lambda function.
+This is a python module used with **tx-manager-lambda**. See the `tx-manager-lambda documentation <http://tx-manager-lambda.readthedocs.io/en/latest/readme.html>`_ for details on setting up and deploying the Lambda function.
 
 Project description at `tX Manager Module`_.
 
