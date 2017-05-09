@@ -27,11 +27,11 @@ develop:
 tx-manager
 ==========
 
-This is a python module used with tx-manager-lambda
+This is a python module used with tx-manager-lambda. See the `tx-manager-lambda documentation <http://tx-manager-lambda.readthedocs.io/en/latest/readme.html>`_ for details on setting up and deploying the Lambda function.
 
-Project description at https://github.com/unfoldingWord-dev/door43.org/wiki/tX-Development-Architecture#tx-manager-module.
+Project description at `tX Manager Module`_.
 
-Issue for its creation at https://github.com/unfoldingWord-dev/door43.org/issues/53
+Issue for its creation at https://github.com/unfoldingWord-dev/door43.org/issues/53.
 
 
 tX Pipeline
