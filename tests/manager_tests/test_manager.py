@@ -581,12 +581,12 @@ class ManagerTest(unittest.TestCase):
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
         # there should be a table tag
         self.assertIsNotNone(soup.find('table'))
-        # module1 should have 8 rows of info
-        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module1-'))), 8)
-        # module2 should have 7 rows of info
-        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module2-'))), 7)
-        # module3 should have 5 rows of info
-        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module3-'))), 5)
+        module1 = soup.table.findAll('tr', id=lambda x: x and x.startswith('module1-'))
+        self.assertEquals(len(module1), 12) # module1 should have 12 rows of info
+        module2 = soup.table.findAll('tr', id=lambda x: x and x.startswith('module2-'))
+        self.assertEquals(len(module2), 11)  # module2 should have 11 rows of info
+        module3 = soup.table.findAll('tr', id=lambda x: x and x.startswith('module3-'))
+        self.assertEquals(len(module3), 9) # module3 should have 9 rows of info
 
     # helper methods #
 
