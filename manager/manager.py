@@ -554,19 +554,19 @@ class TxManager(object):
                 '<tr id="totals"><td class="hdr" colspan="2">Total Jobs</td></tr>',
                 'html.parser'))
             body.table.append(BeautifulSoup(
-                '<tr id="job-success" class="module-public-links"><td class="lbl">Success:</td><td>' +
+                '<tr id="totals-job-success" class="module-public-links"><td class="lbl">Success:</td><td>' +
                 str(self.jobs_success) + '</td></tr>',
                 'html.parser'))
             body.table.append(BeautifulSoup(
-                '<tr id="job-warning" class="module-public-links"><td class="lbl">Warnings:</td><td>' +
+                '<tr id="totals-job-warning" class="module-public-links"><td class="lbl">Warnings:</td><td>' +
                 str(self.jobs_warnings) + '</td></tr>',
                 'html.parser'))
             body.table.append(BeautifulSoup(
-                '<tr id="job-failure" class="module-public-links"><td class="lbl">Failures:</td><td>' +
+                '<tr id="totals-job-failure" class="module-public-links"><td class="lbl">Failures:</td><td>' +
                 str(self.jobs_failures) + '</td></tr>',
                 'html.parser'))
             body.table.append(BeautifulSoup(
-                '<tr id="job-total" class="module-public-links"><td class="lbl">Total:</td><td>' +
+                '<tr id="totals-job-total" class="module-public-links"><td class="lbl">Total:</td><td>' +
                 str(self.jobs_total) + '</td></tr>',
                 'html.parser'))
 
