@@ -13,7 +13,6 @@ from module import TxModule
 
 MAX_FAILURES = 10
 
-
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
@@ -483,7 +482,7 @@ class TxManager(object):
                 moduleName = item["name"]
                 self.logger.info(moduleName)
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
+                    '<tr id="' + moduleName + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
                     'html.parser'))
 
                 jobs = self.get_jobs_for_module(totalJobs, moduleName)
@@ -573,6 +572,7 @@ class TxManager(object):
                 'html.parser'))
 
             # build job failures table
+
             jobFailures = self.get_job_failures(totalJobs)
             failureTable = BeautifulSoup('<table id="failed" cellpadding="10" border="1"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
