@@ -660,7 +660,7 @@ class ManagerTest(unittest.TestCase):
         self.assertIsNotNone(table)
         module = table.findAll('tr')
         rowCount = len(module)
-        expectedFailureCount += 1 # add header row
+        expectedFailureCount += 2 # add header rows
         self.assertEquals(rowCount, expectedFailureCount)
 
     def validateModule(self, table, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,

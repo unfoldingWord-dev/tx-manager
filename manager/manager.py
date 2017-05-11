@@ -11,6 +11,8 @@ from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
 
+MAX_FAILURES = 10
+
 
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
@@ -481,7 +483,7 @@ class TxManager(object):
                 moduleName = item["name"]
                 self.logger.info(moduleName)
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2"><b>' + str(moduleName) + '</b></td></tr>',
+                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
                     'html.parser'))
 
                 jobs = self.get_jobs_for_module(totalJobs, moduleName)
@@ -570,20 +572,23 @@ class TxManager(object):
                 str(self.jobs_total) + '</td></tr>',
                 'html.parser'))
 
+            # build job failures table
             jobFailures = self.get_job_failures(totalJobs)
-
-            failureTable = BeautifulSoup('<table id="failed"></table>','html.parser')
+            failureTable = BeautifulSoup('<table id="failed" cellpadding="10" border="1"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
-                '<tr id="totals"><td class="hdr"><b>Failed Jobs<br>Job ID</b></td><td><b>Module</b></td><td><b>Time</b></td><td><b>Errors</b></td><td><b>Identifier</b></td></tr>',
+                '<tr id="totals"><td class="hdr" colspan="5"><h2>Failed Jobs</h2></td></tr>',
+                'html.parser'))
+            failureTable.table.append(BeautifulSoup(
+                '<tr id="totals"><td class="hdr">Job ID</td><td class="hdr">Module</td><td class="hdr">Time</td><td class="hdr">Errors</td><td class="hdr">Identifier</td></tr>',
                 'html.parser'))
 
-            for i in range(0, 10):
+            for i in range(0, MAX_FAILURES):
                 if i >= len(jobFailures):
                     break
 
                 item = jobFailures[i]
                 failureTable.table.append(BeautifulSoup(
-                    '<tr id="failure-' + str(i) + '" class="module-job-id"><td class="lbl">' + item['job_id'] + '</td>'
+                    '<tr id="failure-' + str(i) + '" class="module-job-id"><td>' + item['job_id'] + '</td>'
                     + '<td>' + item['convert_module'] + '</td>'
                     + '<td>' + item['created_at'] + '</td>'
                     + '<td>' + str(item['errors']) + '</td>'
