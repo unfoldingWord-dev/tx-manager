@@ -57,7 +57,8 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module1",
-                "errors" : [ "error" ]
+                "errors" : [ "error" ],
+                "created_at":	"2017-04-12T17:03:06Z"
             },
             "2": {
                 "job_id": "2",
@@ -102,6 +103,26 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module2"
+            },
+            "8": {
+                "job_id": "8",
+                "status": "requested",
+                "resource_type": "obs",
+                "input_format": "md",
+                "output_format": "html",
+                "convert_module": "module2",
+                "errors" : [ "error2" ],
+                "created_at":	"2017-03-12T17:03:076Z"
+            },
+            "9": {
+                "job_id": "9",
+                "status": "requested",
+                "resource_type": "obs",
+                "input_format": "md",
+                "output_format": "html",
+                "convert_module": "module2",
+                "errors" : [ "error3" ],
+                "created_at":	"2017-05-12T17:03:04Z"
             }
         }, keyname="job_id")
         cls.mock_module_db = mock_utils.mock_db_handler(data={
@@ -591,23 +612,24 @@ class ManagerTest(unittest.TestCase):
         # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
-        # there should be a table tag
-        self.assertIsNotNone(soup.find('table'))
+        # there should be a status table tag
+        statusTable = soup.find('table', id="status")
+        self.assertIsNotNone(statusTable)
 
         moduleName = 'module1'
         expectedRowCount = 12
         expectedSuccessCount = 2
         expectedWarningCount = 2
         expectedFailureCount = 1
-        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                             expectedWarningCount)
 
         moduleName = 'module2'
         expectedRowCount = 11
         expectedSuccessCount = 2
         expectedWarningCount = 0
-        expectedFailureCount = 0
-        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+        expectedFailureCount = 2
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                             expectedWarningCount)
 
         moduleName = 'module3'
@@ -615,36 +637,39 @@ class ManagerTest(unittest.TestCase):
         expectedSuccessCount = 0
         expectedWarningCount = 0
         expectedFailureCount = 0
-        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                             expectedWarningCount)
 
         moduleName = 'totals'
         expectedRowCount = 4
         expectedSuccessCount = 4
         expectedWarningCount = 2
-        expectedFailureCount = 1
-        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+        expectedFailureCount = 3
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                             expectedWarningCount)
+
+        failureTable = soup.find('table', id="failed")
+        self.assertIsNotNone(failureTable)
 
     # helper methods #
 
-    def validateModule(self, soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+    def validateModule(self, table, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                        expectedWarningCount):
-        module = soup.table.findAll('tr', id=lambda x: x and x.startswith(moduleName + '-'))
+        module = table.findAll('tr', id=lambda x: x and x.startswith(moduleName + '-'))
         rowCount = len(module)
         self.assertEquals(rowCount, expectedRowCount)
-        successCount = self.getCountFromRow(soup, moduleName + '-job-success')
+        successCount = self.getCountFromRow(table, moduleName + '-job-success')
         self.assertEquals(successCount, expectedSuccessCount)
-        warningCount = self.getCountFromRow(soup, moduleName + '-job-warning')
+        warningCount = self.getCountFromRow(table, moduleName + '-job-warning')
         self.assertEquals(warningCount, expectedWarningCount)
-        failureCount = self.getCountFromRow(soup, moduleName + '-job-failure')
+        failureCount = self.getCountFromRow(table, moduleName + '-job-failure')
         self.assertEquals(failureCount, expectedFailureCount)
         expectedTotalCount = expectedFailureCount + expectedSuccessCount + expectedWarningCount
-        totalCount = self.getCountFromRow(soup, moduleName + '-job-total')
+        totalCount = self.getCountFromRow(table, moduleName + '-job-total')
         self.assertEquals(totalCount, expectedTotalCount)
 
-    def getCountFromRow(self, soup, rowID):
-        success = soup.table.findAll('tr', id=lambda x: x == rowID)
+    def getCountFromRow(self, table, rowID):
+        success = table.findAll('tr', id=lambda x: x == rowID)
         dataFields = success[0].findAll("td")
         strings = dataFields[1].stripped_strings # get data from second column
         count = -1

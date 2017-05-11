@@ -474,7 +474,7 @@ class TxManager(object):
         if items and len(items):
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
 
-            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table></table>',
+            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
                                  'html.parser')
             for item in items:
                 # self.logger.info(json.dumps(item))
@@ -570,6 +570,11 @@ class TxManager(object):
                 str(self.jobs_total) + '</td></tr>',
                 'html.parser'))
 
+            jobFailures = self.get_job_failures(totalJobs)
+
+            failureTable = BeautifulSoup('<table id="failed"></table>','html.parser')
+
+            body.append(failureTable)
             dashboard['body'] = body.prettify('UTF-8')
         else:
             self.logger.info("No modules found.")
@@ -608,4 +613,17 @@ class TxManager(object):
             except:
                 self.jobs_failures+=1
 
+    def get_job_failures(self, jobs):
+        failedJobs = []
+        for job in jobs:
+            try:
+                errors = job['errors']
+                if len(errors) > 0:
+                    failedJobs.append(job)
+
+            except:
+                 failedJobs.append(job)
+
+        failedJobs = sorted(failedJobs, key=lambda k: k['created_at'], reverse=True)
+        return failedJobs
 
