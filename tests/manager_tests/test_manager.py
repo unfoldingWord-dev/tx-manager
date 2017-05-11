@@ -658,9 +658,8 @@ class ManagerTest(unittest.TestCase):
 
     def validateTable(self, table, expectedFailureCount):
         self.assertIsNotNone(table)
-        module = table.findAll('tr')
+        module = table.findAll('tr', id=lambda x: x and x.startswith('failure-'))
         rowCount = len(module)
-        expectedFailureCount += 2 # add header rows
         self.assertEquals(rowCount, expectedFailureCount)
 
     def validateModule(self, table, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
