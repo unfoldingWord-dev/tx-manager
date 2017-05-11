@@ -469,6 +469,7 @@ class TxManager(object):
         }
 
         items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
+        totalJobs = self.list_jobs({},False)
 
         if items and len(items):
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
@@ -477,10 +478,14 @@ class TxManager(object):
                                  'html.parser')
             for item in items:
                 # self.logger.info(json.dumps(item))
-                self.logger.info(item["name"])
+                moduleName = item["name"]
+                self.logger.info(moduleName)
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2">' + str(item["name"]) + '</td></tr>',
+                    '<tr id="' + moduleName + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
                     'html.parser'))
+
+                jobs = self.get_jobs_for_module(totalJobs, moduleName)
+                self.get_jobs_counts(jobs)
 
                 # TBD the following code almosts walks the db record replacing next 11 lines
                 # for attr, val in item:
@@ -489,45 +494,118 @@ class TxManager(object):
                 # rec += '<tr><td colspan="2"></td></tr>'
 
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
+                    '<tr id="' + moduleName + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
                     str(item["type"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
+                    '<tr id="' + moduleName + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
                     json.dumps(item["input_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
+                    '<tr id="' + moduleName + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
                     json.dumps(item["output_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
+                    '<tr id="' + moduleName + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
                     json.dumps(item["resource_types"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
+                    '<tr id="' + moduleName + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
                     str(item["version"]) + '</td></tr>',
                     'html.parser'))
 
                 if len(item["options"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + item['name'] + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
+                        '<tr id="' + moduleName + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
                         json.dumps(item["options"]) + '</td></tr>',
                         'html.parser'))
 
                 if len(item["private_links"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + item['name'] + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
+                        '<tr id="' + moduleName + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
                         json.dumps(item["private_links"]) + '</td></tr>',
                         'html.parser'))
 
                 if len(item["public_links"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + item['name'] + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
+                        '<tr id="' + moduleName + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
                         json.dumps(item["public_links"]) + '</td></tr>',
                         'html.parser'))
+
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + moduleName + '-job-success" class="module-public-links"><td class="lbl">Job Successes:</td><td>' +
+                    str(self.jobs_success) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + moduleName + '-job-warning" class="module-public-links"><td class="lbl">Job Warnings:</td><td>' +
+                    str(self.jobs_warnings) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + moduleName + '-job-failure" class="module-public-links"><td class="lbl">Job Failures:</td><td>' +
+                    str(self.jobs_failures) + '</td></tr>',
+                    'html.parser'))
+                body.table.append(BeautifulSoup(
+                    '<tr id="' + moduleName + '-job-total" class="module-public-links"><td class="lbl">Jobs Total:</td><td>' +
+                    str(self.jobs_total) + '</td></tr>',
+                    'html.parser'))
+
+            self.get_jobs_counts(totalJobs)
+            body.table.append(BeautifulSoup(
+                '<tr id="totals"><td class="hdr" colspan="2">Total Jobs</td></tr>',
+                'html.parser'))
+            body.table.append(BeautifulSoup(
+                '<tr id="totals-job-success" class="module-public-links"><td class="lbl">Success:</td><td>' +
+                str(self.jobs_success) + '</td></tr>',
+                'html.parser'))
+            body.table.append(BeautifulSoup(
+                '<tr id="totals-job-warning" class="module-public-links"><td class="lbl">Warnings:</td><td>' +
+                str(self.jobs_warnings) + '</td></tr>',
+                'html.parser'))
+            body.table.append(BeautifulSoup(
+                '<tr id="totals-job-failure" class="module-public-links"><td class="lbl">Failures:</td><td>' +
+                str(self.jobs_failures) + '</td></tr>',
+                'html.parser'))
+            body.table.append(BeautifulSoup(
+                '<tr id="totals-job-total" class="module-public-links"><td class="lbl">Total:</td><td>' +
+                str(self.jobs_total) + '</td></tr>',
+                'html.parser'))
+
             dashboard['body'] = body.prettify('UTF-8')
         else:
             self.logger.info("No modules found.")
 
         return dashboard
+
+    def get_jobs_for_module(self, jobs, moduleName):
+        jobsInModule = []
+        for job in jobs:
+            if "convert_module" in job:
+                name = job["convert_module"]
+                if name == moduleName:
+                    jobsInModule.append(job)
+
+        return jobsInModule
+
+    def get_jobs_counts(self, jobs):
+        self.jobs_total = len(jobs)
+        self.jobs_warnings = 0
+        self.jobs_failures = 0
+        self.jobs_success = 0
+        for job in jobs:
+            try:
+                errors = job['errors']
+                if len(errors) > 0:
+                    self.jobs_failures+=1
+                    continue
+
+                warnings = job['warnings']
+                if len(warnings) > 0:
+                    self.jobs_warnings+=1
+                    continue
+
+                self.jobs_success+=1
+
+            except:
+                self.jobs_failures+=1
+
+
