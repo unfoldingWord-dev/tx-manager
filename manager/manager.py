@@ -573,6 +573,19 @@ class TxManager(object):
             jobFailures = self.get_job_failures(totalJobs)
 
             failureTable = BeautifulSoup('<table id="failed"></table>','html.parser')
+            failureTable.table.append(BeautifulSoup(
+                '<tr id="totals"><td class="hdr">Failed Jobs</td><td class="hdr">Module</td></tr>',
+                'html.parser'))
+
+            for i in range(0, 10):
+                if i >= len(jobFailures):
+                    break
+
+                item = jobFailures[i]
+                failureTable.table.append(BeautifulSoup(
+                    '<tr id="failure-' + str(i) + '" class="module-public-links"><td class="lbl">' + item['job_id'] + '</td><td>' +
+                    item['convert_module'] + '</td></tr>',
+                    'html.parser'))
 
             body.append(failureTable)
             dashboard['body'] = body.prettify('UTF-8')

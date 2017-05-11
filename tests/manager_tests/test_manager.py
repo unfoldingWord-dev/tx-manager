@@ -614,7 +614,6 @@ class ManagerTest(unittest.TestCase):
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
         # there should be a status table tag
         statusTable = soup.find('table', id="status")
-        self.assertIsNotNone(statusTable)
 
         moduleName = 'module1'
         expectedRowCount = 12
@@ -649,12 +648,21 @@ class ManagerTest(unittest.TestCase):
                             expectedWarningCount)
 
         failureTable = soup.find('table', id="failed")
-        self.assertIsNotNone(failureTable)
+        expectedFailureCount = 3
+        self.validateTable( failureTable, expectedFailureCount)
 
     # helper methods #
 
+    def validateTable(self, table, expectedFailureCount):
+        self.assertIsNotNone(table)
+        module = table.findAll('tr')
+        rowCount = len(module)
+        expectedFailureCount += 1 # add header row
+        self.assertEquals(rowCount, expectedFailureCount)
+
     def validateModule(self, table, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                        expectedWarningCount):
+        self.assertIsNotNone(table)
         module = table.findAll('tr', id=lambda x: x and x.startswith(moduleName + '-'))
         rowCount = len(module)
         self.assertEquals(rowCount, expectedRowCount)
