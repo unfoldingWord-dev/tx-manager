@@ -324,7 +324,7 @@ class ManagerTest(unittest.TestCase):
         data = args[1]
         self.assertIsInstance(data, dict)
         self.assertIn("errors", data)
-        self.assertEqual(len(data["errors"]), 0)
+        self.assertEqual(len(data["errors"]), 1)
         self.assertIn("warnings", data)
         self.assertTrue(len(data["warnings"]) > 0)
 
