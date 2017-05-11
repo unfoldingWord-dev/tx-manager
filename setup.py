@@ -15,7 +15,7 @@ def read(f_name):
 
 setup(
     name='tx-manager',
-    version='0.2.61',
+    version='0.2.62',
     packages=[
         'client',
         'manager',

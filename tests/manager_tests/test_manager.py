@@ -46,14 +46,18 @@ class ManagerTest(unittest.TestCase):
                 "status": "started",
                 "resource_type": "obs",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "html",
+                "convert_module": "module1",
+                "errors" : []
             },
             "1": {
                 "job_id": "1",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "html",
+                "convert_module": "module1",
+                "errors" : [ "error" ]
             },
             "2": {
                 "job_id": "2",
@@ -62,34 +66,42 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "usfm",
                 "output_format": "html",
                 "callback": ManagerTest.MOCK_CALLBACK_URL,
+                "convert_module": "module1",
+                "warnings" : []
             },
             "3": {
                 "job_id": "3",
                 "status": "requested",
                 "resource_type": "other",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "html",
+                "convert_module": "module1",
+                "warnings" : [ "warning" ]
             },
             "4": {
                 "job_id": "4",
                 "status": "requested",
                 "resource_type": "unsupported",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "html",
+                "convert_module": "module1",
+                "warnings" : [ "warning1", "warning2" ]
             },
             "6": {
                 "job_id": "6",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "html",
+                "convert_module": "module2"
             },
             "7": {
                 "job_id": "7",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
-                "output_format": "html"
+                "output_format": "html",
+                "convert_module": "module2"
             }
         }, keyname="job_id")
         cls.mock_module_db = mock_utils.mock_db_handler(data={
@@ -312,7 +324,7 @@ class ManagerTest(unittest.TestCase):
         data = args[1]
         self.assertIsInstance(data, dict)
         self.assertIn("errors", data)
-        self.assertEqual(len(data["errors"]), 0)
+        self.assertEqual(len(data["errors"]), 1)
         self.assertIn("warnings", data)
         self.assertTrue(len(data["warnings"]) > 0)
 
@@ -581,14 +593,66 @@ class ManagerTest(unittest.TestCase):
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
         # there should be a table tag
         self.assertIsNotNone(soup.find('table'))
-        # module1 should have 8 rows of info
-        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module1-'))), 8)
-        # module2 should have 7 rows of info
-        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module2-'))), 7)
-        # module3 should have 5 rows of info
-        self.assertEquals(len(soup.table.findAll('tr', id=lambda x: x and x.startswith('module3-'))), 5)
+
+        moduleName = 'module1'
+        expectedRowCount = 12
+        expectedSuccessCount = 2
+        expectedWarningCount = 2
+        expectedFailureCount = 1
+        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'module2'
+        expectedRowCount = 11
+        expectedSuccessCount = 2
+        expectedWarningCount = 0
+        expectedFailureCount = 0
+        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'module3'
+        expectedRowCount = 9
+        expectedSuccessCount = 0
+        expectedWarningCount = 0
+        expectedFailureCount = 0
+        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'totals'
+        expectedRowCount = 4
+        expectedSuccessCount = 4
+        expectedWarningCount = 2
+        expectedFailureCount = 1
+        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
 
     # helper methods #
+
+    def validateModule(self, soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                       expectedWarningCount):
+        module = soup.table.findAll('tr', id=lambda x: x and x.startswith(moduleName + '-'))
+        rowCount = len(module)
+        self.assertEquals(rowCount, expectedRowCount)
+        successCount = self.getCountFromRow(soup, moduleName + '-job-success')
+        self.assertEquals(successCount, expectedSuccessCount)
+        warningCount = self.getCountFromRow(soup, moduleName + '-job-warning')
+        self.assertEquals(warningCount, expectedWarningCount)
+        failureCount = self.getCountFromRow(soup, moduleName + '-job-failure')
+        self.assertEquals(failureCount, expectedFailureCount)
+        expectedTotalCount = expectedFailureCount + expectedSuccessCount + expectedWarningCount
+        totalCount = self.getCountFromRow(soup, moduleName + '-job-total')
+        self.assertEquals(totalCount, expectedTotalCount)
+
+    def getCountFromRow(self, soup, rowID):
+        success = soup.table.findAll('tr', id=lambda x: x == rowID)
+        dataFields = success[0].findAll("td")
+        strings = dataFields[1].stripped_strings # get data from second column
+        count = -1
+        for string in strings:
+            count = int(string)
+            break
+
+        return count
 
     def call_args(self, mock_object, num_args, num_kwargs=0):
         """
