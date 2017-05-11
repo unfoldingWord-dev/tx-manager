@@ -481,7 +481,7 @@ class TxManager(object):
                 moduleName = item["name"]
                 self.logger.info(moduleName)
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
+                    '<tr id="' + moduleName + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
                     'html.parser'))
 
                 jobs = self.get_jobs_for_module(totalJobs, moduleName)
