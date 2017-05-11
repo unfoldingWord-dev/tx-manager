@@ -58,6 +58,7 @@ class ManagerTest(unittest.TestCase):
                 "output_format": "html",
                 "convert_module": "module1",
                 "errors" : [ "error" ],
+                "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bd",
                 "created_at":	"2017-04-12T17:03:06Z"
             },
             "2": {
@@ -111,7 +112,8 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module2",
-                "errors" : [ "error2" ],
+                "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bZ",
+                "errors" : [ "error1", "error2" ],
                 "created_at":	"2017-03-12T17:03:076Z"
             },
             "9": {
@@ -121,7 +123,8 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module2",
-                "errors" : [ "error3" ],
+                "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bZZ",
+                "errors" : [ "error1","error2","error3" ],
                 "created_at":	"2017-05-12T17:03:04Z"
             }
         }, keyname="job_id")

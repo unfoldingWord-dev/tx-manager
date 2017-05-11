@@ -481,7 +481,7 @@ class TxManager(object):
                 moduleName = item["name"]
                 self.logger.info(moduleName)
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
+                    '<tr id="' + item['name'] + '"><td class="hdr" colspan="2"><b>' + str(moduleName) + '</b></td></tr>',
                     'html.parser'))
 
                 jobs = self.get_jobs_for_module(totalJobs, moduleName)
@@ -574,7 +574,7 @@ class TxManager(object):
 
             failureTable = BeautifulSoup('<table id="failed"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
-                '<tr id="totals"><td class="hdr">Failed Jobs</td><td class="hdr">Module</td></tr>',
+                '<tr id="totals"><td class="hdr"><b>Failed Jobs<br>Job ID</b></td><td><b>Module</b></td><td><b>Time</b></td><td><b>Errors</b></td><td><b>Identifier</b></td></tr>',
                 'html.parser'))
 
             for i in range(0, 10):
@@ -583,8 +583,12 @@ class TxManager(object):
 
                 item = jobFailures[i]
                 failureTable.table.append(BeautifulSoup(
-                    '<tr id="failure-' + str(i) + '" class="module-public-links"><td class="lbl">' + item['job_id'] + '</td><td>' +
-                    item['convert_module'] + '</td></tr>',
+                    '<tr id="failure-' + str(i) + '" class="module-job-id"><td class="lbl">' + item['job_id'] + '</td>'
+                    + '<td>' + item['convert_module'] + '</td>'
+                    + '<td>' + item['created_at'] + '</td>'
+                    + '<td>' + str(item['errors']) + '</td>'
+                    + '<td>' + item['identifier'] + '</td>'
+                    + '</tr>',
                     'html.parser'))
 
             body.append(failureTable)
