@@ -494,58 +494,58 @@ class TxManager(object):
                 # rec += '<tr><td colspan="2"></td></tr>'
 
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
+                    '<tr id="' + moduleName + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
                     str(item["type"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
+                    '<tr id="' + moduleName + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
                     json.dumps(item["input_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
+                    '<tr id="' + moduleName + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
                     json.dumps(item["output_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
+                    '<tr id="' + moduleName + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
                     json.dumps(item["resource_types"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
+                    '<tr id="' + moduleName + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
                     str(item["version"]) + '</td></tr>',
                     'html.parser'))
 
                 if len(item["options"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + item['name'] + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
+                        '<tr id="' + moduleName + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
                         json.dumps(item["options"]) + '</td></tr>',
                         'html.parser'))
 
                 if len(item["private_links"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + item['name'] + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
+                        '<tr id="' + moduleName + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
                         json.dumps(item["private_links"]) + '</td></tr>',
                         'html.parser'))
 
                 if len(item["public_links"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + item['name'] + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
+                        '<tr id="' + moduleName + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
                         json.dumps(item["public_links"]) + '</td></tr>',
                         'html.parser'))
 
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-job-success" class="module-public-links"><td class="lbl">Job Successes:</td><td>' +
+                    '<tr id="' + moduleName + '-job-success" class="module-public-links"><td class="lbl">Job Successes:</td><td>' +
                     str(self.jobs_success) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-job-warning" class="module-public-links"><td class="lbl">Job Warnings:</td><td>' +
+                    '<tr id="' + moduleName + '-job-warning" class="module-public-links"><td class="lbl">Job Warnings:</td><td>' +
                     str(self.jobs_warnings) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-job-failure" class="module-public-links"><td class="lbl">Job Failures:</td><td>' +
+                    '<tr id="' + moduleName + '-job-failure" class="module-public-links"><td class="lbl">Job Failures:</td><td>' +
                     str(self.jobs_failures) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + item['name'] + '-job-total" class="module-public-links"><td class="lbl">Jobs Total:</td><td>' +
+                    '<tr id="' + moduleName + '-job-total" class="module-public-links"><td class="lbl">Jobs Total:</td><td>' +
                     str(self.jobs_total) + '</td></tr>',
                     'html.parser'))
 
