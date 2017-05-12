@@ -577,7 +577,7 @@ class TxManager(object):
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
             failureTable = BeautifulSoup('<table id="failed" cellpadding="10" border="1" style="border-collapse:collapse"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
-                '<tr id="totals"><td class="hdr">Errors</td><td class="hdr">Source</td><td class="hdr">Destination</td></tr>',
+                '<tr id="header"><th class="hdr">Time</th><th class="hdr">Errors</th><th class="hdr">Source</th><th class="hdr">Destination</th><th class="hdr">Job ID</th></tr>',
                 'html.parser'))
 
             for i in range(0, MAX_FAILURES):
@@ -592,9 +592,11 @@ class TxManager(object):
                 destinationUrl = 'https://live.door43.org/u/' + identifier
                 failureTable.table.append(BeautifulSoup(
                     '<tr id="failure-' + str(i) + '" class="module-job-id">'
+                    + '<td>' + item['created_at'] + '</td>'
                     + '<td>' + str(item['errors']) + '</td>'
                     + '<td><a href="' + sourceUrl + '">' + sourceUrl + '</a></td>'
                     + '<td><a href="' + destinationUrl + '">' + destinationUrl + '</a></td>'
+                    + '<td>' + item['job_id'] + '</td>'
                     + '</tr>',
                     'html.parser'))
 
