@@ -574,12 +574,10 @@ class TxManager(object):
             # build job failures table
 
             jobFailures = self.get_job_failures(totalJobs)
-            failureTable = BeautifulSoup('<table id="failed" cellpadding="10" border="1"></table>','html.parser')
+            body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
+            failureTable = BeautifulSoup('<table id="failed" cellpadding="10" border="1" style="border-collapse:collapse"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
-                '<tr id="header"><td class="hdr" colspan="5"><h2>Failed Jobs</h2></td></tr>',
-                'html.parser'))
-            failureTable.table.append(BeautifulSoup(
-                '<tr id="totals"><td class="hdr">Job ID</td><td class="hdr">Module</td><td class="hdr">Time</td><td class="hdr">Errors</td><td class="hdr">Identifier</td></tr>',
+                '<tr id="totals"><td class="hdr">Errors</td><td class="hdr">Source</td><td class="hdr">Destination</td></tr>',
                 'html.parser'))
 
             for i in range(0, MAX_FAILURES):
@@ -587,12 +585,16 @@ class TxManager(object):
                     break
 
                 item = jobFailures[i]
+
+                identifier = item['identifier']
+                identifiers = identifier.split("/")
+                sourceUrl = self.gogs_url + "/" + "/".join(identifiers[:2])
+                destinationUrl = 'https://live.door43.org/u/' + identifier
                 failureTable.table.append(BeautifulSoup(
-                    '<tr id="failure-' + str(i) + '" class="module-job-id"><td>' + item['job_id'] + '</td>'
-                    + '<td>' + item['convert_module'] + '</td>'
-                    + '<td>' + item['created_at'] + '</td>'
+                    '<tr id="failure-' + str(i) + '" class="module-job-id">'
                     + '<td>' + str(item['errors']) + '</td>'
-                    + '<td>' + item['identifier'] + '</td>'
+                    + '<td><a href="' + sourceUrl + '">' + sourceUrl + '</a></td>'
+                    + '<td><a href="' + destinationUrl + '">' + destinationUrl + '</a></td>'
                     + '</tr>',
                     'html.parser'))
 
