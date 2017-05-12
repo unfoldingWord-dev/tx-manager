@@ -575,7 +575,7 @@ class TxManager(object):
 
             jobFailures = self.get_job_failures(totalJobs)
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
-            failureTable = BeautifulSoup('<table id="failed" cellpadding="10" border="1" style="border-collapse:collapse"></table>','html.parser')
+            failureTable = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
                 '<tr id="header"><th class="hdr">Time</th><th class="hdr">Errors</th><th class="hdr">Source</th><th class="hdr">Destination</th><th class="hdr">Job ID</th></tr>',
                 'html.parser'))
