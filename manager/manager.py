@@ -589,7 +589,11 @@ class TxManager(object):
                 identifier = item['identifier']
                 identifiers = identifier.split("/")
                 sourceSubPath = "/".join(identifiers[:2])
-                sourceUrl = self.gogs_url + "/" + sourceSubPath
+                gogs_url = self.gogs_url
+                if gogs_url == None :
+                    gogs_url = 'https://git.door43.org'
+
+                sourceUrl = gogs_url + "/" + sourceSubPath
                 destinationUrl = 'https://live.door43.org/u/' + identifier
                 failureTable.table.append(BeautifulSoup(
                     '<tr id="failure-' + str(i) + '" class="module-job-id">'
