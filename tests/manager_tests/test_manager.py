@@ -611,6 +611,7 @@ class ManagerTest(unittest.TestCase):
 
     def test_generate_dashboard(self):
         manager = TxManager()
+        manager.gogs_url = 'https://git.door43.org'
         dashboard = manager.generate_dashboard()
         # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
