@@ -59,6 +59,7 @@ class ManagerTest(unittest.TestCase):
                 "convert_module": "module1",
                 "errors" : [ "error" ],
                 "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bd",
+                "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip",
                 "created_at":	"2017-04-12T17:03:06Z"
             },
             "2": {
@@ -113,6 +114,7 @@ class ManagerTest(unittest.TestCase):
                 "output_format": "html",
                 "convert_module": "module2",
                 "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bZ",
+                "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bdZ.zip",
                 "errors" : [ "error1", "error2" ],
                 "created_at":	"2017-03-12T17:03:076Z"
             },
@@ -124,6 +126,7 @@ class ManagerTest(unittest.TestCase):
                 "output_format": "html",
                 "convert_module": "module2",
                 "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bZZ",
+                "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bdZZ.zip",
                 "errors" : [ "error1","error2","error3" ],
                 "created_at":	"2017-05-12T17:03:04Z"
             }

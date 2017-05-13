@@ -580,6 +580,10 @@ class TxManager(object):
                 '<tr id="header"><th class="hdr">Time</th><th class="hdr">Errors</th><th class="hdr">Source</th><th class="hdr">Destination</th><th class="hdr">Job ID</th></tr>',
                 'html.parser'))
 
+            gogs_url = self.gogs_url
+            if gogs_url == None :
+                gogs_url = 'https://git.door43.org'
+
             for i in range(0, MAX_FAILURES):
                 if i >= len(jobFailures):
                     break
@@ -589,12 +593,8 @@ class TxManager(object):
                 identifier = item['identifier']
                 identifiers = identifier.split("/")
                 sourceSubPath = "/".join(identifiers[:2])
-                gogs_url = self.gogs_url
-                if gogs_url == None :
-                    gogs_url = 'https://git.door43.org'
-
                 sourceUrl = gogs_url + "/" + sourceSubPath
-                destinationUrl = 'https://live.door43.org/u/' + identifier
+                destinationUrl = item['output']
                 failureTable.table.append(BeautifulSoup(
                     '<tr id="failure-' + str(i) + '" class="module-job-id">'
                     + '<td>' + item['created_at'] + '</td>'
