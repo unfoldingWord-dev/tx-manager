@@ -1,10 +1,11 @@
 from __future__ import absolute_import, unicode_literals, print_function
-import unittest
 import itertools
+import unittest
 import mock
 from bs4 import BeautifulSoup
+
+from tests.manager_tests import mock_utils
 from lambda_handlers.dashboard_handler import DashboardHandler
-from manager_tests import mock_utils
 
 
 class DashboardHandlerTest(unittest.TestCase):
