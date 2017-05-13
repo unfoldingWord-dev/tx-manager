@@ -27,7 +27,7 @@ class DashboardHandler(Handler):
 
         max_failures = TxManager.MAX_FAILURES
         try:
-            querystring = event['params']['querystring']
+            querystring = event['api-gateway']['params']['querystring']
             max_failures = int(querystring['failures'])
 
         except:
