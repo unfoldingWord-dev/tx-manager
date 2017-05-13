@@ -11,11 +11,10 @@ from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
 
-MAX_FAILURES = 10
-
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
+    MAX_FAILURES = 10
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False,
                  aws_access_key_id=None, aws_secret_access_key=None,
@@ -453,7 +452,7 @@ class TxManager(object):
     def delete_module(self, module):
         return self.module_db_handler.delete_item({'name': module.name})
 
-    def generate_dashboard(self):
+    def generate_dashboard(self, max_failures = MAX_FAILURES):
         """
         Generate page with metrics indicating configuration of tx-manager.
 
@@ -463,6 +462,7 @@ class TxManager(object):
         :param logger:
         """
         self.logger.info("Start: generateDashboard")
+        self.max_failures = max_failures
 
         dashboard = {
             'title': 'tX-Manager Dashboard',
@@ -584,7 +584,7 @@ class TxManager(object):
             if gogs_url == None :
                 gogs_url = 'https://git.door43.org'
 
-            for i in range(0, MAX_FAILURES):
+            for i in range(0, max_failures):
                 if i >= len(jobFailures):
                     break
 

@@ -615,7 +615,9 @@ class ManagerTest(unittest.TestCase):
     def test_generate_dashboard(self):
         manager = TxManager()
         dashboard = manager.generate_dashboard()
-        # the title should be tX-Manager Dashboard
+        self.assertEquals(manager.max_failures, TxManager.MAX_FAILURES)
+
+    # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
         # there should be a status table tag
