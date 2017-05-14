@@ -198,9 +198,11 @@ class DashboardHandlerTest(unittest.TestCase):
                 'job_table_name': 'test-tx-job',
                 'module_table_name': 'test-tx-module'
             },
-            "params" : {
-                'querystring': {
-                    'failures': '2'
+            "api-gateway" : {
+                "params" : {
+                    'querystring': {
+                        'failures': '2'
+                    }
                 }
             }
         }
@@ -257,10 +259,6 @@ class DashboardHandlerTest(unittest.TestCase):
                 'cdn_url': 'https://test-cdn.door43.org',
                 'job_table_name': 'test-tx-job',
                 'module_table_name': 'test-tx-module'
-            },
-            "params" : {
-                'querystring': {
-                }
             }
         }
         dashboard = DashboardHandler().handle(event, None)
