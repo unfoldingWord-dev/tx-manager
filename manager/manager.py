@@ -415,15 +415,14 @@ class TxManager(object):
         self.job_db_handler.insert_item(job_data)
 
     def query_jobs(self, data=None):
-        items = self.job_db_handler.query_items(data)
+        items, last_key = self.job_db_handler.query_items(data)
         jobs = []
         if items and len(items):
             for item in items:
                 jobs.append(TxJob(item))
 
-        while self.job_db_handler.partial_data:
-            exclusive_start_key = self.job_db_handler.last_key
-            items = self.job_db_handler.query_items(data, exclusive_start_key = exclusive_start_key)
+        while last_key != None:
+            items, last_key = self.job_db_handler.query_items(data, exclusive_start_key=last_key)
             if items and len(items):
                 for item in items:
                     jobs.append(TxJob(item))
@@ -444,7 +443,7 @@ class TxManager(object):
         self.module_db_handler.insert_item(module_data)
 
     def query_modules(self, data=None):
-        items = self.module_db_handler.query_items(data)
+        items, last_key = self.module_db_handler.query_items(data)
         modules = []
         if items and len(items):
             for item in items:
@@ -476,7 +475,8 @@ class TxManager(object):
             'body': 'No modules found'
         }
 
-        items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
+        query_items, last_key = self.module_db_handler.query_items()
+        items = sorted(query_items, key=lambda k: k['name'])
         totalJobs = self.list_jobs({},False)
         self.getMissingConvertModules(items, totalJobs)
 

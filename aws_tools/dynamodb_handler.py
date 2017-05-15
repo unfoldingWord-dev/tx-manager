@@ -133,14 +133,13 @@ class DynamoDBHandler(object):
             else:
                 response = self.table.scan(ExclusiveStartKey = exclusive_start_key)
 
-        self.partial_data = False
+        last_key = None
         if response and 'Items' in response:
             if 'LastEvaluatedKey' in response:
-                self.partial_data = True
-                self.last_key = response['LastEvaluatedKey']
-            return response['Items']
+                last_key = response['LastEvaluatedKey']
+            return response['Items'], last_key
         else:
-            return None
+            return None, last_key
 
 
 RESERVED_WORDS = [
