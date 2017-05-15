@@ -420,6 +420,14 @@ class TxManager(object):
         if items and len(items):
             for item in items:
                 jobs.append(TxJob(item))
+
+        while self.job_db_handler.partial_data:
+            exclusive_start_key = self.job_db_handler.last_key
+            items = self.job_db_handler.query_items(data, exclusive_start_key = exclusive_start_key)
+            if items and len(items):
+                for item in items:
+                    jobs.append(TxJob(item))
+
         return jobs
 
     def get_job(self, job_id):
@@ -470,6 +478,7 @@ class TxManager(object):
 
         items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
         totalJobs = self.list_jobs({},False)
+        self.getMissingConvertModules(items, totalJobs)
 
         if items and len(items):
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
@@ -575,6 +584,34 @@ class TxManager(object):
             self.logger.info("No modules found.")
 
         return dashboard
+
+    def getMissingConvertModules(self, convertModules, jobs):
+        moduleNames = []
+        for job in jobs:
+            if "convert_module" in job:
+                name = job["convert_module"]
+                if not (name in moduleNames):
+                    moduleNames.append(name)
+        for i in range(0, len(moduleNames)):
+            module = moduleNames[i]
+            for item in convertModules:
+                if item["name"] == module:
+                    moduleNames[i] = None
+                    break
+        for module in moduleNames:
+            if module != None: # if unregistered module, add dummy entry
+                entry = {
+                    "input_format" : "",
+                    "name" : "unregistered: " + module,
+                    "options" : [],
+                    "output_format" : [],
+                    "private_links" : [],
+                    "public_links" : [],
+                    "resource_types" : [],
+                    "type" : "",
+                    "version" : "",
+                }
+                convertModules.append(entry)
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobsInModule = []
