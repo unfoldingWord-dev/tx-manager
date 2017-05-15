@@ -58,8 +58,10 @@ class ManagerTest(unittest.TestCase):
                 "output_format": "html",
                 "convert_module": "module1",
                 "errors" : [ "error" ],
+                "cdn_bucket" : "cdn.door43.org",
                 "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bd",
                 "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip",
+                "source" : "https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip",
                 "created_at":	"2017-04-12T17:03:06Z"
             },
             "2": {
@@ -115,7 +117,9 @@ class ManagerTest(unittest.TestCase):
                 "convert_module": "module2",
                 "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bZ",
                 "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bdZ.zip",
+                "source" : "https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZ.zip",
                 "errors" : [ "error1", "error2" ],
+                "cdn_bucket" : "cdn.door43.org",
                 "created_at":	"2017-03-12T17:03:076Z"
             },
             "9": {
@@ -127,7 +131,9 @@ class ManagerTest(unittest.TestCase):
                 "convert_module": "module2",
                 "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bZZ",
                 "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bdZZ.zip",
+                "source" : "https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip",
                 "errors" : [ "error1","error2","error3" ],
+                "cdn_bucket" : "cdn.door43.org",
                 "created_at":	"2017-05-12T17:03:04Z"
             }
         }, keyname="job_id")
@@ -615,7 +621,6 @@ class ManagerTest(unittest.TestCase):
     def test_generate_dashboard(self):
         manager = TxManager()
         dashboard = manager.generate_dashboard()
-        self.assertEquals(manager.max_failures, TxManager.MAX_FAILURES)
 
     # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
@@ -657,11 +662,58 @@ class ManagerTest(unittest.TestCase):
 
         failureTable = soup.find('table', id="failed")
         expectedFailureCount = 3
-        self.validateTable( failureTable, expectedFailureCount)
+        self.validateFailureTable(failureTable, expectedFailureCount)
+
+    def test_generate_dashboard_max_two(self):
+        expectedMaxFailures = 2
+        manager = TxManager()
+        dashboard = manager.generate_dashboard(expectedMaxFailures)
+
+        # the title should be tX-Manager Dashboard
+        self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
+        soup = BeautifulSoup(dashboard['body'], 'html.parser')
+        # there should be a status table tag
+        statusTable = soup.find('table', id="status")
+
+        moduleName = 'module1'
+        expectedRowCount = 12
+        expectedSuccessCount = 2
+        expectedWarningCount = 2
+        expectedFailureCount = 1
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'module2'
+        expectedRowCount = 11
+        expectedSuccessCount = 2
+        expectedWarningCount = 0
+        expectedFailureCount = 2
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'module3'
+        expectedRowCount = 9
+        expectedSuccessCount = 0
+        expectedWarningCount = 0
+        expectedFailureCount = 0
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'totals'
+        expectedRowCount = 4
+        expectedSuccessCount = 4
+        expectedWarningCount = 2
+        expectedFailureCount = 3
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        failureTable = soup.find('table', id="failed")
+        expectedFailureCount = expectedMaxFailures
+        self.validateFailureTable(failureTable, expectedFailureCount)
 
     # helper methods #
 
-    def validateTable(self, table, expectedFailureCount):
+    def validateFailureTable(self, table, expectedFailureCount):
         self.assertIsNotNone(table)
         module = table.findAll('tr', id=lambda x: x and x.startswith('failure-'))
         rowCount = len(module)

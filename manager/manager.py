@@ -462,7 +462,6 @@ class TxManager(object):
         :param logger:
         """
         self.logger.info("Start: generateDashboard")
-        self.max_failures = max_failures
 
         dashboard = {
             'title': 'tX-Manager Dashboard',
@@ -577,7 +576,14 @@ class TxManager(object):
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
             failureTable = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(
-                '<tr id="header"><th class="hdr">Time</th><th class="hdr">Errors</th><th class="hdr">Source</th><th class="hdr">Destination</th><th class="hdr">Job ID</th></tr>',
+                '<tr id="header">'
+                '<th class="hdr">Time</th>'
+                '<th class="hdr">Errors</th>'
+                '<th class="hdr">Repo</th>'
+                '<th class="hdr">PreConvert</th>'
+                '<th class="hdr">Converted</th>'
+                '<th class="hdr">Destination</th>'
+                '<th class="hdr">Job ID</th></tr>',
                 'html.parser'))
 
             gogs_url = self.gogs_url
@@ -590,20 +596,28 @@ class TxManager(object):
 
                 item = jobFailures[i]
 
-                identifier = item['identifier']
-                identifiers = identifier.split("/")
-                sourceSubPath = "/".join(identifiers[:2])
-                sourceUrl = gogs_url + "/" + sourceSubPath
-                destinationUrl = item['output']
-                failureTable.table.append(BeautifulSoup(
-                    '<tr id="failure-' + str(i) + '" class="module-job-id">'
-                    + '<td>' + item['created_at'] + '</td>'
-                    + '<td>' + str(item['errors']) + '</td>'
-                    + '<td><a href="' + sourceUrl + '">' + sourceUrl + '</a></td>'
-                    + '<td><a href="' + destinationUrl + '">' + destinationUrl + '</a></td>'
-                    + '<td>' + item['job_id'] + '</td>'
-                    + '</tr>',
-                    'html.parser'))
+                try :
+                    identifier = item['identifier']
+                    owner_name, repo_name, commit_id = identifier.split('/')
+                    sourceSubPath = 'u/{0}/{1}'.format(owner_name, repo_name)
+                    cdn_bucket = item['cdn_bucket']
+                    destinationUrl = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
+                    repoUrl = gogs_url + "/" + sourceSubPath
+                    preconvertedUrl = item['source']
+                    convertedUrl = item['output']
+                    failureTable.table.append(BeautifulSoup(
+                        '<tr id="failure-' + str(i) + '" class="module-job-id">'
+                        + '<td>' + item['created_at'] + '</td>'
+                        + '<td>' + str(item['errors']) + '</td>'
+                        + '<td><a href="' + repoUrl + '">' + repoUrl + '</a></td>'
+                        + '<td><a href="' + preconvertedUrl + '">' + preconvertedUrl + '</a></td>'
+                        + '<td><a href="' + convertedUrl + '">' + convertedUrl + '</a></td>'
+                        + '<td><a href="' + destinationUrl + '">' + destinationUrl + '</a></td>'
+                        + '<td>' + item['job_id'] + '</td>'
+                        + '</tr>',
+                        'html.parser'))
+                except:
+                    pass
 
             body.append(failureTable)
             dashboard['body'] = body.prettify('UTF-8')
