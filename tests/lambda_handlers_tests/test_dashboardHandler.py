@@ -9,8 +9,9 @@ def new_generate_dashboard( max_failures):
 
 class DashboardHandlerTest(TestCase):
 
+    @mock.patch('manager.manager.TxManager.setup_resources')
     @mock.patch('manager.manager.TxManager.generate_dashboard')
-    def test_handle(self, mock_generate_dashboard):
+    def test_handle(self, mock_generate_dashboard, mock_setup_resources):
         mock_generate_dashboard.side_effect=new_generate_dashboard
         expectedMaxFailures = TxManager.MAX_FAILURES
         event = {
@@ -29,8 +30,9 @@ class DashboardHandlerTest(TestCase):
         maxFailures = handler.handle(event, expectedMaxFailures)
         self.assertEqual(maxFailures, expectedMaxFailures)
 
+    @mock.patch('manager.manager.TxManager.setup_resources')
     @mock.patch('manager.manager.TxManager.generate_dashboard')
-    def test_dashboard_handler_max_two(self, mock_generate_dashboard):
+    def test_dashboard_handler_max_two(self, mock_generate_dashboard, mock_setup_resources):
         mock_generate_dashboard.side_effect=new_generate_dashboard
         expectedMaxFailures = 2
         event = {

@@ -622,7 +622,7 @@ class ManagerTest(unittest.TestCase):
         manager = TxManager()
         dashboard = manager.generate_dashboard()
 
-    # the title should be tX-Manager Dashboard
+        # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
         # there should be a status table tag
