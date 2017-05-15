@@ -4,6 +4,9 @@ from general_tools.url_utils import get_url
 
 
 class Language(object):
+
+    language_list = None
+
     def __init__(self, json_obj=None):
         """
         Optionally accepts an object for initialization.
@@ -27,11 +30,18 @@ class Language(object):
 
     @staticmethod
     def load_languages():
-        return_val = []
+        """
+        Gets the list of Languages. Retrieves the list from tD if needed.
+        :return: list<Language>
+        """
 
-        lang_file = 'http://td.unfoldingword.org/exports/langnames.json'
-        langs = json.loads(get_url(lang_file))
-        for lang in langs:
-            return_val.append(Language(lang))
+        if Language.language_list is None:
 
-        return return_val
+            Language.language_list = []
+
+            lang_file = 'http://td.unfoldingword.org/exports/langnames.json'
+            langs = json.loads(get_url(lang_file))
+            for lang in langs:
+                Language.language_list.append(Language(lang))
+
+        return Language.language_list
