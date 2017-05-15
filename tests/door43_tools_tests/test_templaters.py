@@ -1,8 +1,10 @@
 from __future__ import absolute_import, unicode_literals, print_function
+import codecs
 import os
 import tempfile
 import unittest
 import shutil
+from bs4 import BeautifulSoup
 from door43_tools.templaters import Templater
 from general_tools.file_utils import unzip
 
@@ -61,6 +63,18 @@ class TestTemplater(unittest.TestCase):
         test_file_path = self.extractZipFiles(test_folder_name)
         deployer, success = self.doTemplater(test_file_path)
         self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
+
+    def testTemplaterRightToLeft(self):
+        test_folder_name = os.path.join('converted_projects', 'glk_obs_text_obs-complete.zip')
+        test_file_path = self.extractZipFiles(test_folder_name)
+        deployer, success = self.doTemplater(test_file_path)
+
+        # check for dir attribute in html tag
+        with codecs.open(os.path.join(deployer.output_dir, '01.html'), 'r', 'utf-8-sig') as f:
+            soup = BeautifulSoup(f, 'html.parser')
+
+        self.assertIn('dir', soup.html.attrs)
+        self.assertEqual('rtl', soup.html.attrs['dir'])
 
     def extractZipFiles(self, test_folder_name):
         file_path = os.path.join(self.resources_dir, test_folder_name)

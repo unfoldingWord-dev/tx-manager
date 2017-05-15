@@ -4,6 +4,7 @@ import json
 import codecs
 from glob import glob
 from bs4 import BeautifulSoup
+from door43_tools.language_handler import Language
 from general_tools.file_utils import write_file
 from door43_tools.manifest_handler import Manifest
 
@@ -70,7 +71,7 @@ class Templater(object):
             if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
                 continue
             if filename != fname:
-                html += '<li><a href="{0}">{1}</a></li>'.format(os.path.basename(fname),title)
+                html += '<li><a href="{0}">{1}</a></li>'.format(os.path.basename(fname), title)
             else:
                 html += '<li>{0}</li>'.format(title)
         html += """
@@ -136,6 +137,12 @@ class Templater(object):
             outer_content_div.clear()
             outer_content_div.append(body)
             soup.html['lang'] = language_code
+
+            languages = Language.load_languages()
+            language = [lang for lang in languages if lang.lc == language_code]
+            if language and language[0].ld:
+                soup.html['dir'] = language[0].ld
+
             soup.head.title.clear()
             soup.head.title.append(heading+' - '+title)
 
