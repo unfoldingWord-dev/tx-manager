@@ -602,7 +602,7 @@ class TxManager(object):
             if module != None: # if unregistered module, add dummy entry
                 entry = {
                     "input_format" : "",
-                    "name" : "unregistered: " + module,
+                    "name" : module,
                     "options" : [],
                     "output_format" : [],
                     "private_links" : [],
@@ -610,6 +610,7 @@ class TxManager(object):
                     "resource_types" : [],
                     "type" : "",
                     "version" : "",
+                    "unregistered" : True
                 }
                 convertModules.append(entry)
 
