@@ -652,7 +652,7 @@ class TxManager(object):
             if module != None: # if unregistered module, add dummy entry
                 entry = {
                     "input_format" : "",
-                    "name" : "unregistered: " + module,
+                    "name" : module,
                     "options" : [],
                     "output_format" : [],
                     "private_links" : [],
@@ -660,6 +660,7 @@ class TxManager(object):
                     "resource_types" : [],
                     "type" : "",
                     "version" : "",
+                    "unregistered" : True
                 }
                 convertModules.append(entry)
 
@@ -679,21 +680,18 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
         for job in jobs:
-            try:
-                errors = job['errors']
-                if len(errors) > 0:
-                    self.jobs_failures+=1
-                    continue
-
-                warnings = job['warnings']
-                if len(warnings) > 0:
-                    self.jobs_warnings+=1
-                    continue
-
-                self.jobs_success+=1
-
-            except:
+            errors = job['errors']
+            if len(errors) > 0:
                 self.jobs_failures+=1
+                continue
+
+            warnings = job['warnings']
+            if len(warnings) > 0:
+                self.jobs_warnings+=1
+                continue
+
+            self.jobs_success+=1
+
 
     def get_job_failures(self, jobs):
         failedJobs = []

@@ -112,6 +112,14 @@ class ManagerTest(unittest.TestCase):
                 "job_id": "8",
                 "status": "requested",
                 "resource_type": "obs",
+                "input_format": "html",
+                "output_format": "pdf",
+                "convert_module": "module4"
+            },
+            "9": {
+                "job_id": "9",
+                "status": "requested",
+                "resource_type": "obs",
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module2",
@@ -122,8 +130,8 @@ class ManagerTest(unittest.TestCase):
                 "cdn_bucket" : "cdn.door43.org",
                 "created_at":	"2017-03-12T17:03:076Z"
             },
-            "9": {
-                "job_id": "9",
+            "10": {
+                "job_id": "10",
                 "status": "requested",
                 "resource_type": "obs",
                 "input_format": "md",
@@ -621,7 +629,6 @@ class ManagerTest(unittest.TestCase):
     def test_generate_dashboard(self):
         manager = TxManager()
         dashboard = manager.generate_dashboard()
-
         # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
         soup = BeautifulSoup(dashboard['body'], 'html.parser')
@@ -647,6 +654,14 @@ class ManagerTest(unittest.TestCase):
         moduleName = 'module3'
         expectedRowCount = 9
         expectedSuccessCount = 0
+        expectedWarningCount = 0
+        expectedFailureCount = 0
+        self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
+        moduleName = 'module4'
+        expectedRowCount = 9
+        expectedSuccessCount = 1
         expectedWarningCount = 0
         expectedFailureCount = 0
         self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
