@@ -630,20 +630,17 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
         for job in jobs:
-            try:
-                errors = job['errors']
-                if len(errors) > 0:
-                    self.jobs_failures+=1
-                    continue
-
-                warnings = job['warnings']
-                if len(warnings) > 0:
-                    self.jobs_warnings+=1
-                    continue
-
-                self.jobs_success+=1
-
-            except:
+            errors = job['errors']
+            if len(errors) > 0:
                 self.jobs_failures+=1
+                continue
+
+            warnings = job['warnings']
+            if len(warnings) > 0:
+                self.jobs_warnings+=1
+                continue
+
+            self.jobs_success+=1
+
 
 
