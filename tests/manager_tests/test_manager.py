@@ -660,20 +660,21 @@ class ManagerTest(unittest.TestCase):
                             expectedWarningCount)
 
         moduleName = 'module4'
-        expectedRowCount = 9
-        expectedSuccessCount = 1
+        expectedRowCount = 0
+        expectedSuccessCount = 0
         expectedWarningCount = 0
         expectedFailureCount = 0
         self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                             expectedWarningCount)
 
         moduleName = 'totals'
-        expectedRowCount = 4
+        expectedRowCount = 5
         expectedSuccessCount = 5
         expectedWarningCount = 2
         expectedFailureCount = 3
+        expectedUnregistered = 0
         self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
-                            expectedWarningCount)
+                            expectedWarningCount, expectedUnregistered)
 
         failureTable = soup.find('table', id="failed")
         expectedFailureCount = 3
@@ -715,12 +716,13 @@ class ManagerTest(unittest.TestCase):
                             expectedWarningCount)
 
         moduleName = 'totals'
-        expectedRowCount = 4
+        expectedRowCount = 5
         expectedSuccessCount = 5
         expectedWarningCount = 2
         expectedFailureCount = 3
+        expectedUnregistered = 0
         self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
-                            expectedWarningCount)
+                            expectedWarningCount, expectedUnregistered)
 
         failureTable = soup.find('table', id="failed")
         expectedFailureCount = expectedMaxFailures
@@ -735,24 +737,30 @@ class ManagerTest(unittest.TestCase):
         self.assertEquals(rowCount, expectedFailureCount)
 
     def validateModule(self, table, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
-                       expectedWarningCount):
+                       expectedWarningCount, expectedUnregistered = 0):
         self.assertIsNotNone(table)
         module = table.findAll('tr', id=lambda x: x and x.startswith(moduleName + '-'))
         rowCount = len(module)
         self.assertEquals(rowCount, expectedRowCount)
-        successCount = self.getCountFromRow(table, moduleName + '-job-success')
-        self.assertEquals(successCount, expectedSuccessCount)
-        warningCount = self.getCountFromRow(table, moduleName + '-job-warning')
-        self.assertEquals(warningCount, expectedWarningCount)
-        failureCount = self.getCountFromRow(table, moduleName + '-job-failure')
-        self.assertEquals(failureCount, expectedFailureCount)
-        expectedTotalCount = expectedFailureCount + expectedSuccessCount + expectedWarningCount
-        totalCount = self.getCountFromRow(table, moduleName + '-job-total')
-        self.assertEquals(totalCount, expectedTotalCount)
+        if expectedRowCount > 0:
+            successCount = self.getCountFromRow(table, moduleName + '-job-success')
+            self.assertEquals(successCount, expectedSuccessCount)
+            warningCount = self.getCountFromRow(table, moduleName + '-job-warning')
+            self.assertEquals(warningCount, expectedWarningCount)
+            failureCount = self.getCountFromRow(table, moduleName + '-job-failure')
+            self.assertEquals(failureCount, expectedFailureCount)
+            unregisteredCount = self.getCountFromRow(table, moduleName + '-job-unregistered')
+            self.assertEquals(unregisteredCount, expectedUnregistered)
+            expectedTotalCount = expectedFailureCount + expectedSuccessCount + expectedWarningCount + expectedUnregistered
+            totalCount = self.getCountFromRow(table, moduleName + '-job-total')
+            self.assertEquals(totalCount, expectedTotalCount)
 
     def getCountFromRow(self, table, rowID):
-        success = table.findAll('tr', id=lambda x: x == rowID)
-        dataFields = success[0].findAll("td")
+        rows = table.findAll('tr', id=lambda x: x == rowID)
+        if len(rows) == 0:
+            return 0
+
+        dataFields = rows[0].findAll("td")
         strings = dataFields[1].stripped_strings # get data from second column
         count = -1
         for string in strings:

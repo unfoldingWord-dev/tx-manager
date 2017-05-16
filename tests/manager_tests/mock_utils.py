@@ -19,12 +19,16 @@ def mock_db_handler(data, keyname):
             return data[key]
         return None
 
+    def get_item_count():
+        return len(data.values())
+
     def query_items(query=None, only_fields_with_values=True, queryChunkLimit=-1):
         return data.values()
 
     handler = MagicMock()
     handler.get_item = MagicMock(side_effect=get_item)
     handler.query_items = MagicMock(side_effect=query_items)
+    handler.get_item_count = MagicMock(side_effect=get_item_count)
     handler.setup_resources = MagicMock(side_effects=setup_resources)
     handler.mock_data = data
     return handler

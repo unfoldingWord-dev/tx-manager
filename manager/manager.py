@@ -151,6 +151,9 @@ class TxManager(object):
             ],
         }
 
+    def get_job_count(self):
+        return self.job_db_handler.get_item_count()
+
     def list_jobs(self, data, must_be_authenticated=True):
         if must_be_authenticated:
             if 'gogs_user_token' not in data:
@@ -474,8 +477,9 @@ class TxManager(object):
             for item in items:
                 moduleNames.append(item["name"])
 
-            totalJobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : moduleNames}
+            registeredJobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : moduleNames}
                                     }, False)
+            totalJobCount = self.get_job_count()
 
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
 
@@ -489,7 +493,7 @@ class TxManager(object):
                     '<tr id="' + moduleName + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
                     'html.parser'))
 
-                jobs = self.get_jobs_for_module(totalJobs, moduleName)
+                jobs = self.get_jobs_for_module(registeredJobs, moduleName)
                 self.get_jobs_counts(jobs)
 
                 # TBD the following code almosts walks the db record replacing next 11 lines
@@ -554,7 +558,7 @@ class TxManager(object):
                     str(self.jobs_total) + '</td></tr>',
                     'html.parser'))
 
-            self.get_jobs_counts(totalJobs)
+            self.get_jobs_counts(registeredJobs)
             body.table.append(BeautifulSoup(
                 '<tr id="totals"><td class="hdr" colspan="2">Total Jobs</td></tr>',
                 'html.parser'))
@@ -571,13 +575,17 @@ class TxManager(object):
                 str(self.jobs_failures) + '</td></tr>',
                 'html.parser'))
             body.table.append(BeautifulSoup(
+                '<tr id="totals-job-unregistered" class="module-public-links"><td class="lbl">Unregistered:</td><td>' +
+                str(totalJobCount - self.jobs_total) + '</td></tr>',
+                'html.parser'))
+            body.table.append(BeautifulSoup(
                 '<tr id="totals-job-total" class="module-public-links"><td class="lbl">Total:</td><td>' +
-                str(self.jobs_total) + '</td></tr>',
+                str(totalJobCount) + '</td></tr>',
                 'html.parser'))
 
             # build job failures table
 
-            jobFailures = self.get_job_failures(totalJobs)
+            jobFailures = self.get_job_failures(registeredJobs)
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
             failureTable = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
             failureTable.table.append(BeautifulSoup(

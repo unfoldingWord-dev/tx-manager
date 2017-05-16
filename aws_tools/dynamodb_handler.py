@@ -73,6 +73,9 @@ class DynamoDBHandler(object):
             Key=keys
         )
 
+    def get_item_count(self):
+        return self.table.item_count
+
     def query_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):
         """
         gets items from database
@@ -158,7 +161,7 @@ class DynamoDBHandler(object):
             if (queryChunkLimit >= 0) and (itemCount >= queryChunkLimit):
                 break
 
-        return items;
+        return items
 
 RESERVED_WORDS = [
     'ABORT',
