@@ -73,7 +73,7 @@ class DynamoDBHandler(object):
             Key=keys
         )
 
-    def query_items(self, query=None, only_fields_with_values=True):
+    def query_items(self, query=None, only_fields_with_values=True, exclusive_start_key=None):
         filter_expression = None
         if query and len(query) > 1:
             for field, value in iteritems(query):
@@ -118,16 +118,28 @@ class DynamoDBHandler(object):
                     filter_expression &= condition
 
         if filter_expression is not None:
-            response = self.table.scan(
-                FilterExpression=filter_expression
-            )
+            if exclusive_start_key == None:
+                response = self.table.scan(
+                    FilterExpression=filter_expression
+                )
+            else:
+                response = self.table.scan(
+                    FilterExpression=filter_expression,
+                    ExclusiveStartKey = exclusive_start_key
+                )
         else:
-            response = self.table.scan()
+            if exclusive_start_key == None:
+                response = self.table.scan()
+            else:
+                response = self.table.scan(ExclusiveStartKey = exclusive_start_key)
 
+        last_key = None
         if response and 'Items' in response:
-            return response['Items']
+            if 'LastEvaluatedKey' in response:
+                last_key = response['LastEvaluatedKey']
+            return response['Items'], last_key
         else:
-            return None
+            return None, last_key
 
 
 RESERVED_WORDS = [

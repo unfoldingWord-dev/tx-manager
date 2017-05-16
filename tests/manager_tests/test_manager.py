@@ -102,6 +102,14 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module2"
+            },
+            "8": {
+                "job_id": "8",
+                "status": "requested",
+                "resource_type": "obs",
+                "input_format": "html",
+                "output_format": "pdf",
+                "convert_module": "module4"
             }
         }, keyname="job_id")
         cls.mock_module_db = mock_utils.mock_db_handler(data={
@@ -618,9 +626,17 @@ class ManagerTest(unittest.TestCase):
         self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
                             expectedWarningCount)
 
+        moduleName = 'module4'
+        expectedRowCount = 9
+        expectedSuccessCount = 1
+        expectedWarningCount = 0
+        expectedFailureCount = 0
+        self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
+                            expectedWarningCount)
+
         moduleName = 'totals'
         expectedRowCount = 4
-        expectedSuccessCount = 4
+        expectedSuccessCount = 5
         expectedWarningCount = 2
         expectedFailureCount = 1
         self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
