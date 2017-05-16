@@ -636,7 +636,7 @@ class ManagerTest(unittest.TestCase):
 
         moduleName = 'totals'
         expectedRowCount = 4
-        expectedSuccessCount = 4
+        expectedSuccessCount = 5
         expectedWarningCount = 2
         expectedFailureCount = 1
         self.validateModule(soup, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
