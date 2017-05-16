@@ -85,14 +85,12 @@ class DynamoDBHandlerTests(unittest.TestCase):
             }
             data = {"age": 30, "full_name": "John Doe"}
             self.handler.table.scan.return_value = {"Items": data}
-            items, last_key = self.handler.query_items(query)
-            self.assertEqual(items, data)
+            self.assertEqual(self.handler.query_items(query), data)
             self.handler.table.scan.assert_called_once()
 
     def test_query_item_no_query(self):
         """Test a invocation of `query_item` with no query."""
         data = {"age": 30, "full_name": "John Doe"}
         self.handler.table.scan.return_value = {"Items": data}
-        items, last_key = self.handler.query_items()
-        self.assertEqual(items, data)
+        self.assertEqual(self.handler.query_items(), data)
         self.handler.table.scan.assert_called_once_with()

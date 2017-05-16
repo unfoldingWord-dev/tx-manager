@@ -73,7 +73,15 @@ class DynamoDBHandler(object):
             Key=keys
         )
 
-    def query_items(self, query=None, only_fields_with_values=True, exclusive_start_key=None):
+    def query_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):
+        """
+        gets items from database
+        :param query: 
+        :param only_fields_with_values: 
+        :param queryChunkLimit: not an absolute count, but a threshold where we stop fetching more chunks
+                        (if negative then no limit, but will read all chunks)
+        :return: 
+        """
         filter_expression = None
         if query and len(query) > 1:
             for field, value in iteritems(query):
@@ -118,29 +126,39 @@ class DynamoDBHandler(object):
                     filter_expression &= condition
 
         if filter_expression is not None:
-            if exclusive_start_key == None:
-                response = self.table.scan(
-                    FilterExpression=filter_expression
-                )
-            else:
+            response = self.table.scan(
+                FilterExpression=filter_expression
+            )
+        else:
+            response = self.table.scan()
+
+        if not response or not('Items' in response):
+            return None
+
+        # finished if there is no more data to read
+        if not('LastEvaluatedKey' in response):
+            return response['Items']
+
+        items = response['Items']
+
+        # read chunks until end or threshold is reached
+        while 'LastEvaluatedKey' in response:
+            if filter_expression is not None:
                 response = self.table.scan(
                     FilterExpression=filter_expression,
-                    ExclusiveStartKey = exclusive_start_key
+                    ExclusiveStartKey = response['LastEvaluatedKey']
                 )
-        else:
-            if exclusive_start_key == None:
-                response = self.table.scan()
             else:
-                response = self.table.scan(ExclusiveStartKey = exclusive_start_key)
+                response = self.table.scan(ExclusiveStartKey = response['LastEvaluatedKey'])
 
-        last_key = None
-        if response and 'Items' in response:
-            if 'LastEvaluatedKey' in response:
-                last_key = response['LastEvaluatedKey']
-            return response['Items'], last_key
-        else:
-            return None, last_key
+            if response and ('Items' in response):
+                items += response['Items']
 
+            itemCount = len(items)
+            if (queryChunkLimit >= 0) and (itemCount >= queryChunkLimit):
+                break
+
+        return items;
 
 RESERVED_WORDS = [
     'ABORT',
