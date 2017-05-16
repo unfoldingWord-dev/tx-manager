@@ -696,13 +696,9 @@ class TxManager(object):
     def get_job_failures(self, jobs):
         failedJobs = []
         for job in jobs:
-            try:
-                errors = job['errors']
-                if len(errors) > 0:
-                    failedJobs.append(job)
-
-            except:
-                 failedJobs.append(job)
+            errors = job['errors']
+            if len(errors) > 0:
+                failedJobs.append(job)
 
         failedJobs = sorted(failedJobs, key=lambda k: k['created_at'], reverse=True)
         return failedJobs
