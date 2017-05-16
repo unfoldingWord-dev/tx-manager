@@ -83,7 +83,7 @@ class DynamoDBHandler(object):
         :return: 
         """
         filter_expression = None
-        if query and len(query) > 1:
+        if query and len(query) >= 1:
             for field, value in iteritems(query):
                 value2 = None
                 if isinstance(value, dict) and 'condition' in value and 'value' in value:

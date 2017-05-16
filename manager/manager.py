@@ -469,9 +469,14 @@ class TxManager(object):
         }
 
         items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
-        totalJobs = self.list_jobs({},False)
-
         if items and len(items):
+            moduleNames = []
+            for item in items:
+                moduleNames.append(item["name"])
+
+            totalJobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : moduleNames}
+                                    }, False)
+
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
 
             body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table></table>',
