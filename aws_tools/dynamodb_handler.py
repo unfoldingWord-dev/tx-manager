@@ -74,6 +74,10 @@ class DynamoDBHandler(object):
         )
 
     def get_item_count(self):
+        """
+        get number of items in table - one caveat is that this value may be off since AWS only updates it every 6 hours
+        :return: 
+        """
         return self.table.item_count
 
     def query_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):

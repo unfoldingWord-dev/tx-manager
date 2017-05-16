@@ -152,6 +152,10 @@ class TxManager(object):
         }
 
     def get_job_count(self):
+        """
+        get number of jobs in database - one caveat is that this value may be off since AWS only updates it every 6 hours
+        :return: 
+        """
         return self.job_db_handler.get_item_count()
 
     def list_jobs(self, data, must_be_authenticated=True):
@@ -480,6 +484,9 @@ class TxManager(object):
             registeredJobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : moduleNames}
                                     }, False)
             totalJobCount = self.get_job_count()
+            registeredJobCount = len(registeredJobs)
+            if registeredJobCount > totalJobCount: # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
+                totalJobCount = registeredJobCount
 
             self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
 
