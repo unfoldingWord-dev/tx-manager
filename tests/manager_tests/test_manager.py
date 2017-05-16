@@ -669,7 +669,7 @@ class ManagerTest(unittest.TestCase):
 
         moduleName = 'totals'
         expectedRowCount = 4
-        expectedSuccessCount = 4
+        expectedSuccessCount = 5
         expectedWarningCount = 2
         expectedFailureCount = 3
         self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
@@ -716,7 +716,7 @@ class ManagerTest(unittest.TestCase):
 
         moduleName = 'totals'
         expectedRowCount = 4
-        expectedSuccessCount = 4
+        expectedSuccessCount = 5
         expectedWarningCount = 2
         expectedFailureCount = 3
         self.validateModule(statusTable, moduleName, expectedRowCount, expectedSuccessCount, expectedFailureCount,
