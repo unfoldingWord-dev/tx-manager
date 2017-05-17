@@ -73,9 +73,24 @@ class DynamoDBHandler(object):
             Key=keys
         )
 
-    def query_items(self, query=None, only_fields_with_values=True):
+    def get_item_count(self):
+        """
+        get number of items in table - one caveat is that this value may be off since AWS only updates it every 6 hours
+        :return: 
+        """
+        return self.table.item_count
+
+    def query_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):
+        """
+        gets items from database
+        :param query: 
+        :param only_fields_with_values: 
+        :param queryChunkLimit: not an absolute count, but a threshold where we stop fetching more chunks
+                        (if negative then no limit, but will read all chunks)
+        :return: 
+        """
         filter_expression = None
-        if query and len(query) > 1:
+        if query and len(query) >= 1:
             for field, value in iteritems(query):
                 value2 = None
                 if isinstance(value, dict) and 'condition' in value and 'value' in value:
@@ -124,11 +139,33 @@ class DynamoDBHandler(object):
         else:
             response = self.table.scan()
 
-        if response and 'Items' in response:
-            return response['Items']
-        else:
+        if not response or not('Items' in response):
             return None
 
+        # finished if there is no more data to read
+        if not('LastEvaluatedKey' in response):
+            return response['Items']
+
+        items = response['Items']
+
+        # read chunks until end or threshold is reached
+        while 'LastEvaluatedKey' in response:
+            if filter_expression is not None:
+                response = self.table.scan(
+                    FilterExpression=filter_expression,
+                    ExclusiveStartKey = response['LastEvaluatedKey']
+                )
+            else:
+                response = self.table.scan(ExclusiveStartKey = response['LastEvaluatedKey'])
+
+            if response and ('Items' in response):
+                items += response['Items']
+
+            itemCount = len(items)
+            if (queryChunkLimit >= 0) and (itemCount >= queryChunkLimit):
+                break
+
+        return items
 
 RESERVED_WORDS = [
     'ABORT',
