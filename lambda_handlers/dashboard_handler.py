@@ -24,4 +24,13 @@ class DashboardHandler(Handler):
             'job_table_name': self.retrieve(event['vars'], 'job_table_name', 'Environment Vars'),
             'module_table_name': self.retrieve(event['vars'], 'module_table_name', 'Environment Vars')
         }
-        return TxManager(**env_vars).generate_dashboard()
+
+        max_failures = TxManager.MAX_FAILURES
+        try:
+            querystring = event['api-gateway']['params']['querystring']
+            max_failures = int(querystring['failures'])
+
+        except:
+            pass
+
+        return TxManager(**env_vars).generate_dashboard(max_failures)
