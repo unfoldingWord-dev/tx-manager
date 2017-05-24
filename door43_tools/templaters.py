@@ -44,10 +44,12 @@ class Templater(object):
 
     def build_left_sidebar(self, filename=None):
         html = """
-            <div>
-                <h1>Revisions</h1>
-                <table width="100%" id="revisions"></table>
-            </div>
+            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="left-sidebar-nav">
+                <div class="nav nav-stacked" id="revisions-div">
+                    <h1>Revisions</h1>
+                    <table width="100%" id="revisions"></table>
+                </div>
+            </nav>
             """
         return html
 
@@ -156,14 +158,14 @@ class Templater(object):
             heading_span.append(heading)
 
             if left_sidebar_div:
-                left_sidebar_html = '<span>' + self.build_left_sidebar(filename) + '</span>'
-                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
+                left_sidebar_html = self.build_left_sidebar(filename)
+                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').nav.extract()
                 left_sidebar_div.clear()
                 left_sidebar_div.append(left_sidebar)
 
             if right_sidebar_div:
-                right_sidebar_html = '<span>'+self.build_right_sidebar(filename)+'</span>'
-                right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').span.extract()
+                right_sidebar_html = self.build_right_sidebar(filename)
+                right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
                 right_sidebar_div.clear()
                 right_sidebar_div.append(right_sidebar)
 
