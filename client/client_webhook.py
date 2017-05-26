@@ -177,7 +177,12 @@ class ClientWebhook(object):
         headers = {"content-type": "application/json"}
 
         print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
-        print(payload)
+
+        # remove token from printout, so it will not show in integration testing logs on Travis, etc.
+        logPayload = payload.copy()
+        logPayload["gogs_user_token"] = "DUMMY"
+        print(logPayload)
+
         response = requests.post(tx_manager_job_url, json=payload, headers=headers)
         print('finished.')
 
