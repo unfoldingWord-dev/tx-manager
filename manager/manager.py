@@ -11,6 +11,7 @@ from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
 
+
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
@@ -34,11 +35,11 @@ class TxManager(object):
         self.gogs_url = gogs_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
-        self.quiet = quiet
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.job_table_name = job_table_name
         self.module_table_name = module_table_name
+        self.quiet = quiet
 
         if not self.job_table_name:
             self.job_table_name = TxManager.JOB_TABLE_NAME
@@ -48,8 +49,7 @@ class TxManager(object):
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
-
-        self.logger = logging.getLogger('tx-manager')
+        self.logger = logging.getLogger()
 
         self.setup_resources()
 
@@ -236,11 +236,10 @@ class TxManager(object):
             print('finished.')
 
             print("Response from {0}:".format(converter_module.name))
-            print(response)
+            print(response.json())
 
             json_data = response.json()
             if json_data:
-                json_data = response.json()
                 # The json_data of the response could result in a few different formats:
                 # 1) It could be that an exception was thrown in the converter code, which the API Gateway puts
                 #    into a json array with "errorMessage" containing the exception message.
@@ -249,12 +248,7 @@ class TxManager(object):
                 # 3) The other possibility is for the Lambda function to not finish executing
                 #    (e.g. exceeds its 5 minute execution limit). We don't currently handle this possibility.
                 # Todo: Handle lambda function returning due to exceeding 5 minutes execution limit
-                if 'errorMessage' in json_data:
-                    error = json_data['errorMessage']
-                    if error.startswith('Bad Request: '):
-                        error = error[len('Bad Request: '):]
-                    job.error_message(error)
-                elif 'success' in json_data:
+                if 'success' in json_data:
                     success = json_data['success']
                     for message in json_data['info']:
                         if message:
@@ -265,12 +259,19 @@ class TxManager(object):
                     for message in json_data['warnings']:
                         if message:
                             job.warning_message(message)
-                    if json_data['errors']:
+                    if len(json_data['errors']):
                         job.log_message('{0} function returned with errors.'.format(converter_module.name))
-                    elif json_data['warnings']:
+                    elif len(json_data['warnings']):
                         job.log_message('{0} function returned with warnings.'.format(converter_module.name))
                     else:
                         job.log_message('{0} function returned successfully.'.format(converter_module.name))
+                elif 'errorMessage' in json_data or 'message' in json_data:
+                    error = json_data.get('errorMessage', json_data.get('message'))
+                    if error.startswith('Bad Request: '):
+                        error = error[len('Bad Request: '):]
+                    job.error_message(error)
+                else:
+                    job.error_message('Conversion failed for unknown reason: {0}'.format(json_data))
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
@@ -280,6 +281,7 @@ class TxManager(object):
             job.success = False
             job.status = "failed"
             message = "Conversion failed"
+            print("Conversion failed, success: {0}, errors: {1}".format(success, job.errors))
         elif len(job.warnings) > 0:
             job.success = True
             job.status = "warnings"
@@ -304,8 +306,7 @@ class TxManager(object):
 
         return job.get_db_data()
 
-    @staticmethod
-    def do_callback(url, payload):
+    def do_callback(self, url, payload):
         if url.startswith('http'):
             headers = {"content-type": "application/json"}
             print('Making callback to {0} with payload:'.format(url))
@@ -313,8 +314,7 @@ class TxManager(object):
             requests.post(url, json=payload, headers=headers)
             print('finished.')
 
-    @staticmethod
-    def make_api_gateway_for_module(module):
+    def make_api_gateway_for_module(self, module):
         # lambda_func_name = module['name']
         # AWS_LAMBDA_API_ID = '7X97xCLPDE16Jep5Zv85N6zy28wcQfJz79E2H3ln'
         # # of 'tx-manager_api_key'
