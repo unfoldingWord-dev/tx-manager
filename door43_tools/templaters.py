@@ -9,6 +9,14 @@ from general_tools.file_utils import write_file
 from door43_tools.manifest_handler import Manifest
 
 
+def do_template(resource_type, source_dir, output_dir, template_file):
+    if resource_type in ['udb', 'ulb', 'bible']:
+        templater = BibleTemplater(source_dir, output_dir, template_file)
+    else:
+        templater = Templater(source_dir, output_dir, template_file)
+    return templater.run()
+
+
 class Templater(object):
     def __init__(self, source_dir, output_dir, template_file, quiet=False):
         self.source_dir = source_dir  # Local directory
@@ -24,8 +32,6 @@ class Templater(object):
     def run(self):
         repo_name = ""
 
-        print(glob(os.path.join(self.source_dir, '*')))
-
         # get build_log
         build_log_filename = os.path.join(self.source_dir, 'build_log.json')
         if os.path.isfile(build_log_filename):
@@ -39,8 +45,8 @@ class Templater(object):
 
         with open(self.template_file) as template_file:
             self.template_html = template_file.read()
-
         self.apply_template()
+        return True
 
     def build_left_sidebar(self, filename=None):
         html = """
@@ -224,7 +230,6 @@ class BibleTemplater(Templater):
                         <ul class="panel-body chapters">
                     """.format(book_code, title, ' in' if fname == filename else '')
             for chapter in soup.find_all('h2', {'c-num'}):
-                print(chapter['id'])
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
                     """.format(os.path.basename(fname) if fname != filename else '', chapter['id'],
