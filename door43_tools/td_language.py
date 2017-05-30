@@ -1,22 +1,20 @@
 from __future__ import unicode_literals
 import json
-from general_tools.url_utils import get_url
+from general_tools import url_utils
 
 
-class Language(object):
+class TdLanguage(object):
 
     language_list = None
 
     def __init__(self, json_obj=None):
         """
         Optionally accepts an object for initialization.
-
         :param object json_obj: An object to initialize the instance member variables
         """
         # deserialize
         if json_obj:
             self.__dict__ = json_obj
-
         else:
             self.ln = ''
             self.gw = False
@@ -29,19 +27,22 @@ class Language(object):
             self.cc = []
 
     @staticmethod
-    def load_languages():
+    def get_languages():
         """
         Gets the list of Languages. Retrieves the list from tD if needed.
-        :return: list<Language>
+        :return: list<TdLanguage>
         """
-
-        if Language.language_list is None:
-
-            Language.language_list = []
-
+        if TdLanguage.language_list is None:
+            TdLanguage.language_list = []
             lang_file = 'http://td.unfoldingword.org/exports/langnames.json'
-            langs = json.loads(get_url(lang_file))
+            langs = json.loads(url_utils.get_url(lang_file))
             for lang in langs:
-                Language.language_list.append(Language(lang))
+                TdLanguage.language_list.append(TdLanguage(lang))
+        return TdLanguage.language_list
 
-        return Language.language_list
+    @staticmethod
+    def get_language(lang):
+        languages = TdLanguage.get_languages()
+        found = [x for x in languages if x.lc == lang]
+        if len(found):
+            return found[0]

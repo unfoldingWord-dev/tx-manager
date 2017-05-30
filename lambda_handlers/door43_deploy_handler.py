@@ -31,12 +31,10 @@ class Door43DeployHandler(Handler):
 
     @staticmethod
     def deploy(bucket_name, key):
-        print("DEPLOY {0} {1}".format(bucket_name, key))
         cdn_bucket = 'cdn.door43.org'
         door43_bucket = 'door43.org'
         if '-' in bucket_name:
             prefix = bucket_name.split('-')[0] + '-'
             cdn_bucket = '{0}{1}'.format(prefix, cdn_bucket)
             door43_bucket = '{0}{1}'.format(prefix, door43_bucket)
-        print("DEPLOY2 {0} {1}".format(cdn_bucket, door43_bucket))
         ProjectDeployer(cdn_bucket, door43_bucket).deploy_revision_to_door43(key)
