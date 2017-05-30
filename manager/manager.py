@@ -674,7 +674,6 @@ class TxManager(object):
 
             self.jobs_success+=1
 
-
     def get_job_failures(self, jobs):
         failedJobs = []
         for job in jobs:
@@ -684,4 +683,9 @@ class TxManager(object):
 
         failedJobs = sorted(failedJobs, key=lambda k: k['created_at'], reverse=True)
         return failedJobs
+
+
+
+
+
 
