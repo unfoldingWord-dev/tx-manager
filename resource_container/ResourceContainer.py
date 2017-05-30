@@ -387,7 +387,7 @@ class Resource:
 
     @property
     def rights(self):
-        return self.resource.get('rights', 'CC BY-SA')
+        return self.resource.get('rights', 'CC BY-SA 4.0')
 
     @property
     def creator(self):
