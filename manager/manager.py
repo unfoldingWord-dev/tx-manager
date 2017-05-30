@@ -684,8 +684,3 @@ class TxManager(object):
         failedJobs = sorted(failedJobs, key=lambda k: k['created_at'], reverse=True)
         return failedJobs
 
-
-
-
-
-

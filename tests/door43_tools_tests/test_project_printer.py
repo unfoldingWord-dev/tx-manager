@@ -2,8 +2,8 @@ from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import os
 import tempfile
-import mock
 from moto import mock_s3
+from bs4 import BeautifulSoup
 from door43_tools.project_printer import ProjectPrinter
 from general_tools.file_utils import unzip
 from shutil import rmtree
@@ -25,7 +25,18 @@ class ProjectPrinterTests(unittest.TestCase):
         rmtree(self.temp_dir, ignore_errors=True)
 
     def test_print_obs(self):
-        ret = self.printer.print_project(self.project_key)
+        self.printer.print_project(self.project_key)
+        self.assertTrue(self.printer.cdn_handler.key_exists('u/{0}/print_all.html'.format(self.project_key)))
+        html = self.printer.cdn_handler.get_file_contents('u/{0}/print_all.html'.format(self.project_key))
+        soup = BeautifulSoup(html, 'html.parser')
+        self.assertEqual(len(soup.div), 69)
+        # Run again, shouldn't have to generate
+        self.printer.print_project(self.project_key)
+        self.assertTrue(self.printer.cdn_handler.key_exists('u/{0}/print_all.html'.format(self.project_key)))
+
+    def test_random_tests(self):
+        self.assertRaises(Exception, self.printer.print_project, 'bad_key')
+        self.assertRaises(Exception, self.printer.print_project, 'bad_owner/bad_repo/bad_commit')
 
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')
