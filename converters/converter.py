@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+import logging
 from aws_tools.s3_handler import S3Handler
 from general_tools.url_utils import download_file
 from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
@@ -13,7 +14,7 @@ class Converter(object):
     EXCLUDED_FILES = ["license.md", "manifest.json", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source, resource, cdn_bucket=None, cdn_file=None, options=None):
-        self.logger = ConvertLogger()
+        self.log = ConvertLogger()
         self.options = {}
         self.source = source
         self.resource = resource
@@ -59,15 +60,15 @@ class Converter(object):
                 # upload the output archive either to cdn_bucket or to a file (no cdn_bucket)
                 self.upload_archive()
             except:
-                self.logger.error('Conversion process ended abnormally')
+                self.log.error('Conversion process ended abnormally')
         else:
-            self.logger.error('Resource "{0}" not currently supported'.format(self.resource))
+            self.log.error('Resource "{0}" not currently supported'.format(self.resource))
 
         return {
-            'success': len(self.logger.logs['error']) == 0,
-            'info': self.logger.logs['info'],
-            'warnings': self.logger.logs['warning'],
-            'errors': self.logger.logs['error']
+            'success': len(self.log.logs['error']) == 0,
+            'info': self.log.logs['info'],
+            'warnings': self.log.logs['warning'],
+            'errors': self.log.logs['error']
         }
 
     def download_archive(self):

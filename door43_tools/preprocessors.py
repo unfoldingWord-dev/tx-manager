@@ -7,11 +7,10 @@ from general_tools.file_utils import copy_tree
 from shutil import copy
 
 class Preprocessor(object):
-    def __init__(self, manifest, source_dir, output_dir, quiet=False):
+    def __init__(self, manifest, source_dir, output_dir):
         self.manifest = manifest
         self.source_dir = source_dir  # Local directory
         self.output_dir = output_dir  # Local directory
-        self.quiet = quiet
 
     def run(self):
         if os.path.isdir(os.path.join(self.source_dir, 'content')):

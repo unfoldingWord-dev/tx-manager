@@ -5,7 +5,6 @@ import tempfile
 import requests
 import logging
 import json
-from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
 from general_tools.url_utils import download_file
@@ -28,20 +27,13 @@ class ClientWebhook(object):
         :param Logger logger:
         :param class s3_handler_class:
         """
-
-        if not logger:
-            self.logger = logging.getLogger()
-            self.logger.setLevel(logging.INFO)
-        else:
-            self.logger = logger
-
         self.commit_data = commit_data
         self.api_url = api_url
         self.pre_convert_bucket = pre_convert_bucket
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
         self.gogs_user_token = gogs_user_token
-        self.s3_handler_class = s3_handler_class
+        self.logger = logging.getLogger()
 
         if self.pre_convert_bucket:
             # we use us-west-2 for our s3 buckets
@@ -126,7 +118,7 @@ class ClientWebhook(object):
                                                              resource_type.capitalize(),
                                                              input_format.capitalize()))
         except AttributeError as e:
-            self.logger.info('Got AttributeError: {0}'.format(e.message))
+            self.logger.debug('Got AttributeError: {0}'.format(e.message))
             preprocessor_class = preprocessors.Preprocessor
 
         # merge the source files with the template
@@ -138,23 +130,23 @@ class ClientWebhook(object):
         # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
         zip_filename = commit_id + '.zip'
         zip_filepath = os.path.join(self.base_temp_dir, zip_filename)
-        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
+        self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
         if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
             add_file_to_zip(zip_filepath, manifest_path, 'manifest.json')
-        self.logger.info('finished.')
+        self.logger.debug('finished.')
 
         # 4) Upload zipped file to the S3 bucket
-        s3_handler = self.s3_handler_class(self.pre_convert_bucket)
+        s3_handler = S3Handler(self.pre_convert_bucket)
         file_key = "preconvert/" + zip_filename
-        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
+        self.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
             s3_handler.upload_file(zip_filepath, file_key)
         except Exception as e:
             self.logger.error('Failed to upload zipped repo up to server')
             self.logger.exception(e)
         finally:
-            self.logger.info('finished.')
+            self.logger.debug('finished.')
 
         # Send job request to tx-manager
         source_url = self.source_url_base+"/"+file_key
@@ -176,15 +168,15 @@ class ClientWebhook(object):
 
         headers = {"content-type": "application/json"}
 
-        print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
+        self.logger.debug('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url))
 
         # remove token from printout, so it will not show in integration testing logs on Travis, etc.
         logPayload = payload.copy()
         logPayload["gogs_user_token"] = "DUMMY"
-        print(logPayload)
+        self.logger.debug(logPayload)
 
         response = requests.post(tx_manager_job_url, json=payload, headers=headers)
-        print('finished.')
+        self.logger.debug('finished.')
 
         # Fake job in case tx-manager returns an error, can still build the build_log.json
         job = {
@@ -306,7 +298,7 @@ class ClientWebhook(object):
         repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition('/')[2])
 
         try:
-            self.logger.info('Downloading {0}...'.format(repo_zip_url))
+            self.logger.debug('Downloading {0}...'.format(repo_zip_url))
 
             # if the file already exists, remove it, we want a fresh copy
             if os.path.isfile(repo_zip_file):
@@ -314,13 +306,13 @@ class ClientWebhook(object):
 
             download_file(repo_zip_url, repo_zip_file)
         finally:
-            self.logger.info('finished.')
+            self.logger.debug('finished.')
 
         try:
-            self.logger.info('Unzipping {0}...'.format(repo_zip_file))
+            self.logger.debug('Unzipping {0}...'.format(repo_zip_file))
             unzip(repo_zip_file, repo_dir)
         finally:
-            self.logger.info('finished.')
+            self.logger.debug('finished.')
 
         # clean up the downloaded zip file
         if os.path.isfile(repo_zip_file):

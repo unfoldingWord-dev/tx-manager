@@ -10,16 +10,13 @@ from client.client_webhook import ClientWebhook
 class TestClientWebhook(unittest.TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     temp_dir = None
-    print(resources_dir)
 
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
     shutil.rmtree(base_temp_dir, ignore_errors=True)
 
     @staticmethod
     def mock_download_repo(source, target):
-        print('Mock downloading {}'.format(source), end=' ')
         shutil.copyfile(os.path.join(TestClientWebhook.resources_dir, source), target)
-        print('finished.')
 
     def setUp(self):
         try:

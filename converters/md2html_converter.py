@@ -14,7 +14,7 @@ from door43_tools.obs_data import obs_data
 class Md2HtmlConverter(Converter):
 
     def convert_obs(self):
-        self.logger.info('Processing the OBS markdown files')
+        self.log.info('Processing the OBS markdown files')
 
         # find the first directory that has md files.
         files = self.get_files()
@@ -37,15 +37,15 @@ class Md2HtmlConverter(Converter):
                 html_filename = base_name + ".html"
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, html)
-                self.logger.info('Converted {0} to {1}.'.format(os.path.basename(filename), os.path.basename(html_filename)))
+                self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename), os.path.basename(html_filename)))
 
                 # Do the OBS inspection (this now operates on a single file instead of folder)
                 # QUESTION: Should this be done separately after conversion????
-                inspector = OBSInspection(output_file, self.logger)
+                inspector = OBSInspection(output_file, self.log)
                 try:
                     inspector.run()
                 except Exception as e:
-                    self.logger.warning('Chapter {0}: failed to run OBS inspector: {1}'.format(base_name, e.message))
+                    self.log.warning('Chapter {0}: failed to run OBS inspector: {1}'.format(base_name, e.message))
             else:
                 # Directly copy over files that are not markdown files
                 try:
@@ -58,6 +58,6 @@ class Md2HtmlConverter(Converter):
         for chapter in sorted(obs_data['chapters']): # verify all expected chapters are present
             found_chapter = found_chapters.get(chapter)
             if not found_chapter:
-                self.logger.warning('Chapter {0} is missing!'.format(chapter))
+                self.log.warning('Chapter {0} is missing!'.format(chapter))
 
-        self.logger.info('Finished processing Markdown files.')
+        self.log.info('Finished processing Markdown files.')
