@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import os
 import tempfile
-import mock
 from moto import mock_s3
 from door43_tools.project_deployer import ProjectDeployer
 from general_tools.file_utils import unzip

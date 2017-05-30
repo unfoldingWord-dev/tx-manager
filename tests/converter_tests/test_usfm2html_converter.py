@@ -52,7 +52,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
     def test_run(self):
         """Runs the converter and verifies the output."""
         # test with the English OBS
-        zip_file = self.resources_dir+"/eight_bible_books.zip"
+        zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -73,7 +73,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         Runs the converter and verifies the output
         """
         # test with the English OBS
-        zip_file = self.resources_dir+"/51-PHP.zip"
+        zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
