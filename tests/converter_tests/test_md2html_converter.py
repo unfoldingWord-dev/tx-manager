@@ -56,7 +56,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
     def test_run(self):
         """Runs the converter and verifies the output."""
         # test with the English OBS
-        zip_file = self.resources_dir+"/en-obs.zip"
+        zip_file = os.path.join(self.resources_dir, 'en-obs.zip')
         out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
         with closing(Md2HtmlConverter('', 'obs', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file

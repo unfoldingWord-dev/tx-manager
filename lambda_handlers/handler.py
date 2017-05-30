@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function
-from abc import ABCMeta, abstractmethod
 import json
 import logging
+from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
 
 

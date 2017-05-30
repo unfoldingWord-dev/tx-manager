@@ -10,7 +10,6 @@ from client.client_webhook import ClientWebhook
 class TestClientWebhook(unittest.TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     temp_dir = None
-
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
     shutil.rmtree(base_temp_dir, ignore_errors=True)
 

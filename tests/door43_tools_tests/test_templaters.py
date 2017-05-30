@@ -65,7 +65,7 @@ class TestTemplater(unittest.TestCase):
         self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
 
     def testTemplaterRightToLeft(self):
-        test_folder_name = os.path.join('converted_projects', 'glk_obs_text_obs-complete.zip')
+        test_folder_name = os.path.join(self.resources_dir, 'converted_projects', 'glk_obs_text_obs-complete.zip')
         test_file_path = self.extractZipFiles(test_folder_name)
         deployer, success = self.doTemplater(test_file_path)
 

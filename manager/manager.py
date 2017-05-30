@@ -53,7 +53,7 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
 
-        self.logger = logging.getLogger('tx-manager')
+        self.logger = logging.getLogger()
 
         self.setup_resources()
 
@@ -236,11 +236,10 @@ class TxManager(object):
             self.logger.debug('finished.')
 
             self.logger.debug("Response from {0}:".format(converter_module.name))
-            self.logger.debug(response)
+            self.logger.debug(response.json())
 
             json_data = response.json()
             if json_data:
-                json_data = response.json()
                 # The json_data of the response could result in a few different formats:
                 # 1) It could be that an exception was thrown in the converter code, which the API Gateway puts
                 #    into a json array with "errorMessage" containing the exception message.
@@ -249,12 +248,7 @@ class TxManager(object):
                 # 3) The other possibility is for the Lambda function to not finish executing
                 #    (e.g. exceeds its 5 minute execution limit). We don't currently handle this possibility.
                 # Todo: Handle lambda function returning due to exceeding 5 minutes execution limit
-                if 'errorMessage' in json_data:
-                    error = json_data['errorMessage']
-                    if error.startswith('Bad Request: '):
-                        error = error[len('Bad Request: '):]
-                    job.error_message(error)
-                elif 'success' in json_data:
+                if 'success' in json_data:
                     success = json_data['success']
                     for message in json_data['info']:
                         if message:
@@ -265,12 +259,19 @@ class TxManager(object):
                     for message in json_data['warnings']:
                         if message:
                             job.warning_message(message)
-                    if json_data['errors']:
+                    if len(json_data['errors']):
                         job.log_message('{0} function returned with errors.'.format(converter_module.name))
-                    elif json_data['warnings']:
+                    elif len(json_data['warnings']):
                         job.log_message('{0} function returned with warnings.'.format(converter_module.name))
                     else:
                         job.log_message('{0} function returned successfully.'.format(converter_module.name))
+                elif 'errorMessage' in json_data or 'message' in json_data:
+                    error = json_data.get('errorMessage', json_data.get('message'))
+                    if error.startswith('Bad Request: '):
+                        error = error[len('Bad Request: '):]
+                    job.error_message(error)
+                else:
+                    job.error_message('Conversion failed for unknown reason: {0}'.format(json_data))
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
@@ -280,6 +281,7 @@ class TxManager(object):
             job.success = False
             job.status = "failed"
             message = "Conversion failed"
+            print("Conversion failed, success: {0}, errors: {1}".format(success, job.errors))
         elif len(job.warnings) > 0:
             job.success = True
             job.status = "warnings"

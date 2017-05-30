@@ -14,7 +14,6 @@ class OBSStatus(object):
         :param object content_dir: Path to the directory of OBS manifest file
         """
         self.content_dir = content_dir
-
         self. manifest_file = os.path.join(self.content_dir, 'manifest.json')
         if os.path.isfile(self. manifest_file):
             self.__dict__ = load_json_object(self.manifest_file)
@@ -40,13 +39,12 @@ class OBSInspection(object):
             except:
                 chapter = None
         self.chapter = chapter
-        self.manifest = {}
         self.log = log
         if not self.log:
             self.log = ConvertLogger()
 
     def run(self):
-        if not self.chapter: # skip over files that are not chapters
+        if not self.chapter:  # skip over files that are not chapters
             return
 
         if not os.path.isfile(self.filename):
