@@ -84,7 +84,6 @@ class RC:
     def as_dict(self):
         """
         Return a proper dict object of the manifest
-        :param RC rc: 
         :return dict: 
         """
         return {
