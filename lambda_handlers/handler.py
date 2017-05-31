@@ -24,12 +24,11 @@ class Handler(object):
         """
         self.logger.debug("EVENT:")
         self.logger.debug(json.dumps(event))
-        return self._handle(event, context)
-#        try:
-#            return self._handle(event, context)
-#        except Exception as e:
-#            self.logger.error(e.message, exc_info=1)
-#            raise EnvironmentError('Bad Request: {}'.format(e.message))
+        try:
+            return self._handle(event, context)
+        except Exception as e:
+            self.logger.error(e.message, exc_info=1)
+            raise EnvironmentError('Bad Request: {}'.format(e.message))
 
     @abstractmethod
     def _handle(self, event, context):
