@@ -2,26 +2,7 @@ from __future__ import print_function, unicode_literals
 import os
 from bs4 import BeautifulSoup
 from converters.convert_logger import ConvertLogger
-from general_tools.file_utils import load_json_object
 from obs_data import obs_data
-
-
-class OBSStatus(object):
-    def __init__(self, content_dir=None):
-        """
-        Takes a path to a directory
-
-        :param object content_dir: Path to the directory of OBS manifest file
-        """
-        self.content_dir = content_dir
-        self. manifest_file = os.path.join(self.content_dir, 'manifest.json')
-        if os.path.isfile(self. manifest_file):
-            self.__dict__ = load_json_object(self.manifest_file)
-        else:
-            raise IOError('The file {0} was not found.'.format(self.manifest_file))
-
-    def __contains__(self, item):
-        return item in self.__dict__
 
 
 class OBSInspection(object):

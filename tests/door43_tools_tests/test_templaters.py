@@ -5,14 +5,14 @@ import tempfile
 import unittest
 import shutil
 from bs4 import BeautifulSoup
-from door43_tools.templaters import Templater
+from door43_tools.templaters import do_template
 from general_tools.file_utils import unzip
 
 
 class TestTemplater(unittest.TestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
-
+    
     def setUp(self):
         """Runs before each test."""
         self.out_dir = ''
@@ -30,47 +30,47 @@ class TestTemplater(unittest.TestCase):
         test_folder_name = "converted_projects/en-ulb-4-books.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
-        deployer, success = self.doTemplater(test_file_path)
-        self.verifyBibleTemplater(success, expect_success, deployer.output_dir,
+        success = self.doTemplater('bible', test_file_path)
+        self.verifyBibleTemplater(success, expect_success, self.out_dir,
                                   ['01-GEN.html', '02-EXO.html', '03-LEV.html', '05-DEU.html'])
 
     def testTemplaterObsComplete(self):
         test_folder_name = "converted_projects/aab_obs_text_obs-complete.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
-        deployer, success = self.doTemplater(test_file_path)
-        self.verifyObsTemplater(success, expect_success, deployer.output_dir)
+        success = self.doTemplater('obs', test_file_path)
+        self.verifyObsTemplater(success, expect_success, self.out_dir)
 
     def testCommitToDoor43Empty(self):
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
         expect_success = True
         missing_chapters = range(1, 51)
         test_file_path = self.extractZipFiles(test_folder_name)
-        deployer, success = self.doTemplater(test_file_path)
-        self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
+        success = self.doTemplater('obs', test_file_path)
+        self.verifyObsTemplater(success, expect_success, self.out_dir, missing_chapters)
 
     def testCommitToDoor43MissingFirstFrame(self):
         test_folder_name = "converted_projects/aah_obs_text_obs-missing_first_frame.zip"
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
-        deployer, success = self.doTemplater(test_file_path)
-        self.verifyObsTemplater(success, expect_success, deployer.output_dir)
+        success = self.doTemplater('obs', test_file_path)
+        self.verifyObsTemplater(success, expect_success, self.out_dir)
 
     def testCommitToDoor43MissingChapter50(self):
         test_folder_name = os.path.join('converted_projects', 'aai_obs_text_obs-missing_chapter_50.zip')
         expect_success = True
         missing_chapters = [50]
         test_file_path = self.extractZipFiles(test_folder_name)
-        deployer, success = self.doTemplater(test_file_path)
-        self.verifyObsTemplater(success, expect_success, deployer.output_dir, missing_chapters)
+        success = self.doTemplater('obs', test_file_path)
+        self.verifyObsTemplater(success, expect_success, self.out_dir, missing_chapters)
 
     def testTemplaterRightToLeft(self):
         test_folder_name = os.path.join(self.resources_dir, 'converted_projects', 'glk_obs_text_obs-complete.zip')
         test_file_path = self.extractZipFiles(test_folder_name)
-        deployer, success = self.doTemplater(test_file_path)
+        success = self.doTemplater('obs', test_file_path)
 
         # check for dir attribute in html tag
-        with codecs.open(os.path.join(deployer.output_dir, '01.html'), 'r', 'utf-8-sig') as f:
+        with codecs.open(os.path.join(self.out_dir, '01.html'), 'r', 'utf-8-sig') as f:
             soup = BeautifulSoup(f, 'html.parser')
 
         self.assertIn('dir', soup.html.attrs)
@@ -82,19 +82,15 @@ class TestTemplater(unittest.TestCase):
         unzip(file_path, self.temp_dir)
         return self.temp_dir
 
-    def doTemplater(self, test_folder_name):
-        template_file = os.path.join(self.resources_dir, 'templates', 'obs.html')
+    def doTemplater(self, resource_type, test_folder_name):
+        template_file = os.path.join(self.resources_dir, 'templates', '{0}.html'.format(resource_type))
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        success = True
-        templater = Templater(test_folder_name, self.out_dir, template_file)
         try:
-            templater.run()
+            return do_template(resource_type,test_folder_name, self.out_dir, template_file)
         except Exception as e:
-            print("Templater threw exception: ")
+            print("do_template threw exception: ")
             print(e)
-            success = False
-
-        return templater, success
+            return False
 
     def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters = []):
         self.assertIsNotNone(output_folder)

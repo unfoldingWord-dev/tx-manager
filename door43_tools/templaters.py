@@ -9,6 +9,14 @@ from general_tools.file_utils import write_file
 from resource_container.ResourceContainer import RC
 
 
+def do_template(resource_type, source_dir, output_dir, template_file):
+    if resource_type in ['udb', 'ulb', 'bible']:
+        templater = BibleTemplater(source_dir, output_dir, template_file)
+    else:
+        templater = Templater(source_dir, output_dir, template_file)
+    return templater.run()
+
+
 class Templater(object):
     def __init__(self, source_dir, output_dir, template_file):
         self.source_dir = source_dir  # Local directory
@@ -26,6 +34,7 @@ class Templater(object):
         with open(self.template_file) as template_file:
             self.template_html = template_file.read()
         self.apply_template()
+        return True
 
     def build_left_sidebar(self, filename=None):
         html = """
