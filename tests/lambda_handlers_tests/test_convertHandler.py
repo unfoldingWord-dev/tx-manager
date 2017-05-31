@@ -41,7 +41,7 @@ class TestConvertHandler(TestCase):
                 }
             },
             'vars': {
-                'cdn_url': 'https://cdn.exmaple.com',
+                'cdn_url': 'https://cdn.example.com',
                 'api_url': 'https://api.example.com',
                 'gogs_url': 'http://git.example.com',
                 'cdn_bucket': 'cdn_test_bucket'
@@ -85,7 +85,7 @@ class TestConvertHandler(TestCase):
                 }
             },
             'vars': {
-                'cdn_url': 'https://cdn.exmaple.com',
+                'cdn_url': 'https://cdn.example.com',
                 'api_url': 'https://api.example.com',
                 'gogs_url': 'http://git.example.com',
                 'cdn_bucket': 'cdn_test_bucket'

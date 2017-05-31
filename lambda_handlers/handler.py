@@ -1,6 +1,6 @@
 from __future__ import unicode_literals, print_function
-from abc import ABCMeta, abstractmethod
 import json
+from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
 
 
@@ -48,4 +48,4 @@ class Handler(object):
         if key in dictionary:
             return dictionary[key]
         dict_name = "dictionary" if dict_name is None else dict_name
-        raise Exception('{k} not found in {d}'.format(k=repr(key), d=dict_name))
+        raise Exception('\'{k}\' not found in {d}'.format(k=key, d=dict_name))

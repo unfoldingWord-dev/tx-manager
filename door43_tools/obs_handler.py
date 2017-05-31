@@ -21,7 +21,6 @@ class OBSInspection(object):
                 chapter = None
         self.chapter = chapter
         self.logger = logger
-        self.manifest = {}
         if not self.logger:
             self.logger = ConvertLogger()
 
