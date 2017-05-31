@@ -71,7 +71,10 @@ class ProjectDeployer(object):
         if resource_type == 'ulb' or resource_type == 'udb':
             resource_type = 'bible'
 
-        template_key = 'templates/{0}.html'.format(resource_type)
+        if resource_type in ['bible', 'ulb', 'udb']:
+            template_key = 'templates/bible.html'
+        else:
+            template_key = 'templates/obs.html'
         template_file = os.path.join(template_dir, 'template.html')
         self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
         self.door43_handler.download_file(template_key, template_file)
