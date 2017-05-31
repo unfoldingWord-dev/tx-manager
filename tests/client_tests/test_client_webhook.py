@@ -15,9 +15,7 @@ class TestClientWebhook(unittest.TestCase):
 
     @staticmethod
     def mock_download_repo(source, target):
-        print('Mock downloading {}'.format(source), end=' ')
         shutil.copyfile(os.path.join(TestClientWebhook.resources_dir, source), target)
-        print('finished.')
 
     def setUp(self):
         try:

@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function
+import logging
 from six import iteritems
 
 
@@ -9,8 +10,7 @@ class TxObject(object):
         'errors'
     ]
 
-    def __init__(self, quiet=False):
-        self.quiet = quiet
+    def __init__(self):
         self.log = []
         self.warnings = []
         self.errors = []
@@ -30,16 +30,10 @@ class TxObject(object):
         return data
 
     def log_message(self, message):
-        if not self.quiet:
-            print(message)
         self.log.append(message)
 
     def error_message(self, message):
-        if not self.quiet:
-            print(message)
         self.errors.append(message)
 
     def warning_message(self, message):
-        if not self.quiet:
-            print(message)
         self.warnings.append(message)

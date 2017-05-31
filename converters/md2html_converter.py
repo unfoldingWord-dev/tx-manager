@@ -66,7 +66,6 @@ class Md2HtmlConverter(Converter):
             found_chapter = found_chapters.get(chapter)
             if not found_chapter:
                 self.log.warning('Chapter {0} is missing!'.format(chapter))
-
         self.log.info('Finished processing OBS Markdown files.')
 
     def convert_markdown(self):

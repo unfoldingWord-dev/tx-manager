@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 import boto3
+import logging
 from six import iteritems
 from boto3 import Session
 from boto3.dynamodb.conditions import Attr, Key
@@ -14,13 +15,14 @@ class DynamoDBHandler(object):
         self.aws_region_name = aws_region_name
         self.resource = None
         self.table = None
+        self.logger = logging.getLogger()
         self.setup_resources()
 
     def setup_resources(self):
         if self.aws_access_key_id and self.aws_secret_access_key:
             session = Session(aws_access_key_id=self.aws_access_key_id,
-                                   aws_secret_access_key=self.aws_secret_access_key,
-                                   region_name=self.aws_region_name)
+                              aws_secret_access_key=self.aws_secret_access_key,
+                              region_name=self.aws_region_name)
             self.resource = session.resource('dynamodb')
         else:
             self.resource = boto3.resource('dynamodb')
@@ -54,12 +56,12 @@ class DynamoDBHandler(object):
                 expressions.append('{0} = :{1}'.format(name, field))
                 values[':{0}'.format(field)] = value
 
-        print('UPDATING WITH:')
-        print('SET {0}'.format(', '.join(expressions)))
-        print("VALUES:")
-        print(values)
-        print("NAMES:")
-        print(names)
+        self.logger.debug('UPDATING WITH:')
+        self.logger.debug('SET {0}'.format(', '.join(expressions)))
+        self.logger.debug("VALUES:")
+        self.logger.debug(values)
+        self.logger.debug("NAMES:")
+        self.logger.debug(names)
 
         return self.table.update_item(
             Key=keys,

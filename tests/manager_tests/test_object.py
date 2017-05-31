@@ -9,10 +9,10 @@ class MyObject(TxObject):
         'field2'
     ]
 
-    def __init__(self, quiet=False):
+    def __init__(self):
         self.field1 = None
         self.field2 = None
-        super(MyObject, self).__init__(quiet)
+        super(MyObject, self).__init__()
 
 
 class ObjectTest(unittest.TestCase):

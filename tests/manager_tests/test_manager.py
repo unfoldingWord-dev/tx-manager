@@ -569,17 +569,6 @@ class ManagerTest(unittest.TestCase):
             del missing[key]
             self.assertRaises(Exception, manager.register_module, missing)
 
-    def test_debug_print(self):
-        for quiet in (True, False):
-            manager = TxManager(quiet=quiet)
-            mock_stdout = StringIO()
-            with mock.patch("sys.stdout", mock_stdout):
-                manager.debug_print("Hello world")
-                if quiet:
-                    self.assertEqual(mock_stdout.getvalue(), "")
-                else:
-                    self.assertEqual(mock_stdout.getvalue(), "Hello world\n")
-
     def test_get_update_delete_job(self):
         """Test [get/update/delete]_job methods."""
         manager = TxManager(**self.tx_manager_env_vars)
