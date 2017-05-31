@@ -131,6 +131,7 @@ def write_file(file_name, file_contents, indent=None):
     with codecs.open(file_name, 'w', encoding='utf-8') as out_file:
         out_file.write(text_to_write)
 
+
 def get_mime_type(path):
     mime = MimeTypes()
 

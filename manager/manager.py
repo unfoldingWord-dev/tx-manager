@@ -674,7 +674,6 @@ class TxManager(object):
 
             self.jobs_success+=1
 
-
     def get_job_failures(self, jobs):
         failedJobs = []
         for job in jobs:
