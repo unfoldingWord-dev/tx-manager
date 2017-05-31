@@ -135,7 +135,12 @@ class RC:
             if 'dublin_core' in self.manifest and self.manifest['dublin_core']:
                 self._resource = Resource(self, self.manifest['dublin_core'])
             elif 'resource' in self.manifest and self.manifest['resource']:
-                self._resource = Resource(self, self.manifest['resource'])
+                resource = self.manifest['resource']
+                if len(resource) == 2 and 'id' in resource and 'name' in resource:
+                    self.manifest['id'] = resource['id']
+                    self.manifest['name'] = resource['name']
+                    resource = self.manifest
+                self._resource = Resource(self, resource)
             else:
                 self._resource = Resource(self, self.manifest)
         return self._resource
