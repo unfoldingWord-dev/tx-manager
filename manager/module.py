@@ -16,7 +16,7 @@ class TxModule(TxObject):
         'version'
     ]
 
-    def __init__(self, data, quiet=False):
+    def __init__(self, data):
         """Init attributes"""
         self.name = None
         self.input_format = None
@@ -28,7 +28,7 @@ class TxModule(TxObject):
         self.type = None
         self.version = 1
 
-        super(TxModule, self).__init__(quiet)
+        super(TxModule, self).__init__()
 
         if isinstance(data, dict):
             self.populate(data)

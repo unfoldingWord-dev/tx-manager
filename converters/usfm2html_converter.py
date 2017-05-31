@@ -20,7 +20,6 @@ class Usfm2HtmlConverter(Converter):
 
     def convert_bible(self):
         self.log.info('Processing the Bible USFM files')
-        self.logger.debug('Processing the Bible USFM files')
 
         # find the first directory that has usfm files.
         files = self.get_files()
@@ -48,9 +47,7 @@ class Usfm2HtmlConverter(Converter):
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, template_soup.prettify())
                 self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
-                                                              os.path.basename(html_filename)))
-                self.logger.debug('Converted {0} to {1}.'.format(os.path.basename(filename),
-                                                              os.path.basename(html_filename)))
+                                                             os.path.basename(html_filename)))
                 remove_tree(scratch_dir)
 
                 # TODO 3/30/17 BLM - should be an inspection here like OBS has?
@@ -71,6 +68,4 @@ class Usfm2HtmlConverter(Converter):
         #        write_file(os.path.join(self.output_dir, 'all.html'), complete_html)
         #        self.log_message('Made one HTML of all bibles in all.html.')
         #        self.log_message('Finished processing Markdown files.')
-
         self.log.info('Finished processing Bible USFM files.')
-        self.logger.debug('Finished processing Bible USFM files.')

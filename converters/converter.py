@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+import logging
 from aws_tools.s3_handler import S3Handler
 from general_tools.url_utils import download_file
 from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
@@ -64,7 +65,7 @@ class Converter(object):
             self.logger.debug("Unzipping {0} to {1}".format(self.input_zip_file, self.files_dir))
             unzip(self.input_zip_file, self.files_dir)
             # convert method called
-            self.logger.debug("Calling convert()")
+            self.logger.debug("Converting files...")
             if self.convert():
                 self.logger.debug("Was able to convert {0}".format(self.resource))
                 # zip the output dir to the output archive
@@ -78,7 +79,6 @@ class Converter(object):
             else:
                 self.log.error('Resource {0} currently not supported.'.format(self.resource))
         except Exception as e:
-                self.logger.error(e.message, exc_info=1)
                 self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
 
         result = {

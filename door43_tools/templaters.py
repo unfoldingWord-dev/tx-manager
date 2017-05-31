@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 import os
 import json
 import codecs
+import logging
 from glob import glob
 from bs4 import BeautifulSoup
 from general_tools.file_utils import write_file
@@ -17,20 +18,19 @@ def do_template(resource_type, source_dir, output_dir, template_file):
 
 
 class Templater(object):
-    def __init__(self, source_dir, output_dir, template_file, quiet=False):
+    def __init__(self, source_dir, output_dir, template_file):
         self.source_dir = source_dir  # Local directory
         self.output_dir = output_dir  # Local directory
         self.template_file = template_file  # Local file of template
-        self.quiet = quiet
 
         self.files = sorted(glob(os.path.join(self.source_dir, '*.html')))
         self.rc = None
         self.template_html = ''
+        self.logger = logging.getLogger()
 
     def run(self):
         # get the resource container
         self.rc = RC(self.source_dir)
-
         with open(self.template_file) as template_file:
             self.template_html = template_file.read()
         self.apply_template()
@@ -104,8 +104,7 @@ class Templater(object):
 
         # loop through the html files
         for filename in self.files:
-            if not self.quiet:
-                print('Applying template to {0}.'.format(filename))
+            self.logger.debug('Applying template to {0}.'.format(filename))
 
             # read the downloaded file into a dom abject
             with codecs.open(filename, 'r', 'utf-8-sig') as f:
@@ -166,8 +165,7 @@ class Templater(object):
             html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
             # write to output directory
             out_file = os.path.join(self.output_dir, os.path.basename(filename))
-            if not self.quiet:
-                print('Writing {0}.'.format(out_file))
+            self.logger.debug('Writing {0}.'.format(out_file))
             write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
 
@@ -228,5 +226,4 @@ class BibleTemplater(Templater):
             </ul>
         </nav>
             """
-        print(html)
         return html

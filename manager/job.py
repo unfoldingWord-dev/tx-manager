@@ -31,7 +31,7 @@ class TxJob(TxObject):
         'errors'
     ]
 
-    def __init__(self, data, quiet=False):
+    def __init__(self, data):
         # Init attributes
         self.job_id = None
         self.user = None
@@ -57,7 +57,7 @@ class TxJob(TxObject):
         self.api_base_url = None
         self.cdn_base_url = None
 
-        super(TxJob, self).__init__(quiet)
+        super(TxJob, self).__init__()
 
         if isinstance(data, dict):
             self.populate(data)

@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function
+import logging
 
 
 class ConvertLogger(object):
@@ -8,10 +9,12 @@ class ConvertLogger(object):
             "info": [],
             "warning": [],
         }
+        self.logger = logging.getLogger()
 
     def log(self, type, msg):
         if type in self.logs:
             self.logs[type].append(msg)
+            self.logger.debug("CONVERSION {0}: {1}".format(type.upper(), msg))
 
     def warning(self, msg):
         self.log("warning", msg)

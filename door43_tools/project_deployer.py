@@ -3,6 +3,7 @@ import os
 import tempfile
 import boto3
 import json
+import logging
 from glob import glob
 from shutil import copyfile
 from aws_tools.s3_handler import S3Handler
@@ -29,6 +30,7 @@ class ProjectDeployer(object):
         self.cdn_handler = None
         self.door43_handler = None
         self.lambda_client = None
+        self.logger = logging.getLogger()
         self.setup_resources()
 
     def setup_resources(self):
@@ -71,7 +73,7 @@ class ProjectDeployer(object):
 
         template_key = 'templates/{0}.html'.format(resource_type)
         template_file = os.path.join(template_dir, 'template.html')
-        print("Downloading {0} to {1}...".format(template_key, template_file))
+        self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
         self.door43_handler.download_file(template_key, template_file)
 
         html_files = sorted(glob(os.path.join(source_dir, '*.html')))
@@ -136,7 +138,7 @@ class ProjectDeployer(object):
                 if os.path.isdir(path):
                     continue
                 key = s3_commit_key + path.replace(output_dir, '')
-                print("Uploading {0} to {1}".format(path, key))
+                self.logger.debug("Uploading {0} to {1}".format(path, key))
                 self.door43_handler.upload_file(path, key, 0)
 
         # Now we place json files and make an index.html file for the whole repo
