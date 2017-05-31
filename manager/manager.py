@@ -281,7 +281,7 @@ class TxManager(object):
             job.success = False
             job.status = "failed"
             message = "Conversion failed"
-            print("Conversion failed, success: {0}, errors: {1}".format(success, job.errors))
+            self.logger.debug("Conversion failed, success: {0}, errors: {1}".format(success, job.errors))
         elif len(job.warnings) > 0:
             job.success = True
             job.status = "warnings"
