@@ -16,7 +16,7 @@ class TestClientCallbackHandler(TestCase):
             },
             'vars': {
                 'gogs_url': 'https://git.example.com',
-                'cdn_url': 'https://cdn.exmaple.com',
+                'cdn_url': 'https://cdn.example.com',
                 'api_url': 'https://api.example.com',
                 'cdn_bucket': 'cdn_test_bucket'
             }

@@ -11,11 +11,12 @@ from usfm_tools.transform import UsfmTransform
 
 class Usfm2HtmlConverter(Converter):
 
-    def convert_udb(self):
-        self.convert_bible()
-
-    def convert_ulb(self):
-        self.convert_bible()
+    def convert(self):
+        if self.resource in ['ulb', 'udb', 'bible']:
+            self.convert_bible()
+            return True
+        else:
+            return False
 
     def convert_bible(self):
         self.log.info('Processing the Bible USFM files')
@@ -60,10 +61,6 @@ class Usfm2HtmlConverter(Converter):
                 except:
                     pass
 
-        manifest_file = os.path.join(self.files_dir, 'manifest.json')
-        if os.path.isfile(manifest_file):
-            copyfile(manifest_file, os.path.join(self.output_dir, 'manifest.json'))
-
         # Do the Bible inspection HERE
         #        inspector = BibleInspection(self.output_dir, self.log)
         #        inspector.run()
@@ -71,5 +68,4 @@ class Usfm2HtmlConverter(Converter):
         #        write_file(os.path.join(self.output_dir, 'all.html'), complete_html)
         #        self.log_message('Made one HTML of all bibles in all.html.')
         #        self.log_message('Finished processing Markdown files.')
-
         self.log.info('Finished processing Bible USFM files.')
