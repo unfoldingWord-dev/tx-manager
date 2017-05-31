@@ -157,6 +157,27 @@ class TestResourceContainer(unittest.TestCase):
         chunks = rc.chunks('01')
         self.assertEqual(len(chunks), 11)
 
+    def test_ceb_psa_text_ulb_L3(self):
+        """ Populates the ResourceContainer object and verifies the output."""
+        # test with the English OBS
+        zip_file = os.path.join(self.resources_dir, 'ceb_psa_text_ulb_L3.zip')
+        self.out_dir = tempfile.mkdtemp(prefix='repo_')
+        unzip(zip_file, self.out_dir)
+        repo_dir = os.path.join(self.out_dir, 'ceb_psa_text_ulb_l3')
+        rc = RC(repo_dir)
+        rc.as_dict()
+        json = load_json_object(os.path.join(repo_dir, 'manifest.json'))
+        self.assertEqual(rc.resource.identifier, json['resource']['id'])
+        self.assertEqual(rc.resource.type, 'book')
+        self.assertEqual(rc.resource.format, 'text/{0}'.format(json['format']))
+        self.assertEqual(rc.resource.file_ext, json['format'])
+        self.assertEqual(rc.resource.conformsto, 'pre-rc')
+        self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
+        chapters = rc.chapters()
+        self.assertEqual(len(chapters), 151)
+        chunks = rc.chunks('01')
+        self.assertEqual(len(chunks), 5)
+
     @mock.patch('general_tools.url_utils.get_url')
     def test_random_tests(self, mock_get_url):
         mock_get_url.return_value = '[{"ld": "ltr", "gw": false, "lc": "aa", "ln": "Afaraf", "cc": ["DJ", "ER", "ET", "US", "CA"], "pk": 6, "alt": ["Afaraf", "Danakil", "Denkel", "Adal", "Afar Af", "Qafar", "Baadu (Ba\'adu)"], "lr": "Africa", "ang": "Afar"}, {"ld": "ltr", "gw": false, "lc": "aaa", "ln": "Ghotuo", "cc": ["NG"], "pk": 7, "alt": [], "lr": "Africa", "ang": "Ghotuo"}]'
