@@ -17,8 +17,6 @@ class ClientCallback(object):
         :param dict job_data:
         :param string cdn_bucket:
         :param string gogs_url:
-        :param Logger logger:
-        :param class s3_handler_class:
         """
         self.logger = logging.getLogger()
         self.job = TxJob(job_data)

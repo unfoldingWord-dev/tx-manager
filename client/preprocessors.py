@@ -22,17 +22,15 @@ class Preprocessor(object):
     ignoreDirectories = ['.git', '00']
     ignoreFiles = ['.DS_Store', 'reference.txt', 'title.txt']
 
-    def __init__(self, rc, source_dir, output_dir, quiet=False):
+    def __init__(self, rc, source_dir, output_dir):
         """
         :param RC rc: 
         :param string source_dir: 
         :param string output_dir: 
-        :param bool quiet: 
         """
         self.rc = rc
         self.source_dir = source_dir  # Local directory
         self.output_dir = output_dir  # Local directory
-        self.quiet = quiet
 
         # Copy all files in the root of source_dir
         for file_path in glob(self.source_dir+"/*"):

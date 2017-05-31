@@ -15,7 +15,7 @@ from aws_tools.s3_handler import S3Handler
 class ClientWebhook(object):
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
-                 gogs_url=None, gogs_user_token=None, logger=None, s3_handler_class=S3Handler):
+                 gogs_url=None, gogs_user_token=None):
         """
         :param dict commit_data:
         :param string api_url:
@@ -23,8 +23,6 @@ class ClientWebhook(object):
         :param string cdn_bucket:
         :param string gogs_url:
         :param string gogs_user_token:
-        :param Logger logger:
-        :param class s3_handler_class:
         """
         self.commit_data = commit_data
         self.api_url = api_url
@@ -182,7 +180,7 @@ class ClientWebhook(object):
             else:
                 job = json_data['job']
 
-        cdn_handler = self.s3_handler_class(self.cdn_bucket)
+        cdn_handler = S3Handler(self.cdn_bucket)
 
         # Download the project.json file for this repo (create it if doesn't exist) and update it
         project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
