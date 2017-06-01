@@ -5,7 +5,7 @@ import tempfile
 import unittest
 import shutil
 from resource_container.ResourceContainer import RC
-from client.preprocessors import BiblePreprocessor
+from client.preprocessors import do_preprocess
 from general_tools.file_utils import unzip
 
 
@@ -61,8 +61,7 @@ class TestBiblePreprocessor(unittest.TestCase):
 
     def runBiblePreprocessor(self, rc, repo_dir):
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        compiler = BiblePreprocessor(rc, repo_dir, self.out_dir)
-        compiler.run()
+        do_preprocess(rc, repo_dir, self.out_dir)
         return self.out_dir
 
     def verifyTransform(self, folder, expectedName):
