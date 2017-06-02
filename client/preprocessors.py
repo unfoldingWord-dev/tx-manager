@@ -272,9 +272,6 @@ class TaPreprocessor(Preprocessor):
             markdown = '{0} <a name="{1}"/>{2}\n\n'.format('#'*level, section['link'], section['title'])
         else:
             markdown = '{0} {1}\n\n'.format('#'*level, section['title'])
-        if 'sections' in section:
-            for subsection in section['sections']:
-                markdown += self.compile_section(project, subsection, level + 1)
         if 'link' in section:
             link = section['link']
             question = self.get_question(project, link)
@@ -297,6 +294,10 @@ class TaPreprocessor(Preprocessor):
                         markdown += '  * [{0}]({1})\n'.\
                             format(self.get_title(project, recommended), self.get_ref(project, recommended))
                     markdown += '\n'
+                markdown += '---\n\n'  # horizontal rule
+        if 'sections' in section:
+            for subsection in section['sections']:
+                markdown += self.compile_section(project, subsection, level + 1)
         return markdown
 
     def run(self):
@@ -309,6 +310,24 @@ class TaPreprocessor(Preprocessor):
             markdown = '# {0}\n\n'.format(title)
             for section in toc['sections']:
                 markdown += self.compile_section(project, section, 2)
+            markdown = self.fix_links(markdown)
             output_file = os.path.join(self.output_dir, '{0}.md'.format(project.identifier))
             write_file(output_file, markdown)
         return True
+
+    @staticmethod
+    def fix_links(content):
+        # fix links to other sections within the same manual (only one ../ and a section name)
+        # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
+        content = re.sub(r'\]\(\.\./([^/\)]+)/01.md\)', r'](#\1)', content)
+        # fix links to other manuals (two ../ and a manual name and a section name)
+        # e.g. [how to translate](../../translate/accurate/01.md) => [how to translate](translate.html#accurate)
+        content = re.sub(r'\]\(\.\./\.\./([^/\)]+)/([^/\)]+)/01.md\)', r'](\1.html#\2)', content)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/\)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"\(])((http|https|ftp)://[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](\2)', content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"\(\/])(www\.[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](http://\2)', content, flags=re.IGNORECASE)
+        return content
