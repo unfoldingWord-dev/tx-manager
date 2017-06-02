@@ -35,13 +35,12 @@ class Preprocessor(object):
         self.output_dir = output_dir  # Local directory
 
         # Write out the new manifest file based on the resource container
-        write_file(os.path.join(self.output_dir, 'manifest.json'), self.rc.as_dict())
         write_file(os.path.join(self.output_dir, 'manifest.yaml'), self.rc.as_dict())
 
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all files in the project directory
+            # Copy all the markdown files in the project root directory to the output directory
             for file_path in glob(os.path.join(content_dir, '*.md')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
@@ -125,7 +124,7 @@ class ObsPreprocessor(Preprocessor):
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all files in the project directory
+            # Copy all the markdown files in the project root directory to the output directory
             for file_path in glob(os.path.join(content_dir, '*.md')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
@@ -160,7 +159,7 @@ class BiblePreprocessor(Preprocessor):
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all files in the project directory as it may just have 01-GEN.usfm, etc.
+            # Copy all USFM files in the project root directory to the output directory
             for file_path in glob(os.path.join(content_dir, '*.usfm')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path):

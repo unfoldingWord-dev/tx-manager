@@ -80,9 +80,9 @@ class Templater(object):
         language_code = self.rc.resource.language.identifier
         language_name = self.rc.resource.language.title
         language_dir = self.rc.resource.language.direction
-        resource_name = self.rc.resource.identifier
+        resource_title = self.rc.resource.title
 
-        heading = '{0}: {1}'.format(language_name, resource_name)
+        heading = '{0}: {1}'.format(language_name, resource_title)
         title = ''
         canonical = ''
 
