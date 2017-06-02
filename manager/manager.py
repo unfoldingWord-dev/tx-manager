@@ -599,7 +599,6 @@ class TxManager(object):
                 '<th class="hdr">PreConvert</th>'
                 '<th class="hdr">Converted</th>'
                 '<th class="hdr">Destination</th>'
-                '<th class="hdr">Job ID</th></tr>',
                 'html.parser'))
 
             gogs_url = self.gogs_url
@@ -615,7 +614,7 @@ class TxManager(object):
                 try :
                     identifier = item['identifier']
                     owner_name, repo_name, commit_id = identifier.split('/')
-                    sourceSubPath = 'u/{0}/{1}'.format(owner_name, repo_name)
+                    sourceSubPath = '{0}/{1}'.format(owner_name, repo_name)
                     cdn_bucket = item['cdn_bucket']
                     destinationUrl = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
                     repoUrl = gogs_url + "/" + sourceSubPath
@@ -624,12 +623,11 @@ class TxManager(object):
                     failureTable.table.append(BeautifulSoup(
                         '<tr id="failure-' + str(i) + '" class="module-job-id">'
                         + '<td>' + item['created_at'] + '</td>'
-                        + '<td>' + str(item['errors']) + '</td>'
-                        + '<td><a href="' + repoUrl + '">' + repoUrl + '</a></td>'
-                        + '<td><a href="' + preconvertedUrl + '">' + preconvertedUrl + '</a></td>'
-                        + '<td><a href="' + convertedUrl + '">' + convertedUrl + '</a></td>'
-                        + '<td><a href="' + destinationUrl + '">' + destinationUrl + '</a></td>'
-                        + '<td>' + item['job_id'] + '</td>'
+                        + '<td>' + ','.join(item['errors']) + '</td>'
+                        + '<td><a href="' + repoUrl + '">' + sourceSubPath + '</a></td>'
+                        + '<td><a href="' + preconvertedUrl + '">' + preconvertedUrl.rsplit('/', 1)[1] + '</a></td>'
+                        + '<td><a href="' + convertedUrl + '">' + item['job_id'] + '.zip</a></td>'
+                        + '<td><a href="' + destinationUrl + '">Build Log</a></td>'
                         + '</tr>',
                         'html.parser'))
                 except:
