@@ -87,15 +87,14 @@ class ClientWebhook(object):
 
         # 3) Zip up the massaged files
         # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
-        zip_filename = commit_id + '.zip'
-        zip_filepath = os.path.join(self.base_temp_dir, zip_filename)
+        zip_filepath = tempfile.mktemp(dir=self.base_temp_dir)
         self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
         self.logger.debug('finished.')
 
         # 4) Upload zipped file to the S3 bucket
         s3_handler = S3Handler(self.pre_convert_bucket)
-        file_key = "preconvert/" + zip_filename
+        file_key = 'preconvert/{0}.zip'.format(commit_id)
         self.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
             s3_handler.upload_file(zip_filepath, file_key)

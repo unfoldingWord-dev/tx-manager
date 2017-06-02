@@ -13,6 +13,8 @@ def do_preprocess(rc, repo_dir, output_dir):
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier in ['bible', 'ulb', 'udb']:
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
+    elif rc.resource.identifier in ['ta']:
+        preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
     else:
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run()
@@ -20,7 +22,7 @@ def do_preprocess(rc, repo_dir, output_dir):
 
 class Preprocessor(object):
     ignoreDirectories = ['.git', '00']
-    ignoreFiles = ['.DS_Store', 'reference.txt', 'title.txt']
+    ignoreFiles = ['.DS_Store', 'reference.txt', 'title.txt', 'LICENSE.md', 'README.md']
 
     def __init__(self, rc, source_dir, output_dir):
         """
@@ -32,27 +34,27 @@ class Preprocessor(object):
         self.source_dir = source_dir  # Local directory
         self.output_dir = output_dir  # Local directory
 
-        # Copy all files in the root of source_dir
-        for file_path in glob(self.source_dir+"/*"):
-            if os.path.isfile(file_path):
-                copy(file_path, self.output_dir)
-
         # Write out the new manifest file based on the resource container
-        write_file(os.path.join(self.output_dir, 'manifest.json'), self.rc.as_dict())
+        write_file(os.path.join(self.output_dir, 'manifest.yaml'), self.rc.as_dict())
 
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all files in the project directory
-            for file_path in glob(os.path.join(content_dir, "*")):
+            # Copy all the markdown files in the project root directory to the output directory
+            for file_path in glob(os.path.join(content_dir, '*.md')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
-                if os.path.isfile(file_path) and not os.path.exists(output_file_path):
+                if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
+                        and os.path.basename(file_path) not in self.ignoreFiles:
                     copy(file_path, output_file_path)
             for chapter in self.rc.chapters(project.identifier):
                 text = ''
                 for chunk in self.rc.chunks(project.identifier, chapter):
-                    text += read_file(os.path.join(content_dir, chapter, chunk))+"\n"
-                write_file(os.path.join(self.output_dir, '{0}.{1}'.format(chapter, self.rc.resource.file_ext)), text)
+                    text += read_file(os.path.join(content_dir, chapter, chunk))+"\n\n"
+                if self.rc.project_count > 1:
+                    file_name = '{0}-{1}.{2}'.format(project.identifier, chapter, self.rc.resource.file_ext)
+                else:
+                    file_name = '{0}.{1}'.format(chapter, self.rc.resource.file_ext)
+                write_file(os.path.join(self.output_dir, file_name), text)
         return True
 
 
@@ -80,10 +82,11 @@ class ObsPreprocessor(Preprocessor):
         if the title file does not exist, it will hand back the number with a period only.
         """
         title_file = os.path.join(content_dir, chapter, 'title.txt')
-        title = chapter.lstrip('0') + '. '
         if os.path.exists(title_file):
             contents = read_file(title_file)
             title = contents.strip()
+        else:
+            title = chapter.lstrip('0') + '. '
         return title
 
     @staticmethod
@@ -121,10 +124,11 @@ class ObsPreprocessor(Preprocessor):
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all files in the project directory
-            for file_path in glob(os.path.join(content_dir, "*")):
+            # Copy all the markdown files in the project root directory to the output directory
+            for file_path in glob(os.path.join(content_dir, '*.md')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
-                if os.path.isfile(file_path) and not os.path.exists(output_file_path):
+                if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
+                        and os.path.basename(file_path) not in self.ignoreFiles:
                     copy(file_path, output_file_path)
             if self.is_chunked(project):
                 for chapter in self.get_chapters(content_dir):
@@ -155,8 +159,8 @@ class BiblePreprocessor(Preprocessor):
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all files in the project directory as it may just have 01-GEN.usfm, etc.
-            for file_path in glob(os.path.join(content_dir, "*")):
+            # Copy all USFM files in the project root directory to the output directory
+            for file_path in glob(os.path.join(content_dir, '*.usfm')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path):
                     copy(file_path, output_file_path)
@@ -208,4 +212,102 @@ class BiblePreprocessor(Preprocessor):
                                          '{0}-{1}.usfm'.format(bible_books.BOOK_NUMBERS[project.identifier],
                                                                project.identifier.upper()))
                 write_file(usfm_file, usfm)
+        return True
+
+
+class TaPreprocessor(Preprocessor):
+    manual_title_map = {
+        'checking': 'Checking Manual',
+        'intro': 'Introduction to translationAcademy',
+        'process': 'Process Manual',
+        'translate': 'Translation Manual'
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(TaPreprocessor, self).__init__(*args, **kwargs)
+
+    def get_title(self, project, link):
+        proj = None
+        if link in project.config():
+            proj = project
+        else:
+            for p in self.rc.projects:
+                if link in p.config():
+                    proj = p
+        if proj:
+            title_file = os.path.join(self.source_dir, proj.path, link, 'title.md')
+            if os.path.isfile(title_file):
+                return read_file(title_file)
+        return link.replace('-', ' ').title()
+
+    def get_ref(self, project, link):
+        if link in project.config():
+            return '#{0}'.format(link)
+        for p in self.rc.projects:
+            if link in p.config():
+                return '{0}.html#{1}'.format(p.identifier, link)
+        return '#{0}'.format(link)
+
+    def get_question(self, project, slug):
+        subtitle_file = os.path.join(self.source_dir, project.path, slug, 'sub-title.md')
+        if os.path.isfile(subtitle_file):
+            return read_file(subtitle_file)
+
+    def get_content(self, project, slug):
+        content_file = os.path.join(self.source_dir, project.path, slug, '01.md')
+        if os.path.isfile(content_file):
+            return read_file(content_file)
+
+    def compile_section(self, project, section, level):
+        """
+        Recursive section markdown creator
+
+        :param project: 
+        :param dict section: 
+        :param int level: 
+        :return: 
+        """
+        if 'link' in section:
+            markdown = '{0} <a name="{1}"/>{2}\n\n'.format('#'*level, section['link'], section['title'])
+        else:
+            markdown = '{0} {1}\n\n'.format('#'*level, section['title'])
+        if 'sections' in section:
+            for subsection in section['sections']:
+                markdown += self.compile_section(project, subsection, level + 1)
+        if 'link' in section:
+            link = section['link']
+            question = self.get_question(project, link)
+            if question:
+                markdown += '*This page answers the question: {0}*\n\n'.format(question)
+            config = project.config()
+            if link in config:
+                if 'dependencies' in config[link] and config[link]['dependencies']:
+                    markdown += '*In order to understand this topic, it would be good to read:*\n\n'
+                    for dependency in config[link]['dependencies']:
+                        markdown += '  * [{0}]({1})\n'.\
+                            format(self.get_title(project, dependency), self.get_ref(project, dependency))
+                    markdown += '\n'
+                content = self.get_content(project, link)
+                if content:
+                    markdown += '{0}\n\n'.format(content)
+                if 'recommended' in config[link] and config[link]['recommended']:
+                    markdown += '*Next we recommend you learn about:*\n\n'
+                    for recommended in config[link]['recommended']:
+                        markdown += '  * [{0}]({1})\n'.\
+                            format(self.get_title(project, recommended), self.get_ref(project, recommended))
+                    markdown += '\n'
+        return markdown
+
+    def run(self):
+        for project in self.rc.projects:
+            toc = self.rc.toc(project.identifier)
+            if project.identifier in self.manual_title_map:
+                title = self.manual_title_map[project.identifier]
+            else:
+                title = '{0} Manual'.format(project.identifier.title())
+            markdown = '# {0}\n\n'.format(title)
+            for section in toc['sections']:
+                markdown += self.compile_section(project, section, 2)
+            output_file = os.path.join(self.output_dir, '{0}.md'.format(project.identifier))
+            write_file(output_file, markdown)
         return True

@@ -218,7 +218,7 @@ class RC:
             return []
         else:
             chapters = []
-            for d in glob(os.path.join(self.dir, p.path, '*')):
+            for d in sorted(glob(os.path.join(self.dir, p.path, '*'))):
                 chapter = os.path.basename(d)
                 if os.path.isdir(d) and not chapter.startswith('.'):
                     if len(self.chunks(identifier, chapter)):
@@ -233,7 +233,7 @@ class RC:
         if p is None:
             return []
         chunks = []
-        for f in glob(os.path.join(self.dir, p.path, chapter_identifier, '*')):
+        for f in sorted(glob(os.path.join(self.dir, p.path, chapter_identifier, '*'))):
             chunk = os.path.basename(f)
             ext = os.path.splitext(chunk)[1]
             if os.path.isfile(f) and not chunk.startswith('.') and ext in ['', '.txt', '.text', '.md', '.usfm']:
@@ -260,15 +260,19 @@ class RC:
         p = self.project(project_identifier)
         if p is None:
             return None
-        file_path = os.path.join(self.dir, p.path, 'config.yaml')
-        return load_yaml_object(file_path)
+        if not p.config_yaml:
+            file_path = os.path.join(self.dir, p.path, 'config.yaml')
+            p.config_yaml = load_yaml_object(file_path)
+        return p.config_yaml
 
     def toc(self, project_identifier=None):
         p = self.project(project_identifier)
         if p is None:
             return None
-        file_path = os.path.join(self.dir, p.path, 'toc.yaml')
-        return load_yaml_object(file_path)
+        if not p.toc_yaml:
+            file_path = os.path.join(self.dir, p.path, 'toc.yaml')
+            p.toc_yaml = load_yaml_object(file_path)
+        return p.toc_yaml
 
 
 class Resource:
@@ -518,6 +522,8 @@ class Project:
             raise Exception('Missing RC parameter: rc')
         if not isinstance(self.project, dict):
             raise Exception('Missing dict parameter: project')
+        self.config_yaml = None
+        self.toc_yaml = None
 
     @property
     def identifier(self):
@@ -565,6 +571,21 @@ class Project:
     @property
     def categories(self):
         return self.project.get('categories', [])
+
+    def toc(self):
+        return self.rc.toc(self.identifier)
+
+    def config(self):
+        return self.rc.config(self.identifier)
+
+    def chapters(self):
+        return self.rc.chapters(self.identifier)
+
+    def chunks(self, chapter_identifier=None):
+        return self.rc.chunks(self.identifier, chapter_identifier)
+
+    def usfm_files(self):
+        return self.rc.usfm_files(self.identifier)
 
     def as_dict(self):
         return {

@@ -46,9 +46,9 @@ class TestResourceContainer(unittest.TestCase):
         rc_dic = rc.as_dict()
         yaml = load_yaml_object(os.path.join(repo_dir, 'manifest.yaml'))
         self.assertDictEqual(yaml, rc_dic)
-        chapters = rc.chapters()
+        chapters = rc.projects[0].chapters()
         self.assertEqual(len(chapters), 2)
-        chunks = rc.chunks(rc.project().identifier, 'front')
+        chunks = rc.project().chunks('front')
         self.assertEqual(chunks, ['intro.md', 'title.md'])
 
     def test_en_obs_package_json(self):
@@ -67,9 +67,9 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.file_ext, 'md')
         self.assertEqual(rc.resource.conformsto, 'pre-rc')
         self.assertEqual(rc.resource.issued, json['resource']['status']['pub_date'])
-        chapters = rc.chapters()
+        chapters = rc.projects[0].chapters()
         self.assertEqual(len(chapters), 2)
-        chunks = rc.chunks(rc.project().identifier, '_back')
+        chunks = rc.project().chunks('_back')
         self.assertEqual(chunks, ['back-matter.md'])
 
     def test_bible_no_manifest(self):
@@ -87,28 +87,9 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.file_ext, 'usfm')
         self.assertEqual(rc.resource.conformsto, 'pre-rc')
         self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
-        chapters = rc.chapters()
+        chapters = rc.project().chapters()
         self.assertEqual(len(chapters), 0)
-
-    def test_bible_no_manifest(self):
-        """ Populates the ResourceContainer object and verifies the output."""
-        # test with the English OBS
-        zip_file = os.path.join(self.resources_dir, 'bible-no-manifest.zip')
-        self.out_dir = tempfile.mkdtemp(prefix='repo_')
-        unzip(zip_file, self.out_dir)
-        repo_dir = os.path.join(self.out_dir, 'en_ulb')
-        rc = RC(repo_dir)
-        rc.as_dict()
-        self.assertEqual(rc.resource.identifier, 'ulb')
-        self.assertEqual(rc.resource.type, 'bundle')
-        self.assertEqual(rc.resource.format, 'text/usfm')
-        self.assertEqual(rc.resource.file_ext, 'usfm')
-        self.assertEqual(rc.resource.conformsto, 'pre-rc')
-        self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
-        chapters = rc.chapters()
-        self.assertEqual(len(chapters), 0)
-        self.assertIsNone(rc.config())
-        self.assertIsNone(rc.toc())
+        self.assertEqual(len(rc.project().usfm_files()), 8)
 
     def test_multiple_projects(self):
         """ Populates the ResourceContainer object and verifies the output."""
@@ -128,13 +109,13 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.modified, yaml['dublin_core']['modified'])
         self.assertEqual(len(rc.project_ids), 4)
         self.assertEqual(rc.project_count, 4)
-        chapters = rc.chapters('checking')
+        chapters = rc.project('checking').chapters()
         self.assertEqual(len(chapters), 44)
-        chunks = rc.chunks('checking', 'level1')
+        chunks = rc.project('checking').chunks('level1')
         self.assertEqual(chunks, ['01.md', 'sub-title.md', 'title.md'])
-        self.assertTrue('acceptable' in rc.config('checking'))
-        self.assertTrue('title' in rc.toc('checking'))
-        self.assertTrue(rc.toc('checking')['title'], 'Table of Contents')
+        self.assertTrue('acceptable' in rc.project('checking').config())
+        self.assertTrue('title' in rc.project('checking').toc())
+        self.assertTrue(rc.project('checking').toc()['title'], 'Table of Contents')
 
     def test_bible_from_tx_pre_rc(self):
         """ Populates the ResourceContainer object and verifies the output."""
@@ -152,9 +133,9 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.file_ext, json['format'])
         self.assertEqual(rc.resource.conformsto, 'pre-rc')
         self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
-        chapters = rc.chapters()
+        chapters = rc.projects[0].chapters()
         self.assertEqual(len(chapters), 29)
-        chunks = rc.chunks('01')
+        chunks = rc.projects[0].chunks('01')
         self.assertEqual(len(chunks), 11)
 
     def test_ceb_psa_text_ulb_L3(self):
@@ -173,9 +154,9 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.file_ext, json['format'])
         self.assertEqual(rc.resource.conformsto, 'pre-rc')
         self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
-        chapters = rc.chapters()
+        chapters = rc.projects[0].chapters()
         self.assertEqual(len(chapters), 151)
-        chunks = rc.chunks('01')
+        chunks = rc.projects[0].chunks('01')
         self.assertEqual(len(chunks), 5)
 
     @mock.patch('general_tools.url_utils.get_url')
