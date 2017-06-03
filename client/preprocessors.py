@@ -226,7 +226,7 @@ class TaPreprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(TaPreprocessor, self).__init__(*args, **kwargs)
 
-    def get_title(self, project, link):
+    def get_title(self, project, link, default=None):
         proj = None
         if link in project.config():
             proj = project
@@ -238,7 +238,10 @@ class TaPreprocessor(Preprocessor):
             title_file = os.path.join(self.source_dir, proj.path, link, 'title.md')
             if os.path.isfile(title_file):
                 return read_file(title_file)
-        return link.replace('-', ' ').title()
+        if default:
+            return default
+        else:
+            return link.replace('-', ' ').title()
 
     def get_ref(self, project, link):
         if link in project.config():
@@ -268,7 +271,8 @@ class TaPreprocessor(Preprocessor):
         :return: 
         """
         if 'link' in section:
-            markdown = '{0} <a name="{1}"/>{2}\n\n'.format('#'*level, section['link'], section['title'])
+            markdown = '{0} <a name="{1}"/>{2}\n\n'.format('#'*level, section['link'], 
+                                                           self.get_title(project, section['link'], section['title']))
         else:
             markdown = '{0} {1}\n\n'.format('#'*level, section['title'])
         if 'link' in section:
@@ -312,6 +316,15 @@ class TaPreprocessor(Preprocessor):
             markdown = self.fix_links(markdown)
             output_file = os.path.join(self.output_dir, '{0}.md'.format(project.identifier))
             write_file(output_file, markdown)
+
+            # Copy the toc and config.yaml file to the output dir so they can be used to
+            # generate the ToC on live.door43.org
+            toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
+            if os.path.isfile(toc_file):
+                copy(toc_file, os.path.join(self.output_dir, '{0}-toc.yaml'.format(project.identifier)))
+            config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+            if os.path.isfile(config_file):
+                copy(config_file, os.path.join(self.output_dir, '{0}-config.yaml'.format(project.identifier)))
         return True
 
     @staticmethod

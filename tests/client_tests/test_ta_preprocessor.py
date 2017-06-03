@@ -53,6 +53,11 @@ class TestTaPreprocessor(unittest.TestCase):
         self.assertTrue('../' not in intro)
         self.assertTrue('../' not in process)
         self.assertTrue('../' not in translate)
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'checking-toc.yaml')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'checking-config.yaml')))
+        preprocessor = TaPreprocessor(rc, repo_dir, self.out_dir)
+        self.assertEqual(preprocessor.get_title(rc.project('checking'), 'fake-link', 'My Title'), 'My Title')
+        self.assertEqual(preprocessor.get_title(rc.project('checking'), 'fake-link'), 'Fake Link')
 
     def test_fix_links(self):
         content = "This has [links](../section1/01.md) to the same [manual](../section2/01.md)"
