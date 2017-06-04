@@ -226,7 +226,7 @@ class TaPreprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(TaPreprocessor, self).__init__(*args, **kwargs)
 
-    def get_title(self, project, link, default=None):
+    def get_title(self, project, link, alt_title=None):
         proj = None
         if link in project.config():
             proj = project
@@ -238,8 +238,8 @@ class TaPreprocessor(Preprocessor):
             title_file = os.path.join(self.source_dir, proj.path, link, 'title.md')
             if os.path.isfile(title_file):
                 return read_file(title_file)
-        if default:
-            return default
+        if alt_title:
+            return alt_title
         else:
             return link.replace('-', ' ').title()
 
