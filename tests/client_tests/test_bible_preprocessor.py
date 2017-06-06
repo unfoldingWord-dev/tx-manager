@@ -44,6 +44,20 @@ class TestBiblePreprocessor(unittest.TestCase):
         #then
         self.verifyTransform(folder, expectedOutput)
 
+    def test_BiblePreprocessorActsWithSlashInText(self):
+
+        #given
+        file_name = os.path.join('raw_sources', 'awa_act_text_reg.zip')
+        repo_name = 'awa_act_text_reg'
+        expectedOutput = '45-ACT.usfm'
+        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
+
+        # when
+        folder = self.runBiblePreprocessor(rc, repo_dir)
+
+        #then
+        self.verifyTransform(folder, expectedOutput)
+
     @classmethod
     def extractFiles(self, file_name, repo_name):
         file_path = os.path.join(TestBiblePreprocessor.resources_dir, file_name)
