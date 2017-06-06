@@ -11,7 +11,7 @@ from glob import glob
 def do_preprocess(rc, repo_dir, output_dir):
     if rc.resource.identifier in ['obs']:
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
-    elif rc.resource.identifier in ['bible', 'ulb', 'udb']:
+    elif rc.resource.identifier in ['bible', 'ulb', 'udb', 'reg']:
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier in ['ta']:
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
