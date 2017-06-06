@@ -334,12 +334,7 @@ class Resource:
         if 'identifier' in self.resource and self.resource['identifier']:
             return self.resource['identifier']
         if 'id' in self.resource and self.resource['id']:
-            id = self.resource['id']
-            if id in ['reg', 'rsv']:
-                return 'bible'
-            else:
-                return id
-
+            return self.resource['id']
         elif 'slug' in self.resource and self.resource['slug']:
             slug = self.resource['slug']
             if 'ulb' in slug:

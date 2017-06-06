@@ -12,7 +12,7 @@ from usfm_tools.transform import UsfmTransform
 class Usfm2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource in ['ulb', 'udb', 'bible']:
+        if self.resource in ['ulb', 'udb', 'bible', 'reg']:
             self.convert_bible()
             return True
         else:
