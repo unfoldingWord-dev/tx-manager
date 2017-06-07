@@ -86,6 +86,23 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         files_to_verify = ['51-PHP.html']
         self.verifyFiles(files_to_verify)
 
+    def test_MattCompleteWithBackslash(self):
+        """
+        Runs the converter and verifies the output
+        """
+        zip_file = os.path.join(self.resources_dir, 'kpb_mat_text_udb.zip')
+        out_zip_file = tempfile.mktemp('.zip')
+        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
+            tx.input_zip_file = zip_file
+            tx.run()
+        # verify the output
+        self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
+        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        unzip(out_zip_file, self.out_dir)
+        remove(out_zip_file)
+        files_to_verify = ['41-MAT.html']
+        self.verifyFiles(files_to_verify)
+
     def verifyFiles(self, files_to_verify):
         for file_to_verify in files_to_verify:
             file_name = os.path.join(self.out_dir, file_to_verify)
