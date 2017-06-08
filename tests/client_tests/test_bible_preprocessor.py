@@ -44,6 +44,20 @@ class TestBiblePreprocessor(unittest.TestCase):
         #then
         self.verifyTransform(folder, expectedOutput)
 
+    def test_BiblePreprocessorMultipleBooks(self):
+
+        #given
+        file_name = os.path.join('raw_sources', 'en-ulb.zip')
+        repo_name = 'en-ulb'
+        expectedOutput = '51-PHP.usfm'
+        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
+
+        # when
+        folder = self.runBiblePreprocessor(rc, repo_dir)
+
+        #then
+        self.verifyTransform(folder, expectedOutput)
+
     def test_BiblePreprocessorActsWithSlashInText(self):
 
         #given
@@ -67,7 +81,7 @@ class TestBiblePreprocessor(unittest.TestCase):
         unzip(file_path, temp_dir)
         repo_dir = os.path.join(temp_dir, repo_name)
         if not os.path.isdir(repo_dir):
-            repo_dir = file_path
+            repo_dir = temp_dir
 
         # 2) Get the resource container
         rc = RC(repo_dir)

@@ -1,11 +1,15 @@
 from __future__ import unicode_literals, print_function
 import json
 import hashlib
+from urlparse import parse_qs
+
 import requests
 import logging
 from datetime import datetime
 from datetime import timedelta
 from bs4 import BeautifulSoup
+from future.backports.urllib.parse import urlparse
+
 from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
@@ -124,11 +128,12 @@ class TxManager(object):
                                                          user.email,
                                                          created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         # All conversions must result in a ZIP of the converted file(s)
-        output_file = 'tx/job/{0}.zip'.format(job.job_id)
+        jobPath = self.getJobPath(job)
+        output_file = 'tx/job/{0}.zip'.format(jobPath)
         job.output = '{0}/{1}'.format(self.cdn_url, output_file)
         job.cdn_file = output_file
         job.links = {
-            "href": "{0}/tx/job/{1}".format(self.api_url, job.job_id),
+            "href": "{0}/tx/job/{1}".format(self.api_url, jobPath),
             "rel": "self",
             "method": "GET"
         }
@@ -150,6 +155,33 @@ class TxManager(object):
                 },
             ],
         }
+
+    def getJobPath(self, job):
+        """
+        if regular job, then this is just the job_id.  If a child job then append the item number
+        :param job:
+        :return:
+        """
+        params = self.isChildJob(job.source)
+        if params and ('item' in params):
+            item = params['item'][0]
+            return job.job_id + "/" + item
+
+        return job.job_id
+
+
+    def isChildJob(self, sourceUrl):
+        """
+        if this is a child job, return the child parameters
+        :param sourceUrl:
+        :return:
+        """
+        result = urlparse(sourceUrl)
+        if result and len(result.query) > 0:
+            params = parse_qs(result.query)
+            return params
+
+        return None
 
     def get_job_count(self):
         """
