@@ -98,12 +98,12 @@ class TestBiblePreprocessor(unittest.TestCase):
                 self.verifyFile(file, folder)
 
             self.assertTrue(preprocessor.isMultipleJobs())
-            self.assertEqual(len(preprocessor.getFileList()), len(expectedName))
+            self.assertEqual(len(preprocessor.getBookList()), len(expectedName))
 
         else:
             self.verifyFile(expectedName, folder)
             self.assertFalse(preprocessor.isMultipleJobs())
-            self.assertEqual(len(preprocessor.getFileList()), 0)
+            self.assertEqual(len(preprocessor.getBookList()), 0)
 
     def verifyFile(self, expectedName, folder):
         file_name = os.path.join(folder, expectedName)

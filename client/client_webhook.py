@@ -4,6 +4,8 @@ import tempfile
 import requests
 import logging
 import json
+import shutil
+from string import join
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
 from general_tools.url_utils import download_file
@@ -101,22 +103,12 @@ class ClientWebhook(object):
             self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
 
             # Compile data for build_log.json
-            build_log_json = job
-            build_log_json['repo_name'] = repo_name
-            build_log_json['repo_owner'] = repo_owner
-            build_log_json['commit_id'] = commit_id
-            build_log_json['committed_by'] = pusher_username
-            build_log_json['commit_url'] = commit_url
-            build_log_json['compare_url'] = compare_url
-            build_log_json['commit_message'] = commit_message
+            build_log_json = self.getBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
+                                              repo_name, repo_owner)
 
             # Upload build_log.json to S3:
             s3_commit_key = 'u/{0}'.format(identifier)
-            for obj in cdn_handler.get_objects(prefix=s3_commit_key):
-                self.cdnDeleteFile(cdn_handler, obj)
-            build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
-            write_file(build_log_file, build_log_json)
-            self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
+            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
 
             if len(job['errors']) > 0:
                 raise Exception('; '.join(job['errors']))
@@ -124,8 +116,66 @@ class ClientWebhook(object):
                 return build_log_json
 
         # multiple book project
-        # todo
+        books = preprocessor.getBookList()
+        self.logger.debug('Splitting job into separate parts for books: ' + join( books, ","))
+        for i in range(0, len(books)):
+            book = books[i]
+
+            # 3) Zip up the massaged files for just the one book
+
+            self.logger.debug('Adding job for: ' + book)
+            bookdir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix=book + '_')
+
+            fileNames = os.listdir(output_dir)
+            for file in fileNames:
+                if (file == book) or not(file in books):
+                    shutil.copyfile(os.path.join(output_dir, file), os.path.join(bookdir, file))
+
+            zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
+            self.logger.debug('Zipping files from {0} to {1}...'.format(bookdir, zip_filepath))
+            add_contents_to_zip(zip_filepath, bookdir)
+            self.logger.debug('finished.')
+
+            # 4) Upload zipped file to the S3 bucket
+            file_key = self.uploadZipFile(commit_id, zip_filepath)# Send job request to tx-manager
+
+            # Send job request to tx-manager
+            identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
+
+            cdn_handler = S3Handler(self.cdn_bucket)
+
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
+
+            # Compile data for build_log.json
+            build_log_json = self.getBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
+                                              repo_name, repo_owner)
+
+            # Upload build_log.json to S3:
+            s3_commit_key = 'u/{0}-{1}'.format(identifier, i)
+            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
+
+        # todo merge build_logs and check for errors
         return None
+
+    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key):
+        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+            self.cdnDeleteFile(cdn_handler, obj)
+        build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
+        write_file(build_log_file, build_log_json)
+        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
+
+    def getBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
+                    repo_owner):
+        build_log_json = job
+        build_log_json['repo_name'] = repo_name
+        build_log_json['repo_owner'] = repo_owner
+        build_log_json['commit_id'] = commit_id
+        build_log_json['committed_by'] = pusher_username
+        build_log_json['commit_url'] = commit_url
+        build_log_json['compare_url'] = compare_url
+        build_log_json['commit_message'] = commit_message
+        return build_log_json
 
     def updateProjectJson(self, cdn_handler, commit_id, job, repo_name, repo_owner):
         project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)

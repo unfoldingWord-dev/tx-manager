@@ -60,7 +60,7 @@ class Preprocessor(object):
     def isMultipleJobs(self):
         return False
 
-    def getFileList(self):
+    def getBookList(self):
         return None
 
 
@@ -161,21 +161,21 @@ class ObsPreprocessor(Preprocessor):
 class BiblePreprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(BiblePreprocessor, self).__init__(*args, **kwargs)
-        self.files = []
+        self.books = []
 
     def isMultipleJobs(self):
-        return (len(self.files) > 1)
+        return (len(self.books) > 1)
 
-    def getFileList(self):
-        return self.files
+    def getBookList(self):
+        return self.books
 
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
             # Copy all USFM files in the project root directory to the output directory
-            self.files = []
+            self.books = []
             for file_path in glob(os.path.join(content_dir, '*.usfm')):
-                self.files.append(os.path.basename(file_path))
+                self.books.append(os.path.basename(file_path))
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path):
                     copy(file_path, output_file_path)

@@ -66,9 +66,21 @@ class TestClientWebhook(unittest.TestCase):
     def test_process_webhook(self, mock_download_file):
         # given
         mock_download_file.side_effect = self.mock_download_repo
-        source = os.path.join(self.parent_resources_dir, 'kpb_mat_text_udb_repo')
-        clientWebHook = self.setupClientWebhookMock(source)
+        clientWebHook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
         expectedJobRequests = 1
+
+        # when
+        clientWebHook.process_webhook()
+
+        # then
+        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobRequests)
+
+    @patch('client.client_webhook.download_file')
+    def test_process_webhook_multiple_books(self, mock_download_file):
+        # given
+        mock_download_file.side_effect = self.mock_download_repo
+        clientWebHook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
+        expectedJobRequests = 4
 
         # when
         clientWebHook.process_webhook()
@@ -78,8 +90,9 @@ class TestClientWebhook(unittest.TestCase):
 
     # helpers
 
-    def setupClientWebhookMock(self, source):
-        env_vars = self.getEnvironment(source, self.parent_resources_dir)
+    def setupClientWebhookMock(self, repoName, basePath):
+        source = os.path.join(basePath, repoName)
+        env_vars = self.getEnvironment(source, basePath)
         cwh = ClientWebhook(**env_vars)
         cwh.sendJobRequestToTxManager = self.mock_sendJobRequestToTxManager
         cwh.cdnUploadFile = self.mock_cdnUploadFile
