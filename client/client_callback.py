@@ -4,7 +4,7 @@ import tempfile
 import logging
 import time
 from logging import Logger
-from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
+from general_tools.file_utils import unzip, write_file
 from general_tools.url_utils import download_file
 from aws_tools.s3_handler import S3Handler
 from manager.job import TxJob
@@ -12,35 +12,28 @@ from manager.job import TxJob
 
 class ClientCallback(object):
 
-    def __init__(self, job_data=None, cdn_bucket=None, gogs_url=None, logger=None, s3_handler_class=S3Handler):
+    def __init__(self, job_data=None, cdn_bucket=None, gogs_url=None):
         """
         :param dict job_data:
         :param string cdn_bucket:
         :param string gogs_url:
-        :param Logger logger:
-        :param class s3_handler_class:
         """
-        if not logger:
-            self.logger = logging.getLogger()
-            self.logger.setLevel(logging.INFO)
-        else:
-            self.logger = logger
+        self.logger = logging.getLogger()
         self.job = TxJob(job_data)
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
-        self.s3_handler_class = s3_handler_class
 
     def process_callback(self):
-        cdn_handler = self.s3_handler_class(self.cdn_bucket)
+        cdn_handler = S3Handler(self.cdn_bucket)
         owner_name, repo_name, commit_id = self.job.identifier.split('/')
-        s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name,
-                                               commit_id)  # The identifier is how to know which username/repo/commit this callback goes to
+        # The identifier is how to know which username/repo/commit this callback goes to
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name, commit_id)
 
         # Download the ZIP file of the converted files
         converted_zip_url = self.job.output
         converted_zip_file = os.path.join(tempfile.gettempdir(), converted_zip_url.rpartition('/')[2])
         try:
-            print('Downloading converted zip file from {0}...'.format(converted_zip_url))
+            self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
             tries = 0
             # Going to try to get the file every second for 200 seconds just in case there is a delay in the upload
             # (For example, 3.6MB takes at least one minute to be seen on S3!)
@@ -54,22 +47,22 @@ class ClientCallback(object):
                     if tries >= 200:
                         raise
         finally:
-            print('finished.')
+            self.logger.debug('finished.')
 
         # Unzip the archive
         unzip_dir = tempfile.mkdtemp(prefix='unzip_')
         try:
-            print('Unzipping {0}...'.format(converted_zip_file))
+            self.logger.debug('Unzipping {0}...'.format(converted_zip_file))
             unzip(converted_zip_file, unzip_dir)
         finally:
-            print('finished.')
+            self.logger.debug('finished.')
 
         # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
         for root, dirs, files in os.walk(unzip_dir):
             for f in sorted(files):
                 path = os.path.join(root, f)
                 key = s3_commit_key + path.replace(unzip_dir, '')
-                print('Uploading {0} to {1}'.format(f, key))
+                self.logger.debug('Uploading {0} to {1}'.format(f, key))
                 cdn_handler.upload_file(path, key)
 
         # Download the project.json file for this repo (create it if doesn't exist) and update it
@@ -125,6 +118,6 @@ class ClientCallback(object):
         write_file(build_log_file, build_log_json)
         cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
 
-        print('Finished deploying to cdn_bucket. Done.')
+        self.logger.debug('Finished deploying to cdn_bucket. Done.')
 
         return build_log_json

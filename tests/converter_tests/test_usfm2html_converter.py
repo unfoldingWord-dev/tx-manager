@@ -52,7 +52,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
     def test_run(self):
         """Runs the converter and verifies the output."""
         # test with the English OBS
-        zip_file = self.resources_dir+"/eight_bible_books.zip"
+        zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -73,7 +73,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         Runs the converter and verifies the output
         """
         # test with the English OBS
-        zip_file = self.resources_dir+"/51-PHP.zip"
+        zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -84,6 +84,23 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         unzip(out_zip_file, self.out_dir)
         remove(out_zip_file)
         files_to_verify = ['51-PHP.html']
+        self.verifyFiles(files_to_verify)
+
+    def test_MattCompleteWithBackslash(self):
+        """
+        Runs the converter and verifies the output
+        """
+        zip_file = os.path.join(self.resources_dir, 'kpb_mat_text_udb.zip')
+        out_zip_file = tempfile.mktemp('.zip')
+        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
+            tx.input_zip_file = zip_file
+            tx.run()
+        # verify the output
+        self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
+        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        unzip(out_zip_file, self.out_dir)
+        remove(out_zip_file)
+        files_to_verify = ['41-MAT.html']
         self.verifyFiles(files_to_verify)
 
     def verifyFiles(self, files_to_verify):
@@ -97,6 +114,22 @@ class TestUsfmHtmlConverter(unittest.TestCase):
 
             self.assertIsNotNone(usfm);
             self.assertTrue(len(usfm) > 10, 'Bible usfm file contents missing: {0}'.format(file_to_verify))
+
+    def test_bad_source(self):
+        """This tests giving a bad resource type to the converter"""
+        with closing(Usfm2HtmlConverter('bad_source', 'bad_resource')) as tx:
+            result = tx.run()
+        self.assertFalse(result['success'])
+        self.assertEqual(result['errors'], [u'Conversion process ended abnormally: Failed to download bad_source'])
+
+    def test_bad_resource(self):
+        """This tests giving a bad resource type to the converter"""
+        zip_file = self.resources_dir + "/51-PHP.zip"
+        with closing(Usfm2HtmlConverter('', 'bad_resource')) as tx:
+            tx.input_zip_file = zip_file
+            result = tx.run()
+        self.assertFalse(result['success'])
+        self.assertEqual(result['errors'], ['Resource bad_resource currently not supported.'])
 
 
 if __name__ == '__main__':

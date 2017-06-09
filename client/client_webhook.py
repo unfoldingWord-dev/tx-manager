@@ -1,23 +1,21 @@
 from __future__ import print_function, unicode_literals
 import os
-import sys
 import tempfile
 import requests
 import logging
 import json
-from logging import Logger
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
 from general_tools.url_utils import download_file
-from door43_tools import preprocessors
-from door43_tools.manifest_handler import Manifest, MetaData
+from resource_container.ResourceContainer import RC
+from client.preprocessors import do_preprocess
 from aws_tools.s3_handler import S3Handler
 
 
 class ClientWebhook(object):
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
-                 gogs_url=None, gogs_user_token=None, logger=None, s3_handler_class=S3Handler):
+                 gogs_url=None, gogs_user_token=None):
         """
         :param dict commit_data:
         :param string api_url:
@@ -25,23 +23,14 @@ class ClientWebhook(object):
         :param string cdn_bucket:
         :param string gogs_url:
         :param string gogs_user_token:
-        :param Logger logger:
-        :param class s3_handler_class:
         """
-
-        if not logger:
-            self.logger = logging.getLogger()
-            self.logger.setLevel(logging.INFO)
-        else:
-            self.logger = logger
-
         self.commit_data = commit_data
         self.api_url = api_url
         self.pre_convert_bucket = pre_convert_bucket
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
         self.gogs_user_token = gogs_user_token
-        self.s3_handler_class = s3_handler_class
+        self.logger = logging.getLogger()
 
         if self.pre_convert_bucket:
             # we use us-west-2 for our s3 buckets
@@ -83,78 +72,37 @@ class ClientWebhook(object):
         pusher_username = pusher['username']
 
         # 1) Download and unzip the repo files
-        temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='repo_')
+        temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='{0}_'.format(repo_name))
         self.download_repo(commit_url, temp_dir)
-        repo_dir = os.path.join(temp_dir, repo_name)
+        repo_dir = os.path.join(temp_dir, repo_name.lower())
         if not os.path.isdir(repo_dir):
             repo_dir = temp_dir
 
-        # 2) Get the manifest file or make one if it doesn't exist based on meta.json, repo_name and file extensions
-        manifest_path = os.path.join(repo_dir, 'manifest.json')
-        if not os.path.isfile(manifest_path):
-            manifest_path = os.path.join(repo_dir, 'project.json')
-            if not os.path.isfile(manifest_path):
-                manifest_path = None
-        meta_path = os.path.join(repo_dir, 'meta.json')
-        meta = None
-        if os.path.isfile(meta_path):
-            meta = MetaData(meta_path)
-        manifest = Manifest(file_name=manifest_path, repo_name=repo_name, files_path=repo_dir, meta=meta)
+        # Get the resource container
+        rc = RC(repo_dir, repo_name)
 
-        # determining how the repo was generated/created:
-        generator = ''
-        if manifest.generator and manifest.generator['name'] and manifest.generator['name'].startswith('ts'):
-            generator = 'ts'
-        if not generator:
-            dirs = sorted(get_subdirs(repo_dir, True))
-            if 'content' in dirs:
-                repo_dir = os.path.join(repo_dir, 'content')
-            elif 'usfm' in dirs:
-                repo_dir = os.path.join(repo_dir, 'usfm')
-
-        manifest_path = os.path.join(repo_dir, 'manifest.json')
-        write_file(manifest_path, manifest.__dict__)  # Write it back out so it's using the latest manifest format
-
-        input_format = manifest.format
-        resource_type = manifest.resource['id']
-        if resource_type == 'ulb' or resource_type == 'udb':
-            resource_type = 'bible'
-
-        try:
-            preprocessor_class = self.str_to_class(
-                'preprocessors.{0}{1}{2}Preprocessor'.format(generator.capitalize(),
-                                                             resource_type.capitalize(),
-                                                             input_format.capitalize()))
-        except AttributeError as e:
-            self.logger.info('Got AttributeError: {0}'.format(e.message))
-            preprocessor_class = preprocessors.Preprocessor
-
-        # merge the source files with the template
+        # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
-        preprocessor = preprocessor_class(manifest, repo_dir, output_dir)
-        preprocessor.run()
+        do_preprocess(rc, repo_dir, output_dir)
 
         # 3) Zip up the massaged files
         # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
-        zip_filename = commit_id + '.zip'
-        zip_filepath = os.path.join(self.base_temp_dir, zip_filename)
-        self.logger.info('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
+        zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
+        self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
-        if os.path.isfile(manifest_path) and not os.path.isfile(os.path.join(output_dir, 'manifest.json')):
-            add_file_to_zip(zip_filepath, manifest_path, 'manifest.json')
-        self.logger.info('finished.')
+        self.logger.debug('finished.')
 
         # 4) Upload zipped file to the S3 bucket
-        s3_handler = self.s3_handler_class(self.pre_convert_bucket)
-        file_key = "preconvert/" + zip_filename
-        self.logger.info('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
+        s3_handler = S3Handler(self.pre_convert_bucket)
+        file_key = 'preconvert/{0}.zip'.format(commit_id)
+        self.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
             s3_handler.upload_file(zip_filepath, file_key)
         except Exception as e:
             self.logger.error('Failed to upload zipped repo up to server')
             self.logger.exception(e)
         finally:
-            self.logger.info('finished.')
+            self.logger.debug('finished.')
 
         # Send job request to tx-manager
         source_url = self.source_url_base+"/"+file_key
@@ -162,13 +110,12 @@ class ClientWebhook(object):
         tx_manager_job_url = self.api_url + '/tx/job'
         identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                           commit_id)  # The way to know which repo/commit goes to this job request
-        if input_format == 'markdown':
-            input_format = 'md'
+
         payload = {
             "identifier": identifier,
             "gogs_user_token": self.gogs_user_token,
-            "resource_type": manifest.resource['id'],
-            "input_format": input_format,
+            "resource_type": rc.resource.identifier,
+            "input_format": rc.resource.file_ext,
             "output_format": "html",
             "source": source_url,
             "callback": callback_url
@@ -176,17 +123,22 @@ class ClientWebhook(object):
 
         headers = {"content-type": "application/json"}
 
-        print('Making request to tx-Manager URL {0} with payload:'.format(tx_manager_job_url), end=' ')
-        print(payload)
+        self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
+
+        # remove token from printout, so it will not show in integration testing logs on Travis, etc.
+        logPayload = payload.copy()
+        logPayload["gogs_user_token"] = "DUMMY"
+        self.logger.debug(logPayload)
+
         response = requests.post(tx_manager_job_url, json=payload, headers=headers)
-        print('finished.')
+        self.logger.debug('finished.')
 
         # Fake job in case tx-manager returns an error, can still build the build_log.json
         job = {
             'job_id': None,
             'identifier': identifier,
-            'resource_type': manifest.resource['id'],
-            'input_format': input_format,
+            'resource_type': rc.resource.identifier,
+            'input_format': rc.resource.file_ext,
             'output_format': 'html',
             'source': source_url,
             'callback': callback_url,
@@ -227,7 +179,7 @@ class ClientWebhook(object):
             else:
                 job = json_data['job']
 
-        cdn_handler = self.s3_handler_class(self.cdn_bucket)
+        cdn_handler = S3Handler(self.cdn_bucket)
 
         # Download the project.json file for this repo (create it if doesn't exist) and update it
         project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
@@ -265,7 +217,7 @@ class ClientWebhook(object):
         build_log_json['compare_url'] = compare_url
         build_log_json['commit_message'] = commit_message
 
-        # Upload build_log.json and manifest.json to S3:
+        # Upload build_log.json to S3:
         s3_commit_key = 'u/{0}'.format(identifier)
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
             cdn_handler.delete_file(obj.key)
@@ -273,21 +225,10 @@ class ClientWebhook(object):
         write_file(build_log_file, build_log_json)
         cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
 
-        cdn_handler.upload_file(manifest_path, s3_commit_key + '/manifest.json', 0)
-
         if len(job['errors']) > 0:
             raise Exception('; '.join(job['errors']))
         else:
             return build_log_json
-
-    @staticmethod
-    def str_to_class(class_name_string):
-        """
-        Gets a class from a string.
-
-        :param str|unicode class_name_string: The string of the class name
-        """
-        return reduce(getattr, class_name_string.split("."), sys.modules[__name__])
 
     def download_repo(self, commit_url, repo_dir):
         """
@@ -301,7 +242,7 @@ class ClientWebhook(object):
         repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition('/')[2])
 
         try:
-            self.logger.info('Downloading {0}...'.format(repo_zip_url))
+            self.logger.debug('Downloading {0}...'.format(repo_zip_url))
 
             # if the file already exists, remove it, we want a fresh copy
             if os.path.isfile(repo_zip_file):
@@ -309,13 +250,13 @@ class ClientWebhook(object):
 
             download_file(repo_zip_url, repo_zip_file)
         finally:
-            self.logger.info('finished.')
+            self.logger.debug('finished.')
 
         try:
-            self.logger.info('Unzipping {0}...'.format(repo_zip_file))
+            self.logger.debug('Unzipping {0}...'.format(repo_zip_file))
             unzip(repo_zip_file, repo_dir)
         finally:
-            self.logger.info('finished.')
+            self.logger.debug('finished.')
 
         # clean up the downloaded zip file
         if os.path.isfile(repo_zip_file):

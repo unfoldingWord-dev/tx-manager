@@ -2,16 +2,17 @@ from setuptools import setup
 
 setup(
     name='tx-manager',
-    version='0.2.63',
+    version='0.2.64',
     packages=[
         'client',
-        'manager',
         'converters',
         'aws_tools',
         'door43_tools',
         'general_tools',
         'gogs_tools',
-        'lambda_handlers'
+        'lambda_handlers',
+        'manager',
+        'resource_container'
     ],
     package_data={'converters': ['templates/*.html']},
     author='unfoldingWord',
@@ -41,9 +42,10 @@ setup(
         'markdown==2.6.8',
         'future==0.16.0',
         'pyparsing==2.1.10',
-        'usfm-tools==0.0.8',
+        'usfm-tools==0.0.12',
         'mock',  # travis reports syntax error in mock setup.cfg if we give version
-        'moto==0.4.31'
+        'moto==0.4.31',
+        'PyYAML==3.12'
     ],
     test_suite='tests'
 )

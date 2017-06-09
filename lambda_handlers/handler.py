@@ -1,11 +1,20 @@
 from __future__ import unicode_literals, print_function
-from abc import ABCMeta, abstractmethod
 import json
+import logging
+from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
 
 
 class Handler(object):
     __metaclass__ = ABCMeta
+
+    def __init__(self):
+        # Make Boto3 not be so noisy
+        logging.getLogger('boto3').setLevel(logging.ERROR)
+        logging.getLogger('botocore').setLevel(logging.ERROR)
+        # Set up logger
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
 
     def handle(self, event, context):
         """
@@ -13,11 +22,12 @@ class Handler(object):
         :param context:
         :return dict:
         """
-        print("EVENT:")
-        print(json.dumps(event))
+        self.logger.debug("EVENT:")
+        self.logger.debug(json.dumps(event))
         try:
             return self._handle(event, context)
         except Exception as e:
+            self.logger.error(e.message, exc_info=1)
             raise EnvironmentError('Bad Request: {}'.format(e.message))
 
     @abstractmethod
@@ -48,4 +58,4 @@ class Handler(object):
         if key in dictionary:
             return dictionary[key]
         dict_name = "dictionary" if dict_name is None else dict_name
-        raise Exception('{k} not found in {d}'.format(k=repr(key), d=dict_name))
+        raise Exception('\'{k}\' not found in {d}'.format(k=key, d=dict_name))

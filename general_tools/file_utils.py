@@ -5,6 +5,7 @@ import os
 import zipfile
 import sys
 import shutil
+import yaml
 from mimetypes import MimeTypes
 
 # we need this to check for string versus object
@@ -40,6 +41,7 @@ def add_contents_to_zip(zip_file, path):
         for root, dirs, files in os.walk(path):
             for file in files:
                 file_path = os.path.join(root, file)
+                print('Adding {0} to {1} as {2}'.format(file_path, zip_file, file_path[len(path)+1:]))
                 zf.write(file_path, file_path[len(path)+1:])
 
 
@@ -76,29 +78,34 @@ def make_dir(dir_name, linux_mode=0o755, error_if_not_writable=False):
 
 def load_json_object(file_name, default=None):
     """
-    Deserialized <file_name> into a Python object.
-
+    Deserialized JSON file <file_name> into a Python dict.
     :param str|unicode file_name: The name of the file to read
     :param default: The value to return if the file is not found
     """
     if not os.path.isfile(file_name):
         return default
-
-    # use utf-8-sig in case the file has a Byte Order Mark
-    with codecs.open(file_name, 'r', 'utf-8-sig') as in_file:
-        # read the text from the file
-        content = in_file.read()
-
-    # convert Windows line endings to Linux line endings
-    content = content.replace('\r\n', '\n')
-
     # return a deserialized object
-    return json.loads(content)
+    return json.loads(read_file(file_name))
+
+
+def load_yaml_object(file_name, default=None):
+    """
+    Deserialized YAML file <file_name> into a Python dict.
+    :param str|unicode file_name: The name of the file to read
+    :param default: The value to return if the file is not found
+    """
+    if not os.path.isfile(file_name):
+        return default
+    # return a deserialized object
+    return yaml.load(read_file(file_name))
 
 
 def read_file(file_name, encoding='utf-8-sig'):
     with codecs.open(file_name, 'r', encoding=encoding) as f:
-        return f.read()
+        content = f.read()
+    # convert Windows line endings to Linux line endings
+    content = content.replace('\r\n', '\n')
+    return content
 
 
 def write_file(file_name, file_contents, indent=None):
@@ -117,10 +124,14 @@ def write_file(file_name, file_contents, indent=None):
     if isinstance(file_contents, string_types):
         text_to_write = file_contents
     else:
-        text_to_write = json.dumps(file_contents, sort_keys=True, indent=indent)
+        if os.path.splitext(file_name)[1] == '.yaml':
+            text_to_write = yaml.safe_dump(file_contents)
+        else:
+            text_to_write = json.dumps(file_contents, sort_keys=True, indent=indent)
 
     with codecs.open(file_name, 'w', encoding='utf-8') as out_file:
         out_file.write(text_to_write)
+
 
 def get_mime_type(path):
     mime = MimeTypes()

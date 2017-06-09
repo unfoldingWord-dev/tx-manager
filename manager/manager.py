@@ -11,12 +11,13 @@ from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
 
+
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
     MAX_FAILURES = 10
 
-    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None, quiet=False,
+    def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
                  job_table_name=None, module_table_name=None):
         """
@@ -24,7 +25,6 @@ class TxManager(object):
         :param string gogs_url:
         :param string cdn_url:
         :param string cdn_bucket:
-        :param bool quiet:
         :param string aws_access_key_id:
         :param string aws_secret_access_key:
         :param string job_table_name:
@@ -34,7 +34,6 @@ class TxManager(object):
         self.gogs_url = gogs_url
         self.cdn_url = cdn_url
         self.cdn_bucket = cdn_bucket
-        self.quiet = quiet
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.job_table_name = job_table_name
@@ -49,7 +48,12 @@ class TxManager(object):
         self.module_db_handler = None
         self.gogs_handler = None
 
-        self.logger = logging.getLogger('tx-manager')
+        self.jobs_total = 0
+        self.jobs_warnings = 0
+        self.jobs_failures = 0
+        self.jobs_success = 0
+
+        self.logger = logging.getLogger()
 
         self.setup_resources()
 
@@ -60,10 +64,6 @@ class TxManager(object):
             self.module_db_handler = DynamoDBHandler(self.module_table_name)
         if self.gogs_url:
             self.gogs_handler = GogsHandler(self.gogs_url)
-
-    def debug_print(self, message):
-        if not self.quiet:
-            print(message)
 
     def get_user(self, user_token):
         return self.gogs_handler.get_user(user_token)
@@ -89,7 +89,7 @@ class TxManager(object):
         del data['gogs_user_token']
         data['user'] = user.username
 
-        job = TxJob(data, self.quiet)
+        job = TxJob(data)
 
         if not job.cdn_bucket:
             if not self.cdn_bucket:
@@ -230,17 +230,16 @@ class TxManager(object):
 
             headers = {"content-type": "application/json"}
             url = converter_module.public_links[0]
-            print("Payload to {0}:".format(url))
-            print(json.dumps(payload))
+            self.logger.debug("Payload to {0}:".format(url))
+            self.logger.debug(json.dumps(payload))
             response = requests.post(url, json=payload, headers=headers)
-            print('finished.')
+            self.logger.debug('finished.')
 
-            print("Response from {0}:".format(converter_module.name))
-            print(response)
+            self.logger.debug("Response from {0}:".format(converter_module.name))
+            self.logger.debug(response.json())
 
             json_data = response.json()
             if json_data:
-                json_data = response.json()
                 # The json_data of the response could result in a few different formats:
                 # 1) It could be that an exception was thrown in the converter code, which the API Gateway puts
                 #    into a json array with "errorMessage" containing the exception message.
@@ -249,12 +248,7 @@ class TxManager(object):
                 # 3) The other possibility is for the Lambda function to not finish executing
                 #    (e.g. exceeds its 5 minute execution limit). We don't currently handle this possibility.
                 # Todo: Handle lambda function returning due to exceeding 5 minutes execution limit
-                if 'errorMessage' in json_data:
-                    error = json_data['errorMessage']
-                    if error.startswith('Bad Request: '):
-                        error = error[len('Bad Request: '):]
-                    job.error_message(error)
-                elif 'success' in json_data:
+                if 'success' in json_data:
                     success = json_data['success']
                     for message in json_data['info']:
                         if message:
@@ -265,12 +259,19 @@ class TxManager(object):
                     for message in json_data['warnings']:
                         if message:
                             job.warning_message(message)
-                    if json_data['errors']:
+                    if len(json_data['errors']):
                         job.log_message('{0} function returned with errors.'.format(converter_module.name))
-                    elif json_data['warnings']:
+                    elif len(json_data['warnings']):
                         job.log_message('{0} function returned with warnings.'.format(converter_module.name))
                     else:
                         job.log_message('{0} function returned successfully.'.format(converter_module.name))
+                elif 'errorMessage' in json_data or 'message' in json_data:
+                    error = json_data.get('errorMessage', json_data.get('message'))
+                    if error.startswith('Bad Request: '):
+                        error = error[len('Bad Request: '):]
+                    job.error_message(error)
+                else:
+                    job.error_message('Conversion failed for unknown reason: {0}'.format(json_data))
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
@@ -280,6 +281,7 @@ class TxManager(object):
             job.success = False
             job.status = "failed"
             message = "Conversion failed"
+            self.logger.debug("Conversion failed, success: {0}, errors: {1}".format(success, job.errors))
         elif len(job.warnings) > 0:
             job.success = True
             job.status = "warnings"
@@ -304,17 +306,15 @@ class TxManager(object):
 
         return job.get_db_data()
 
-    @staticmethod
-    def do_callback(url, payload):
+    def do_callback(self, url, payload):
         if url.startswith('http'):
             headers = {"content-type": "application/json"}
-            print('Making callback to {0} with payload:'.format(url))
-            print(payload)
+            self.logger.debug('Making callback to {0} with payload:'.format(url))
+            self.logger.debug(payload)
             requests.post(url, json=payload, headers=headers)
-            print('finished.')
+            self.logger.debug('finished.')
 
-    @staticmethod
-    def make_api_gateway_for_module(module):
+    def make_api_gateway_for_module(self, module):
         # lambda_func_name = module['name']
         # AWS_LAMBDA_API_ID = '7X97xCLPDE16Jep5Zv85N6zy28wcQfJz79E2H3ln'
         # # of 'tx-manager_api_key'
@@ -399,7 +399,7 @@ class TxManager(object):
         return
 
     def register_module(self, data):
-        module = TxModule(data, self.quiet)
+        module = TxModule(data)
 
         if not module.name:
             raise Exception('"name" not given.')
@@ -410,7 +410,7 @@ class TxManager(object):
         if not module.output_format:
             raise Exception('"output_format" not given.')
         if not module.resource_types:
-            raise Exception('"resource_types" not given.', exc_info=1)
+            raise Exception('"resource_types" not given.')
 
         module.public_links.append("{0}/tx/convert/{1}".format(self.api_url, module.name))
         self.insert_module(module)
@@ -459,16 +459,13 @@ class TxManager(object):
     def delete_module(self, module):
         return self.module_db_handler.delete_item({'name': module.name})
 
-    def generate_dashboard(self, max_failures = MAX_FAILURES):
+    def generate_dashboard(self, max_failures=MAX_FAILURES):
         """
         Generate page with metrics indicating configuration of tx-manager.
 
-        :param dict event:
-        :param context:
-        :param DynamicDBHandler:
-        :param logger:
+        :param int max_failures:
         """
-        self.logger.info("Start: generateDashboard")
+        self.logger.debug("Start: generateDashboard")
 
         dashboard = {
             'title': 'tX-Manager Dashboard',
@@ -488,14 +485,13 @@ class TxManager(object):
             if registeredJobCount > totalJobCount: # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
                 totalJobCount = registeredJobCount
 
-            self.logger.info("  Found: " + str(len(items)) + " item[s] in tx-module")
+            self.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
 
             body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
                                  'html.parser')
             for item in items:
-                # self.logger.info(json.dumps(item))
                 moduleName = item["name"]
-                self.logger.info(moduleName)
+                self.logger.debug(moduleName)
                 body.table.append(BeautifulSoup(
                     '<tr id="' + moduleName + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
                     'html.parser'))
@@ -603,7 +599,6 @@ class TxManager(object):
                 '<th class="hdr">PreConvert</th>'
                 '<th class="hdr">Converted</th>'
                 '<th class="hdr">Destination</th>'
-                '<th class="hdr">Job ID</th></tr>',
                 'html.parser'))
 
             gogs_url = self.gogs_url
@@ -619,7 +614,7 @@ class TxManager(object):
                 try :
                     identifier = item['identifier']
                     owner_name, repo_name, commit_id = identifier.split('/')
-                    sourceSubPath = 'u/{0}/{1}'.format(owner_name, repo_name)
+                    sourceSubPath = '{0}/{1}'.format(owner_name, repo_name)
                     cdn_bucket = item['cdn_bucket']
                     destinationUrl = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
                     repoUrl = gogs_url + "/" + sourceSubPath
@@ -628,12 +623,11 @@ class TxManager(object):
                     failureTable.table.append(BeautifulSoup(
                         '<tr id="failure-' + str(i) + '" class="module-job-id">'
                         + '<td>' + item['created_at'] + '</td>'
-                        + '<td>' + str(item['errors']) + '</td>'
-                        + '<td><a href="' + repoUrl + '">' + repoUrl + '</a></td>'
-                        + '<td><a href="' + preconvertedUrl + '">' + preconvertedUrl + '</a></td>'
-                        + '<td><a href="' + convertedUrl + '">' + convertedUrl + '</a></td>'
-                        + '<td><a href="' + destinationUrl + '">' + destinationUrl + '</a></td>'
-                        + '<td>' + item['job_id'] + '</td>'
+                        + '<td>' + ','.join(item['errors']) + '</td>'
+                        + '<td><a href="' + repoUrl + '">' + sourceSubPath + '</a></td>'
+                        + '<td><a href="' + preconvertedUrl + '">' + preconvertedUrl.rsplit('/', 1)[1] + '</a></td>'
+                        + '<td><a href="' + convertedUrl + '">' + item['job_id'] + '.zip</a></td>'
+                        + '<td><a href="' + destinationUrl + '">Build Log</a></td>'
                         + '</tr>',
                         'html.parser'))
                 except:
@@ -642,7 +636,7 @@ class TxManager(object):
             body.append(failureTable)
             dashboard['body'] = body.prettify('UTF-8')
         else:
-            self.logger.info("No modules found.")
+            self.logger.debug("No modules found.")
 
         return dashboard
 
@@ -673,7 +667,6 @@ class TxManager(object):
                 continue
 
             self.jobs_success+=1
-
 
     def get_job_failures(self, jobs):
         failedJobs = []

@@ -2,52 +2,48 @@ from __future__ import unicode_literals, print_function
 import os
 import json
 import codecs
+import logging
 from glob import glob
 from bs4 import BeautifulSoup
-from door43_tools.language_handler import Language
 from general_tools.file_utils import write_file
-from door43_tools.manifest_handler import Manifest
+from resource_container.ResourceContainer import RC
+
+
+def do_template(resource_type, source_dir, output_dir, template_file):
+    if resource_type in ['udb', 'ulb', 'bible']:
+        templater = BibleTemplater(source_dir, output_dir, template_file)
+    else:
+        templater = Templater(source_dir, output_dir, template_file)
+    return templater.run()
 
 
 class Templater(object):
-    def __init__(self, source_dir, output_dir, template_file, quiet=False):
+    def __init__(self, source_dir, output_dir, template_file):
         self.source_dir = source_dir  # Local directory
         self.output_dir = output_dir  # Local directory
         self.template_file = template_file  # Local file of template
-        self.quiet = quiet
 
         self.files = sorted(glob(os.path.join(self.source_dir, '*.html')))
-        self.manifest = None
-        self.build_log = {}
+        self.rc = None
         self.template_html = ''
+        self.logger = logging.getLogger()
 
     def run(self):
-        repo_name = ""
-
-        print(glob(os.path.join(self.source_dir, '*')))
-
-        # get build_log
-        build_log_filename = os.path.join(self.source_dir, 'build_log.json')
-        if os.path.isfile(build_log_filename):
-            with open(build_log_filename) as build_log_file:
-                self.build_log = json.load(build_log_file)
-                repo_name = self.build_log['repo_name']
-
-        # get manifest
-        manifest_filename = os.path.join(self.source_dir, 'manifest.json')
-        self.manifest = Manifest(file_name=manifest_filename, repo_name=repo_name, files_path=self.source_dir)
-
+        # get the resource container
+        self.rc = RC(self.source_dir)
         with open(self.template_file) as template_file:
             self.template_html = template_file.read()
-
         self.apply_template()
+        return True
 
     def build_left_sidebar(self, filename=None):
         html = """
-            <div>
-                <h1>Revisions</h1>
-                <table width="100%" id="revisions"></table>
-            </div>
+            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="left-sidebar-nav">
+                <div class="nav nav-stacked" id="revisions-div">
+                    <h1>Revisions</h1>
+                    <table width="100%" id="revisions"></table>
+                </div>
+            </nav>
             """
         return html
 
@@ -81,11 +77,12 @@ class Templater(object):
         return html
 
     def apply_template(self):
-        language_code = self.manifest.target_language['id']
-        language_name = self.manifest.target_language['name']
-        resource_name = self.manifest.resource['name']
+        language_code = self.rc.resource.language.identifier
+        language_name = self.rc.resource.language.title
+        language_dir = self.rc.resource.language.direction
+        resource_title = self.rc.resource.title
 
-        heading = '{0}: {1}'.format(language_name, resource_name)
+        heading = '{0}: {1}'.format(language_name, resource_title)
         title = ''
         canonical = ''
 
@@ -107,8 +104,7 @@ class Templater(object):
 
         # loop through the html files
         for filename in self.files:
-            if not self.quiet:
-                print('Applying template to {0}.'.format(filename))
+            self.logger.debug('Applying template to {0}.'.format(filename))
 
             # read the downloaded file into a dom abject
             with codecs.open(filename, 'r', 'utf-8-sig') as f:
@@ -137,11 +133,7 @@ class Templater(object):
             outer_content_div.clear()
             outer_content_div.append(body)
             soup.html['lang'] = language_code
-
-            languages = Language.load_languages()
-            language = [lang for lang in languages if lang.lc == language_code]
-            if language and language[0].ld:
-                soup.html['dir'] = language[0].ld
+            soup.html['dir'] = language_dir
 
             soup.head.title.clear()
             soup.head.title.append(heading+' - '+title)
@@ -156,14 +148,14 @@ class Templater(object):
             heading_span.append(heading)
 
             if left_sidebar_div:
-                left_sidebar_html = '<span>' + self.build_left_sidebar(filename) + '</span>'
-                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').span.extract()
+                left_sidebar_html = self.build_left_sidebar(filename)
+                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').nav.extract()
                 left_sidebar_div.clear()
                 left_sidebar_div.append(left_sidebar)
 
             if right_sidebar_div:
-                right_sidebar_html = '<span>'+self.build_right_sidebar(filename)+'</span>'
-                right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').span.extract()
+                right_sidebar_html = self.build_right_sidebar(filename)
+                right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
                 right_sidebar_div.clear()
                 right_sidebar_div.append(right_sidebar)
 
@@ -173,8 +165,7 @@ class Templater(object):
             html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
             # write to output directory
             out_file = os.path.join(self.output_dir, os.path.basename(filename))
-            if not self.quiet:
-                print('Writing {0}.'.format(out_file))
+            self.logger.debug('Writing {0}.'.format(out_file))
             write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
 
@@ -222,7 +213,6 @@ class BibleTemplater(Templater):
                         <ul class="panel-body chapters">
                     """.format(book_code, title, ' in' if fname == filename else '')
             for chapter in soup.find_all('h2', {'c-num'}):
-                print(chapter['id'])
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
                     """.format(os.path.basename(fname) if fname != filename else '', chapter['id'],
@@ -236,5 +226,4 @@ class BibleTemplater(Templater):
             </ul>
         </nav>
             """
-        print(html)
         return html

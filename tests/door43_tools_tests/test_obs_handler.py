@@ -124,5 +124,5 @@ class TestObsHandler(unittest.TestCase):
         return inspection
 
     def verify_results(self, expected_errors, expected_warnings, inspection):
-        self.assertEqual(len(inspection.logger.logs["warning"]) > 0, expected_warnings)
-        self.assertEqual(len(inspection.logger.logs["error"]) > 0, expected_errors)
+        self.assertEqual(len(inspection.log.logs["warning"]) > 0, expected_warnings)
+        self.assertEqual(len(inspection.log.logs["error"]) > 0, expected_errors)

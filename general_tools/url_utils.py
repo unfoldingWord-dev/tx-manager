@@ -47,10 +47,9 @@ def _download_file(url, outfile, urlopen):
         with closing(urlopen(url)) as request:
             with open(outfile, 'wb') as fp:
                 shutil.copyfileobj(request, fp)
-
     except IOError as err:
         print('ERROR retrieving %s' % url)
-        print(err.message)
+        print(err)
         sys.exit(1)
 
 

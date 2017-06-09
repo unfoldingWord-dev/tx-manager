@@ -11,14 +11,15 @@ from usfm_tools.transform import UsfmTransform
 
 class Usfm2HtmlConverter(Converter):
 
-    def convert_udb(self):
-        self.convert_bible()
-
-    def convert_ulb(self):
-        self.convert_bible()
+    def convert(self):
+        if self.resource in ['ulb', 'udb', 'bible', 'reg']:
+            self.convert_bible()
+            return True
+        else:
+            return False
 
     def convert_bible(self):
-        self.logger.info('Processing the Bible USFM files')
+        self.log.info('Processing the Bible USFM files')
 
         # find the first directory that has usfm files.
         files = self.get_files()
@@ -45,8 +46,8 @@ class Usfm2HtmlConverter(Converter):
                 content_div.body.unwrap()
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, template_soup.prettify())
-                self.logger.info('Converted {0} to {1}.'.format(os.path.basename(filename),
-                                                                os.path.basename(html_filename)))
+                self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
+                                                             os.path.basename(html_filename)))
                 remove_tree(scratch_dir)
 
                 # TODO 3/30/17 BLM - should be an inspection here like OBS has?
@@ -60,16 +61,11 @@ class Usfm2HtmlConverter(Converter):
                 except:
                     pass
 
-        manifest_file = os.path.join(self.files_dir, 'manifest.json')
-        if os.path.isfile(manifest_file):
-            copyfile(manifest_file, os.path.join(self.output_dir, 'manifest.json'))
-
         # Do the Bible inspection HERE
-        #        inspector = BibleInspection(self.output_dir, self.logger)
+        #        inspector = BibleInspection(self.output_dir, self.log)
         #        inspector.run()
         #        complete_html = html_template.safe_substitute(content=complete_html)
         #        write_file(os.path.join(self.output_dir, 'all.html'), complete_html)
         #        self.log_message('Made one HTML of all bibles in all.html.')
         #        self.log_message('Finished processing Markdown files.')
-
-        self.logger.info('Finished processing Bible USFM files.')
+        self.log.info('Finished processing Bible USFM files.')
