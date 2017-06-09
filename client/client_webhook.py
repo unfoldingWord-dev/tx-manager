@@ -5,7 +5,6 @@ import requests
 import logging
 import json
 import shutil
-from string import join
 from datetime import datetime
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
 from general_tools.url_utils import download_file
@@ -41,7 +40,7 @@ class ClientWebhook(object):
             self.source_url_base = None
 
         # move everything down one directory levek for simple delete
-        self.intermediate_dir =  'tx-manager'
+        self.intermediate_dir = 'tx-manager'
         self.base_temp_dir = os.path.join(tempfile.gettempdir(), self.intermediate_dir)
 
     def process_webhook(self):
@@ -74,7 +73,7 @@ class ClientWebhook(object):
         pusher_username = pusher['username']
 
         # 1) Download and unzip the repo files
-        repo_dir = self.getRepoFiles(commit_url, repo_name)# Get the resource container
+        repo_dir = self.getRepoFiles(commit_url, repo_name)
 
         # Get the resource container
         rc = RC(repo_dir, repo_name)
@@ -92,7 +91,7 @@ class ClientWebhook(object):
             self.logger.debug('finished.')
 
             # 4) Upload zipped file to the S3 bucket
-            file_key = self.uploadZipFile(commit_id, zip_filepath)# Send job request to tx-manager
+            file_key = self.uploadZipFile(commit_id, zip_filepath)
 
             # Send job request to tx-manager
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
@@ -117,7 +116,9 @@ class ClientWebhook(object):
 
         # multiple book project
         books = preprocessor.getBookList()
-        self.logger.debug('Splitting job into separate parts for books: ' + join( books, ","))
+        self.logger.debug('Splitting job into separate parts for books: ' + ','.join(books))
+        errors = []
+        build_logs = {}
         for i in range(0, len(books)):
             book = books[i]
 
@@ -155,8 +156,14 @@ class ClientWebhook(object):
             s3_commit_key = 'u/{0}-{1}'.format(identifier, i)
             self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
 
-        # todo merge build_logs and check for errors
-        return None
+            errors += job['errors']
+            build_logs[str(i)] = build_log_json
+
+        if len(errors) > 0:
+            raise Exception('; '.join(errors))
+        else:
+            return build_logs
+
 
     def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key):
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
