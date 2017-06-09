@@ -1,7 +1,6 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
-import logging
 from aws_tools.s3_handler import S3Handler
 from general_tools.url_utils import download_file
 from general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove

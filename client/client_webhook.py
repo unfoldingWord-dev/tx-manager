@@ -180,6 +180,11 @@ class ClientWebhook(object):
                 job = json_data['job']
 
         cdn_handler = S3Handler(self.cdn_bucket)
+        s3_commit_key = 'u/{0}'.format(identifier)
+
+        # clear out the commit directory in the cdn bucket for this project revision
+        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+            cdn_handler.delete_file(obj.key)
 
         # Download the project.json file for this repo (create it if doesn't exist) and update it
         project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
@@ -207,9 +212,15 @@ class ClientWebhook(object):
         write_file(project_file, project_json)
         cdn_handler.upload_file(project_file, project_json_key, 0)
 
+        # Upload a manifest.yaml file for this project
+        manifest_file = os.path.join(self.base_temp_dir, 'manifest.yaml')
+        write_file(manifest_file, rc.as_dict())
+        cdn_handler.upload_file(manifest_file, s3_commit_key + '/manifest.yaml', 0)
+
         # Compile data for build_log.json
         build_log_json = job
         build_log_json['repo_name'] = repo_name
+        build_log_json['title'] = rc.resource.title
         build_log_json['repo_owner'] = repo_owner
         build_log_json['commit_id'] = commit_id
         build_log_json['committed_by'] = pusher_username
@@ -218,9 +229,6 @@ class ClientWebhook(object):
         build_log_json['commit_message'] = commit_message
 
         # Upload build_log.json to S3:
-        s3_commit_key = 'u/{0}'.format(identifier)
-        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
-            cdn_handler.delete_file(obj.key)
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
         cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)

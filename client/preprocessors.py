@@ -271,7 +271,7 @@ class TaPreprocessor(Preprocessor):
         :return: 
         """
         if 'link' in section:
-            markdown = '{0} <a name="{1}"/>{2}\n\n'.format('#'*level, section['link'], 
+            markdown = '{0} <a id="{1}"/>{2}\n\n'.format('#'*level, section['link'],
                                                            self.get_title(project, section['link'], section['title']))
         else:
             markdown = '{0} {1}\n\n'.format('#'*level, section['title'])

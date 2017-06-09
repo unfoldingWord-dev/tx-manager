@@ -1,24 +1,29 @@
 from __future__ import unicode_literals, print_function
 import os
-import json
 import codecs
 import logging
 from glob import glob
 from bs4 import BeautifulSoup
 from general_tools.file_utils import write_file
 from resource_container.ResourceContainer import RC
+from general_tools.file_utils import load_yaml_object
 
 
 def do_template(resource_type, source_dir, output_dir, template_file):
-    if resource_type in ['udb', 'ulb', 'bible']:
-        templater = BibleTemplater(source_dir, output_dir, template_file)
+    if resource_type in ['udb', 'ulb', 'bible', 'reg']:
+        templater = BibleTemplater(resource_type, source_dir, output_dir, template_file)
+    elif resource_type == 'obs':
+        templater = ObsTemplater(resource_type, source_dir, output_dir, template_file)
+    elif resource_type == 'ta':
+        templater = TaTemplater(resource_type, source_dir, output_dir, template_file)
     else:
-        templater = Templater(source_dir, output_dir, template_file)
+        templater = Templater(resource_type, source_dir, output_dir, template_file)
     return templater.run()
 
 
 class Templater(object):
-    def __init__(self, source_dir, output_dir, template_file):
+    def __init__(self, resource_type, source_dir, output_dir, template_file):
+        self.resource_type = resource_type
         self.source_dir = source_dir  # Local directory
         self.output_dir = output_dir  # Local directory
         self.template_file = template_file  # Local file of template
@@ -33,6 +38,9 @@ class Templater(object):
         self.rc = RC(self.source_dir)
         with open(self.template_file) as template_file:
             self.template_html = template_file.read()
+            soup = BeautifulSoup(self.template_html, 'html.parser')
+            soup.body['class'] = self.resource_type
+            self.template_html = unicode(soup)
         self.apply_template()
         return True
 
@@ -161,6 +169,11 @@ class Templater(object):
 
             # render the html as an unicode string
             html = unicode(soup)
+
+            # fix the footer message, removing the title of this page in parentheses as it doesn't get filled
+            html = html.replace(
+                '("<a xmlns:dct="http://purl.org/dc/terms/" href="https://live.door43.org/templates/project-page.html" rel="dct:source">{{ HEADING }}</a>") ',
+                '')
             # update the canonical URL - it is in several different locations
             html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
             # write to output directory
@@ -181,7 +194,7 @@ class BibleTemplater(Templater):
     def build_page_nav(self, filename=None):
         html = """
         <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
-            <ul id="sidebar-nav" class="affix affix-top nav nav-stacked books panel-group">
+            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
             filebase = os.path.splitext(os.path.basename(fname))[0]
@@ -216,7 +229,7 @@ class BibleTemplater(Templater):
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
                     """.format(os.path.basename(fname) if fname != filename else '', chapter['id'],
-                               chapter['id'].split('-')[1].lstrip('0'))
+                               chapter['id'].split('-')[2].lstrip('0'))
             html += """
                         </ul>
                     </div>
@@ -226,4 +239,84 @@ class BibleTemplater(Templater):
             </ul>
         </nav>
             """
+        return html
+
+
+class TaTemplater(Templater):
+    def __init__(self, *args, **kwargs):
+        super(TaTemplater, self).__init__(*args, **kwargs)
+
+    def find_first_link(self, section):
+        """
+        Returns the link of the first section that has one
+        :param dict section: 
+        :return: 
+        """
+        if 'link' in section:
+            return section['link']
+        if 'sections' in section:
+            for subsection in section['sections']:
+                link = self.find_first_link(subsection)
+                if link:
+                    return link
+
+    def build_section_toc(self, section):
+        """
+        Recursive section toc builder
+        :param dict section: 
+        :return: 
+        """
+        html = """
+            <li>
+            """
+        link = self.find_first_link(section)
+        html += """
+                <a href="#{0}">{1}</a>
+            """.format(link, section['title'])
+        if 'sections' in section:
+            html += """
+                <ul class="nav nav-stacked">
+            """
+            for subsection in section['sections']:
+                html += self.build_section_toc(subsection)
+            html += """
+                </ul>
+            """
+        html += """
+            </li>
+        """
+        return html
+
+    def build_page_nav(self, filename=None):
+        html = """
+            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+                <ul id="sidebar-nav" class="nav nav-stacked">
+        """
+        for fname in self.files:
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f.read(), 'html.parser')
+            if soup.find('h1'):
+                title = soup.find('h1').text
+            else:
+                title = os.path.splitext(os.path.basename(fname))[0].title()
+            if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
+                continue
+            if fname != filename:
+                html += """
+                <h4><a href="{0}">{1}</a></h4>
+                """.format(os.path.basename(fname), title)
+            else:
+                html += """
+                <h4>{0}</h4>
+                """.format(title)
+                toc = load_yaml_object(os.path.join('{0}-toc.yaml'.format(os.path.splitext(fname)[0])))
+                if toc:
+                    for section in toc['sections']:
+                        html += self.build_section_toc(section)
+                html += """
+                """
+        html += """
+                </ul>
+            </nav>
+        """
         return html
