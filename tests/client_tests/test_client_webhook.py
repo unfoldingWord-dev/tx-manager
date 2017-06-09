@@ -13,16 +13,19 @@ class TestClientWebhook(unittest.TestCase):
     temp_dir = None
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
     shutil.rmtree(base_temp_dir, ignore_errors=True)
+    jobRequestCount = 0
 
     @staticmethod
     def mock_download_repo(source, target):
         shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
     def mock_sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner):
-        return "id",{
-            "job_id": "0",
+        TestClientWebhook.jobRequestCount += 1
+        job_id = "job_" + str(TestClientWebhook.jobRequestCount)
+        return job_id,{
+            "job_id": job_id,
             "status": "started",
-            "status": "status",
+            "success": "success",
             "resource_type": "obs",
             "input_format": "md",
             "output_format": "html",
@@ -32,11 +35,13 @@ class TestClientWebhook(unittest.TestCase):
         }
 
     def mock_cdnUploadFile(self, cdn_handler, project_file, project_json_key):
-        return None
+        return
 
     def mock_cdnGetJson(self, cdn_handler, project_json_key):
         return { }
 
+    def mock_cdnDeleteFile(self, cdn_handler, obj):
+        return
 
     def setUp(self):
         try:
@@ -45,6 +50,7 @@ class TestClientWebhook(unittest.TestCase):
             pass
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
+        TestClientWebhook.jobRequestCount = 0
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
@@ -58,17 +64,28 @@ class TestClientWebhook(unittest.TestCase):
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook(self, mock_download_file):
+        # given
         mock_download_file.side_effect = self.mock_download_repo
         source = os.path.join(self.parent_resources_dir, 'kpb_mat_text_udb_repo')
-        env_vars = self.getEnvironment(source, self.parent_resources_dir)
+        clientWebHook = self.setupClientWebhookMock(source)
+        expectedJobRequests = 1
 
+        # when
+        clientWebHook.process_webhook()
+
+        # then
+        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobRequests)
+
+    # helpers
+
+    def setupClientWebhookMock(self, source):
+        env_vars = self.getEnvironment(source, self.parent_resources_dir)
         cwh = ClientWebhook(**env_vars)
         cwh.sendJobRequestToTxManager = self.mock_sendJobRequestToTxManager
         cwh.cdnUploadFile = self.mock_cdnUploadFile
         cwh.cdnGetJson = self.mock_cdnGetJson
-        cwh.process_webhook()
-
-    # helpers
+        cwh.cdnDeleteFile = self.mock_cdnDeleteFile
+        return cwh
 
     def getEnvironment(self, sourcePath, gogsUrl):
         gogsUserToken = "dummy"
