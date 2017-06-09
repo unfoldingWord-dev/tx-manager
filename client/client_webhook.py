@@ -72,45 +72,123 @@ class ClientWebhook(object):
         pusher_username = pusher['username']
 
         # 1) Download and unzip the repo files
-        temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='{0}_'.format(repo_name))
-        self.download_repo(commit_url, temp_dir)
-        repo_dir = os.path.join(temp_dir, repo_name.lower())
-        if not os.path.isdir(repo_dir):
-            repo_dir = temp_dir
+        repo_dir = self.getRepoFiles(commit_url, repo_name)# Get the resource container
 
         # Get the resource container
         rc = RC(repo_dir, repo_name)
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
-        do_preprocess(rc, repo_dir, output_dir)
+        results, preprocessor = do_preprocess(rc, repo_dir, output_dir)
 
-        # 3) Zip up the massaged files
-        # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
-        zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
-        self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
-        add_contents_to_zip(zip_filepath, output_dir)
-        self.logger.debug('finished.')
+        if not preprocessor.isMultipleJobs():
+            # 3) Zip up the massaged files
+            # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
+            zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
+            self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
+            add_contents_to_zip(zip_filepath, output_dir)
+            self.logger.debug('finished.')
 
-        # 4) Upload zipped file to the S3 bucket
+            # 4) Upload zipped file to the S3 bucket
+            file_key = self.uploadZipFile(commit_id, zip_filepath)# Send job request to tx-manager
+
+            # Send job request to tx-manager
+            identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
+
+            cdn_handler = S3Handler(self.cdn_bucket)
+
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
+
+            # Compile data for build_log.json
+            build_log_json = job
+            build_log_json['repo_name'] = repo_name
+            build_log_json['repo_owner'] = repo_owner
+            build_log_json['commit_id'] = commit_id
+            build_log_json['committed_by'] = pusher_username
+            build_log_json['commit_url'] = commit_url
+            build_log_json['compare_url'] = compare_url
+            build_log_json['commit_message'] = commit_message
+
+            # Upload build_log.json to S3:
+            s3_commit_key = 'u/{0}'.format(identifier)
+            for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+                cdn_handler.delete_file(obj.key)
+            build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
+            write_file(build_log_file, build_log_json)
+            self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
+
+            if len(job['errors']) > 0:
+                raise Exception('; '.join(job['errors']))
+            else:
+                return build_log_json
+
+        else: # multiple book project
+            # todo
+            return None
+
+    def updateProjectJson(self, cdn_handler, commit_id, job, repo_name, repo_owner):
+        project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
+        project_json = self.cdnGetJson(cdn_handler, project_json_key)
+        project_json['user'] = repo_owner
+        project_json['repo'] = repo_name
+        project_json['repo_url'] = 'https://git.door43.org/{0}/{1}'.format(repo_owner, repo_name)
+        commit = {
+            'id': commit_id,
+            'created_at': job['created_at'],
+            'status': job['status'],
+            'success': job['success'],
+            'started_at': None,
+            'ended_at': None
+        }
+        if 'commits' not in project_json:
+            project_json['commits'] = []
+        commits = []
+        for c in project_json['commits']:
+            if c['id'] != commit_id:
+                commits.append(c)
+        commits.append(commit)
+        project_json['commits'] = commits
+        project_file = os.path.join(self.base_temp_dir, 'project.json')
+        write_file(project_file, project_json)
+        self.cdnUploadFile(cdn_handler, project_file, project_json_key)
+
+    def cdnUploadFile(self, cdn_handler, project_file, project_json_key):
+        cdn_handler.upload_file(project_file, project_json_key, 0)
+
+    def cdnGetJson(self, cdn_handler, project_json_key):
+        project_json = cdn_handler.get_json(project_json_key)
+        return project_json
+
+    def uploadZipFile(self, commit_id, zip_filepath):
         s3_handler = S3Handler(self.pre_convert_bucket)
         file_key = 'preconvert/{0}.zip'.format(commit_id)
         self.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
-            s3_handler.upload_file(zip_filepath, file_key)
+            self.cdnUploadFile(s3_handler, zip_filepath, file_key )
         except Exception as e:
             self.logger.error('Failed to upload zipped repo up to server')
             self.logger.exception(e)
         finally:
             self.logger.debug('finished.')
 
-        # Send job request to tx-manager
-        source_url = self.source_url_base+"/"+file_key
+        return file_key
+
+    def getRepoFiles(self, commit_url, repo_name):
+        temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='{0}_'.format(repo_name))
+        self.download_repo(commit_url, temp_dir)
+        repo_dir = os.path.join(temp_dir, repo_name.lower())
+        if not os.path.isdir(repo_dir):
+            repo_dir = temp_dir
+
+        return repo_dir
+
+    def sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner):
+        source_url = self.source_url_base + "/" + file_key
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
         identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                           commit_id)  # The way to know which repo/commit goes to this job request
-
         payload = {
             "identifier": identifier,
             "gogs_user_token": self.gogs_user_token,
@@ -120,19 +198,14 @@ class ClientWebhook(object):
             "source": source_url,
             "callback": callback_url
         }
-
         headers = {"content-type": "application/json"}
-
         self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
-
         # remove token from printout, so it will not show in integration testing logs on Travis, etc.
         logPayload = payload.copy()
         logPayload["gogs_user_token"] = "DUMMY"
         self.logger.debug(logPayload)
-
         response = requests.post(tx_manager_job_url, json=payload, headers=headers)
         self.logger.debug('finished.')
-
         # Fake job in case tx-manager returns an error, can still build the build_log.json
         job = {
             'job_id': None,
@@ -150,7 +223,6 @@ class ClientWebhook(object):
             'warnings': [],
             'errors': []
         }
-
         if response.status_code != requests.codes.ok:
             job['status'] = 'failed'
             job['success'] = False
@@ -178,57 +250,7 @@ class ClientWebhook(object):
                 job['errors'].append('tX Manager did not return any info about the job request.')
             else:
                 job = json_data['job']
-
-        cdn_handler = S3Handler(self.cdn_bucket)
-
-        # Download the project.json file for this repo (create it if doesn't exist) and update it
-        project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
-        project_json = cdn_handler.get_json(project_json_key)
-        project_json['user'] = repo_owner
-        project_json['repo'] = repo_name
-        project_json['repo_url'] = 'https://git.door43.org/{0}/{1}'.format(repo_owner, repo_name)
-        commit = {
-            'id': commit_id,
-            'created_at': job['created_at'],
-            'status': job['status'],
-            'success': job['success'],
-            'started_at': None,
-            'ended_at': None
-        }
-        if 'commits' not in project_json:
-            project_json['commits'] = []
-        commits = []
-        for c in project_json['commits']:
-            if c['id'] != commit_id:
-                commits.append(c)
-        commits.append(commit)
-        project_json['commits'] = commits
-        project_file = os.path.join(self.base_temp_dir, 'project.json')
-        write_file(project_file, project_json)
-        cdn_handler.upload_file(project_file, project_json_key, 0)
-
-        # Compile data for build_log.json
-        build_log_json = job
-        build_log_json['repo_name'] = repo_name
-        build_log_json['repo_owner'] = repo_owner
-        build_log_json['commit_id'] = commit_id
-        build_log_json['committed_by'] = pusher_username
-        build_log_json['commit_url'] = commit_url
-        build_log_json['compare_url'] = compare_url
-        build_log_json['commit_message'] = commit_message
-
-        # Upload build_log.json to S3:
-        s3_commit_key = 'u/{0}'.format(identifier)
-        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
-            cdn_handler.delete_file(obj.key)
-        build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
-        write_file(build_log_file, build_log_json)
-        cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
-
-        if len(job['errors']) > 0:
-            raise Exception('; '.join(job['errors']))
-        else:
-            return build_log_json
+        return identifier, job
 
     def download_repo(self, commit_url, repo_dir):
         """
