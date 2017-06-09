@@ -15,7 +15,7 @@ def read(f_name):
 
 setup(
     name='tx-manager',
-    version='0.2.63',
+    version='0.2.64',
     packages=[
         'client',
         'converters',
@@ -55,7 +55,7 @@ setup(
         'markdown==2.6.8',
         'future==0.16.0',
         'pyparsing==2.1.10',
-        'usfm-tools==0.0.11',
+        'usfm-tools==0.0.12',
         'PyYAML==3.12'
     ]
 )
