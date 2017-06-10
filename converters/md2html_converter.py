@@ -94,7 +94,7 @@ class Md2HtmlConverter(Converter):
                 for tag in soup.findAll('a', {'id': True}):
                     if tag.parent and tag.parent.name in ['h1', 'h2', 'h3', 'h4', 'h5']:
                         tag.parent['id'] = tag['id']
-                        tag.parent['class'] = 'section-header'
+                        tag.parent['class'] = tag.parent.get('class', []) + ['section-header']
                         tag.extract()
                 html = unicode(soup)
 

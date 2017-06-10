@@ -7,10 +7,11 @@ from bs4 import BeautifulSoup
 from general_tools.file_utils import write_file
 from resource_container.ResourceContainer import RC
 from general_tools.file_utils import load_yaml_object
+from resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 def do_template(resource_type, source_dir, output_dir, template_file):
-    if resource_type in ['udb', 'ulb', 'bible', 'reg']:
+    if resource_type in BIBLE_RESOURCE_TYPES:
         templater = BibleTemplater(resource_type, source_dir, output_dir, template_file)
     elif resource_type == 'obs':
         templater = ObsTemplater(resource_type, source_dir, output_dir, template_file)
@@ -39,7 +40,9 @@ class Templater(object):
         with open(self.template_file) as template_file:
             self.template_html = template_file.read()
             soup = BeautifulSoup(self.template_html, 'html.parser')
-            soup.body['class'] = self.resource_type
+            soup.body['class'] = soup.body.get('class', []) + [self.resource_type]
+            if self.resource_type in BIBLE_RESOURCE_TYPES and self.resource_type != 'bible':
+                soup.body['class'] = soup.body.get('class', []) + ['bible']
             self.template_html = unicode(soup)
         self.apply_template()
         return True
@@ -245,20 +248,7 @@ class BibleTemplater(Templater):
 class TaTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(TaTemplater, self).__init__(*args, **kwargs)
-
-    def find_first_link(self, section):
-        """
-        Returns the link of the first section that has one
-        :param dict section: 
-        :return: 
-        """
-        if 'link' in section:
-            return section['link']
-        if 'sections' in section:
-            for subsection in section['sections']:
-                link = self.find_first_link(subsection)
-                if link:
-                    return link
+        self.section_container_id = 1
 
     def build_section_toc(self, section):
         """
@@ -266,16 +256,18 @@ class TaTemplater(Templater):
         :param dict section: 
         :return: 
         """
+        if 'link' in section:
+            link = section['link']
+        else:
+            link = 'section-container-{0}'.format(self.section_container_id)
+            self.section_container_id = self.section_container_id + 1
         html = """
             <li>
-            """
-        link = self.find_first_link(section)
-        html += """
                 <a href="#{0}">{1}</a>
             """.format(link, section['title'])
         if 'sections' in section:
             html += """
-                <ul class="nav nav-stacked">
+                <ul>
             """
             for subsection in section['sections']:
                 html += self.build_section_toc(subsection)
@@ -288,6 +280,7 @@ class TaTemplater(Templater):
         return html
 
     def build_page_nav(self, filename=None):
+        self.section_container_id = 1
         html = """
             <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
                 <ul id="sidebar-nav" class="nav nav-stacked">
