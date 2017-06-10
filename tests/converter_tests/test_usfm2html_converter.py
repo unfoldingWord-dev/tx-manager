@@ -56,9 +56,10 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
-            tx.run()
+            results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
+        self.assertIsNotNone(results)
         self.out_dir = tempfile.mkdtemp(prefix='udb_')
         unzip(out_zip_file, self.out_dir)
         remove(out_zip_file)
@@ -77,9 +78,10 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
-            tx.run()
+            results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
+        self.assertIsNotNone(results)
         self.out_dir = tempfile.mkdtemp(prefix='udb_')
         unzip(out_zip_file, self.out_dir)
         remove(out_zip_file)
@@ -94,9 +96,10 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         out_zip_file = tempfile.mktemp('.zip')
         with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
-            tx.run()
+            results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
+        self.assertIsNotNone(results)
         self.out_dir = tempfile.mkdtemp(prefix='udb_')
         unzip(out_zip_file, self.out_dir)
         remove(out_zip_file)

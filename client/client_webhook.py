@@ -120,7 +120,8 @@ class ClientWebhook(object):
         errors = []
         build_logs = []
         cdn_handler = S3Handler(self.cdn_bucket)
-        for i in range(0, len(books)):
+        bookCount = len(books)
+        for i in range(0, bookCount):
             book = books[i]
 
             # 3) Zip up the massaged files for just the one book
@@ -142,7 +143,7 @@ class ClientWebhook(object):
             file_key = self.uploadZipFile(commit_id, zip_filepath)# Send job request to tx-manager
 
             # Send job request to tx-manager
-            identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
+            identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner, count=bookCount, part=i)
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
@@ -247,12 +248,18 @@ class ClientWebhook(object):
 
         return repo_dir
 
-    def sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner):
+    def sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner, count=0, part=0):
         source_url = self.source_url_base + "/" + file_key
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
-        identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
+
+        if not count:
+            identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                           commit_id)  # The way to know which repo/commit goes to this job request
+        else: # if this is just part of a job
+            identifier = "{0}/{1}/{2}/{3}/{4}".format(repo_owner, repo_name,
+                                              commit_id,  count, part)  # The way to know which repo/commit goes to this job request
+
         payload = {
             "identifier": identifier,
             "gogs_user_token": self.gogs_user_token,
@@ -262,6 +269,9 @@ class ClientWebhook(object):
             "source": source_url,
             "callback": callback_url
         }
+        return self.sendPayloadToTxConverter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
+
+    def sendPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         headers = {"content-type": "application/json"}
         self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
         # remove token from printout, so it will not show in integration testing logs on Travis, etc.

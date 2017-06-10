@@ -29,7 +29,7 @@ class TestClientWebhook(unittest.TestCase):
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
         TestClientWebhook.jobRequestCount = 0
-        TestClientWebhook.mock_job_return_value = TestClientWebhook.default_mock_job_return_value.copy()
+        TestClientWebhook.mock_job_return_value = json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value)) # do deep copy
         TestClientWebhook.uploaded_files = []
 
     def tearDown(self):
@@ -59,6 +59,7 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(results['job_id'], expectedJobID)
         self.assertFalse('multiple' in results)
         self.assertEqual(len(results['errors']), expectedErrorCount)
+        self.assertEqual(results, self.getLastJson())
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook_error(self, mock_download_file):
@@ -101,6 +102,7 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(len(results['build_logs']), expectedJobCount)
         self.assertEqual(len(results['errors']), expectedErrorCount)
         self.assertTrue('multiple' in results)
+        self.assertEqual(results, self.getLastJson())
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook_multiple_books_errors(self, mock_download_file):
@@ -136,7 +138,7 @@ class TestClientWebhook(unittest.TestCase):
     def mock_download_repo(source, target):
         shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
-    def mock_sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner):
+    def mock_sendPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         TestClientWebhook.jobRequestCount += 1
         job_id = "job_" + str(TestClientWebhook.jobRequestCount)
         mock_job_return_value = TestClientWebhook.mock_job_return_value
@@ -157,7 +159,7 @@ class TestClientWebhook(unittest.TestCase):
         source = os.path.join(basePath, repoName)
         env_vars = self.getEnvironment(source, basePath)
         cwh = ClientWebhook(**env_vars)
-        cwh.sendJobRequestToTxManager = self.mock_sendJobRequestToTxManager
+        cwh.sendPayloadToTxConverter = self.mock_sendPayloadToTxConverter
         cwh.cdnUploadFile = self.mock_cdnUploadFile
         cwh.cdnGetJson = self.mock_cdnGetJson
         cwh.cdnDeleteFile = self.mock_cdnDeleteFile
