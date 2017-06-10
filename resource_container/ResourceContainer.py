@@ -7,6 +7,8 @@ from general_tools.file_utils import load_json_object, load_yaml_object, read_fi
 from datetime import datetime
 from glob import glob
 
+BIBLE_RESOURCE_TYPES = ['ulb', 'udb', 'bible', 'reg']
+
 resource_map = {
     'udb': {
         'title': 'Unlocked Dynamic Bible',
@@ -15,6 +17,11 @@ resource_map = {
     },
     'ulb': {
         'title': 'Unlocked Literal Bible',
+        'type': 'book',
+        'format': 'text/usfm'
+    },
+    'reg': {
+        'title': 'Regular',
         'type': 'book',
         'format': 'text/usfm'
     },
@@ -319,7 +326,7 @@ class Resource:
     def type(self):
         if 'type' in self.resource and isinstance(self.resource['type'], basestring):
             return self.resource['type']
-        elif self.identifier in ['udb', 'ulb', 'bible']:
+        elif self.identifier in BIBLE_RESOURCE_TYPES:
             if len(self.rc.usfm_files()):
                 return 'bundle'
             else:

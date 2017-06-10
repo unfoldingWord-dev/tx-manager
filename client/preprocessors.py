@@ -6,14 +6,15 @@ from general_tools.file_utils import write_file, read_file
 from shutil import copy
 from resource_container.ResourceContainer import RC
 from glob import glob
+from resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 def do_preprocess(rc, repo_dir, output_dir):
-    if rc.resource.identifier in ['obs']:
+    if rc.resource.identifier == 'obs':
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
-    elif rc.resource.identifier in ['bible', 'ulb', 'udb', 'reg']:
+    elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
-    elif rc.resource.identifier in ['ta']:
+    elif rc.resource.identifier == 'ta':
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
     else:
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
@@ -225,6 +226,7 @@ class TaPreprocessor(Preprocessor):
 
     def __init__(self, *args, **kwargs):
         super(TaPreprocessor, self).__init__(*args, **kwargs)
+        self.section_container_id = 1
 
     def get_title(self, project, link, alt_title=None):
         proj = None
@@ -271,12 +273,12 @@ class TaPreprocessor(Preprocessor):
         :return: 
         """
         if 'link' in section:
-            markdown = '{0} <a name="{1}"/>{2}\n\n'.format('#'*level, section['link'], 
-                                                           self.get_title(project, section['link'], section['title']))
-        else:
-            markdown = '{0} {1}\n\n'.format('#'*level, section['title'])
-        if 'link' in section:
             link = section['link']
+        else:
+            link = 'section-container-{0}'.format(self.section_container_id)
+            self.section_container_id = self.section_container_id + 1
+        markdown = '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, self.get_title(project, link, section['title']))
+        if 'link' in section:
             question = self.get_question(project, link)
             if question:
                 markdown += '*This page answers the question: {0}*\n\n'.format(question)
@@ -305,6 +307,7 @@ class TaPreprocessor(Preprocessor):
 
     def run(self):
         for project in self.rc.projects:
+            self.section_container_id = 1
             toc = self.rc.toc(project.identifier)
             if project.identifier in self.manual_title_map:
                 title = self.manual_title_map[project.identifier]

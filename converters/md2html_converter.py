@@ -4,6 +4,7 @@ import string
 import markdown
 import codecs
 from shutil import copyfile
+from bs4 import BeautifulSoup
 from general_tools.file_utils import write_file
 from converter import Converter
 from door43_tools.obs_handler import OBSInspection
@@ -27,7 +28,7 @@ class Md2HtmlConverter(Converter):
         files = self.get_files()
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, 'templates', 'obs-template.html')) as template_file:
+        with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
             html_template = string.Template(template_file.read())
 
         found_chapters = {}
@@ -38,7 +39,7 @@ class Md2HtmlConverter(Converter):
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
                 html = markdown.markdown(md)
-                html = html_template.safe_substitute(content=html)
+                html = html_template.safe_substitute(title=self.resource.upper(), content=html)
                 base_name = os.path.splitext(os.path.basename(filename))[0]
                 found_chapters[base_name] = True
                 html_filename = base_name + ".html"
@@ -87,6 +88,16 @@ class Md2HtmlConverter(Converter):
                     md = md_file.read()
                 html = markdown.markdown(md)
                 html = html_template.safe_substitute(title=self.resource.upper(), content=html)
+
+                # Change headers like <h1><a id="verbs"/>Verbs</h1> to <h1 id="verbs">Verbs</h1>
+                soup = BeautifulSoup(html, 'html.parser')
+                for tag in soup.findAll('a', {'id': True}):
+                    if tag.parent and tag.parent.name in ['h1', 'h2', 'h3', 'h4', 'h5']:
+                        tag.parent['id'] = tag['id']
+                        tag.parent['class'] = tag.parent.get('class', []) + ['section-header']
+                        tag.extract()
+                html = unicode(soup)
+
                 base_name = os.path.splitext(os.path.basename(filename))[0]
                 found_chapters[base_name] = True
                 html_filename = base_name + ".html"
