@@ -167,6 +167,7 @@ class BiblePreprocessor(Preprocessor):
         return (len(self.books) > 1)
 
     def getBookList(self):
+        self.books.sort()
         return self.books
 
     def run(self):

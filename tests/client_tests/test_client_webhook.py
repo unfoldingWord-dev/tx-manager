@@ -1,11 +1,12 @@
 from __future__ import absolute_import, unicode_literals, print_function
+import json
 import os
 import shutil
 import tempfile
 import unittest
-
 from mock import patch
 from client.client_webhook import ClientWebhook
+from general_tools.file_utils import read_file
 
 class TestClientWebhook(unittest.TestCase):
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
@@ -14,34 +15,11 @@ class TestClientWebhook(unittest.TestCase):
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
     shutil.rmtree(base_temp_dir, ignore_errors=True)
     jobRequestCount = 0
-
-    @staticmethod
-    def mock_download_repo(source, target):
-        shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
-
-    def mock_sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner):
-        TestClientWebhook.jobRequestCount += 1
-        job_id = "job_" + str(TestClientWebhook.jobRequestCount)
-        return job_id,{
-            "job_id": job_id,
-            "status": "started",
-            "success": "success",
-            "resource_type": "obs",
-            "input_format": "md",
-            "output_format": "html",
-            "convert_module": "module1",
-            "created_at":"2017-05-22T13:39:15Z",
-            "errors" : []
-        }
-
-    def mock_cdnUploadFile(self, cdn_handler, project_file, project_json_key):
-        return
-
-    def mock_cdnGetJson(self, cdn_handler, project_json_key):
-        return { }
-
-    def mock_cdnDeleteFile(self, cdn_handler, obj):
-        return
+    default_mock_job_return_value = {'job_id': '0', 'status': 'started', 'success': 'success', 'resource_type': 'obs',
+                             'input_format': 'md', 'output_format': 'html', 'convert_module': 'module1',
+                             'created_at': '2017-05-22T13:39:15Z', 'errors': []}
+    mock_job_return_value = default_mock_job_return_value
+    uploaded_files = []
 
     def setUp(self):
         try:
@@ -51,6 +29,8 @@ class TestClientWebhook(unittest.TestCase):
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
         TestClientWebhook.jobRequestCount = 0
+        TestClientWebhook.mock_job_return_value = TestClientWebhook.default_mock_job_return_value.copy()
+        TestClientWebhook.uploaded_files = []
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
@@ -67,28 +47,111 @@ class TestClientWebhook(unittest.TestCase):
         # given
         mock_download_file.side_effect = self.mock_download_repo
         clientWebHook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
-        expectedJobRequests = 1
+        expectedJobCount = 1
+        expectedJobID = 'job_1'
+        expectedErrorCount = 0
 
         # when
-        clientWebHook.process_webhook()
+        results = clientWebHook.process_webhook()
 
         # then
-        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobRequests)
+        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
+        self.assertEqual(results['job_id'], expectedJobID)
+        self.assertFalse('multiple' in results)
+        self.assertEqual(len(results['errors']), expectedErrorCount)
+
+    @patch('client.client_webhook.download_file')
+    def test_process_webhook_error(self, mock_download_file):
+        # given
+        mock_download_file.side_effect = self.mock_download_repo
+        clientWebHook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
+        TestClientWebhook.mock_job_return_value['errors'] = ['error 1','error 2']
+        expectedJobCount = 1
+        expectedJobID = 'job_1'
+        capturedError = False
+        expectedErrorCount = 2
+
+        # when
+        try:
+            clientWebHook.process_webhook()
+        except:
+            capturedError = True
+
+        # then
+        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
+        self.assertTrue(capturedError)
+        results = self.getLastJson()
+        self.assertEqual(results['job_id'], expectedJobID)
+        self.assertFalse('multiple' in results)
+        self.assertEqual(len(results['errors']), expectedErrorCount)
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook_multiple_books(self, mock_download_file):
         # given
         mock_download_file.side_effect = self.mock_download_repo
         clientWebHook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
-        expectedJobRequests = 4
+        expectedJobCount = 4
+        expectedErrorCount = 0
 
         # when
-        clientWebHook.process_webhook()
+        results = clientWebHook.process_webhook()
 
         # then
-        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobRequests)
+        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
+        self.assertEqual(len(results['build_logs']), expectedJobCount)
+        self.assertEqual(len(results['errors']), expectedErrorCount)
+        self.assertTrue('multiple' in results)
+
+    @patch('client.client_webhook.download_file')
+    def test_process_webhook_multiple_books_errors(self, mock_download_file):
+        # given
+        mock_download_file.side_effect = self.mock_download_repo
+        clientWebHook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
+        TestClientWebhook.mock_job_return_value['errors'] = ['error 1','error 2']
+        expectedJobCount = 4
+        expectedErrorCount = 2 * expectedJobCount
+
+        # when
+        try:
+            clientWebHook.process_webhook()
+        except:
+            capturedError = True
+
+        # then
+        self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
+        self.assertTrue(capturedError)
+        results = self.getLastJson()
+        self.assertEqual(len(results['build_logs']), expectedJobCount)
+        self.assertEqual(len(results['errors']), expectedErrorCount)
+        self.assertTrue('multiple' in results)
 
     # helpers
+
+    def getLastJson(self):
+        jsonFile = TestClientWebhook.uploaded_files[-1]
+        text = read_file(jsonFile)
+        return json.loads(text)
+
+    @staticmethod
+    def mock_download_repo(source, target):
+        shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
+
+    def mock_sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner):
+        TestClientWebhook.jobRequestCount += 1
+        job_id = "job_" + str(TestClientWebhook.jobRequestCount)
+        mock_job_return_value = TestClientWebhook.mock_job_return_value
+        mock_job_return_value['job_id'] = job_id
+        return job_id, mock_job_return_value
+
+    def mock_cdnUploadFile(self, cdn_handler, project_file, project_json_key):
+        TestClientWebhook.uploaded_files.append(project_file)
+        return
+
+    def mock_cdnGetJson(self, cdn_handler, project_json_key):
+        return { }
+
+    def mock_cdnDeleteFile(self, cdn_handler, obj):
+        return
 
     def setupClientWebhookMock(self, repoName, basePath):
         source = os.path.join(basePath, repoName)
@@ -101,43 +164,43 @@ class TestClientWebhook(unittest.TestCase):
         return cwh
 
     def getEnvironment(self, sourcePath, gogsUrl):
-        gogsUserToken = "dummy"
+        gogsUserToken = 'dummy'
         api_url = 'https://api.door43.org'
         pre_convert_bucket = 'tx-webhook-client'
         gogs_url = 'https://git.door43.org'
         cdn_bucket = 'cdn.door43.org'
-        baseUrl = "https://git.door43.org"
-        commitID = "22f3d09f7a33d2496db6993648f0cd967a9006f6"
-        commitPath = "/tx-manager-test-data/en-ulb/commit/22f3d09f7a33d2496db6993648f0cd967a9006f6"
-        repo = "en-ulb"
-        user = "tx-manager-test-data"
+        baseUrl = 'https://git.door43.org'
+        commitID = '22f3d09f7a33d2496db6993648f0cd967a9006f6'
+        commitPath = '/tx-manager-test-data/en-ulb/commit/22f3d09f7a33d2496db6993648f0cd967a9006f6'
+        repo = 'en-ulb'
+        user = 'tx-manager-test-data'
 
         if not sourcePath:
             sourcePath = baseUrl + commitPath
 
         webhookData = {
-            "after": commitID,
-            "commits": [
+            'after': commitID,
+            'commits': [
                 {
-                    "id": commitID,
-                    "message": "Fri Dec 16 2016 11:09:07 GMT+0530 (India Standard Time)\n",
-                    "url": sourcePath,
+                    'id': commitID,
+                    'message': 'Fri Dec 16 2016 11:09:07 GMT+0530 (India Standard Time)\n',
+                    'url': sourcePath,
                 }],
-            "compare_url": "",
-            "repository": {
-                "name": repo,
-                "owner": {
-                    "id": 1234567890,
-                    "username": user,
-                    "full_name": user,
-                    "email": "you@example.com"
+            'compare_url': '',
+            'repository': {
+                'name': repo,
+                'owner': {
+                    'id': '1234567890',
+                    'username': user,
+                    'full_name': user,
+                    'email': 'you@example.com'
                 },
             },
-            "pusher": {
-                "id": 123456789,
-                "username": "test",
-                "full_name": "",
-                "email": "you@example.com"
+            'pusher': {
+                'id': '123456789',
+                'username': 'test',
+                'full_name': '',
+                'email': 'you@example.com'
             },
         }
         env_vars = {

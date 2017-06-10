@@ -118,7 +118,8 @@ class ClientWebhook(object):
         books = preprocessor.getBookList()
         self.logger.debug('Splitting job into separate parts for books: ' + ','.join(books))
         errors = []
-        build_logs = {}
+        build_logs = []
+        cdn_handler = S3Handler(self.cdn_bucket)
         for i in range(0, len(books)):
             book = books[i]
 
@@ -143,8 +144,6 @@ class ClientWebhook(object):
             # Send job request to tx-manager
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
 
-            cdn_handler = S3Handler(self.cdn_bucket)
-
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
 
@@ -153,24 +152,29 @@ class ClientWebhook(object):
                                               repo_name, repo_owner)
 
             # Upload build_log.json to S3:
-            s3_commit_key = 'u/{0}-{1}'.format(identifier, i)
-            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
+            s3_commit_key = 'u/{0}'.format(identifier)
+            file_name='build_log_{0}.json'.format(i)
+            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key, file_name)
 
             errors += job['errors']
-            build_logs[str(i)] = build_log_json
+            build_logs.append(build_log_json)
 
+        build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors}
+        # Upload build_log.json to S3:
+        s3_commit_key = 'u/{0}'.format(identifier)
+        self.uploadBuildLogToS3(build_logs_json, cdn_handler, s3_commit_key)
         if len(errors) > 0:
             raise Exception('; '.join(errors))
         else:
-            return build_logs
+            return build_logs_json
 
 
-    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key):
+    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key, file_name='build_log.json'):
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
             self.cdnDeleteFile(cdn_handler, obj)
-        build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
+        build_log_file = os.path.join(self.base_temp_dir, file_name)
         write_file(build_log_file, build_log_json)
-        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
+        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/' + file_name)
 
     def getBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                     repo_owner):
