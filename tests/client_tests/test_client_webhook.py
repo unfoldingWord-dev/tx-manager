@@ -20,6 +20,7 @@ class TestClientWebhook(unittest.TestCase):
                              'created_at': '2017-05-22T13:39:15Z', 'errors': []}
     mock_job_return_value = default_mock_job_return_value
     uploaded_files = []
+    uploaded_keys = []
 
     def setUp(self):
         try:
@@ -31,6 +32,7 @@ class TestClientWebhook(unittest.TestCase):
         TestClientWebhook.jobRequestCount = 0
         TestClientWebhook.mock_job_return_value = json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value)) # do deep copy
         TestClientWebhook.uploaded_files = []
+        TestClientWebhook.uploaded_keys = []
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
@@ -145,8 +147,9 @@ class TestClientWebhook(unittest.TestCase):
         mock_job_return_value['job_id'] = job_id
         return job_id, mock_job_return_value
 
-    def mock_cdnUploadFile(self, cdn_handler, project_file, project_json_key):
+    def mock_cdnUploadFile(self, cdn_handler, project_file, s3_key):
         TestClientWebhook.uploaded_files.append(project_file)
+        TestClientWebhook.uploaded_keys.append(s3_key)
         return
 
     def mock_cdnGetJson(self, cdn_handler, project_json_key):

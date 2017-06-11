@@ -215,8 +215,8 @@ class ClientWebhook(object):
         write_file(project_file, project_json)
         self.cdnUploadFile(cdn_handler, project_file, project_json_key)
 
-    def cdnUploadFile(self, cdn_handler, project_file, project_json_key):
-        cdn_handler.upload_file(project_file, project_json_key, 0)
+    def cdnUploadFile(self, cdn_handler, project_file, s3_key):
+        cdn_handler.upload_file(project_file, s3_key, 0)
 
     def cdnGetJson(self, cdn_handler, project_json_key):
         project_json = cdn_handler.get_json(project_json_key)
