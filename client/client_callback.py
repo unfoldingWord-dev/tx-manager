@@ -29,13 +29,14 @@ class ClientCallback(object):
         multipleProject = len(parts) >= 5
         if not multipleProject:
             owner_name, repo_name, commit_id = parts
-            # The identifier is how to know which username/repo/commit this callback goes to
-            s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name, commit_id)
         else:
             owner_name, repo_name, commit_id, part_count, part_id = parts
             self.logger.debug('Multiple project, part {0} of {1}'.format(part_id,part_count))
-            # The identifier is how to know which username/repo/commit this callback goes to
-            s3_commit_key = 'u/{0}/{1}/{2}/{3}/{4}'.format(owner_name, repo_name, commit_id, part_count, part_id)
+
+        # The identifier is how to know which username/repo/commit this callback goes to
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name, commit_id)
+
+        self.logger.debug('Callback for comming {0}...'.format(s3_commit_key))
 
         # Download the ZIP file of the converted files
         converted_zip_url = self.job.output
@@ -58,79 +59,165 @@ class ClientCallback(object):
             self.logger.debug('download finished.')
 
         if multipleProject:
-            # todo
+            # copy this part of converted output to repo
+            s3_part_key = '{0}/{1}'.format(s3_commit_key, part_id)
+            self.cdn_handler.upload_file(converted_zip_file, s3_part_key + '.zip')
+
+            self.logger.debug('download finished.')
+
             # check if all parts are present, if not return
-            # if all parts are present, then merge together
-        else:
-            # Unzip the archive
-            unzip_dir = tempfile.mkdtemp(prefix='unzip_')
-            try:
-                self.logger.debug('Unzipping {0}...'.format(converted_zip_file))
-                unzip(converted_zip_file, unzip_dir)
-            finally:
-                self.logger.debug('finished.')
+            missing_parts = []
+            finishedParts = self.getFinishedParts(s3_commit_key)
 
-            # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
-            for root, dirs, files in os.walk(unzip_dir):
-                for f in sorted(files):
-                    path = os.path.join(root, f)
-                    key = s3_commit_key + path.replace(unzip_dir, '')
-                    self.logger.debug('Uploading {0} to {1}'.format(f, key))
-                    cdn_handler.upload_file(path, key)
+            for i in range(0, part_count):
+                fileName = '{1}.zip'.format(i)
 
-            # Download the project.json file for this repo (create it if doesn't exist) and update it
-            project_json_key = 'u/{0}/{1}/project.json'.format(owner_name, repo_name)
-            project_json = cdn_handler.get_json(project_json_key)
-            project_json['user'] = owner_name
-            project_json['repo'] = repo_name
-            project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
-            commit = {
-                'id': commit_id,
-                'created_at': self.job.created_at,
-                'status': self.job.status,
-                'success': self.job.success,
-                'started_at': None,
-                'ended_at': None
-            }
-            if self.job.started_at:
-                commit['started_at'] = self.job.started_at
-            if self.job.ended_at:
-                commit['ended_at'] = self.job.ended_at
-            if 'commits' not in project_json:
-                project_json['commits'] = []
-            commits = []
-            for c in project_json['commits']:
-                if c['id'] != commit_id:
-                    commits.append(c)
-            commits.append(commit)
-            project_json['commits'] = commits
-            project_file = os.path.join(tempfile.gettempdir(), 'project.json')
-            write_file(project_file, project_json)
-            cdn_handler.upload_file(project_file, project_json_key, 0)
+                matchFound = False
+                for part in finishedParts:
+                    if fileName in part.key:
+                        matchFound = True
+                        break
+
+                if not matchFound:
+                    missing_parts.append(fileName)
 
             # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = cdn_handler.get_json(s3_commit_key + '/build_log.json')
-            build_log_json['started_at'] = self.job.started_at
-            build_log_json['ended_at'] = self.job.ended_at
-            build_log_json['success'] = self.job.success
-            build_log_json['status'] = self.job.status
-            build_log_json['message'] = self.job.message
-            if self.job.log:
-                build_log_json['log'] = self.job.log
-            else:
-                build_log_json['log'] = []
-            if self.job.warnings:
-                build_log_json['warnings'] = self.job.warnings
-            else:
-                build_log_json['warnings'] = []
-            if self.job.errors:
-                build_log_json['errors'] = self.job.errors
-            else:
-                build_log_json['errors'] = []
-            build_log_file = os.path.join(tempfile.gettempdir(), 'build_log_finished.json')
-            write_file(build_log_file, build_log_json)
-            cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
+            build_log_json = self.updateBuildLog(cdn_handler, s3_part_key)
+
+            if len(missing_parts) > 0:
+                self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
+                return build_log_json
 
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
 
+            # all parts are present, merge together
+
+            build_logs_json = []
+            self.job.status = 'success'
+            self.job.log = []
+            self.job.warnings = []
+            self.job.errors = []
+            baseTempFolder = tempfile.gettempdir()
+            for i in range(0, part_count):
+                s3_part_key = '{0}/{1}'.format(s3_commit_key, i)
+                unzip_dir = os.path.join(baseTempFolder, str(i))
+                converted_zip_file = os.path.join(baseTempFolder, str(i) + '.zip')
+                cdn_handler.download_file(s3_part_key + '.zip', converted_zip_file)
+
+                # Unzip the archive
+                unzip_dir = self.unzipConvertedFiles(converted_zip_file)
+
+                # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
+                self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
+
+                # Now download the existing build_log.json file, update it and upload it back to S3
+                build_log_json = cdn_handler.get_json(s3_commit_key + '/build_log.json')
+                build_logs_json.append(build_log_json)
+
+                self.job.log += build_log_json['log']
+                self.job.errors += build_log_json['errors']
+                self.job.warnings += build_log_json['warnings']
+                self.job.success &= build_log_json['success']
+                if build_log_json['status'] != 'success':
+                    self.job.status = build_log_json['status']
+
+            # Now download the existing build_log.json file, update it and upload it back to S3
+            build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key)
+
+            self.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
+
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            self.updateProjectFile(cdn_handler, commit_id, owner_name, repo_name)
+
             return build_log_json
+
+        else: # single part conversion
+            # Unzip the archive
+            unzip_dir = self.unzipConvertedFiles(converted_zip_file)
+
+            # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
+            self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
+
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            self.updateProjectFile(cdn_handler, commit_id, owner_name, repo_name)
+
+            # Now download the existing build_log.json file, update it and upload it back to S3
+            build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key)
+
+            self.logger.debug('Finished deploying to cdn_bucket. Done.')
+            return build_log_json
+
+    def getFinishedParts(self, cdn_handler, s3_commit_key):
+        return cdn_handler.get_objects(prefix=s3_commit_key, suffix='.zip')
+
+    def unzipConvertedFiles(self, converted_zip_file):
+        unzip_dir = tempfile.mkdtemp(prefix='unzip_')
+        try:
+            self.logger.debug('Unzipping {0}...'.format(converted_zip_file))
+            unzip(converted_zip_file, unzip_dir)
+        finally:
+            self.logger.debug('finished.')
+
+        return unzip_dir
+
+    def uploadConvertedFiles(self, cdn_handler, s3_commit_key, unzip_dir):
+        for root, dirs, files in os.walk(unzip_dir):
+            for f in sorted(files):
+                path = os.path.join(root, f)
+                key = s3_commit_key + path.replace(unzip_dir, '')
+                self.logger.debug('Uploading {0} to {1}'.format(f, key))
+                cdn_handler.upload_file(path, key)
+
+    def updateProjectFile(self, cdn_handler, commit_id, owner_name, repo_name):
+        project_json_key = 'u/{0}/{1}/project.json'.format(owner_name, repo_name)
+        project_json = cdn_handler.get_json(project_json_key)
+        project_json['user'] = owner_name
+        project_json['repo'] = repo_name
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
+        commit = {
+            'id': commit_id,
+            'created_at': self.job.created_at,
+            'status': self.job.status,
+            'success': self.job.success,
+            'started_at': None,
+            'ended_at': None
+        }
+        if self.job.started_at:
+            commit['started_at'] = self.job.started_at
+        if self.job.ended_at:
+            commit['ended_at'] = self.job.ended_at
+        if 'commits' not in project_json:
+            project_json['commits'] = []
+        commits = []
+        for c in project_json['commits']:
+            if c['id'] != commit_id:
+                commits.append(c)
+        commits.append(commit)
+        project_json['commits'] = commits
+        project_file = os.path.join(tempfile.gettempdir(), 'project.json')
+        write_file(project_file, project_json)
+        cdn_handler.upload_file(project_file, project_json_key, 0)
+
+    def updateBuildLog(self, cdn_handler, s3_commit_key):
+        build_log_json = cdn_handler.get_json(s3_commit_key + '/build_log.json')
+        build_log_json['started_at'] = self.job.started_at
+        build_log_json['ended_at'] = self.job.ended_at
+        build_log_json['success'] = self.job.success
+        build_log_json['status'] = self.job.status
+        build_log_json['message'] = self.job.message
+        if self.job.log:
+            build_log_json['log'] = self.job.log
+        else:
+            build_log_json['log'] = []
+        if self.job.warnings:
+            build_log_json['warnings'] = self.job.warnings
+        else:
+            build_log_json['warnings'] = []
+        if self.job.errors:
+            build_log_json['errors'] = self.job.errors
+        else:
+            build_log_json['errors'] = []
+        build_log_file = os.path.join(tempfile.gettempdir(), 'build_log_finished.json')
+        write_file(build_log_file, build_log_json)
+        cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
+        return build_log_json

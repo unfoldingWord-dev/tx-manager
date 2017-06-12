@@ -20,7 +20,6 @@ class TestClientWebhook(unittest.TestCase):
                              'created_at': '2017-05-22T13:39:15Z', 'errors': []}
     mock_job_return_value = default_mock_job_return_value
     uploaded_files = []
-    uploaded_keys = []
 
     def setUp(self):
         try:
@@ -32,7 +31,6 @@ class TestClientWebhook(unittest.TestCase):
         TestClientWebhook.jobRequestCount = 0
         TestClientWebhook.mock_job_return_value = json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value)) # do deep copy
         TestClientWebhook.uploaded_files = []
-        TestClientWebhook.uploaded_keys = []
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
@@ -50,7 +48,6 @@ class TestClientWebhook(unittest.TestCase):
         mock_download_file.side_effect = self.mock_download_repo
         clientWebHook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
         expectedJobCount = 1
-        expectedJobID = 'job_1'
         expectedErrorCount = 0
 
         # when
@@ -58,10 +55,11 @@ class TestClientWebhook(unittest.TestCase):
 
         # then
         self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
-        self.assertEqual(results['job_id'], expectedJobID)
+        self.assertTrue(len(results['job_id']) > 16)
         self.assertFalse('multiple' in results)
         self.assertEqual(len(results['errors']), expectedErrorCount)
-        self.assertEqual(results, self.getLastJson())
+        self.assertEqual(results, self.getBuildLogJson())
+        self.assertTrue(len(self.getProjectJson()) >= 4)
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook_error(self, mock_download_file):
@@ -70,7 +68,6 @@ class TestClientWebhook(unittest.TestCase):
         clientWebHook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
         TestClientWebhook.mock_job_return_value['errors'] = ['error 1','error 2']
         expectedJobCount = 1
-        expectedJobID = 'job_1'
         capturedError = False
         expectedErrorCount = 2
 
@@ -83,10 +80,11 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
         self.assertTrue(capturedError)
-        results = self.getLastJson()
-        self.assertEqual(results['job_id'], expectedJobID)
+        results = self.getBuildLogJson()
+        self.assertTrue(len(results['job_id']) > 16)
         self.assertFalse('multiple' in results)
         self.assertEqual(len(results['errors']), expectedErrorCount)
+        self.assertTrue(len(self.getProjectJson()) >= 4)
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook_multiple_books(self, mock_download_file):
@@ -104,7 +102,8 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(len(results['build_logs']), expectedJobCount)
         self.assertEqual(len(results['errors']), expectedErrorCount)
         self.assertTrue('multiple' in results)
-        self.assertEqual(results, self.getLastJson())
+        self.assertEqual(results, self.getBuildLogJson())
+        self.assertTrue(len(self.getProjectJson()) >= 4)
 
     @patch('client.client_webhook.download_file')
     def test_process_webhook_multiple_books_errors(self, mock_download_file):
@@ -124,17 +123,38 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.assertEqual(TestClientWebhook.jobRequestCount, expectedJobCount)
         self.assertTrue(capturedError)
-        results = self.getLastJson()
+        results = self.getBuildLogJson()
         self.assertEqual(len(results['build_logs']), expectedJobCount)
         self.assertEqual(len(results['errors']), expectedErrorCount)
         self.assertTrue('multiple' in results)
+        self.assertTrue(len(self.getProjectJson()) >= 4)
 
     # helpers
 
-    def getLastJson(self):
-        jsonFile = TestClientWebhook.uploaded_files[-1]
-        text = read_file(jsonFile)
-        return json.loads(text)
+    def getBuildLogJson(self):
+        return self.readLastUploadedJsonFile('build_log.json')
+
+    def getProjectJson(self):
+        return self.readLastUploadedJsonFile('project.json')
+
+    def readLastUploadedJsonFile(self, match):
+        jsonStr = self.readLastUploadedFile(match)
+        if jsonStr:
+            jsonData = json.loads(jsonStr)
+            return jsonData
+        return None
+
+    def readLastUploadedFile(self, match):
+        filePath = self.getLastUploadedFile(match)
+        if filePath:
+            return read_file(filePath)
+        return None
+
+    def getLastUploadedFile(self, match):
+        for upload in reversed(TestClientWebhook.uploaded_files):
+            if match in upload['key']:
+                return upload['file']
+        return None
 
     @staticmethod
     def mock_download_repo(source, target):
@@ -142,14 +162,13 @@ class TestClientWebhook(unittest.TestCase):
 
     def mock_sendPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         TestClientWebhook.jobRequestCount += 1
-        job_id = "job_" + str(TestClientWebhook.jobRequestCount)
         mock_job_return_value = TestClientWebhook.mock_job_return_value
-        mock_job_return_value['job_id'] = job_id
-        return job_id, mock_job_return_value
+        mock_job_return_value['job_id'] = identifier
+        return identifier, mock_job_return_value
 
     def mock_cdnUploadFile(self, cdn_handler, project_file, s3_key):
-        TestClientWebhook.uploaded_files.append(project_file)
-        TestClientWebhook.uploaded_keys.append(s3_key)
+        bucket_name = cdn_handler.bucket.name
+        TestClientWebhook.uploaded_files.append({ 'file' : project_file, 'key' : bucket_name + '/' + s3_key})
         return
 
     def mock_cdnGetJson(self, cdn_handler, project_json_key):

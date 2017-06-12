@@ -61,7 +61,8 @@ class TestClientCallbackHandler(TestCase):
                 'cdn_bucket': 'cdn_test_bucket'
             }
         }
-        cwh.handle(event, None)
+        results = cwh.handle(event, None)
+        self.assertIsNotNone(results)
 
     @patch('client.client_webhook.download_file')
     def test_client_callback_multiple(self, mock_download_file):

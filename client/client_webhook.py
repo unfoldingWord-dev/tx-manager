@@ -82,17 +82,17 @@ class ClientWebhook(object):
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
         results, preprocessor = do_preprocess(rc, repo_dir, output_dir)
 
+        # 3) Zip up the massaged files
+        # commit_id is a unique ID for this lambda call, so using it to not conflict with other requests
+        zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
+        self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
+        add_contents_to_zip(zip_filepath, output_dir)
+        self.logger.debug('finished.')
+
+        # 4) Upload zipped file to the S3 bucket
+        file_key = self.uploadZipFile(commit_id, zip_filepath)
+
         if not preprocessor.isMultipleJobs():
-            # 3) Zip up the massaged files
-            # context.aws_request_id is a unique ID for this lambda call, so using it to not conflict with other requests
-            zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
-            self.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
-            add_contents_to_zip(zip_filepath, output_dir)
-            self.logger.debug('finished.')
-
-            # 4) Upload zipped file to the S3 bucket
-            file_key = self.uploadZipFile(commit_id, zip_filepath)
-
             # Send job request to tx-manager
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
 
@@ -102,8 +102,8 @@ class ClientWebhook(object):
             self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
 
             # Compile data for build_log.json
-            build_log_json = self.getBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
-                                              repo_name, repo_owner)
+            build_log_json = self.createBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
+                                                 repo_name, repo_owner)
 
             # Upload build_log.json to S3:
             s3_commit_key = 'u/{0}'.format(identifier)
@@ -114,19 +114,24 @@ class ClientWebhook(object):
             else:
                 return build_log_json
 
+        # -------------------------
         # multiple book project
+        # -------------------------
+
         books = preprocessor.getBookList()
         self.logger.debug('Splitting job into separate parts for books: ' + ','.join(books))
         errors = []
         build_logs = []
+        jobs = []
         cdn_handler = S3Handler(self.cdn_bucket)
         bookCount = len(books)
         for i in range(0, bookCount):
             book = books[i]
+            partID = '{0}_of_{1}'.format(i,bookCount)
 
             # 3) Zip up the massaged files for just the one book
 
-            self.logger.debug('Adding job for: ' + book)
+            self.logger.debug('Adding job for {0} part {1}'.format(book, partID))
             bookdir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix=book + '_')
 
             fileNames = os.listdir(output_dir)
@@ -140,28 +145,30 @@ class ClientWebhook(object):
             self.logger.debug('finished.')
 
             # 4) Upload zipped file to the S3 bucket
-            file_key = self.uploadZipFile(commit_id, zip_filepath)# Send job request to tx-manager
+            file_key = self.uploadZipFile(commit_id + '/' + partID, zip_filepath)# Send job request to tx-manager
 
             # Send job request to tx-manager
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner, count=bookCount, part=i)
 
-            # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
+            jobs.append(job)
 
-            # Compile data for build_log.json
-            build_log_json = self.getBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
-                                              repo_name, repo_owner)
+            build_log_json = self.createBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
+                                                 repo_name, repo_owner)
 
             # Upload build_log.json to S3:
             s3_commit_key = 'u/{0}'.format(identifier)
-            file_name='build_log_{0}.json'.format(i)
-            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key, file_name)
+            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
 
             errors += job['errors']
             build_logs.append(build_log_json)
 
+        # Download the project.json file for this repo (create it if doesn't exist) and update it
+        self.updateProjectJson(cdn_handler, commit_id, jobs[0], repo_name, repo_owner)
+
         build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors}
+
         # Upload build_log.json to S3:
+        identifier = self.createNewJobID(repo_owner, repo_name, commit_id)
         s3_commit_key = 'u/{0}'.format(identifier)
         self.uploadBuildLogToS3(build_logs_json, cdn_handler, s3_commit_key)
         if len(errors) > 0:
@@ -170,15 +177,15 @@ class ClientWebhook(object):
             return build_logs_json
 
 
-    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key, file_name='build_log.json'):
+    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key):
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
             self.cdnDeleteFile(cdn_handler, obj)
-        build_log_file = os.path.join(self.base_temp_dir, file_name)
+        build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
-        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/' + file_name)
+        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
 
-    def getBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
-                    repo_owner):
+    def createBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
+                       repo_owner):
         build_log_json = job
         build_log_json['repo_name'] = repo_name
         build_log_json['repo_owner'] = repo_owner
@@ -253,12 +260,7 @@ class ClientWebhook(object):
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
 
-        if not count:
-            identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
-                                          commit_id)  # The way to know which repo/commit goes to this job request
-        else: # if this is just part of a job
-            identifier = "{0}/{1}/{2}/{3}/{4}".format(repo_owner, repo_name,
-                                              commit_id,  count, part)  # The way to know which repo/commit goes to this job request
+        identifier = self.createNewJobID(repo_owner, repo_name, commit_id, count, part)
 
         payload = {
             "identifier": identifier,
@@ -270,6 +272,16 @@ class ClientWebhook(object):
             "callback": callback_url
         }
         return self.sendPayloadToTxConverter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
+
+    def createNewJobID(self, repo_owner, repo_name, commit_id, count=0, part=0):
+        if not count:
+            identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
+                                              commit_id)  # The way to know which repo/commit goes to this job request
+        else:  # if this is just part of a job
+            identifier = "{0}/{1}/{2}/{3}/{4}".format(repo_owner, repo_name,
+                                                      commit_id, count,
+                                                      part)  # The way to know which repo/commit goes to this job request
+        return identifier
 
     def sendPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         headers = {"content-type": "application/json"}
