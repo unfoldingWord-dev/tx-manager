@@ -36,10 +36,11 @@ class TestClientCallback(TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
-    def test_client_callback(self):
+    def test_clientCallbackSimpleJob(self):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
-        mock_ccb = self.mockClientCallback()
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a'
+        mock_ccb = self.mockClientCallback(identifier)
 
         #when
         results = mock_ccb.process_callback()
@@ -47,36 +48,48 @@ class TestClientCallback(TestCase):
         #then
         self.assertIsNotNone(results)
 
-    # @patch('client.client_callback.ClientCallback.download_file')
-    # def test_client_callback_multiple(self):
-    #     mock_download_file.side_effect = self.mock_download_repo
-    #     cwh = ClientCallbackHandler()
-    #     event = {
-    #         'data': {},
-    #         'body-json': {
-    #             'identifier' : 'tx-manager-test-data/en-ulb/22f3d09f7a/4/0',
-    #             'output' : 'https://test-cdn.door43.org/tx/job/6864ae1b91195f261ba5cda62d58d5ad9333f3131c787bb68f20c27adcc85cad.zip'
-    #         },
-    #         'vars': {
-    #             'gogs_url': 'https://git.example.com',
-    #             'cdn_url': 'https://cdn.example.com',
-    #             'api_url': 'https://api.example.com',
-    #             'cdn_bucket': 'cdn_test_bucket'
-    #         }
-    #     }
-    #     cwh.handle(event, None)
+    def test_clientCallbackMultipleJobPartial(self):
+        # given
+        self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/1'
+        self.generatePartsCompleted( 1, 2)
+        mock_ccb = self.mockClientCallback(identifier)
+
+        #when
+        results = mock_ccb.process_callback()
+
+        #then
+        self.assertIsNotNone(results)
+
+    def test_clientCallbackMultipleJobComplete(self):
+        # given
+        self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0'
+        self.generatePartsCompleted( 0, 2)
+        mock_ccb = self.mockClientCallback(identifier)
+
+        #when
+        results = mock_ccb.process_callback()
+
+        #then
+        self.assertIsNotNone(results)
 
 
-        # helpers
+    # helpers
 
-    def mockClientCallback(self):
+    def mockClientCallback(self, identifier):
         self.build_log_json = '{}'
         self.project_json = '{}'
 
         vars = {
             'job_data': {
-                'identifier': 'tx-manager-test-data/en-ulb/22f3d09f7a',
-                'output' : 'https://test-cdn.door43.org/tx/job/6864ae1b91195f261ba5cda62d58d5ad9333f3131c787bb68f20c27adcc85cad.zip'
+                'created_at': '2017-05-22T13:39:15Z',
+                'identifier': ('%s' % identifier),
+                'output' : 'https://test-cdn.door43.org/tx/job/6864ae1b91195f261ba5cda62d58d5ad9333f3131c787bb68f20c27adcc85cad.zip',
+                'ended_at': '2017-05-22T13:39:17Z',
+                'started_at': '2017-05-22T13:39:16Z',
+                'status': 'started',
+                'success': 'success'
             },
             'gogs_url': 'https://git.example.com',
             'cdn_bucket': 'cdn_test_bucket'
@@ -85,6 +98,8 @@ class TestClientCallback(TestCase):
         mock_ccb.downloadFile = self.mock_downloadFile
         mock_ccb.cdnUploadFile = self.mock_cdnUploadFile
         mock_ccb.cdnGetJsonFile = self.mock_cdnGetJsonFile
+        mock_ccb.getFinishedParts = self.mock_getFinishedParts
+        mock_ccb.cdnDownloadFile = self.mock_cdnDownloadFile
         return mock_ccb
 
     def mock_downloadFile(self, target, url):
@@ -107,3 +122,21 @@ class TestClientCallback(TestCase):
         elif 'project.json' in s3_key:
             return json.loads(self.project_json)
         return ''
+
+    def generatePartsCompleted(self, start, end):
+        TestClientCallback.parts = []
+        for i in range(start, end):
+            part = Part("{0}.zip".format(i))
+            TestClientCallback.parts.append(part)
+        return TestClientCallback.parts
+
+    def mock_getFinishedParts(self, cdn_handler, s3_commit_key):
+        return TestClientCallback.parts
+
+    def mock_cdnDownloadFile(self, cdn_handler, s3_part_key, target):
+        self.mock_downloadFile(target, s3_part_key)
+
+class Part(object):
+    def __init__(self, key):
+        self.key = key
+
