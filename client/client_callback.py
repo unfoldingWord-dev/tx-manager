@@ -4,6 +4,7 @@ import tempfile
 import logging
 import time
 from logging import Logger
+from general_tools import file_utils
 from general_tools.file_utils import unzip, write_file
 from general_tools.url_utils import download_file
 from aws_tools.s3_handler import S3Handler
@@ -41,6 +42,7 @@ class ClientCallback(object):
         # Download the ZIP file of the converted files
         converted_zip_url = self.job.output
         converted_zip_file = os.path.join(tempfile.gettempdir(), converted_zip_url.rpartition('/')[2])
+        file_utils.remove(converted_zip_file) # make sure old file not present
         try:
             self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
             tries = 0
@@ -51,7 +53,7 @@ class ClientCallback(object):
                 tries += 1
                 time.sleep(1)
                 try:
-                    download_file(converted_zip_url, converted_zip_file)
+                    self.downloadFile(converted_zip_file, converted_zip_url)
                 except:
                     if tries >= 200:
                         raise
@@ -61,7 +63,7 @@ class ClientCallback(object):
         if multipleProject:
             # copy this part of converted output to repo
             s3_part_key = '{0}/{1}'.format(s3_commit_key, part_id)
-            self.cdn_handler.upload_file(converted_zip_file, s3_part_key + '.zip')
+            self.cdnUploadFile(self.cdn_handler, converted_zip_file, s3_part_key + '.zip')
 
             self.logger.debug('download finished.')
 
@@ -111,7 +113,7 @@ class ClientCallback(object):
                 self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
                 # Now download the existing build_log.json file, update it and upload it back to S3
-                build_log_json = cdn_handler.get_json(s3_commit_key + '/build_log.json')
+                build_log_json = self.cdnGetJsonFile(cdn_handler, s3_commit_key + '/build_log.json')
                 build_logs_json.append(build_log_json)
 
                 self.job.log += build_log_json['log']
@@ -147,6 +149,9 @@ class ClientCallback(object):
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
             return build_log_json
 
+    def downloadFile(self, converted_zip_file, converted_zip_url):
+        download_file(converted_zip_url, converted_zip_file)
+
     def getFinishedParts(self, cdn_handler, s3_commit_key):
         return cdn_handler.get_objects(prefix=s3_commit_key, suffix='.zip')
 
@@ -166,11 +171,14 @@ class ClientCallback(object):
                 path = os.path.join(root, f)
                 key = s3_commit_key + path.replace(unzip_dir, '')
                 self.logger.debug('Uploading {0} to {1}'.format(f, key))
-                cdn_handler.upload_file(path, key)
+                self.cdnUploadFile(cdn_handler, path, key)
+
+    def cdnUploadFile(self, cdn_handler, path, key, cache_time=600):
+        cdn_handler.upload_file(path, key, cache_time)
 
     def updateProjectFile(self, cdn_handler, commit_id, owner_name, repo_name):
         project_json_key = 'u/{0}/{1}/project.json'.format(owner_name, repo_name)
-        project_json = cdn_handler.get_json(project_json_key)
+        project_json = self.cdnGetJsonFile(cdn_handler, project_json_key)
         project_json['user'] = owner_name
         project_json['repo'] = repo_name
         project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(self.gogs_url, owner_name, repo_name)
@@ -196,10 +204,14 @@ class ClientCallback(object):
         project_json['commits'] = commits
         project_file = os.path.join(tempfile.gettempdir(), 'project.json')
         write_file(project_file, project_json)
-        cdn_handler.upload_file(project_file, project_json_key, 0)
+        self.cdnUploadFile(cdn_handler, project_file, project_json_key, 0)
+
+    def cdnGetJsonFile(self, cdn_handler, project_json_key):
+        project_json = cdn_handler.get_json(project_json_key)
+        return project_json
 
     def updateBuildLog(self, cdn_handler, s3_commit_key):
-        build_log_json = cdn_handler.get_json(s3_commit_key + '/build_log.json')
+        build_log_json = self.cdnGetJsonFile(cdn_handler, s3_commit_key + '/build_log.json')
         build_log_json['started_at'] = self.job.started_at
         build_log_json['ended_at'] = self.job.ended_at
         build_log_json['success'] = self.job.success
@@ -219,5 +231,5 @@ class ClientCallback(object):
             build_log_json['errors'] = []
         build_log_file = os.path.join(tempfile.gettempdir(), 'build_log_finished.json')
         write_file(build_log_file, build_log_json)
-        cdn_handler.upload_file(build_log_file, s3_commit_key + '/build_log.json', 0)
+        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json', 0)
         return build_log_json
