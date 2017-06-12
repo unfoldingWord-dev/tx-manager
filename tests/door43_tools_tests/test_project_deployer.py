@@ -52,7 +52,5 @@ class ProjectDeployerTests(unittest.TestCase):
         for filename in self.project_files:
             self.deployer.cdn_handler.upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key, filename))
         self.deployer.cdn_handler.upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')
-        self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'bible.html'),
-                                            'templates/bible.html')
-        self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'obs.html'),
-                                            'templates/obs.html')
+        self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+                                                 'templates/project-page.html')

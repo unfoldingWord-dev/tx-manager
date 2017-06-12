@@ -97,6 +97,11 @@ class ClientWebhook(object):
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner)
 
             cdn_handler = S3Handler(self.cdn_bucket)
+            s3_commit_key = 'u/{0}'.format(identifier)
+
+            # clear out the commit directory in the cdn bucket for this project revision
+            for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+                cdn_handler.delete_file(obj.key)
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             self.updateProjectJson(cdn_handler, commit_id, job, repo_name, repo_owner)
@@ -106,7 +111,6 @@ class ClientWebhook(object):
                                                  repo_name, repo_owner)
 
             # Upload build_log.json to S3:
-            s3_commit_key = 'u/{0}'.format(identifier)
             self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
 
             if len(job['errors']) > 0:
@@ -123,7 +127,9 @@ class ClientWebhook(object):
         errors = []
         build_logs = []
         jobs = []
+
         cdn_handler = S3Handler(self.cdn_bucket)
+
         bookCount = len(books)
         for i in range(0, bookCount):
             book = books[i]
@@ -149,14 +155,17 @@ class ClientWebhook(object):
 
             # Send job request to tx-manager
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner, count=bookCount, part=i)
-
             jobs.append(job)
+
+            # clear out the commit directory in the cdn bucket for this project revision
+            s3_commit_key = 'u/{0}'.format(identifier)
+            for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+                cdn_handler.delete_file(obj.key)
 
             build_log_json = self.createBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
                                                  repo_name, repo_owner)
 
             # Upload build_log.json to S3:
-            s3_commit_key = 'u/{0}'.format(identifier)
             self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
 
             errors += job['errors']

@@ -7,12 +7,13 @@ from shutil import copyfile
 from general_tools.file_utils import write_file, remove_tree
 from converter import Converter
 from usfm_tools.transform import UsfmTransform
+from resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 class Usfm2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource in ['ulb', 'udb', 'bible', 'reg']:
+        if self.resource in BIBLE_RESOURCE_TYPES:
             self.convert_bible()
             return True
         else:
@@ -25,7 +26,7 @@ class Usfm2HtmlConverter(Converter):
         files = self.get_files()
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, 'templates', 'bible-template.html')) as template_file:
+        with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
             template_html = template_file.read()
 
         for filename in files:
@@ -39,6 +40,7 @@ class Usfm2HtmlConverter(Converter):
                 with codecs.open(os.path.join(scratch_dir, html_filename), 'r', 'utf-8-sig') as html_file:
                     converted_html = html_file.read()
                 template_soup = BeautifulSoup(template_html, 'html.parser')
+                template_soup.head.title.string = self.resource.upper()
                 converted_soup = BeautifulSoup(converted_html, 'html.parser')
                 content_div = template_soup.find('div', id='content')
                 content_div.clear()

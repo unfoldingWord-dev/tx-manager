@@ -43,7 +43,7 @@ class TestTaPreprocessor(unittest.TestCase):
         translate = read_file(os.path.join(self.out_dir, 'translate.md'))
         soup = BeautifulSoup(markdown.markdown(checking), 'html.parser')
         self.assertEqual(soup.h1.text, "Checking Manual")
-        self.assertIsNotNone(soup.find("a", {"name": "accurate"}))
+        self.assertIsNotNone(soup.find("a", {"id": "accurate"}))
         self.assertEqual(len(soup.find_all('li')), 350)
         # Test links have been converted
         self.assertIsNotNone(soup.find("a", {"href": "#accuracy-check"}))

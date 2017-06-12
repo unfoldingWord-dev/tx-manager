@@ -4,9 +4,10 @@ import os
 import tempfile
 import unittest
 import shutil
+import re
 from bs4 import BeautifulSoup
 from door43_tools.templaters import do_template
-from general_tools.file_utils import unzip
+from general_tools.file_utils import unzip, read_file
 
 
 class TestTemplater(unittest.TestCase):
@@ -40,6 +41,19 @@ class TestTemplater(unittest.TestCase):
         test_file_path = self.extractZipFiles(test_folder_name)
         success = self.doTemplater('obs', test_file_path)
         self.verifyObsTemplater(success, expect_success, self.out_dir)
+
+    def testTemplaterTaComplete(self):
+        test_folder_name = "converted_projects/en_ta-complete.zip"
+        expect_success = True
+        test_file_path = self.extractZipFiles(test_folder_name)
+        success = self.doTemplater('ta', test_file_path)
+        self.verifyTaTemplater(success, expect_success, self.out_dir,
+                               ['checking.html', 'intro.html', 'process.html', 'translate.html'])
+        # Verify sidebar nav generated
+        soup = BeautifulSoup(read_file(os.path.join(self.out_dir, 'checking.html')), 'html.parser')
+        self.assertEqual(len(soup.find('nav', {'id': 'right-sidebar-nav'}).findAll('li')), 49)
+        self.assertEqual(len(soup.find('div', {'id': 'content'}).findAll(re.compile(r'h\d+'),
+                                                                         {'class': 'section-header'})), 44)
 
     def testCommitToDoor43Empty(self):
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
@@ -83,14 +97,9 @@ class TestTemplater(unittest.TestCase):
         return self.temp_dir
 
     def doTemplater(self, resource_type, test_folder_name):
-        template_file = os.path.join(self.resources_dir, 'templates', '{0}.html'.format(resource_type))
+        template_file = os.path.join(self.resources_dir, 'templates', 'project-page.html')
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        try:
-            return do_template(resource_type,test_folder_name, self.out_dir, template_file)
-        except Exception as e:
-            print("do_template threw exception: ")
-            print(e)
-            return False
+        return do_template(resource_type, test_folder_name, self.out_dir, template_file)
 
     def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters = []):
         self.assertIsNotNone(output_folder)
@@ -116,6 +125,13 @@ class TestTemplater(unittest.TestCase):
         for file_to_verify in files_to_verify:
             file_name = os.path.join(output_folder, file_to_verify)
             self.assertTrue(os.path.isfile(file_name), 'file not found: {0}'.format(file_name))
+
+    def verifyTaTemplater(self, success, expect_success, output_folder, filesToVerify=[]):
+        self.assertIsNotNone(output_folder)
+        self.assertEqual(success, expect_success)
+        for file_name in filesToVerify:
+            self.assertTrue(os.path.isfile(os.path.join(output_folder, file_name)), 'file not found: {0}'
+                            .format(file_name))
 
 if __name__ == '__main__':
     unittest.main()

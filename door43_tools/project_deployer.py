@@ -66,16 +66,9 @@ class ProjectDeployer(object):
 
         self.cdn_handler.download_dir(s3_commit_key, source_dir)
         source_dir = os.path.join(source_dir, s3_commit_key)
-
         resource_type = build_log['resource_type']
-        if resource_type == 'ulb' or resource_type == 'udb':
-            resource_type = 'bible'
-
-        if resource_type in ['bible', 'ulb', 'udb']:
-            template_key = 'templates/bible.html'
-        else:
-            template_key = 'templates/obs.html'
-        template_file = os.path.join(template_dir, 'template.html')
+        template_key = 'templates/project-page.html'
+        template_file = os.path.join(template_dir, 'project-page.html')
         self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
         self.door43_handler.download_file(template_key, template_file)
 
@@ -103,9 +96,11 @@ class ProjectDeployer(object):
                 """
                 content += '<ul><li>' + '</li><li>'.join(build_log['warnings']) + '</li></ul>'
             else:
-                content += '<h1>{0}</h1>'.format(build_log['message'])
+                content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
                 content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
-
+                content += """
+                <script type="text/javascript">setTimeout(function(){window.location.reload(1);}, 10000);</script>
+                """
             html = """
                 <html lang="en">
                     <head>
