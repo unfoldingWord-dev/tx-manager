@@ -112,8 +112,8 @@ class ClientCallback(object):
                 # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
                 self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
-                # Now download the existing build_log.json file a
-                build_log_file, build_log_json = self.getBuildLog(cdn_handler, s3_commit_key + '/build_log.json')
+                # Now download the existing build_log.json file
+                build_log_file, build_log_json = self.getBuildLog(cdn_handler, s3_part_key + '/build_log.json')
                 build_logs_json.append(build_log_json)
 
                 self.job.log += build_log_json['log']
