@@ -171,7 +171,8 @@ class ClientWebhook(object):
         # Download the project.json file for this repo (create it if doesn't exist) and update it
         self.updateProjectJson(cdn_handler, commit_id, jobs[0], repo_name, repo_owner)
 
-        build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors, 'job_id' : last_job_id}
+        source_url = self.source_url_base + "/" + file_key
+        build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors, 'job_id' : last_job_id, 'source': source_url,}
 
         # Upload build_log.json to S3:
         self.uploadBuildLogToS3(build_logs_json, cdn_handler, master_s3_commit_key)
@@ -194,6 +195,7 @@ class ClientWebhook(object):
         uploadKey = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         self.logger.debug('Saving build log to ' + uploadKey)
         self.cdnUploadFile(cdn_handler, build_log_file, uploadKey)
+        self.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
     def createBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                        repo_owner):
