@@ -89,7 +89,7 @@ class ClientCallback(object):
                     missing_parts.append(fileName)
 
             # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key, part_id)
+            build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key, part_id + "_")
 
             if len(missing_parts) > 0:
                 self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
@@ -121,7 +121,10 @@ class ClientCallback(object):
                 self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
                 # Now download the existing build_log.json file
-                build_log_json = self.getBuildLog(cdn_handler, s3_commit_key, str(i))
+                build_log_json = self.getBuildLog(cdn_handler, s3_commit_key, str(i) + "_")
+
+                self.buildLogSanityCheck(build_log_json)
+
                 build_logs_json.append(build_log_json)
 
                 # merge build_log data
@@ -137,7 +140,7 @@ class ClientCallback(object):
 
             # Now upload the merged build_log.json file, update it and upload it back to S3
             master_build_log_json['build_logs'] = build_logs_json # add record of all the parts
-            build_log_json = self.uploadBuildLog(cdn_handler, master_build_log_json, s3_commit_key)
+            build_log_json = self.uploadBuildLog(cdn_handler, master_build_log_json, s3_commit_key, 'm_')
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
@@ -163,6 +166,15 @@ class ClientCallback(object):
 
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
             return build_log_json
+
+    def buildLogSanityCheck(self, build_log_json):
+        # sanity check
+        if not 'log' in build_log_json:
+            build_log_json['log'] = []
+        if not 'warnings' in build_log_json:
+            build_log_json['warnings'] = []
+        if not 'errors' in build_log_json:
+            build_log_json['errors'] = []
 
     def cdnDownloadFile(self, cdn_handler, s3_part_key, filePath):
         cdn_handler.download_file(s3_part_key, filePath)
@@ -265,17 +277,6 @@ class ClientCallback(object):
         self.logger.debug('Reading build log from ' + build_log_key)
         build_log_json = self.cdnGetJsonFile(cdn_handler, build_log_key)
         self.logger.debug('build_log contents: ' + json.dumps(build_log_json))
-
-        # cleanup
-        if not 'log' in build_log_json:
-            build_log_json['log'] = []
-
-        if not 'warnings' in build_log_json:
-            build_log_json['warnings'] = []
-
-        if not 'errors' in build_log_json:
-            build_log_json['errors'] = []
-
         return build_log_json
 
     def getBuildLogKey(self, s3_base_key, part=''):
