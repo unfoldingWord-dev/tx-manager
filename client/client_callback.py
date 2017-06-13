@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import json
 import os
 import tempfile
 import logging
@@ -28,6 +29,8 @@ class ClientCallback(object):
         cdn_handler = S3Handler(self.cdn_bucket)
         parts = self.job.identifier.split('/')
         multipleProject = len(parts) >= 5
+        part_count = 0
+        part_id = 0
         if not multipleProject:
             owner_name, repo_name, commit_id = parts
         else:
@@ -96,6 +99,7 @@ class ClientCallback(object):
 
             # all parts are present, merge together
 
+            master_build_log_json = build_log_json # use as basis for master
             build_logs_json = []
             self.job.status = 'success'
             self.job.log = []
@@ -119,24 +123,30 @@ class ClientCallback(object):
                 # Now download the existing build_log.json file
                 build_log_key = s3_part_key + '/build_log.json'
                 self.logger.debug('Updating build log: ' + build_log_key)
-                build_log_file, build_log_json = self.getBuildLog(cdn_handler, build_log_key)
+                build_log_json = self.getBuildLog(cdn_handler, build_log_key)
                 build_logs_json.append(build_log_json)
 
+                # merge build_log data
                 self.job.log += build_log_json['log']
                 self.job.errors += build_log_json['errors']
                 self.job.warnings += build_log_json['warnings']
-                if build_log_json['status'] != 'success':
-                    self.job.success = build_log_json['success']
-                if build_log_json['status'] != 'success':
+                if ('status' in build_log_json) and (build_log_json['status'] != 'success'):
                     self.job.status = build_log_json['status']
+                if ('success' in build_log_json) and (build_log_json['success'] != None):
+                    self.job.success = build_log_json['success']
+                if ('message' in build_log_json) and (build_log_json['message'] != None):
+                    self.job.message = build_log_json['message']
 
-            # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key)
-
-            self.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
+            # Now upload the merged build_log.json file, update it and upload it back to S3
+            master_build_log_json['build_logs'] = build_logs_json # add record of all the parts
+            build_log_json = self.uploadBuildLog(cdn_handler, master_build_log_json, s3_commit_key)
+            self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.updateProjectFile(cdn_handler, commit_id, owner_name, repo_name)
+            project_json = self.updateProjectFile(cdn_handler, commit_id, owner_name, repo_name)
+            self.logger.debug('Updated project.json: ' + json.dumps(project_json))
+
+            self.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
 
             return build_log_json
 
@@ -215,19 +225,18 @@ class ClientCallback(object):
         project_file = os.path.join(tempfile.gettempdir(), 'project.json')
         write_file(project_file, project_json)
         self.cdnUploadFile(cdn_handler, project_file, project_json_key, 0)
+        return project_json
 
     def cdnGetJsonFile(self, cdn_handler, project_json_key):
         project_json = cdn_handler.get_json(project_json_key)
         return project_json
 
     def updateBuildLog(self, cdn_handler, s3_commit_key):
-        build_log_file, build_log_json = self.getBuildLog(cdn_handler, s3_commit_key)
-        write_file(build_log_file, build_log_json)
-        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json', 0)
+        build_log_json = self.getBuildLog(cdn_handler, s3_commit_key)
+        self.uploadBuildLog(cdn_handler, build_log_json, s3_commit_key)
         return build_log_json
 
-    def getBuildLog(self, cdn_handler, s3_commit_key):
-        build_log_json = self.cdnGetJsonFile(cdn_handler, s3_commit_key + '/build_log.json')
+    def uploadBuildLog(self, cdn_handler, build_log_json, s3_commit_key):
         build_log_json['started_at'] = self.job.started_at
         build_log_json['ended_at'] = self.job.ended_at
         build_log_json['success'] = self.job.success
@@ -246,4 +255,21 @@ class ClientCallback(object):
         else:
             build_log_json['errors'] = []
         build_log_file = os.path.join(tempfile.gettempdir(), 'build_log_finished.json')
-        return build_log_file, build_log_json
+        write_file(build_log_file, build_log_json)
+        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json', 0)
+        return build_log_json
+
+    def getBuildLog(self, cdn_handler, s3_commit_key):
+        build_log_json = self.cdnGetJsonFile(cdn_handler, s3_commit_key + '/build_log.json')
+
+        # cleanup
+        if not 'log' in build_log_json:
+            build_log_json['log'] = []
+
+        if not 'warnings' in build_log_json:
+            build_log_json['warnings'] = []
+
+        if not 'errors' in build_log_json:
+            build_log_json['errors'] = []
+
+        return build_log_json
