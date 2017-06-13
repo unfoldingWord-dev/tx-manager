@@ -63,9 +63,9 @@ class ClientCallback(object):
         if multipleProject:
             # copy this part of converted output to repo
             s3_part_key = '{0}/{1}'.format(s3_commit_key, part_id)
-            self.cdnUploadFile(cdn_handler, converted_zip_file, s3_part_key + '.zip')
-
-            self.logger.debug('download finished.')
+            zip_part_key = s3_part_key + '.zip'
+            self.logger.debug('Uploading part to: ' + zip_part_key)
+            self.cdnUploadFile(cdn_handler, converted_zip_file, zip_part_key)
 
             # check if all parts are present, if not return
             missing_parts = []
@@ -79,6 +79,7 @@ class ClientCallback(object):
                 for part in finishedParts:
                     if fileName in part.key:
                         matchFound = True
+                        self.logger.debug('Found converted part: ' + part.key)
                         break
 
                 if not matchFound:
@@ -102,9 +103,12 @@ class ClientCallback(object):
             self.job.errors = []
             baseTempFolder = tempfile.gettempdir()
             for i in range(0, count):
+                self.logger.debug('Merging part {0}'.format(i))
                 s3_part_key = '{0}/{1}'.format(s3_commit_key, i)
                 converted_zip_file = os.path.join(baseTempFolder, str(i) + '.zip')
-                self.cdnDownloadFile(cdn_handler, s3_part_key + '.zip', converted_zip_file)
+                zip_file_key = s3_part_key + '.zip'
+                self.logger.debug('Loading converted files from ' + zip_file_key)
+                self.cdnDownloadFile(cdn_handler, zip_file_key, converted_zip_file)
 
                 # Unzip the archive
                 unzip_dir = self.unzipConvertedFiles(converted_zip_file)
@@ -113,7 +117,9 @@ class ClientCallback(object):
                 self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
                 # Now download the existing build_log.json file
-                build_log_file, build_log_json = self.getBuildLog(cdn_handler, s3_part_key + '/build_log.json')
+                build_log_key = s3_part_key + '/build_log.json'
+                self.logger.debug('Updating build log: ' + build_log_key)
+                build_log_file, build_log_json = self.getBuildLog(cdn_handler, build_log_key)
                 build_logs_json.append(build_log_json)
 
                 self.job.log += build_log_json['log']
