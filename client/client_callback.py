@@ -29,8 +29,8 @@ class ClientCallback(object):
         cdn_handler = S3Handler(self.cdn_bucket)
         parts = self.job.identifier.split('/')
         multipleProject = len(parts) >= 5
-        part_count = 0
-        part_id = 0
+        part_count = '0'
+        part_id = '0'
         if not multipleProject:
             owner_name, repo_name, commit_id = parts
         else:
