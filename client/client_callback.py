@@ -157,7 +157,7 @@ class ClientCallback(object):
             return build_log_json
 
     def cdnDownloadFile(self, cdn_handler, s3_part_key, filePath):
-        cdn_handler.download_file(s3_part_key + '.zip', filePath)
+        cdn_handler.download_file(s3_part_key, filePath)
 
     def downloadFile(self, converted_zip_file, converted_zip_url):
         download_file(converted_zip_url, converted_zip_file)
