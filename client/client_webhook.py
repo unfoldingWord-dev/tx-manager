@@ -131,6 +131,7 @@ class ClientWebhook(object):
         self.clearCommitDirectoryInCdn(cdn_handler, master_s3_commit_key)
 
         bookCount = len(books)
+        last_job_id = 0
         for i in range(0, bookCount):
             book = books[i]
             partID = '{0}_of_{1}'.format(i,bookCount)
@@ -156,6 +157,7 @@ class ClientWebhook(object):
             # Send job request to tx-manager
             identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner, count=bookCount, part=i)
             jobs.append(job)
+            last_job_id = job['job_id']
 
             s3_commit_key = 'u/{0}'.format(identifier)
             self.clearCommitDirectoryInCdn(cdn_handler, s3_commit_key)
@@ -172,7 +174,7 @@ class ClientWebhook(object):
         # Download the project.json file for this repo (create it if doesn't exist) and update it
         self.updateProjectJson(cdn_handler, commit_id, jobs[0], repo_name, repo_owner)
 
-        build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors}
+        build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors, 'job_id' : last_job_id}
 
         # Upload build_log.json to S3:
         self.uploadBuildLogToS3(build_logs_json, cdn_handler, master_s3_commit_key)
