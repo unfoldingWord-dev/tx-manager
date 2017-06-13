@@ -89,7 +89,7 @@ class ClientCallback(object):
                     missing_parts.append(fileName)
 
             # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = self.updateBuildLog(cdn_handler, s3_part_key)
+            build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key, part_id)
 
             if len(missing_parts) > 0:
                 self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
@@ -121,8 +121,7 @@ class ClientCallback(object):
                 self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
                 # Now download the existing build_log.json file
-                self.logger.debug('Updating build log: ' + s3_part_key + '/build_log.json')
-                build_log_json = self.getBuildLog(cdn_handler, s3_part_key)
+                build_log_json = self.getBuildLog(cdn_handler, s3_commit_key, str(i))
                 build_logs_json.append(build_log_json)
 
                 # merge build_log data
@@ -230,12 +229,12 @@ class ClientCallback(object):
         project_json = cdn_handler.get_json(project_json_key)
         return project_json
 
-    def updateBuildLog(self, cdn_handler, s3_commit_key):
-        build_log_json = self.getBuildLog(cdn_handler, s3_commit_key)
-        self.uploadBuildLog(cdn_handler, build_log_json, s3_commit_key)
+    def updateBuildLog(self, cdn_handler, s3_base_key):
+        build_log_json = self.getBuildLog(cdn_handler, s3_base_key)
+        self.uploadBuildLog(cdn_handler, build_log_json, s3_base_key)
         return build_log_json
 
-    def uploadBuildLog(self, cdn_handler, build_log_json, s3_commit_key):
+    def uploadBuildLog(self, cdn_handler, build_log_json, s3_base_key, part=''):
         build_log_json['started_at'] = self.job.started_at
         build_log_json['ended_at'] = self.job.ended_at
         build_log_json['success'] = self.job.success
@@ -255,11 +254,17 @@ class ClientCallback(object):
             build_log_json['errors'] = []
         build_log_file = os.path.join(tempfile.gettempdir(), 'build_log_finished.json')
         write_file(build_log_file, build_log_json)
-        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json', 0)
+        build_log_key = self.getBuildLogKey(s3_base_key, part)
+        self.logger.debug('Writing build log to ' + build_log_key)
+        self.logger.debug('build_log contents: ' + json.dumps(build_log_json))
+        self.cdnUploadFile(cdn_handler, build_log_file, build_log_key, 0)
         return build_log_json
 
-    def getBuildLog(self, cdn_handler, s3_commit_key):
-        build_log_json = self.cdnGetJsonFile(cdn_handler, s3_commit_key + '/build_log.json')
+    def getBuildLog(self, cdn_handler, s3_base_key, part=''):
+        build_log_key = self.getBuildLogKey(s3_base_key, part)
+        self.logger.debug('Reading build log from ' + build_log_key)
+        build_log_json = self.cdnGetJsonFile(cdn_handler, build_log_key)
+        self.logger.debug('build_log contents: ' + json.dumps(build_log_json))
 
         # cleanup
         if not 'log' in build_log_json:
@@ -272,3 +277,7 @@ class ClientCallback(object):
             build_log_json['errors'] = []
 
         return build_log_json
+
+    def getBuildLogKey(self, s3_base_key, part=''):
+        uploadKey = '{0}/{1}build_log.json'.format(s3_base_key, part)
+        return uploadKey

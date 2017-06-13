@@ -159,12 +159,11 @@ class ClientWebhook(object):
             jobs.append(job)
             last_job_id = job['job_id']
 
-            s3_commit_key = 'u/{0}'.format(identifier)
             build_log_json = self.createBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
                                                  repo_name, repo_owner)
 
             # Upload build_log.json to S3:
-            self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
+            self.uploadBuildLogToS3(build_log_json, cdn_handler, master_s3_commit_key, str(i))
 
             errors += job['errors']
             build_logs.append(build_log_json)
@@ -187,13 +186,14 @@ class ClientWebhook(object):
             self.logger.debug('Removing file: ' + obj.key )
             cdn_handler.delete_file(obj.key)
 
-    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key):
+    def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key, part=''):
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
             self.cdnDeleteFile(cdn_handler, obj)
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
-        self.logger.debug('Saving build log to ' + s3_commit_key + '/build_log.json')
-        self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
+        uploadKey = '{0}/{1}build_log.json'.format(s3_commit_key, part)
+        self.logger.debug('Saving build log to ' + uploadKey)
+        self.cdnUploadFile(cdn_handler, build_log_file, uploadKey)
 
     def createBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                        repo_owner):
