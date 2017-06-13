@@ -121,9 +121,8 @@ class ClientCallback(object):
                 self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
                 # Now download the existing build_log.json file
-                build_log_key = s3_part_key + '/build_log.json'
-                self.logger.debug('Updating build log: ' + build_log_key)
-                build_log_json = self.getBuildLog(cdn_handler, build_log_key)
+                self.logger.debug('Updating build log: ' + s3_part_key + '/build_log.json')
+                build_log_json = self.getBuildLog(cdn_handler, s3_part_key)
                 build_logs_json.append(build_log_json)
 
                 # merge build_log data

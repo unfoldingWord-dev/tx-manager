@@ -19,7 +19,7 @@ class TestClientCallback(TestCase):
     source_zip = ''
     build_log_json = ''
     project_json = ''
-    uploaded_files = []
+    transfered_files = [] # for keeping track of file translfers to cdn
 
     def setUp(self):
         try:
@@ -28,7 +28,7 @@ class TestClientCallback(TestCase):
             pass
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientCallback.base_temp_dir, prefix='callbackTest_')
-        TestClientCallback.uploaded_files = []
+        TestClientCallback.transfered_files = []
 
 
     def tearDown(self):
@@ -78,7 +78,11 @@ class TestClientCallback(TestCase):
     # helpers
 
     def mockClientCallback(self, identifier):
-        self.build_log_json = '{}'
+        self.build_log_json = {
+            'dummy_data' : 'stuff'
+        }
+        self.build_log_json = json.dumps(self.build_log_json)
+
         self.project_json = '{}'
 
         vars = {
@@ -113,10 +117,12 @@ class TestClientCallback(TestCase):
 
     def mock_cdnUploadFile(self, cdn_handler, project_file, s3_key, cache_time=600):
         bucket_name = cdn_handler.bucket.name
-        TestClientCallback.uploaded_files.append({ 'file' : project_file, 'key' : bucket_name + '/' + s3_key})
+        TestClientCallback.transfered_files.append({ 'type' : 'upload', 'file' : project_file, 'key' : bucket_name + '/' + s3_key})
         return
 
     def mock_cdnGetJsonFile(self, cdn_handler, s3_key):
+        bucket_name = cdn_handler.bucket.name
+        TestClientCallback.transfered_files.append({ 'type' : 'download', 'file' : 'json', 'key' : bucket_name + '/' + s3_key})
         if 'build_log.json' in s3_key:
             return json.loads(self.build_log_json)
         elif 'project.json' in s3_key:
@@ -134,7 +140,9 @@ class TestClientCallback(TestCase):
         return TestClientCallback.parts
 
     def mock_cdnDownloadFile(self, cdn_handler, s3_part_key, target):
+        bucket_name = cdn_handler.bucket.name
         self.mock_downloadFile(target, s3_part_key)
+        TestClientCallback.transfered_files.append({ 'type' : 'download', 'file' : target, 'key' : bucket_name + '/' + s3_part_key})
 
 class Part(object):
     def __init__(self, key):
