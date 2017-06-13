@@ -160,8 +160,6 @@ class ClientWebhook(object):
             last_job_id = job['job_id']
 
             s3_commit_key = 'u/{0}'.format(identifier)
-            self.clearCommitDirectoryInCdn(cdn_handler, s3_commit_key)
-
             build_log_json = self.createBuildLog(commit_id, commit_message, commit_url, compare_url, job, pusher_username,
                                                  repo_name, repo_owner)
 
@@ -186,6 +184,7 @@ class ClientWebhook(object):
     def clearCommitDirectoryInCdn(self, cdn_handler, s3_commit_key):
         # clear out the commit directory in the cdn bucket for this project revision
         for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+            self.logger.debug('Removing file: ' + obj.key )
             cdn_handler.delete_file(obj.key)
 
     def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key):
@@ -193,6 +192,7 @@ class ClientWebhook(object):
             self.cdnDeleteFile(cdn_handler, obj)
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
+        self.logger.debug('Saving build log to ' + s3_commit_key + '/build_log.json')
         self.cdnUploadFile(cdn_handler, build_log_file, s3_commit_key + '/build_log.json')
 
     def createBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
@@ -288,7 +288,7 @@ class ClientWebhook(object):
         if not count:
             identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                               commit_id)  # The way to know which repo/commit goes to this job request
-        else:  # if this is just part of a job
+        else:  # if this is part of a multipart job
             identifier = "{0}/{1}/{2}/{3}/{4}".format(repo_owner, repo_name,
                                                       commit_id, count,
                                                       part)  # The way to know which repo/commit goes to this job request
