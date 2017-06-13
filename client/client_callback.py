@@ -229,9 +229,9 @@ class ClientCallback(object):
         project_json = cdn_handler.get_json(project_json_key)
         return project_json
 
-    def updateBuildLog(self, cdn_handler, s3_base_key):
-        build_log_json = self.getBuildLog(cdn_handler, s3_base_key)
-        self.uploadBuildLog(cdn_handler, build_log_json, s3_base_key)
+    def updateBuildLog(self, cdn_handler, s3_base_key, part=''):
+        build_log_json = self.getBuildLog(cdn_handler, s3_base_key, part)
+        self.uploadBuildLog(cdn_handler, build_log_json, s3_base_key, part)
         return build_log_json
 
     def uploadBuildLog(self, cdn_handler, build_log_json, s3_base_key, part=''):
