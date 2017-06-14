@@ -163,7 +163,7 @@ class ClientWebhook(object):
                                                  repo_name, repo_owner)
 
             # Upload build_log.json to S3:
-            self.uploadBuildLogToS3(build_log_json, cdn_handler, master_s3_commit_key, str(i))
+            self.uploadBuildLogToS3(build_log_json, cdn_handler, master_s3_commit_key, str(i) + "_")
 
             errors += job['errors']
             build_logs.append(build_log_json)
@@ -188,8 +188,6 @@ class ClientWebhook(object):
             cdn_handler.delete_file(obj.key)
 
     def uploadBuildLogToS3(self, build_log_json, cdn_handler, s3_commit_key, part=''):
-        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
-            self.cdnDeleteFile(cdn_handler, obj)
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
         uploadKey = '{0}/{1}build_log.json'.format(s3_commit_key, part)
@@ -243,6 +241,7 @@ class ClientWebhook(object):
         return project_json
 
     def cdnDeleteFile(self, cdn_handler, obj):
+        self.logger.debug('Removing file: ' + obj.key )
         cdn_handler.delete_file(obj.key)
 
     def uploadZipFile(self, commit_id, zip_filepath):
