@@ -79,7 +79,10 @@ class TestClientCallback(TestCase):
 
     def mockClientCallback(self, identifier):
         self.build_log_json = {
-            'dummy_data' : 'stuff'
+            'dummy_data' : 'stuff',
+            'commit_id' : '123456ff',
+            'repo_owner' : 'repo_owner1',
+            'repo_name' : 'repo_name2',
         }
         self.build_log_json = json.dumps(self.build_log_json)
 
