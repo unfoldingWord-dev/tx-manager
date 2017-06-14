@@ -598,7 +598,7 @@ class TxManager(object):
                 '<th class="hdr">Repo</th>'
                 '<th class="hdr">PreConvert</th>'
                 '<th class="hdr">Converted</th>'
-                '<th class="hdr">Destination</th>'
+                '<th class="hdr">Destination</th>',
                 'html.parser'))
 
             gogs_url = self.gogs_url
