@@ -81,6 +81,7 @@ class TestClientCallback(TestCase):
         self.build_log_json = {
             'dummy_data' : 'stuff',
             'commit_id' : '123456ff',
+            'created_at': '2017-05-22T13:39:15Z',
             'repo_owner' : 'repo_owner1',
             'repo_name' : 'repo_name2',
         }

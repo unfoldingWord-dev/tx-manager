@@ -140,9 +140,11 @@ class ClientCallback(object):
 
             # Now upload the merged build_log.json file, update it and upload it back to S3
             master_build_log_json['build_logs'] = build_logs_json # add record of all the parts
-            master_build_log_json['commit_id'] = build_logs_json[0]['commit_id']
-            master_build_log_json['repo_owner'] = build_logs_json[0]['repo_owner']
-            master_build_log_json['repo_name'] = build_logs_json[0]['repo_name']
+            build_logs_json0 = build_logs_json[0]
+            master_build_log_json['commit_id'] = build_logs_json0['commit_id']
+            master_build_log_json['created_at'] = build_logs_json0['created_at']
+            master_build_log_json['repo_owner'] = build_logs_json0['repo_owner']
+            master_build_log_json['repo_name'] = build_logs_json0['repo_name']
             build_log_json = self.uploadBuildLog(cdn_handler, master_build_log_json, s3_commit_key)
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
