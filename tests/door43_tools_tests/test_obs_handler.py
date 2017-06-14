@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import os
 import unittest
-from door43_tools.obs_handler import OBSInspection
+from libraries.door43_tools.obs_handler import OBSInspection
 
 
 class TestObsHandler(unittest.TestCase):

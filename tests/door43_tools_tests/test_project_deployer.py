@@ -3,8 +3,8 @@ import unittest
 import os
 import tempfile
 from moto import mock_s3
-from door43_tools.project_deployer import ProjectDeployer
-from general_tools.file_utils import unzip
+from libraries.door43_tools.project_deployer import ProjectDeployer
+from libraries.general_tools.file_utils import unzip
 from shutil import rmtree
 
 

@@ -1,0 +1,12 @@
+{
+  "name": "test-tx",
+  "description": "Testing project for tX Manager",
+  "memory": 512,
+  "timeout": 300,
+  "role": "arn:aws:iam::581647696645:role/tx_lambda_function",
+  "environment": {},
+  "hooks": {
+    "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
+    "clean": "rm -rf libraries"
+  }
+}
