@@ -76,7 +76,7 @@ class ClientCallback(object):
             build_log_json = self.updateBuildLog(cdn_handler, s3_commit_key, part_id + "_")
 
             # mark part as finished
-            self.cdnUploadContents(cdn_handler, build_log_json, part_id + '.finished')
+            self.cdnUploadContents(cdn_handler, build_log_json, s3_commit_key + '/' + part_id + '.finished')
 
             # check if all parts are present, if not return
             missing_parts = []
@@ -271,10 +271,11 @@ class ClientCallback(object):
         self.cdnUploadContents(cdn_handler, build_log_json, build_log_key)
         return build_log_json
 
-    def cdnUploadContents(self, cdn_handler, build_log_json, build_log_key):
-        build_log_file = os.path.join(self.tempDir, 'contents.json')
-        write_file(build_log_file, build_log_json)
-        self.cdnUploadFile(cdn_handler, build_log_file, build_log_key, 0)
+    def cdnUploadContents(self, cdn_handler, contents, key):
+        file = os.path.join(self.tempDir, 'contents.json')
+        write_file(file, contents)
+        self.logger.debug('Writing file to ' + key)
+        self.cdnUploadFile(cdn_handler, file, key, 0)
 
     def getBuildLog(self, cdn_handler, s3_base_key, part=''):
         build_log_key = self.getBuildLogKey(s3_base_key, part)
