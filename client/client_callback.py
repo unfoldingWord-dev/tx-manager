@@ -265,13 +265,16 @@ class ClientCallback(object):
             build_log_json['errors'] = self.job.errors
         else:
             build_log_json['errors'] = []
-        build_log_file = os.path.join(tempfile.gettempdir(), 'build_log_finished.json')
-        write_file(build_log_file, build_log_json)
         build_log_key = self.getBuildLogKey(s3_base_key, part)
         self.logger.debug('Writing build log to ' + build_log_key)
         # self.logger.debug('build_log contents: ' + json.dumps(build_log_json))
-        self.cdnUploadFile(cdn_handler, build_log_file, build_log_key, 0)
+        self.cdnUploadContents(cdn_handler, build_log_json, build_log_key)
         return build_log_json
+
+    def cdnUploadContents(self, cdn_handler, build_log_json, build_log_key):
+        build_log_file = os.path.join(self.tempDir, 'contents.json')
+        write_file(build_log_file, build_log_json)
+        self.cdnUploadFile(cdn_handler, build_log_file, build_log_key, 0)
 
     def getBuildLog(self, cdn_handler, s3_base_key, part=''):
         build_log_key = self.getBuildLogKey(s3_base_key, part)
