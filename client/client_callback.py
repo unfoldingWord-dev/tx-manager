@@ -99,7 +99,7 @@ class ClientCallback(object):
 
             # all parts are present, merge together
 
-            master_build_log_json = build_log_json # use as basis for master
+            master_build_log_json = self.getBuildLog(cdn_handler, s3_commit_key)
             build_logs_json = []
             self.job.status = 'success'
             self.job.log = []
@@ -140,7 +140,7 @@ class ClientCallback(object):
 
             # Now upload the merged build_log.json file, update it and upload it back to S3
             master_build_log_json['build_logs'] = build_logs_json # add record of all the parts
-            build_log_json = self.uploadBuildLog(cdn_handler, master_build_log_json, s3_commit_key, 'm_')
+            build_log_json = self.uploadBuildLog(cdn_handler, master_build_log_json, s3_commit_key)
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
