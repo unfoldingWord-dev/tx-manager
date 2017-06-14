@@ -6,6 +6,7 @@ import logging
 import json
 import shutil
 from datetime import datetime
+from general_tools import file_utils
 from general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip
 from general_tools.url_utils import download_file
 from resource_container.ResourceContainer import RC
@@ -109,7 +110,7 @@ class ClientWebhook(object):
 
             # Upload build_log.json to S3:
             self.uploadBuildLogToS3(build_log_json, cdn_handler, s3_commit_key)
-
+            file_utils.remove_tree(self.base_temp_dir) # cleanup
             if len(job['errors']) > 0:
                 raise Exception('; '.join(job['errors']))
             else:
@@ -176,6 +177,7 @@ class ClientWebhook(object):
 
         # Upload build_log.json to S3:
         self.uploadBuildLogToS3(build_logs_json, cdn_handler, master_s3_commit_key)
+        file_utils.remove_tree(self.base_temp_dir) # cleanup
         if len(errors) > 0:
             raise Exception('; '.join(errors))
         else:
@@ -193,7 +195,7 @@ class ClientWebhook(object):
         uploadKey = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         self.logger.debug('Saving build log to ' + uploadKey)
         self.cdnUploadFile(cdn_handler, build_log_file, uploadKey)
-        self.logger.debug('build log contains: ' + json.dumps(build_log_json))
+        # self.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
     def createBuildLog(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                        repo_owner):

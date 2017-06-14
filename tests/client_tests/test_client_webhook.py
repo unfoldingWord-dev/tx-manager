@@ -12,7 +12,7 @@ class TestClientWebhook(unittest.TestCase):
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     temp_dir = None
-    base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
+    base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
     shutil.rmtree(base_temp_dir, ignore_errors=True)
     jobRequestCount = 0
     default_mock_job_return_value = {'job_id': '0', 'status': 'started', 'success': 'success', 'resource_type': 'obs',
@@ -40,6 +40,10 @@ class TestClientWebhook(unittest.TestCase):
     def test_download_repo(self, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
         cwh = ClientWebhook()
+        try:
+            os.makedirs(cwh.base_temp_dir)
+        except:
+            pass
         cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
 
     @patch('client.client_webhook.download_file')
@@ -168,13 +172,18 @@ class TestClientWebhook(unittest.TestCase):
 
     def mock_cdnUploadFile(self, cdn_handler, project_file, s3_key):
         bucket_name = cdn_handler.bucket.name
-        TestClientWebhook.uploaded_files.append({ 'file' : project_file, 'key' : bucket_name + '/' + s3_key})
+        filename = tempfile.mktemp(dir=TestClientWebhook.base_temp_dir)
+        shutil.copyfile(project_file, filename)
+        TestClientWebhook.uploaded_files.append({ 'file' : filename, 'key' : bucket_name + '/' + s3_key})
         return
 
     def mock_cdnGetJson(self, cdn_handler, project_json_key):
         return { }
 
     def mock_cdnDeleteFile(self, cdn_handler, obj):
+        return
+
+    def mock_clearCommitDirectoryInCdn(self, cdn_handler, s3_commit_key):
         return
 
     def setupClientWebhookMock(self, repoName, basePath):
@@ -185,6 +194,7 @@ class TestClientWebhook(unittest.TestCase):
         cwh.cdnUploadFile = self.mock_cdnUploadFile
         cwh.cdnGetJson = self.mock_cdnGetJson
         cwh.cdnDeleteFile = self.mock_cdnDeleteFile
+        cwh.clearCommitDirectoryInCdn = self.mock_clearCommitDirectoryInCdn
         return cwh
 
     def getEnvironment(self, sourcePath, gogsUrl):

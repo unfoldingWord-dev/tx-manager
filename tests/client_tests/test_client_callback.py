@@ -82,6 +82,7 @@ class TestClientCallback(TestCase):
             'dummy_data' : 'stuff',
             'commit_id' : '123456ff',
             'created_at': '2017-05-22T13:39:15Z',
+            'started_at': '2017-05-22T13:39:16Z',
             'repo_owner' : 'repo_owner1',
             'repo_name' : 'repo_name2',
         }
@@ -136,7 +137,7 @@ class TestClientCallback(TestCase):
     def generatePartsCompleted(self, start, end):
         TestClientCallback.parts = []
         for i in range(start, end):
-            part = Part("{0}.zip".format(i))
+            part = Part("{0}.finished".format(i))
             TestClientCallback.parts.append(part)
         return TestClientCallback.parts
 
