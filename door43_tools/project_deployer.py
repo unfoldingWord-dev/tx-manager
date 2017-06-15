@@ -6,6 +6,7 @@ import json
 import logging
 from glob import glob
 from shutil import copyfile
+from general_tools import file_utils
 from aws_tools.s3_handler import S3Handler
 from general_tools.file_utils import write_file
 from door43_tools.templaters import do_template
@@ -32,6 +33,7 @@ class ProjectDeployer(object):
         self.lambda_client = None
         self.logger = logging.getLogger()
         self.setup_resources()
+        self.tempDir = tempfile.mkdtemp(suffix="", prefix="deployer_")
 
     def setup_resources(self):
         self.cdn_handler = S3Handler(self.cdn_bucket)
@@ -60,9 +62,9 @@ class ProjectDeployer(object):
         s3_commit_key = 'u/{0}/{1}/{2}'.format(user, repo_name, commit_id)
         s3_repo_key = 'u/{0}/{1}'.format(user, repo_name)
 
-        source_dir = tempfile.mkdtemp(prefix='source_')
-        output_dir = tempfile.mkdtemp(prefix='output_')
-        template_dir = tempfile.mkdtemp(prefix='template_')
+        source_dir = tempfile.mkdtemp(prefix='source_', dir=self.tempDir)
+        output_dir = tempfile.mkdtemp(prefix='output_', dir=self.tempDir)
+        template_dir = tempfile.mkdtemp(prefix='template_', dir=self.tempDir)
 
         self.cdn_handler.download_dir(s3_commit_key, source_dir)
         source_dir = os.path.join(source_dir, s3_commit_key)
@@ -147,6 +149,7 @@ class ProjectDeployer(object):
             self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
         except Exception:
             pass
+        file_utils.remove_tree(self.tempDir) # cleanup temp files
         return True
 
     def redeploy_all_projects(self, deploy_function):
