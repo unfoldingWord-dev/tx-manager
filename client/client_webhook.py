@@ -172,7 +172,7 @@ class ClientWebhook(object):
         # Download the project.json file for this repo (create it if doesn't exist) and update it
         self.updateProjectJson(cdn_handler, commit_id, jobs[0], repo_name, repo_owner)
 
-        source_url = self.source_url_base + "/" + file_key
+        source_url = self.source_url_base + "/preconvert/" + commit_id + '.zip'
         build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors, 'job_id' : last_job_id, 'source': source_url,}
 
         # Upload build_log.json to S3:
