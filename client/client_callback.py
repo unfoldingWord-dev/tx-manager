@@ -81,6 +81,7 @@ class ClientCallback(object):
             # check if all parts are present, if not return
             missing_parts = []
             finishedParts = self.getFinishedParts(cdn_handler, s3_commit_key)
+            self.logger.debug('found finished files: ' + ','.join(finishedParts))
 
             count = int(part_count)
             for i in range(0, count):
@@ -184,7 +185,7 @@ class ClientCallback(object):
         download_file(converted_zip_url, converted_zip_file)
 
     def getFinishedParts(self, cdn_handler, s3_commit_key):
-        return cdn_handler.get_objects(prefix=s3_commit_key, suffix='.zip')
+        return cdn_handler.get_objects(prefix=s3_commit_key, suffix='.finished')
 
     def unzipConvertedFiles(self, converted_zip_file):
         unzip_dir = tempfile.mkdtemp(prefix='unzip_', dir=self.tempDir)
