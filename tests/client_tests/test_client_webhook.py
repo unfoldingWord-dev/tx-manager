@@ -164,7 +164,7 @@ class TestClientWebhook(unittest.TestCase):
     def mock_download_repo(source, target):
         shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
-    def mock_sendPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
+    def mock_addPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         TestClientWebhook.jobRequestCount += 1
         mock_job_return_value = TestClientWebhook.mock_job_return_value
         mock_job_return_value['job_id'] = identifier
@@ -190,7 +190,7 @@ class TestClientWebhook(unittest.TestCase):
         source = os.path.join(basePath, repoName)
         env_vars = self.getEnvironment(source, basePath)
         cwh = ClientWebhook(**env_vars)
-        cwh.sendPayloadToTxConverter = self.mock_sendPayloadToTxConverter
+        cwh.addPayloadToTxConverter = self.mock_addPayloadToTxConverter
         cwh.cdnUploadFile = self.mock_cdnUploadFile
         cwh.cdnGetJson = self.mock_cdnGetJson
         cwh.cdnDeleteFile = self.mock_cdnDeleteFile

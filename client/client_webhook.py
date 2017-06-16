@@ -285,7 +285,7 @@ class ClientWebhook(object):
             "source": source_url,
             "callback": callback_url
         }
-        return self.sendPayloadToTxConverter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
+        return self.addPayloadToTxConverter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
 
     def createNewJobID(self, repo_owner, repo_name, commit_id, count=0, part=0):
         if not count:
@@ -297,7 +297,7 @@ class ClientWebhook(object):
                                                       part)  # The way to know which repo/commit goes to this job request
         return identifier
 
-    def sendPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
+    def addPayloadToTxConverter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         headers = {"content-type": "application/json"}
         self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
         # remove token from printout, so it will not show in integration testing logs on Travis, etc.
