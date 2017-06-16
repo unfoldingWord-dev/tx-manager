@@ -156,7 +156,7 @@ class ClientWebhook(object):
             file_key = self.uploadZipFile(commit_id + '/' + partID, zip_filepath)# Send job request to tx-manager
 
             # Send job request to tx-manager
-            identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner, count=bookCount, part=i)
+            identifier, job = self.sendJobRequestToTxManager(commit_id, file_key, rc, repo_name, repo_owner, count=bookCount, part=i, book=book)
             jobs.append(job)
             last_job_id = job['job_id']
 
@@ -269,7 +269,7 @@ class ClientWebhook(object):
 
         return repo_dir
 
-    def sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner, count=0, part=0):
+    def sendJobRequestToTxManager(self, commit_id, file_key, rc, repo_name, repo_owner, count=0, part=0, book=''):
         source_url = self.source_url_base + "/" + file_key
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
@@ -285,6 +285,9 @@ class ClientWebhook(object):
             "source": source_url,
             "callback": callback_url
         }
+        if len(book) > 0:
+            payload['book'] = 'book'
+
         return self.addPayloadToTxConverter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
 
     def createNewJobID(self, repo_owner, repo_name, commit_id, count=0, part=0):

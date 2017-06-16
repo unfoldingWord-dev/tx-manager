@@ -47,6 +47,7 @@ class ClientCallback(object):
         converted_zip_url = self.job.output
         converted_zip_file = os.path.join(self.tempDir, converted_zip_url.rpartition('/')[2])
         file_utils.remove(converted_zip_file) # make sure old file not present
+        downloadSuccess = True
         try:
             self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
             tries = 0
@@ -60,16 +61,24 @@ class ClientCallback(object):
                     self.downloadFile(converted_zip_file, converted_zip_url)
                 except:
                     if tries >= 200:
-                        file_utils.remove_tree(self.tempDir) # cleanup
-                        raise
+                        if not multipleProject: # if single project throw an exception
+                            file_utils.remove_tree(self.tempDir) # cleanup
+                            raise
+
+                        downloadSuccess = False # if multiple project we note fail and move on
+                        if self.job.errors == None:
+                            self.job.errors = []
+                        self.job.errors.append("Missing converted file: " + converted_zip_url)
+                        
         finally:
-            self.logger.debug('download finished.')
+            self.logger.debug('download finished, success=' + str(downloadSuccess))
 
-        # Unzip the archive
-        unzip_dir = self.unzipConvertedFiles(converted_zip_file)
+        if downloadSuccess:
+            # Unzip the archive
+            unzip_dir = self.unzipConvertedFiles(converted_zip_file)
 
-        # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
-        self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
+            # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
+            self.uploadConvertedFiles(cdn_handler, s3_commit_key, unzip_dir)
 
         if multipleProject:
             # Now download the existing build_log.json file, update it and upload it back to S3
