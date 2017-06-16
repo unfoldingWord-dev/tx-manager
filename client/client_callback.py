@@ -113,14 +113,8 @@ class ClientCallback(object):
             self.job.log = []
             self.job.warnings = []
             self.job.errors = []
-            baseTempFolder = tempfile.mkdtemp(dir=self.tempDir)
             for i in range(0, count):
                 self.logger.debug('Merging part {0}'.format(i))
-                s3_part_key = '{0}/{1}'.format(s3_commit_key, i)
-                converted_zip_file = os.path.join(baseTempFolder, str(i) + '.zip')
-                zip_file_key = s3_part_key + '.zip'
-                self.logger.debug('Loading converted files from ' + zip_file_key)
-                self.cdnDownloadFile(cdn_handler, zip_file_key, converted_zip_file)
 
                 # Now download the existing build_log.json file
                 build_log_json = self.getBuildLog(cdn_handler, s3_commit_key, str(i) + "_")
