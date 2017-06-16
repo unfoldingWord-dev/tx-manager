@@ -74,6 +74,19 @@ class TestClientCallback(TestCase):
         #then
         self.assertIsNotNone(results)
 
+    def test_clientCallbackMultipleNoJobsComplete(self):
+        # given
+        self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0'
+        self.generatePartsCompleted( 0, 0)
+        mock_ccb = self.mockClientCallback(identifier)
+
+        #when
+        results = mock_ccb.process_callback()
+
+        #then
+        self.assertIsNotNone(results)
+
 
     # helpers
 

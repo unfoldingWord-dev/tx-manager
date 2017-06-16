@@ -81,7 +81,8 @@ class ClientCallback(object):
             # check if all parts are present, if not return
             missing_parts = []
             finishedParts = self.getFinishedParts(cdn_handler, s3_commit_key)
-            self.logger.debug('found finished files: ' + ','.join(finishedParts))
+            finishedPartsFileNames = ','.join([finishedParts[x].key for x in range(len(finishedParts))])
+            self.logger.debug('found finished files: ' + finishedPartsFileNames)
 
             count = int(part_count)
             for i in range(0, count):
