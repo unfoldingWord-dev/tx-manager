@@ -69,7 +69,7 @@ class ClientCallback(object):
                         if self.job.errors == None:
                             self.job.errors = []
                         self.job.errors.append("Missing converted file: " + converted_zip_url)
-                        
+
         finally:
             self.logger.debug('download finished, success=' + str(downloadSuccess))
 
