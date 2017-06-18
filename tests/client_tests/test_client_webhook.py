@@ -194,7 +194,7 @@ class TestClientWebhook(unittest.TestCase):
         cwh.cdnUploadFile = self.mock_cdnUploadFile
         cwh.cdnGetJson = self.mock_cdnGetJson
         cwh.cdnDeleteFile = self.mock_cdnDeleteFile
-        cwh.clearCommitDirectoryInCdn = self.mock_clearCommitDirectoryInCdn
+        cwh.clear_commit_directory_in_cdn = self.mock_clearCommitDirectoryInCdn
         return cwh
 
     def getEnvironment(self, sourcePath, gogsUrl):

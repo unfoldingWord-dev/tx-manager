@@ -25,13 +25,27 @@ class Usfm2HtmlConverter(Converter):
         # find the first directory that has usfm files.
         files = self.get_files()
 
+        exclusive_convert = False
+        convert_only = []
+        if 'convert_only' in self.options:
+            convert_only = self.options['convert_only'].split(',')
+            exclusive_convert = True
+            self.log.info('Converting only: ' + ','.join(convert_only))
+
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
             template_html = template_file.read()
 
         for filename in files:
             if filename.endswith('.usfm'):
+                if exclusive_convert:
+                    self.log.info('checking : ' + filename)
+                    if not (filename in convert_only): # if we are to convert only one file, see if this is it
+                        self.log.info('skipping : ' + filename)
+                        continue
+
                 # Covert the USFM file
+                self.log.info('converting: ' + filename)
                 scratch_dir = tempfile.mkdtemp(prefix='scratch_')
                 copyfile(filename, os.path.join(scratch_dir, os.path.basename(filename)))
                 filebase = os.path.splitext(os.path.basename(filename))[0]
