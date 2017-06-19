@@ -55,6 +55,8 @@ class ProjectDeployer(object):
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log or 'repo_name' not in build_log:
             return False
 
+        self.logger.debug("Deploying, build log: " + json.dumps(build_log))
+
         user = build_log['repo_owner']
         repo_name = build_log['repo_name']
         commit_id = build_log['commit_id'][:10]
