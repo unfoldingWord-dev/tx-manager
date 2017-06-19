@@ -37,7 +37,6 @@ class Usfm2HtmlConverter(Converter):
                     if item[0] == 'convert_only':
                         convert_only = item[1].split(',')
                         exclusive_convert = True
-                        self.log.info('Converting only: ' + ','.join(convert_only))
                         self.source = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
                         break
 
@@ -49,13 +48,10 @@ class Usfm2HtmlConverter(Converter):
             if filename.endswith('.usfm'):
                 if exclusive_convert:
                     base_name = os.path.basename(filename)
-                    self.log.info('checking : ' + base_name)
-                    if base_name not in convert_only: # if we are to convert only one file, see if this is it
-                        self.log.info('skipping : ' + base_name)
+                    if base_name not in convert_only:  # see if this is a file we are to convert
                         continue
 
                 # Covert the USFM file
-                self.log.info('converting: ' + filename)
                 scratch_dir = tempfile.mkdtemp(prefix='scratch_')
                 copyfile(filename, os.path.join(scratch_dir, os.path.basename(filename)))
                 filebase = os.path.splitext(os.path.basename(filename))[0]
