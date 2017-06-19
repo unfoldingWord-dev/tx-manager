@@ -154,6 +154,7 @@ class ClientWebhook(object):
 
             if len(book) > 0:
                 build_log_json['book'] = book
+                build_log_json['options'] = {'convert_only': book}
 
             # Upload build_log.json to S3:
             self.upload_build_log_to_s3(build_log_json, cdn_handler, master_s3_commit_key, str(i) + "_")
