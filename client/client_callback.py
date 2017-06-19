@@ -61,6 +61,10 @@ class ClientCallback(object):
                 try:
                     self.download_file(converted_zip_file, converted_zip_url)
                 except:
+                    if self.job.errors and len(self.job.errors) > 0:
+                        download_success = False
+                        break
+
                     if tries >= 200:
                         if not multiple_project:  # if single project throw an exception
                             file_utils.remove_tree(self.tempDir)  # cleanup
