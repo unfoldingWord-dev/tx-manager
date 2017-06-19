@@ -49,7 +49,7 @@ class TestClientCallback(TestCase):
     def test_clientCallbackMultipleJobPartial(self):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
-        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/1'
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/1/01-GEN.usfm'
         self.generate_parts_completed(1, 2)
         mock_ccb = self.mockClientCallback(identifier)
 
@@ -62,7 +62,7 @@ class TestClientCallback(TestCase):
     def test_clientCallbackMultipleJobComplete(self):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
-        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0'
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0/01-GEN.usfm'
         self.generate_parts_completed(0, 2)
         mock_ccb = self.mockClientCallback(identifier)
 
@@ -75,7 +75,7 @@ class TestClientCallback(TestCase):
     def test_clientCallbackMultipleNoJobsComplete(self):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
-        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0'
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0/01-GEN.usfm'
         self.generate_parts_completed(0, 0)
         mock_ccb = self.mockClientCallback(identifier)
 

@@ -38,7 +38,7 @@ class TestClientWebhook(unittest.TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @patch('client.client_webhook.download_file')
-    def test_download_repo(self, mock_download_file):
+    def test_downloadRepo(self, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
         cwh = ClientWebhook()
         try:
@@ -48,7 +48,7 @@ class TestClientWebhook(unittest.TestCase):
         cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
 
     @patch('client.client_webhook.download_file')
-    def test_process_webhook(self, mock_download_file):
+    def test_processWebhook(self, mock_download_file):
         # given
         mock_download_file.side_effect = self.mock_download_repo
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
@@ -67,7 +67,7 @@ class TestClientWebhook(unittest.TestCase):
         self.assertTrue(len(self.getProjectJson()) >= 4)
 
     @patch('client.client_webhook.download_file')
-    def test_process_webhook_error(self, mock_download_file):
+    def test_processWebhookError(self, mock_download_file):
         # given
         mock_download_file.side_effect = self.mock_download_repo
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
@@ -92,7 +92,7 @@ class TestClientWebhook(unittest.TestCase):
         self.assertTrue(len(self.getProjectJson()) >= 4)
 
     @patch('client.client_webhook.download_file')
-    def test_process_webhook_multiple_books(self, mock_download_file):
+    def test_processWebhookMultipleBooks(self, mock_download_file):
         # given
         mock_download_file.side_effect = self.mock_download_repo
         client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
@@ -111,7 +111,7 @@ class TestClientWebhook(unittest.TestCase):
         self.assertTrue(len(self.getProjectJson()) >= 4)
 
     @patch('client.client_webhook.download_file')
-    def test_process_webhook_multiple_books_errors(self, mock_download_file):
+    def test_processWebhookMultipleBooksErrors(self, mock_download_file):
         # given
         mock_download_file.side_effect = self.mock_download_repo
         client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
@@ -202,7 +202,6 @@ class TestClientWebhook(unittest.TestCase):
         gogs_user_token = 'dummy'
         api_url = 'https://api.door43.org'
         pre_convert_bucket = 'tx-webhook-client'
-        gogs_url = 'https://git.door43.org'
         cdn_bucket = 'cdn.door43.org'
         base_url = 'https://git.door43.org'
         commit_id = '22f3d09f7a33d2496db6993648f0cd967a9006f6'

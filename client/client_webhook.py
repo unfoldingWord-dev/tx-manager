@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import urllib
 import os
 import tempfile
 import requests
@@ -141,11 +142,10 @@ class ClientWebhook(object):
             self.logger.debug('Adding job for {0} part {1}'.format(book, part_id))
             bookdir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix=book + '_')
 
-            options = {'convert_only': book}
-
             # Send job request to tx-manager
-            identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner,
-                                                                  count=book_count, part=i, options=options)
+            source_url = self.build_multipart_source(file_key, book)
+            identifier, job = self.send_job_request_to_tx_manager(commit_id, source_url, rc, repo_name, repo_owner,
+                                                                  count=book_count, part=i, book=book)
             jobs.append(job)
             last_job_id = job['job_id']
 
@@ -154,7 +154,6 @@ class ClientWebhook(object):
 
             if len(book) > 0:
                 build_log_json['book'] = book
-                build_log_json['options'] = {'convert_only': book}
 
             # Upload build_log.json to S3:
             self.upload_build_log_to_s3(build_log_json, cdn_handler, master_s3_commit_key, str(i) + "_")
@@ -176,6 +175,11 @@ class ClientWebhook(object):
             raise Exception('; '.join(errors))
         else:
             return build_logs_json
+
+    def build_multipart_source(self, file_key, book):
+        params = urllib.urlencode({'convert_only': book})
+        source_url = '{0}?{1}'.format(file_key, params)
+        return source_url
 
     def clear_commit_directory_in_cdn(self, cdn_handler, s3_commit_key):
         # clear out the commit directory in the cdn bucket for this project revision
@@ -263,13 +267,13 @@ class ClientWebhook(object):
 
         return repo_dir
 
-    def send_job_request_to_tx_manager(self, commit_id, file_key, rc, repo_name, repo_owner, count=0, part=0,
-                                       options=None):
+    def send_job_request_to_tx_manager(self, commit_id, file_key, rc, repo_name, repo_owner,
+                                       count=0, part=0, book=None):
         source_url = self.source_url_base + "/" + file_key
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
 
-        identifier = self.create_new_job_id(repo_owner, repo_name, commit_id, count, part)
+        identifier = self.create_new_job_id(repo_owner, repo_name, commit_id, count, part, book)
 
         payload = {
             "identifier": identifier,
@@ -280,18 +284,15 @@ class ClientWebhook(object):
             "source": source_url,
             "callback": callback_url
         }
-        if options:
-            payload['options'] = options
-
         return self.add_payload_to_tx_converter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
 
-    def create_new_job_id(self, repo_owner, repo_name, commit_id, count=0, part=0):
+    def create_new_job_id(self, repo_owner, repo_name, commit_id, count=0, part=0, book=None):
         if not count:
             identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                               commit_id)  # The way to know which repo/commit goes to this job request
         else:  # if this is part of a multipart job
             # The way to know which repo/commit goes to this job request
-            identifier = "{0}/{1}/{2}/{3}/{4}".format(repo_owner, repo_name, commit_id, count, part)
+            identifier = "{0}/{1}/{2}/{3}/{4}/{5}".format(repo_owner, repo_name, commit_id, count, part, book)
         return identifier
 
     def add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):

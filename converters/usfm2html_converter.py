@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import urlparse
 import os
 import tempfile
 import codecs
@@ -27,10 +28,18 @@ class Usfm2HtmlConverter(Converter):
 
         exclusive_convert = False
         convert_only = []
-        if 'convert_only' in self.options:
-            convert_only = self.options['convert_only'].split(',')
-            exclusive_convert = True
-            self.log.info('Converting only: ' + ','.join(convert_only))
+        if self.source and len(self.source) > 0:
+            parsed = urlparse.urlparse(self.source)
+            params = urlparse.parse_qsl(parsed.query)
+            if params and len(params) > 0:
+                for i in range(0, len(params)):
+                    item = params[i]
+                    if item[0] == 'convert_only':
+                        convert_only = item[1].split(',')
+                        exclusive_convert = True
+                        self.log.info('Converting only: ' + ','.join(convert_only))
+                        self.source = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+                        break
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
@@ -39,9 +48,10 @@ class Usfm2HtmlConverter(Converter):
         for filename in files:
             if filename.endswith('.usfm'):
                 if exclusive_convert:
-                    self.log.info('checking : ' + filename)
-                    if not (filename in convert_only): # if we are to convert only one file, see if this is it
-                        self.log.info('skipping : ' + filename)
+                    base_name = os.path.basename(filename)
+                    self.log.info('checking : ' + base_name)
+                    if base_name not in convert_only: # if we are to convert only one file, see if this is it
+                        self.log.info('skipping : ' + base_name)
                         continue
 
                 # Covert the USFM file

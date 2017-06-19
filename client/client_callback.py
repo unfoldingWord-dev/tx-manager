@@ -29,14 +29,15 @@ class ClientCallback(object):
     def process_callback(self):
         cdn_handler = S3Handler(self.cdn_bucket)
         parts = self.job.identifier.split('/')
-        multiple_project = len(parts) >= 5
+        multiple_project = len(parts) >= 6
         part_count = '0'
         part_id = '0'
         if not multiple_project:
-            owner_name, repo_name, commit_id = parts
+            owner_name, repo_name, commit_id = parts[0:3]  # extract fields
         else:
-            owner_name, repo_name, commit_id, part_count, part_id = parts
-            self.logger.debug('Multiple project, part {0} of {1}'.format(part_id,part_count))
+            owner_name, repo_name, commit_id, part_count, part_id, book = parts   # extract fields
+            self.logger.debug('Multiple project, part {0} of {1}, converting book {2}'
+                              .format(part_id, part_count, book))
 
         # The identifier is how to know which username/repo/commit this callback goes to
         s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name, commit_id)
