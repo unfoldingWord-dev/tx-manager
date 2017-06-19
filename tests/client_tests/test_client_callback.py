@@ -1,18 +1,17 @@
 from __future__ import absolute_import, unicode_literals, print_function
-
 import json
 import tempfile
-
 import os
-import mock
 import shutil
-
+from aws_tools.s3_handler import S3Handler
 from general_tools import file_utils
 from mock import patch
 from unittest import TestCase
 from client.client_callback import ClientCallback
+from moto import mock_s3
 
 
+@mock_s3
 class TestClientCallback(TestCase):
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'tx-manager')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
@@ -34,6 +33,7 @@ class TestClientCallback(TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
+    # @patch('client.client_webhook.download_file')
     def test_clientCallbackSimpleJob(self):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
@@ -111,7 +111,7 @@ class TestClientCallback(TestCase):
             'resource_type': 'resource_type3'
         }
         if error:
-            self.build_log_json['errors'] = [ error ]
+            self.build_log_json['errors'] = [error]
 
         self.build_log_json = json.dumps(self.build_log_json)
 
@@ -130,13 +130,14 @@ class TestClientCallback(TestCase):
             'gogs_url': 'https://git.example.com',
             'cdn_bucket': 'cdn_test_bucket'
         }
-        mock_ccb = ClientCallback(**vars)
-        mock_ccb.download_file = self.mock_downloadFile
-        mock_ccb.cdn_upload_file = self.mock_cdn_upload_file
-        mock_ccb.cdn_get_json_file = self.mock_cdnGetJsonFile
-        mock_ccb.get_finished_parts = self.mock_get_finished_parts
-        mock_ccb.cdn_download_file = self.mock_cdnDownloadFile
-        return mock_ccb
+        ccb = ClientCallback(**vars)
+        ccb.cdn_handler = S3Handler("test_cdn")
+        ccb.cdn_handler.create_bucket()
+        ccb.download_file = self.mock_downloadFile
+        ccb.cdn_handler.get_objects = self.mock_cdn_get_objects
+        ccb.cdn_handler.upload_file = self.mock_cdn_upload_file
+        ccb.cdn_handler.get_json = self.mock_cdn_get_json
+        return ccb
 
     def mock_downloadFile(self, target, url):
         file_name = os.path.basename(url)
@@ -147,16 +148,14 @@ class TestClientCallback(TestCase):
         elif file_name == 'project.json':
             file_utils.write_file(target, self.project_json)
 
-    def mock_cdn_upload_file(self, cdn_handler, project_file, s3_key, cache_time=600):
-        bucket_name = cdn_handler.bucket.name
+    def mock_cdn_upload_file(self, project_file, s3_key, cache_time=600):
         TestClientCallback.transfered_files.append({'type': 'upload', 'file': project_file,
-                                                    'key': bucket_name + '/' + s3_key})
+                                                    'key': s3_key})
         return
 
-    def mock_cdnGetJsonFile(self, cdn_handler, s3_key):
-        bucket_name = cdn_handler.bucket.name
+    def mock_cdn_get_json(self, s3_key):
         TestClientCallback.transfered_files.append({'type': 'download', 'file': 'json',
-                                                    'key': bucket_name + '/' + s3_key})
+                                                    'key': s3_key})
         if 'build_log.json' in s3_key:
             return json.loads(self.build_log_json)
         elif 'project.json' in s3_key:
@@ -170,14 +169,8 @@ class TestClientCallback(TestCase):
             TestClientCallback.parts.append(part)
         return TestClientCallback.parts
 
-    def mock_get_finished_parts(self, cdn_handler, s3_commit_key):
+    def mock_cdn_get_objects(self, prefix=None, suffix=None):
         return TestClientCallback.parts
-
-    def mock_cdnDownloadFile(self, cdn_handler, s3_part_key, target):
-        bucket_name = cdn_handler.bucket.name
-        self.mock_downloadFile(target, s3_part_key)
-        TestClientCallback.transfered_files.append({'type': 'download', 'file': target,
-                                                    'key': bucket_name + '/' + s3_part_key})
 
 
 class Part(object):
