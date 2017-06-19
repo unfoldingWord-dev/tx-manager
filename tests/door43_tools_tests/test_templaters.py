@@ -48,9 +48,9 @@ class TestTemplater(unittest.TestCase):
         test_file_path = self.extractZipFiles(test_folder_name)
         success = self.doTemplater('ta', test_file_path)
         self.verifyTaTemplater(success, expect_success, self.out_dir,
-                               ['1-intro.html', '2-process.html', '3-translate.html', '4-checking.html'])
+                               ['01-intro.html', '02-process.html', '03-translate.html', '04-checking.html'])
         # Verify sidebar nav generated
-        soup = BeautifulSoup(read_file(os.path.join(self.out_dir, '4-checking.html')), 'html.parser')
+        soup = BeautifulSoup(read_file(os.path.join(self.out_dir, '04-checking.html')), 'html.parser')
         self.assertEqual(len(soup.find('nav', {'id': 'right-sidebar-nav'}).findAll('li')), 49)
         self.assertEqual(len(soup.find('div', {'id': 'content'}).findAll(re.compile(r'h\d+'),
                                                                          {'class': 'section-header'})), 44)

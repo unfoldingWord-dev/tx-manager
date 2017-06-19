@@ -317,17 +317,17 @@ class TaPreprocessor(Preprocessor):
             for section in toc['sections']:
                 markdown += self.compile_section(project, section, 2)
             markdown = self.fix_links(markdown)
-            output_file = os.path.join(self.output_dir, '{0}-{1}.md'.format(idx+1, project.identifier))
+            output_file = os.path.join(self.output_dir, '{0}-{1}.md'.format(str(idx+1).zfill(2), project.identifier))
             write_file(output_file, markdown)
 
             # Copy the toc and config.yaml file to the output dir so they can be used to
             # generate the ToC on live.door43.org
             toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
             if os.path.isfile(toc_file):
-                copy(toc_file, os.path.join(self.output_dir, '{0}-{1}-toc.yaml'.format(idx+1, project.identifier)))
+                copy(toc_file, os.path.join(self.output_dir, '{0}-{1}-toc.yaml'.format(str(idx+1).zfill(2), project.identifier)))
             config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
             if os.path.isfile(config_file):
-                copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(idx+1, project.identifier)))
+                copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(str(idx+1).zfill(2), project.identifier)))
         return True
 
     @staticmethod
