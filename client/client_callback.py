@@ -42,7 +42,7 @@ class ClientCallback(object):
         # The identifier is how to know which username/repo/commit this callback goes to
         s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name, commit_id)
 
-        self.logger.debug('Callback for comming {0}...'.format(s3_commit_key))
+        self.logger.debug('Callback for commit {0}...'.format(s3_commit_key))
 
         # Download the ZIP file of the converted files
         converted_zip_url = self.job.output

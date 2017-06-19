@@ -206,22 +206,6 @@ class ManagerTest(unittest.TestCase):
         for patch in ManagerTest.patches:
             patch.stop()
 
-    def test_child_job(self):
-        tx_manager = TxManager(**self.tx_manager_env_vars)
-        expectedCount = "4"
-        expectedItem = "3"
-        source = "https://s3-us-west-2.amazonaws.com/dev-tx-webhook-client/preconvert/39a099622d.zip?count=" + expectedCount + "&item=" + expectedItem
-        params = tx_manager.isChildJob(source)
-        self.assertIsNotNone(params)
-        self.assertEqual(params['count'][0], expectedCount)
-        self.assertEqual(params['item'][0], expectedItem)
-
-    def test_not_child_job(self):
-        tx_manager = TxManager(**self.tx_manager_env_vars)
-        source = "https://s3-us-west-2.amazonaws.com/dev-tx-webhook-client/preconvert/39a099622d.zip"
-        params = tx_manager.isChildJob(source)
-        self.assertIsNone(params)
-
     def test_setup_job(self):
         """Successful call of setup_job."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
