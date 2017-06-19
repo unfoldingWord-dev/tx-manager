@@ -137,10 +137,15 @@ class ClientCallback(object):
 
                 build_logs_json.append(build_log_json)
 
+                if 'book' in build_log_json:
+                    book = build_log_json['book']
+                else:
+                    book = build_log_json['commit_id']  # if no book then use commit_id
+
                 # merge build_log data
-                self.job.log += build_log_json['log']
-                self.job.errors += build_log_json['errors']
-                self.job.warnings += build_log_json['warnings']
+                self.job.log += self.prefix_list(build_log_json, 'log', book)
+                self.job.errors += self.prefix_list(build_log_json, 'errors', book)
+                self.job.warnings += self.prefix_list(build_log_json, 'warnings', book)
                 if ('status' in build_log_json) and (build_log_json['status'] != 'success'):
                     self.job.status = build_log_json['status']
                 if ('success' in build_log_json) and (build_log_json['success'] is not None):
@@ -178,6 +183,17 @@ class ClientCallback(object):
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
             file_utils.remove_tree(self.tempDir)  # cleanup
             return build_log_json
+
+    def prefix_list(self, build_log_json, key, book):
+        if key not in build_log_json:
+            return []
+
+        items = build_log_json[key]
+        for i in range(0, len(items)):
+            item = items[i]
+            new_text = book + ': ' + item
+            items[i] = new_text
+        return items
 
     def build_log_sanity_check(self, build_log_json):
         # sanity check

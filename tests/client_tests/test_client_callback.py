@@ -72,6 +72,19 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
+    def test_clientCallbackMultipleJobCompleteError(self):
+        # given
+        self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
+        identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0/01-GEN.usfm'
+        self.generate_parts_completed(0, 2)
+        mock_ccb = self.mockClientCallback(identifier, 'conversion failed')
+
+        # when
+        results = mock_ccb.process_callback()
+
+        # then
+        self.assertIsNotNone(results)
+
     def test_clientCallbackMultipleNoJobsComplete(self):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
@@ -87,7 +100,7 @@ class TestClientCallback(TestCase):
 
     # helpers
 
-    def mockClientCallback(self, identifier):
+    def mockClientCallback(self, identifier, error=None):
         self.build_log_json = {
             'dummy_data': 'stuff',
             'commit_id':  '123456ff',
@@ -95,7 +108,11 @@ class TestClientCallback(TestCase):
             'started_at': '2017-05-22T13:39:16Z',
             'repo_owner': 'repo_owner1',
             'repo_name':  'repo_name2',
+            'resource_type': 'resource_type3'
         }
+        if error:
+            self.build_log_json['errors'] = [ error ]
+
         self.build_log_json = json.dumps(self.build_log_json)
 
         self.project_json = '{}'
