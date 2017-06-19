@@ -156,6 +156,7 @@ class ClientCallback(object):
             master_build_log_json['started_at'] = build_logs_json0['started_at']
             master_build_log_json['repo_owner'] = build_logs_json0['repo_owner']
             master_build_log_json['repo_name'] = build_logs_json0['repo_name']
+            master_build_log_json['resource_type'] = build_logs_json0['resource_type']
             build_log_json = self.upload_build_log(cdn_handler, master_build_log_json, s3_commit_key)
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
