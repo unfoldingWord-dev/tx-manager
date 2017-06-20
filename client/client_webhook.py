@@ -174,11 +174,13 @@ class ClientWebhook(object):
         build_logs_json = {
             'multiple': True,
             'build_logs': build_logs,
+            'commit_id': commit_id,
             'errors': errors,
             'job_id': last_job_id,
             'repo_owner': repo_owner,
             'repo_name': repo_name,
-            'source': source_url}
+            'source': source_url
+        }
 
         # Upload build_log.json to S3:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
