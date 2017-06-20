@@ -4,8 +4,8 @@ import tempfile
 import unittest
 import codecs
 from contextlib import closing
-from converters.md2html_converter import Md2HtmlConverter
-from general_tools.file_utils import remove_tree, unzip, remove
+from libraries.converters.md2html_converter import Md2HtmlConverter
+from libraries.general_tools.file_utils import remove_tree, unzip, remove
 from bs4 import BeautifulSoup
 
 

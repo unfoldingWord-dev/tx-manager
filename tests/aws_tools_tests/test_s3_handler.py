@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from botocore.exceptions import ClientError
 from unittest import TestCase
-from aws_tools.s3_handler import S3Handler
+from libraries.aws_tools.s3_handler import S3Handler
 from moto import mock_s3
 
 

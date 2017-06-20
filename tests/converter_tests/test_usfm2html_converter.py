@@ -4,8 +4,8 @@ import os
 import tempfile
 import unittest
 from contextlib import closing
-from converters.usfm2html_converter import Usfm2HtmlConverter
-from general_tools.file_utils import remove_tree, unzip, remove
+from libraries.converters.usfm2html_converter import Usfm2HtmlConverter
+from libraries.general_tools.file_utils import remove_tree, unzip, remove
 
 
 class TestUsfmHtmlConverter(unittest.TestCase):

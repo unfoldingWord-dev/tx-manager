@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from aws_tools.s3_handler import S3Handler
 from mock import patch
-from client.client_webhook import ClientWebhook
+from libraries.client.client_webhook import ClientWebhook
 from general_tools.file_utils import read_file
 from moto import mock_s3
 
@@ -43,6 +43,8 @@ class TestClientWebhook(unittest.TestCase):
 
     @patch('client.client_webhook.download_file')
     def test_downloadRepo(self, mock_download_file):
+    @patch('libraries.client.client_webhook.download_file')
+    def test_download_repo(self, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
         cwh = ClientWebhook()
         try:
