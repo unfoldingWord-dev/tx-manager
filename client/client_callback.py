@@ -51,34 +51,18 @@ class ClientCallback(object):
         converted_zip_file = os.path.join(self.temp_dir, converted_zip_url.rpartition('/')[2])
         file_utils.remove(converted_zip_file)  # make sure old file not present
         download_success = True
+        self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
         try:
-            self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
-            tries = 0
-            # Going to try to get the file every second for 200 seconds just in case there is a delay in the upload
-            # (For example, 3.6MB takes at least one minute to be seen on S3!)
-            time.sleep(5)
-            while not os.path.isfile(converted_zip_file) and tries < 200:
-                tries += 1
-                time.sleep(1)
-                try:
-                    download_file(converted_zip_url, converted_zip_file)
-                except:
-                    if self.job.errors and len(self.job.errors) > 0:
-                        download_success = False
-                        break
-
-                    if tries >= 200:
-                        if not multiple_project:  # if single project throw an exception
-                            file_utils.remove_tree(self.temp_dir)  # cleanup
-                            raise
-
-                        download_success = False  # if multiple project we note fail and move on
-                        if self.job.errors is None:
-                            self.job.errors = []
-                        self.job.errors.append("Missing converted file: " + converted_zip_url)
-
+            download_file(converted_zip_url, converted_zip_file)
+        except:
+            download_success = False  # if multiple project we note fail and move on
+            if not multiple_project:
+                file_utils.remove_tree(self.temp_dir)  # cleanup
+            if self.job.errors is None:
+                self.job.errors = []
+                self.job.errors.append("Missing converted file: " + converted_zip_url)
         finally:
-            self.logger.debug('download finished, success=' + str(download_success))
+            self.logger.debug('download finished, success={0}'.format(str(download_success)))
 
         if download_success:
             # Unzip the archive
