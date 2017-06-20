@@ -25,6 +25,7 @@ class ClientCallback(object):
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
         self.tempDir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
+        self.cdn_handler = None
 
     def process_callback(self):
         if not self.cdn_handler:

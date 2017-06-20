@@ -4,11 +4,14 @@ import os
 import shutil
 import tempfile
 import unittest
+from aws_tools.s3_handler import S3Handler
 from mock import patch
 from client.client_webhook import ClientWebhook
 from general_tools.file_utils import read_file
+from moto import mock_s3
 
 
+@mock_s3
 class TestClientWebhook(unittest.TestCase):
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
@@ -51,8 +54,8 @@ class TestClientWebhook(unittest.TestCase):
     @patch('client.client_webhook.download_file')
     def test_processWebhook(self, mock_download_file):
         # given
-        mock_download_file.side_effect = self.mock_download_repo
-        client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
+        client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
+                                                      mock_download_file)
         expected_job_count = 1
         expected_error_count = 0
 
@@ -70,8 +73,8 @@ class TestClientWebhook(unittest.TestCase):
     @patch('client.client_webhook.download_file')
     def test_processWebhookError(self, mock_download_file):
         # given
-        mock_download_file.side_effect = self.mock_download_repo
-        client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir)
+        client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
+                                                      mock_download_file)
         TestClientWebhook.mock_job_return_value['errors'] = ['error 1', 'error 2']
         expected_job_count = 1
         captured_error = False
@@ -95,8 +98,7 @@ class TestClientWebhook(unittest.TestCase):
     @patch('client.client_webhook.download_file')
     def test_processWebhookMultipleBooks(self, mock_download_file):
         # given
-        mock_download_file.side_effect = self.mock_download_repo
-        client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
+        client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
 
@@ -114,8 +116,7 @@ class TestClientWebhook(unittest.TestCase):
     @patch('client.client_webhook.download_file')
     def test_processWebhookMultipleBooksErrors(self, mock_download_file):
         # given
-        mock_download_file.side_effect = self.mock_download_repo
-        client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir)
+        client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)
         TestClientWebhook.mock_job_return_value['errors'] = ['error 1','error 2']
         expected_job_count = 4
         expected_error_count = 2 * expected_job_count
@@ -123,6 +124,7 @@ class TestClientWebhook(unittest.TestCase):
         # when
         try:
             client_web_hook.process_webhook()
+            captured_error = False
         except:
             captured_error = True
 
@@ -162,8 +164,24 @@ class TestClientWebhook(unittest.TestCase):
                 return upload['file']
         return None
 
+    def setupClientWebhookMock(self, repo_name, base_path, mock_download_file):
+        mock_download_file.side_effect = self.mock_download_repo
+        source = os.path.join(base_path, repo_name)
+        env_vars = self.get_environment(source, base_path)
+        self.cwh = ClientWebhook(**env_vars)
+        self.cwh.cdn_handler = S3Handler("test_cdn")
+        self.cwh.cdn_handler.create_bucket()
+        self.cwh.cdn_handler.upload_file = self.mock_cdn_upload_file
+        self.cwh.cdn_handler.get_json = self.mock_cdn_get_json
+        self.cwh.preconvert_handler = S3Handler("test_preconvert")
+        self.cwh.preconvert_handler.create_bucket()
+        self.cwh.preconvert_handler.upload_file = self.mock_s3_upload_file
+        self.cwh.add_payload_to_tx_converter = self.mock_add_payload_to_tx_converter
+        self.cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
+        return self.cwh
+
     @staticmethod
-    def mock_download_repo(source, target):
+    def mock_download_repo(self, source, target):
         shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
     def mock_add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
@@ -172,32 +190,25 @@ class TestClientWebhook(unittest.TestCase):
         mock_job_return_value['job_id'] = identifier
         return identifier, mock_job_return_value
 
-    def mock_cdn_upload_file(self, cdn_handler, project_file, s3_key):
-        bucket_name = cdn_handler.bucket.name
+    def mock_cdn_upload_file(self, project_file, s3_key):
+        bucket_name = self.cwh.preconvert_handler.bucket.name
+        return self.upload_file(bucket_name, project_file, s3_key)
+
+    def mock_s3_upload_file(self, project_file, s3_key):
+        bucket_name = self.cwh.cdn_handler.bucket.name
+        return self.upload_file(bucket_name, project_file, s3_key)
+
+    def upload_file(self, bucket_name, project_file, s3_key):
         filename = tempfile.mktemp(dir=TestClientWebhook.base_temp_dir)
         shutil.copyfile(project_file, filename)
         TestClientWebhook.uploaded_files.append({'file': filename, 'key': bucket_name + '/' + s3_key})
         return
 
-    def mock_cdn_get_json(self, cdn_handler, project_json_key):
+    def mock_cdn_get_json(self, project_json_key):
         return {}
 
-    def mock_cdn_delete_file(self, cdn_handler, obj):
+    def mock_clear_commit_directory_in_cdn(self, s3_commit_key):
         return
-
-    def mock_clear_commit_directory_in_cdn(self, cdn_handler, s3_commit_key):
-        return
-
-    def setupClientWebhookMock(self, repo_name, base_path):
-        source = os.path.join(base_path, repo_name)
-        env_vars = self.get_environment(source, base_path)
-        cwh = ClientWebhook(**env_vars)
-        cwh.add_payload_to_tx_converter = self.mock_add_payload_to_tx_converter
-        cwh.cdn_upload_file = self.mock_cdn_upload_file
-        cwh.cdn_get_json = self.mock_cdn_get_json
-        cwh.cdn_delete_file = self.mock_cdn_delete_file
-        cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
-        return cwh
 
     def get_environment(self, source_path, gogs_url):
         gogs_user_token = 'dummy'

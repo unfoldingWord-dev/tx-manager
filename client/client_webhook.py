@@ -40,6 +40,9 @@ class ClientWebhook(object):
         else:
             self.source_url_base = None
 
+        self.cdn_handler = None
+        self.preconvert_handler = None
+
         # move everything down one directory levek for simple delete
         self.intermediate_dir = 'tx-manager'
         self.base_temp_dir = os.path.join(tempfile.gettempdir(), self.intermediate_dir)
@@ -73,6 +76,12 @@ class ClientWebhook(object):
             pusher = {'username': commit['author']['username']}
         pusher_username = pusher['username']
 
+        if not self.cdn_handler:
+            self.cdn_handler = S3Handler(self.cdn_bucket)
+
+        if not self.preconvert_handler:
+            self.preconvert_handler = S3Handler(self.pre_convert_bucket)
+
         # 1) Download and unzip the repo files
         repo_dir = self.get_repo_files(commit_url, repo_name)
 
@@ -97,19 +106,18 @@ class ClientWebhook(object):
             # Send job request to tx-manager
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
 
-            cdn_handler = S3Handler(self.cdn_bucket)
             s3_commit_key = 'u/{0}'.format(identifier)
-            self.clear_commit_directory_in_cdn(cdn_handler, s3_commit_key)
+            self.clear_commit_directory_in_cdn(s3_commit_key)
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.update_project_json(cdn_handler, commit_id, job, repo_name, repo_owner)
+            self.update_project_json(commit_id, job, repo_name, repo_owner)
 
             # Compile data for build_log.json
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                    pusher_username, repo_name, repo_owner)
 
             # Upload build_log.json to S3:
-            self.upload_build_log_to_s3(build_log_json, cdn_handler, s3_commit_key)
+            self.upload_build_log_to_s3(build_log_json, s3_commit_key)
             file_utils.remove_tree(self.base_temp_dir)  # cleanup
             if len(job['errors']) > 0:
                 raise Exception('; '.join(job['errors']))
@@ -126,10 +134,9 @@ class ClientWebhook(object):
         build_logs = []
         jobs = []
 
-        cdn_handler = S3Handler(self.cdn_bucket)
         master_identifier = self.create_new_job_id(repo_owner, repo_name, commit_id)
         master_s3_commit_key = 'u/{0}'.format(master_identifier)
-        self.clear_commit_directory_in_cdn(cdn_handler, master_s3_commit_key)
+        self.clear_commit_directory_in_cdn(master_s3_commit_key)
 
         book_count = len(books)
         last_job_id = 0
@@ -156,20 +163,20 @@ class ClientWebhook(object):
                 build_log_json['book'] = book
 
             # Upload build_log.json to S3:
-            self.upload_build_log_to_s3(build_log_json, cdn_handler, master_s3_commit_key, str(i) + "_")
+            self.upload_build_log_to_s3(build_log_json, master_s3_commit_key, str(i) + "_")
 
             errors += job['errors']
             build_logs.append(build_log_json)
 
         # Download the project.json file for this repo (create it if doesn't exist) and update it
-        self.update_project_json(cdn_handler, commit_id, jobs[0], repo_name, repo_owner)
+        self.update_project_json(commit_id, jobs[0], repo_name, repo_owner)
 
         source_url = self.source_url_base + "/preconvert/" + commit_id + '.zip'
         build_logs_json = {'multiple': True, 'build_logs': build_logs, 'errors': errors, 'job_id': last_job_id,
                            'source': source_url}
 
         # Upload build_log.json to S3:
-        self.upload_build_log_to_s3(build_logs_json, cdn_handler, master_s3_commit_key)
+        self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
         file_utils.remove_tree(self.base_temp_dir)  # cleanup
         if len(errors) > 0:
             raise Exception('; '.join(errors))
@@ -181,18 +188,18 @@ class ClientWebhook(object):
         source_url = '{0}?{1}'.format(file_key, params)
         return source_url
 
-    def clear_commit_directory_in_cdn(self, cdn_handler, s3_commit_key):
+    def clear_commit_directory_in_cdn(self, s3_commit_key):
         # clear out the commit directory in the cdn bucket for this project revision
-        for obj in cdn_handler.get_objects(prefix=s3_commit_key):
+        for obj in self.cdn_handler.get_objects(prefix=s3_commit_key):
             self.logger.debug('Removing file: ' + obj.key)
-            cdn_handler.delete_file(obj.key)
+            self.cdn_handler.delete_file(obj.key)
 
-    def upload_build_log_to_s3(self, build_log_json, cdn_handler, s3_commit_key, part=''):
+    def upload_build_log_to_s3(self, build_log_json, s3_commit_key, part=''):
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
         upload_key = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         self.logger.debug('Saving build log to ' + upload_key)
-        self.cdn_upload_file(cdn_handler, build_log_file, upload_key)
+        self.cdn_handler.upload_file(build_log_file, upload_key)
         # self.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
     def create_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
@@ -207,9 +214,9 @@ class ClientWebhook(object):
         build_log_json['commit_message'] = commit_message
         return build_log_json
 
-    def update_project_json(self, cdn_handler, commit_id, job, repo_name, repo_owner):
+    def update_project_json(self, commit_id, job, repo_name, repo_owner):
         project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
-        project_json = self.cdn_get_json(cdn_handler, project_json_key)
+        project_json = self.cdn_handler.get_json(project_json_key)
         project_json['user'] = repo_owner
         project_json['repo'] = repo_name
         project_json['repo_url'] = 'https://git.door43.org/{0}/{1}'.format(repo_owner, repo_name)
@@ -231,25 +238,13 @@ class ClientWebhook(object):
         project_json['commits'] = commits
         project_file = os.path.join(self.base_temp_dir, 'project.json')
         write_file(project_file, project_json)
-        self.cdn_upload_file(cdn_handler, project_file, project_json_key)
-
-    def cdn_upload_file(self, cdn_handler, project_file, s3_key):
-        cdn_handler.upload_file(project_file, s3_key, 0)
-
-    def cdn_get_json(self, cdn_handler, project_json_key):
-        project_json = cdn_handler.get_json(project_json_key)
-        return project_json
-
-    def cdn_delete_file(self, cdn_handler, obj):
-        self.logger.debug('Removing file: ' + obj.key)
-        cdn_handler.delete_file(obj.key)
+        self.cdn_handler.upload_file(project_file, project_json_key)
 
     def upload_zip_file(self, commit_id, zip_filepath):
-        s3_handler = S3Handler(self.pre_convert_bucket)
         file_key = 'preconvert/{0}.zip'.format(commit_id)
         self.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, self.pre_convert_bucket, file_key))
         try:
-            self.cdn_upload_file(s3_handler, zip_filepath, file_key)
+            self.preconvert_handler.upload_file(zip_filepath, file_key)
         except Exception as e:
             self.logger.error('Failed to upload zipped repo up to server')
             self.logger.exception(e)
