@@ -48,18 +48,12 @@ class TestTemplater(unittest.TestCase):
         test_file_path = self.extractZipFiles(test_folder_name)
         success = self.doTemplater('ta', test_file_path)
         self.verifyTaTemplater(success, expect_success, self.out_dir,
-                               ['01-intro.html', '02-process.html', '03-translate.html', '04-checking.html'])
+                               ['checking.html', 'intro.html', 'process.html', 'translate.html'])
         # Verify sidebar nav generated
-        soup = BeautifulSoup(read_file(os.path.join(self.out_dir, '04-checking.html')), 'html.parser')
+        soup = BeautifulSoup(read_file(os.path.join(self.out_dir, 'checking.html')), 'html.parser')
         self.assertEqual(len(soup.find('nav', {'id': 'right-sidebar-nav'}).findAll('li')), 49)
         self.assertEqual(len(soup.find('div', {'id': 'content'}).findAll(re.compile(r'h\d+'),
                                                                          {'class': 'section-header'})), 44)
-        # Check that manuals are in order
-        manuals = soup.find('nav', {'id': 'right-sidebar-nav'}).findChildren('h4')
-        self.assertEqual(manuals[0].text, 'Introduction to translationAcademy')
-        self.assertEqual(manuals[1].text, 'Process Manual')
-        self.assertEqual(manuals[2].text, 'Translation Manual')
-        self.assertEqual(manuals[3].text, 'Checking Manual')
 
     def testCommitToDoor43Empty(self):
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
