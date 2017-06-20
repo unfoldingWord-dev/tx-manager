@@ -33,12 +33,12 @@ class TestClientCallback(TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    # @patch('client.client_webhook.download_file')
-    def test_clientCallbackSimpleJob(self):
+    @patch('client.client_callback.download_file')
+    def test_clientCallbackSimpleJob(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a'
-        mock_ccb = self.mockClientCallback(identifier)
+        mock_ccb = self.mockClientCallback(identifier, mock_download_file)
 
         # when
         results = mock_ccb.process_callback()
@@ -46,12 +46,13 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    def test_clientCallbackMultipleJobPartial(self):
+    @patch('client.client_callback.download_file')
+    def test_clientCallbackMultipleJobPartial(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/1/01-GEN.usfm'
         self.generate_parts_completed(1, 2)
-        mock_ccb = self.mockClientCallback(identifier)
+        mock_ccb = self.mockClientCallback(identifier, mock_download_file)
 
         # when
         results = mock_ccb.process_callback()
@@ -59,12 +60,13 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    def test_clientCallbackMultipleJobComplete(self):
+    @patch('client.client_callback.download_file')
+    def test_clientCallbackMultipleJobComplete(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0/01-GEN.usfm'
         self.generate_parts_completed(0, 2)
-        mock_ccb = self.mockClientCallback(identifier)
+        mock_ccb = self.mockClientCallback(identifier, mock_download_file)
 
         # when
         results = mock_ccb.process_callback()
@@ -72,12 +74,13 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    def test_clientCallbackMultipleJobCompleteError(self):
+    @patch('client.client_callback.download_file')
+    def test_clientCallbackMultipleJobCompleteError(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0/01-GEN.usfm'
         self.generate_parts_completed(0, 2)
-        mock_ccb = self.mockClientCallback(identifier, 'conversion failed')
+        mock_ccb = self.mockClientCallback(identifier, mock_download_file, 'conversion failed')
 
         # when
         results = mock_ccb.process_callback()
@@ -85,12 +88,13 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    def test_clientCallbackMultipleNoJobsComplete(self):
+    @patch('client.client_callback.download_file')
+    def test_clientCallbackMultipleNoJobsComplete(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'tx-manager-test-data/en-ulb/22f3d09f7a/2/0/01-GEN.usfm'
         self.generate_parts_completed(0, 0)
-        mock_ccb = self.mockClientCallback(identifier)
+        mock_ccb = self.mockClientCallback(identifier, mock_download_file)
 
         # when
         results = mock_ccb.process_callback()
@@ -98,9 +102,12 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
+    #
     # helpers
+    #
 
-    def mockClientCallback(self, identifier, error=None):
+    def mockClientCallback(self, identifier, mock_download_file, error=None):
+        mock_download_file.side_effect = self.mock_download_file
         self.build_log_json = {
             'dummy_data': 'stuff',
             'commit_id':  '123456ff',
@@ -133,13 +140,12 @@ class TestClientCallback(TestCase):
         ccb = ClientCallback(**vars)
         ccb.cdn_handler = S3Handler("test_cdn")
         ccb.cdn_handler.create_bucket()
-        ccb.download_file = self.mock_downloadFile
         ccb.cdn_handler.get_objects = self.mock_cdn_get_objects
         ccb.cdn_handler.upload_file = self.mock_cdn_upload_file
         ccb.cdn_handler.get_json = self.mock_cdn_get_json
         return ccb
 
-    def mock_downloadFile(self, target, url):
+    def mock_download_file(self, url, target):
         file_name = os.path.basename(url)
         if '.zip' in file_name:
             shutil.copyfile(self.source_zip, target)

@@ -30,7 +30,8 @@ class TestClientWebhook(unittest.TestCase):
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
         TestClientWebhook.jobRequestCount = 0
-        TestClientWebhook.mock_job_return_value = json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value)) # do deep copy
+        TestClientWebhook.mock_job_return_value = \
+            json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value))  # do deep copy
         TestClientWebhook.uploaded_files = []
 
     def tearDown(self):

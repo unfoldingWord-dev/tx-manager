@@ -61,7 +61,7 @@ class ClientCallback(object):
                 tries += 1
                 time.sleep(1)
                 try:
-                    self.download_file(converted_zip_file, converted_zip_url)
+                    download_file(converted_zip_url, converted_zip_file)
                 except:
                     if self.job.errors and len(self.job.errors) > 0:
                         download_success = False
@@ -205,9 +205,6 @@ class ClientCallback(object):
             build_log_json['warnings'] = []
         if 'errors' not in build_log_json:
             build_log_json['errors'] = []
-
-    def download_file(self, converted_zip_file, converted_zip_url):
-        download_file(converted_zip_url, converted_zip_file)
 
     def unzip_converted_files(self, converted_zip_file):
         unzip_dir = tempfile.mkdtemp(prefix='unzip_', dir=self.tempDir)
