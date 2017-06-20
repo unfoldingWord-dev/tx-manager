@@ -276,7 +276,9 @@ class TxManager(object):
                     else:
                         job.log_message('{0} function returned successfully.'.format(converter_module.name))
                 else:
-                    job.error_message('Conversion failed for unknown reason: {0}'.format(json_data))
+                    job.error_message('Conversion failed for unknown reason.')
+            else:
+                job.error_message('Conversion failed for unknown reason.')
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
