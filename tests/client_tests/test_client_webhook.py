@@ -63,12 +63,7 @@ class TestClientWebhook(unittest.TestCase):
         results = client_web_hook.process_webhook()
 
         # then
-        self.assertEqual(TestClientWebhook.jobRequestCount, expected_job_count)
-        self.assertTrue(len(results['job_id']) > 16)
-        self.assertFalse('multiple' in results)
-        self.assertEqual(len(results['errors']), expected_error_count)
-        self.assertEqual(results, self.getBuildLogJson())
-        self.assertTrue(len(self.getProjectJson()) >= 4)
+        self.validateResults(results, expected_job_count, expected_error_count)
 
     @patch('client.client_webhook.download_file')
     def test_processWebhookError(self, mock_download_file):
@@ -87,13 +82,7 @@ class TestClientWebhook(unittest.TestCase):
             captured_error = True
 
         # then
-        self.assertEqual(TestClientWebhook.jobRequestCount, expected_job_count)
-        self.assertTrue(captured_error)
-        results = self.getBuildLogJson()
-        self.assertTrue(len(results['job_id']) > 16)
-        self.assertFalse('multiple' in results)
-        self.assertEqual(len(results['errors']), expected_error_count)
-        self.assertTrue(len(self.getProjectJson()) >= 4)
+        self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
 
     @patch('client.client_webhook.download_file')
     def test_processWebhookMultipleBooks(self, mock_download_file):
@@ -106,18 +95,13 @@ class TestClientWebhook(unittest.TestCase):
         results = client_web_hook.process_webhook()
 
         # then
-        self.assertEqual(TestClientWebhook.jobRequestCount, expected_job_count)
-        self.assertEqual(len(results['build_logs']), expected_job_count)
-        self.assertEqual(len(results['errors']), expected_error_count)
-        self.assertTrue('multiple' in results)
-        self.assertEqual(results, self.getBuildLogJson())
-        self.assertTrue(len(self.getProjectJson()) >= 4)
+        self.validateResults(results, expected_job_count, expected_error_count)
 
     @patch('client.client_webhook.download_file')
     def test_processWebhookMultipleBooksErrors(self, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)
-        TestClientWebhook.mock_job_return_value['errors'] = ['error 1','error 2']
+        TestClientWebhook.mock_job_return_value['errors'] = ['error 1', 'error 2']
         expected_job_count = 4
         expected_error_count = 2 * expected_job_count
 
@@ -129,15 +113,27 @@ class TestClientWebhook(unittest.TestCase):
             captured_error = True
 
         # then
-        self.assertEqual(TestClientWebhook.jobRequestCount, expected_job_count)
         self.assertTrue(captured_error)
-        results = self.getBuildLogJson()
-        self.assertEqual(len(results['build_logs']), expected_job_count)
-        self.assertEqual(len(results['errors']), expected_error_count)
-        self.assertTrue('multiple' in results)
-        self.assertTrue(len(self.getProjectJson()) >= 4)
+        self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
 
+    #
     # helpers
+    #
+
+    def validateResults(self, results, expected_job_count, expected_error_count):
+        multipleJob = expected_job_count > 1
+        self.assertEqual(TestClientWebhook.jobRequestCount, expected_job_count)
+        self.assertTrue(len(results['job_id']) > 16)
+        self.assertTrue(len(results['commit_id']) > 8)
+        self.assertTrue(len(results['repo_owner']) > 1)
+        self.assertTrue(len(results['repo_name']) > 1)
+        if multipleJob:
+            self.assertEqual(len(results['build_logs']), expected_job_count)
+            self.assertTrue(len(results['source']) > 1)
+        self.assertEqual(len(results['errors']), expected_error_count)
+        self.assertEqual(multipleJob, 'multiple' in results)
+        self.assertEqual(results, self.getBuildLogJson())
+        self.assertTrue(len(self.getProjectJson()) >= 4)
 
     def getBuildLogJson(self):
         return self.readLastUploadedJsonFile('build_log.json')

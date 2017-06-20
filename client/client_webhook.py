@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 import urllib
+import copy
 import os
 import tempfile
 import requests
@@ -171,16 +172,16 @@ class ClientWebhook(object):
         self.update_project_json(commit_id, jobs[0], repo_name, repo_owner)
 
         source_url = self.source_url_base + "/preconvert/" + commit_id + '.zip'
-        build_logs_json = {
-            'multiple': True,
-            'build_logs': build_logs,
-            'commit_id': commit_id,
-            'errors': errors,
-            'job_id': last_job_id,
-            'repo_owner': repo_owner,
-            'repo_name': repo_name,
-            'source': source_url
-        }
+        build_logs_json = copy.copy(build_log_json)
+        build_logs_json['multiple'] = True
+        build_logs_json['build_logs'] = build_logs
+        build_logs_json['job_id'] = last_job_id
+        build_logs_json['source'] = source_url
+        errors = []
+        for i in range(0, book_count):
+            build_log = build_logs[i]
+            errors += build_log['errors']
+        build_logs_json['errors'] = errors
 
         # Upload build_log.json to S3:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
