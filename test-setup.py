@@ -44,8 +44,9 @@ setup(
         'pyparsing==2.1.10',
         'usfm-tools==0.0.12',
         'mock',  # travis reports syntax error in mock setup.cfg if we give version
-        'moto==0.4.31',
+        'moto==1.0.1',
         'PyYAML==3.12'
     ],
     test_suite='tests'
 )
+

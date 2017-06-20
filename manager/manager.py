@@ -10,6 +10,7 @@ from aws_tools.dynamodb_handler import DynamoDBHandler
 from gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
+from aws_tools.lambda_handler import LambdaHandler
 
 
 class TxManager(object):
@@ -47,6 +48,7 @@ class TxManager(object):
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
+        self.lambda_handler = None
 
         self.jobs_total = 0
         self.jobs_warnings = 0
@@ -64,6 +66,7 @@ class TxManager(object):
             self.module_db_handler = DynamoDBHandler(self.module_table_name)
         if self.gogs_url:
             self.gogs_handler = GogsHandler(self.gogs_url)
+        self.lambda_handler = LambdaHandler(self.aws_access_key_id, self.aws_secret_access_key)
 
     def get_user(self, user_token):
         return self.gogs_handler.get_user(user_token)
@@ -221,18 +224,18 @@ class TxManager(object):
             self.update_job(job)
 
             payload = {
-                'job': job.get_db_data(),
+                'data': {
+                    'job': job.get_db_data()
+                }
             }
 
             job.log_message('Telling module {0} to convert {1} and put at {2}'.format(converter_module.name,
                                                                                       job.source,
                                                                                       job.output))
 
-            headers = {"content-type": "application/json"}
-            url = converter_module.public_links[0]
-            self.logger.debug("Payload to {0}:".format(url))
+            self.logger.debug("Payload to {0}:".format(converter_module.name))
             self.logger.debug(json.dumps(payload))
-            response = requests.post(url, json=payload, headers=headers)
+            response = self.lambda_handler.invoke(converter_module.name, payload)
             self.logger.debug('finished.')
 
             self.logger.debug("Response from {0}:".format(converter_module.name))

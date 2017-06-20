@@ -338,20 +338,23 @@ class ManagerTest(unittest.TestCase):
         self.assertRaises(Exception, tx_manager.setup_job, data)
 
     # noinspection PyUnusedLocal
+    @mock.patch('aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job1(self, mock_requests_post):
+    def test_start_job1(self, mock_request_post, mock_invoke):
         """
         Call start job in job 1 from mock data.
 
         Should be a successful invocation with warnings.
         """
-        mock_requests_post.return_value = MockResponse({
+        mock_invoke.return_value = MockResponse({
             "info": ['Converted!'],
             "warnings": ['Missing something'],
             "errors": [],
             "success": True,
             "message": "Has some warnings"
-        }, 200)
+        }, 202)
+
+        mock_request_post.return_value = None
 
         tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.start_job("1")
@@ -370,20 +373,24 @@ class ManagerTest(unittest.TestCase):
         self.assertTrue(len(data["warnings"]) > 0)
 
     # noinspection PyUnusedLocal
+    @mock.patch('aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job2(self, mock_requests_post):
+    def test_start_job2(self, mock_request_post, mock_invoke):
         """
         Call start_job in job 2 from mock data.
 
         Should be a successful invocation without warnings.
         """
-        mock_requests_post.return_value = MockResponse({
+        mock_invoke.return_value = MockResponse({
             "info": ['Converted!'],
             "warnings": [],
             "errors": [],
             "success": True,
             "message": "All good"
-        }, 200)
+        }, 202)
+
+        mock_request_post.return_value = None
+
         tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.start_job("2")
 
@@ -400,8 +407,9 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(len(data["errors"]), 0)
 
     # noinspection PyUnusedLocal
+    @mock.patch('aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job3(self, mock_requests_post):
+    def test_start_job3(self, mock_request_post, mock_invoke):
         """
         Call start_job on job 3 from mock data.
 
@@ -410,13 +418,15 @@ class ManagerTest(unittest.TestCase):
         :param mock_requests_post mock.MagicMock:
         :return:
         """
-        mock_requests_post.return_value = MockResponse({
+        mock_invoke.return_value = MockResponse({
             "info": ['Conversion failed!'],
             "warnings": [],
             "errors": ['Some error'],
             "success": False,
             "message": "Has errors, failed"
-        }, 200)
+        }, 202)
+
+        mock_request_post.return_value = None
 
         manager = TxManager(**self.tx_manager_env_vars)
         manager.start_job("3")
@@ -461,15 +471,17 @@ class ManagerTest(unittest.TestCase):
         self.assertTrue(len(data["errors"]) > 0)
 
     # noinspection PyUnusedLocal
+    @mock.patch('aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job_bad_error(self, mock_requests_post):
+    def test_start_job_bad_error(self, mock_requests_post, mock_invoke):
         """
         Call start_job in job 6 from mock data.
 
         Should fail due to the response having an errorMessage
         """
         error_to_check = "something bad happened!"
-        mock_requests_post.return_value = MockResponse({"errorMessage": 'Bad Request: {0}'.format(error_to_check)}, 400)
+        mock_invoke.return_value = MockResponse({"errorMessage": 'Bad Request: {0}'.format(error_to_check)}, 400)
+        mock_requests_post.return_value = None
         tx_manager = TxManager(**self.tx_manager_env_vars)
         tx_manager.start_job("6")
         # job 0's entry in database should have been updated
@@ -486,8 +498,9 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(data["errors"][0], error_to_check)
 
     # noinspection PyUnusedLocal
+    @mock.patch('aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job_with_errors(self, mock_requests_post):
+    def test_start_job_with_errors(self, mock_requests_post, mock_invoke):
         """
         Call start_job on job 7 from mock data.
 
@@ -496,13 +509,15 @@ class ManagerTest(unittest.TestCase):
         :param mock_requests_post mock.MagicMock:
         :return:
         """
-        mock_requests_post.return_value = MockResponse({
+        mock_invoke.return_value = MockResponse({
             "info": ['Conversion failed!'],
             "warnings": [],
             "errors": ['Some error', 'another error'],
             "success": False,
             "message": "Has errors, failed"
-        }, 200)
+        }, 202)
+
+        mock_requests_post.return_value = None
 
         manager = TxManager(**self.tx_manager_env_vars)
         manager.start_job("7")
