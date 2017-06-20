@@ -1,0 +1,3 @@
+{
+  "description": "Client webhook, called by https://api.door43.org/client/webhook from a Gogs repo when commit occurs"
+}

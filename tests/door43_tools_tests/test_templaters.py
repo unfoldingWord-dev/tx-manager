@@ -6,8 +6,8 @@ import unittest
 import shutil
 import re
 from bs4 import BeautifulSoup
-from door43_tools.templaters import do_template
-from general_tools.file_utils import unzip, read_file
+from libraries.door43_tools.templaters import do_template
+from libraries.general_tools.file_utils import unzip, read_file
 
 
 class TestTemplater(unittest.TestCase):

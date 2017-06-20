@@ -2,13 +2,12 @@ from __future__ import absolute_import, unicode_literals, print_function
 import itertools
 import unittest
 import mock
-from six import StringIO
 from bs4 import BeautifulSoup
 from tests.manager_tests import mock_utils
 from tests.manager_tests.mock_utils import MockResponse
-from manager.job import TxJob
-from manager.manager import TxManager
-from manager.module import TxModule
+from libraries.manager.job import TxJob
+from libraries.manager.manager import TxManager
+from libraries.manager.module import TxModule
 
 
 class ManagerTest(unittest.TestCase):
@@ -187,8 +186,8 @@ class ManagerTest(unittest.TestCase):
             return_value=mock_utils.mock_gogs_handler(["token1", "token2"]))
 
         ManagerTest.patches = (
-            mock.patch("manager.manager.DynamoDBHandler", cls.mock_db),
-            mock.patch("manager.manager.GogsHandler", cls.mock_gogs),
+            mock.patch("libraries.manager.manager.DynamoDBHandler", cls.mock_db),
+            mock.patch("libraries.manager.manager.GogsHandler", cls.mock_gogs),
         )
 
         for patch in ManagerTest.patches:
