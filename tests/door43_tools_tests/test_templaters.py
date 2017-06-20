@@ -54,6 +54,12 @@ class TestTemplater(unittest.TestCase):
         self.assertEqual(len(soup.find('nav', {'id': 'right-sidebar-nav'}).findAll('li')), 49)
         self.assertEqual(len(soup.find('div', {'id': 'content'}).findAll(re.compile(r'h\d+'),
                                                                          {'class': 'section-header'})), 44)
+        # Check that manuals are in order
+        manuals = soup.find('nav', {'id': 'right-sidebar-nav'}).findChildren('h4')
+        self.assertEqual(manuals[0].text, 'Introduction to translationAcademy')
+        self.assertEqual(manuals[1].text, 'Process Manual')
+        self.assertEqual(manuals[2].text, 'Translation Manual')
+        self.assertEqual(manuals[3].text, 'Checking Manual')
 
     def testCommitToDoor43Empty(self):
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
