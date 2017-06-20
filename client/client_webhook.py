@@ -147,7 +147,6 @@ class ClientWebhook(object):
             # 3) Zip up the massaged files for just the one book
 
             self.logger.debug('Adding job for {0} part {1}'.format(book, part_id))
-            bookdir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix=book + '_')
 
             # Send job request to tx-manager
             source_url = self.build_multipart_source(file_key, book)

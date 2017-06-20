@@ -4,7 +4,6 @@ import os
 import tempfile
 import logging
 import time
-from logging import Logger
 from general_tools import file_utils
 from general_tools.file_utils import unzip, write_file
 from general_tools.url_utils import download_file
@@ -24,7 +23,7 @@ class ClientCallback(object):
         self.job = TxJob(job_data)
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
-        self.tempDir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
+        self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
         self.cdn_handler = None
 
     def process_callback(self):
@@ -49,7 +48,7 @@ class ClientCallback(object):
 
         # Download the ZIP file of the converted files
         converted_zip_url = self.job.output
-        converted_zip_file = os.path.join(self.tempDir, converted_zip_url.rpartition('/')[2])
+        converted_zip_file = os.path.join(self.temp_dir, converted_zip_url.rpartition('/')[2])
         file_utils.remove(converted_zip_file)  # make sure old file not present
         download_success = True
         self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
@@ -58,7 +57,7 @@ class ClientCallback(object):
         except:
             download_success = False  # if multiple project we note fail and move on
             if not multiple_project:
-                file_utils.remove_tree(self.tempDir)  # cleanup
+                file_utils.remove_tree(self.temp_dir)  # cleanup
             if self.job.errors is None:
                 self.job.errors = []
                 self.job.errors.append("Missing converted file: " + converted_zip_url)
@@ -101,7 +100,7 @@ class ClientCallback(object):
 
             if len(missing_parts) > 0:
                 self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
-                file_utils.remove_tree(self.tempDir)  # cleanup
+                file_utils.remove_tree(self.temp_dir)  # cleanup
                 return build_log_json
 
             self.logger.debug('All parts finished. Merging.')
@@ -157,7 +156,7 @@ class ClientCallback(object):
             self.logger.debug('Updated project.json: ' + json.dumps(project_json))
 
             self.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
-            file_utils.remove_tree(self.tempDir)  # cleanup
+            file_utils.remove_tree(self.temp_dir)  # cleanup
             return build_log_json
 
         else:  # single part conversion
@@ -168,7 +167,7 @@ class ClientCallback(object):
             build_log_json = self.update_build_log(s3_commit_key)
 
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
-            file_utils.remove_tree(self.tempDir)  # cleanup
+            file_utils.remove_tree(self.temp_dir)  # cleanup
             return build_log_json
 
     def prefix_list(self, build_log_json, key, book):
@@ -192,7 +191,7 @@ class ClientCallback(object):
             build_log_json['errors'] = []
 
     def unzip_converted_files(self, converted_zip_file):
-        unzip_dir = tempfile.mkdtemp(prefix='unzip_', dir=self.tempDir)
+        unzip_dir = tempfile.mkdtemp(prefix='unzip_', dir=self.temp_dir)
         try:
             self.logger.debug('Unzipping {0}...'.format(converted_zip_file))
             unzip(converted_zip_file, unzip_dir)
@@ -235,7 +234,7 @@ class ClientCallback(object):
                 commits.append(c)
         commits.append(commit)
         project_json['commits'] = commits
-        project_file = os.path.join(self.tempDir, 'project.json')
+        project_file = os.path.join(self.temp_dir, 'project.json')
         write_file(project_file, project_json)
         self.cdn_handler.upload_file(project_file, project_json_key, 0)
         return project_json
@@ -270,7 +269,7 @@ class ClientCallback(object):
         return build_log_json
 
     def cdn_upload_contents(self, contents, key):
-        file_name = os.path.join(self.tempDir, 'contents.json')
+        file_name = os.path.join(self.temp_dir, 'contents.json')
         write_file(file_name, contents)
         self.logger.debug('Writing file to ' + key)
         self.cdn_handler.upload_file(file_name, key, 0)
