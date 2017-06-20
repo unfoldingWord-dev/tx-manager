@@ -21,7 +21,8 @@ class StartJobHandler(Handler):
                 module_table_name = '{0}tx-module'.format(prefix)
                 env_vars = {
                     'job_table_name': job_table_name,
-                    'module_table_name': module_table_name
+                    'module_table_name': module_table_name,
+                    'prefix': prefix
                 }
                 job_id = record['dynamodb']['Keys']['job_id']['S']
                 TxManager(**env_vars).start_job(job_id)
