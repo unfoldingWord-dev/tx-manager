@@ -3,7 +3,7 @@ import os
 import tempfile
 from six import BytesIO
 import unittest
-from general_tools import url_utils
+from libraries.general_tools import url_utils
 
 
 class UrlUtilsTests(unittest.TestCase):

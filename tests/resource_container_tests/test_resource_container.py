@@ -3,8 +3,8 @@ import os
 import tempfile
 import unittest
 import mock
-from resource_container.ResourceContainer import RC, manifest_from_repo_name
-from general_tools.file_utils import remove_tree, unzip, load_yaml_object, load_json_object
+from libraries.resource_container.ResourceContainer import RC, manifest_from_repo_name
+from libraries.general_tools.file_utils import remove_tree, unzip, load_yaml_object, load_json_object
 from datetime import datetime
 
 
@@ -159,7 +159,7 @@ class TestResourceContainer(unittest.TestCase):
         chunks = rc.projects[0].chunks('01')
         self.assertEqual(len(chunks), 5)
 
-    @mock.patch('general_tools.url_utils.get_url')
+    @mock.patch('libraries.general_tools.url_utils.get_url')
     def test_random_tests(self, mock_get_url):
         mock_get_url.return_value = '[{"ld": "ltr", "gw": false, "lc": "aa", "ln": "Afaraf", "cc": ["DJ", "ER", "ET", "US", "CA"], "pk": 6, "alt": ["Afaraf", "Danakil", "Denkel", "Adal", "Afar Af", "Qafar", "Baadu (Ba\'adu)"], "lr": "Africa", "ang": "Afar"}, {"ld": "ltr", "gw": false, "lc": "aaa", "ln": "Ghotuo", "cc": ["NG"], "pk": 7, "alt": [], "lr": "Africa", "ang": "Ghotuo"}]'
         # Test getting language from tD

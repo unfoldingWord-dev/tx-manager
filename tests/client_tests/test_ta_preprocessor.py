@@ -4,9 +4,9 @@ import tempfile
 import unittest
 import shutil
 import markdown
-from resource_container.ResourceContainer import RC
-from client.preprocessors import do_preprocess, TaPreprocessor
-from general_tools.file_utils import unzip, read_file
+from libraries.resource_container.ResourceContainer import RC
+from libraries.client.preprocessors import do_preprocess, TaPreprocessor
+from libraries.general_tools.file_utils import unzip, read_file
 from bs4 import BeautifulSoup
 
 

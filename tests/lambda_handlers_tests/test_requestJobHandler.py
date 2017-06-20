@@ -1,13 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
-from lambda_handlers.request_job_handler import RequestJobHandler
+from libraries.lambda_handlers.request_job_handler import RequestJobHandler
 
 
 class TestRequestJobHandler(TestCase):
 
-    @mock.patch('manager.manager.TxManager.setup_resources')
-    @mock.patch('manager.manager.TxManager.setup_job')
+    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
+    @mock.patch('libraries.manager.manager.TxManager.setup_job')
     def test_handle(self, mock_setup_job, mock_setup_resources):
         mock_setup_job.return_value = None
         event = {

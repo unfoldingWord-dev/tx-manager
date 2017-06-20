@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
-from manager.module import TxObject
+from libraries.manager.module import TxObject
 
 
 class MyObject(TxObject):

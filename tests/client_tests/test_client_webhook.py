@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 from mock import patch
-from client.client_webhook import ClientWebhook
+from libraries.client.client_webhook import ClientWebhook
 
 
 class TestClientWebhook(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestClientWebhook(unittest.TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch('client.client_webhook.download_file')
+    @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
         cwh = ClientWebhook()

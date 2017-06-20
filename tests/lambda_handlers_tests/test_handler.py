@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from unittest import TestCase
 from mock import patch
-from lambda_handlers.handler import Handler
+from libraries.lambda_handlers.handler import Handler
 
 
 class MockHandler(Handler):

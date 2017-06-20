@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
-from general_tools import smartquotes
+from libraries.general_tools import smartquotes
 
 
 @unittest.skip("smartquotes not working on lambda")

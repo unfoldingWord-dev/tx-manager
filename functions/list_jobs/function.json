@@ -1,0 +1,3 @@
+{
+  "description": "List jobs, called by https://api.door43.org/tx/job[/<job-id>]?gogs_user_token=<user_token> to get the status of one or more jobs"
+}

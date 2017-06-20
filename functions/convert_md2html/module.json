@@ -1,0 +1,11 @@
+{
+    "name": "md2html",
+    "version": "1",
+    "type": "conversion",
+    "resource_types": ["obs", "ta", "tn", "tq", "tw"],
+    "input_format": ["md"],
+    "output_format": ["html"],
+    "options": [],
+    "private_links": [],
+    "public_links": []
+}
