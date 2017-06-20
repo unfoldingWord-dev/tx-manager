@@ -63,7 +63,7 @@ class Converter(object):
             # unzip the input archive
             self.logger.debug("Unzipping {0} to {1}".format(self.input_zip_file, self.files_dir))
             unzip(self.input_zip_file, self.files_dir)
-            remove(self.input_zip_file, ignore_errors=True)
+            remove(self.input_zip_file)
             # convert method called
             self.logger.debug("Converting files...")
             if self.convert():
@@ -71,11 +71,11 @@ class Converter(object):
                 # zip the output dir to the output archive
                 self.logger.debug("Adding files in {0} to {1}".format(self.output_dir, self.output_zip_file))
                 add_contents_to_zip(self.output_zip_file, self.output_dir)
-                remove_tree(self.output_dir, ignore_errors=True)
+                remove_tree(self.output_dir)
                 # upload the output archive either to cdn_bucket or to a file (no cdn_bucket)
                 self.logger.debug("Uploading archive to {0}/{1}".format(self.cdn_bucket, self.cdn_file))
                 self.upload_archive()
-                remove(self.output_zip_file, ignore_errors=True)
+                remove(self.output_zip_file)
                 self.logger.debug("Uploaded")
                 success = True
             else:
