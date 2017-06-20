@@ -35,3 +35,4 @@ deploy:
   - ./deploy.sh && ./register-modules.sh https://api.door43.org && ./integration_test.sh
   on:
     branch: master
+
