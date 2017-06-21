@@ -57,11 +57,11 @@ class ManagerTest(unittest.TestCase):
                 "input_format": "md",
                 "output_format": "html",
                 "convert_module": "module1",
-                "errors" : [ "error" ],
-                "cdn_bucket" : "cdn.door43.org",
-                "identifier" : "tx-manager-test-data/en-ulb-jud/6778aa89bd",
-                "output" : "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip",
-                "source" : "https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip",
+                "errors": ["error"],
+                "cdn_bucket": "cdn.door43.org",
+                "identifier": "tx-manager-test-data/en-ulb-jud/6778aa89bd",
+                "output": "https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip",
+                "source": "https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip",
                 "created_at":	"2017-04-12T17:03:06Z"
             },
             "2": {

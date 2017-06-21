@@ -11,16 +11,18 @@ from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
+from manifest import TxManifest
 
 
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
+    MANIFEST_TABLE_NAME = 'tx-manifest'
     MAX_FAILURES = 10
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
-                 job_table_name=None, module_table_name=None, prefix=''):
+                 job_table_name=None, module_table_name=None, manifest_table_name=None, prefix=''):
         """
         :param string api_url:
         :param string gogs_url:
@@ -40,15 +42,19 @@ class TxManager(object):
         self.aws_secret_access_key = aws_secret_access_key
         self.job_table_name = job_table_name
         self.module_table_name = module_table_name
+        self.manifest_table_name = manifest_table_name
         self.prefix = prefix
 
         if not self.job_table_name:
             self.job_table_name = TxManager.JOB_TABLE_NAME
         if not self.module_table_name:
             self.module_table_name = TxManager.MODULE_TABLE_NAME
+        if not self.manifest_table_name:
+            self.manifest_table_name = TxManager.MANIFEST_TABLE_NAME
 
         self.job_db_handler = None
         self.module_db_handler = None
+        self.manifest_db_handler = None
         self.gogs_handler = None
         self.lambda_handler = None
 
@@ -66,6 +72,8 @@ class TxManager(object):
             self.job_db_handler = DynamoDBHandler(self.job_table_name)
         if self.module_table_name:
             self.module_db_handler = DynamoDBHandler(self.module_table_name)
+        if self.manifest_table_name:
+            self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
         if self.gogs_url:
             self.gogs_handler = GogsHandler(self.gogs_url)
         self.lambda_handler = LambdaHandler(self.aws_access_key_id, self.aws_secret_access_key)
@@ -466,6 +474,28 @@ class TxManager(object):
     def delete_module(self, module):
         return self.module_db_handler.delete_item({'name': module.name})
 
+    def insert_manifest(self, manifest):
+        manifest_data = manifest.get_db_data()
+        self.manifest_db_handler.insert_item(manifest_data)
+
+    def query_manifests(self, data=None):
+        items = self.manifest_db_handler.query_items(data)
+        manifests = []
+        if items and len(items):
+            for item in items:
+                manifests.append(TxManifest(item))
+        return manifests
+
+    def get_manifest(self, repo_name, user_name):
+        return TxManifest(self.manifest_db_handler.get_item({'repo_name': repo_name, 'user_name': user_name}))
+
+    def update_manifest(self, manifest):
+        return self.manifest_db_handler.update_item({'repo_name': manifest.repo_name, 'user_name': manifest.user_name},
+                                                    manifest.get_db_data())
+
+    def delete_manifest(self, manifest):
+        return self.manifest_db_handler.delete_item({'repo_name': manifest.repo_name, 'user_name': manifest.user_name})
+
     def generate_dashboard(self, max_failures=MAX_FAILURES):
         """
         Generate page with metrics indicating configuration of tx-manager.
@@ -684,4 +714,3 @@ class TxManager(object):
 
         failedJobs = sorted(failedJobs, key=lambda k: k['created_at'], reverse=True)
         return failedJobs
-
