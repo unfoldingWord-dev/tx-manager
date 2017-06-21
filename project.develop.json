@@ -1,6 +1,7 @@
 {
   "name": "dev-tx",
   "description": "DEVELOPMENT tX Manager lambda functions for handling conversions",
+  "runtime": "python",
   "memory": 512,
   "timeout": 300,
   "role": "arn:aws:iam::002723143144:role/dev-tx_lambda_function",
