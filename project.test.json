@@ -5,7 +5,6 @@
   "memory": 512,
   "timeout": 300,
   "role": "arn:aws:iam::581647696645:role/tx_lambda_function",
-  "runtime": "python",
   "environment": {},
   "hooks": {
     "build": "pip install --upgrade git+https://github.com/PhotoNomad0/tx-manager.git@Fix_556/repoConversionTimesOut -t .;cp -Rf ../../libraries .",
