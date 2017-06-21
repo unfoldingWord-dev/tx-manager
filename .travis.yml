@@ -4,7 +4,7 @@ python:
 
 before_install:
   - pip install awscli
-  - ./travis-install-apex.sh
+  - scripts/travis_install_apex.sh
 
 install:
   - pip install -r requirements.txt
@@ -23,13 +23,13 @@ deploy:
 - provider: script
   skip_cleanup: true
   script:
-  - ./deploy.sh && ./register-modules.sh https://dev-api.door43.org && ./integration_test.sh
+  - scripts/deploy.sh && scripts/register_modules.sh https://dev-api.door43.org && scripts/integration_test.sh
   on:
     branch: develop
 - provider: script
   skip_cleanup: true
   script:
-  - ./deploy.sh && ./register-modules.sh https://api.door43.org && ./integration_test.sh
+  - scripts/deploy.sh && scripts/register_modules.sh https://api.door43.org && scripts/integration_test.sh
   on:
     branch: master
 
