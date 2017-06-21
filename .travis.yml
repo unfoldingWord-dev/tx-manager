@@ -2,10 +2,7 @@ language: python
 python:
   - '2.7'
 
-before install:
-  - eval export AWS_ACCESS_KEY_ID=\$${TRAVIS_BRANCH}_AWS_ACCESS_KEY_ID
-  - eval export AWS_SECRET_ACCESS_KEY=\$${TRAVIS_BRANCH}_AWS_SECRET_ACCESS_KEY
-  - eval export AWS_REGION=\$${TRAVIS_BRANCH}_AWS_REGION
+before_install:
   - pip install awscli
   - ./travis-install-apex.sh
 

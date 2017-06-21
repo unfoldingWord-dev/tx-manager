@@ -1,6 +1,7 @@
 {
   "name": "tx",
   "description": "tX Manager lambda functions for handling conversions",
+  "runtime": "python2.7",
   "memory": 512,
   "timeout": 300,
   "role": "arn:aws:iam::002723143144:role/tx_lambda_function",

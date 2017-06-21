@@ -1,6 +1,7 @@
 {
   "name": "test-tx",
   "description": "Testing project for tX Manager",
+  "runtime": "python2.7",
   "memory": 512,
   "timeout": 300,
   "role": "arn:aws:iam::581647696645:role/tx_lambda_function",
