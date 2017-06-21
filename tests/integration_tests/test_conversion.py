@@ -633,8 +633,8 @@ class TestConversions(TestCase):
         print(message)
 
     def print_file(self, file_name, file_path):
-        text = file_utils.read_file(file_path)
-        print("Output file (" + file_name + "): " + text)
+        text = file_utils.read_file(file_path)[:200]  # get the start of the file
+        print("\nOutput file (" + file_name + "): " + text + "\n")
 
     def check_deployed_files(self, handler, expected_output_files, extension, key, chapter_count=-1):
         check_list = []
@@ -699,7 +699,7 @@ class TestConversions(TestCase):
                     self.warn("timeout getting file: " + path)
                     break
 
-                print("retry fetch of: " + path)
+                # print("retry fetch of: " + path)
                 output = handler.get_file_contents(path)
 
             self.assertIsNotNone(output, "missing file: " + path)
