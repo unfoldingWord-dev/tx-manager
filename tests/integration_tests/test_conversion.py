@@ -880,7 +880,7 @@ class TestConversions(TestCase):
             for build_log in build_logs:  # check for completion of each part
                 job_id = build_log['job_id']
                 if job_id not in finished:
-                    self.warn("Conversion Failed to start on job: " + job_id)
+                    self.warn("Timeout watiting for start on job: " + job_id)
 
         return done, job
 
@@ -900,11 +900,11 @@ class TestConversions(TestCase):
 
         polling_timeout = 5 * 60  # poll for up to 5 minutes for job to complete or error
         sleep_interval = 5  # how often to check for completion
-        start_max_wait_count = 30 / sleep_interval  # maximum count to wait for conversion to start (sec/interval)
-        for i in range(0, polling_timeout / sleep_interval):
+        start_max_wait_count = polling_timeout / sleep_interval  # maximum count to wait for conversion to start (sec/interval)
+        for i in range(0, start_max_wait_count):
             job = tx_manager.get_job(job_id)
             self.assertIsNotNone(job)
-            print("job status at " + str(i) + ":\n" + str(job.log))
+            print("job status at " + str(i*sleep_interval) + ":\n" + str(job.log))
 
             if job.ended_at is not None:
                 success = True
@@ -912,7 +912,7 @@ class TestConversions(TestCase):
 
             if (i > start_max_wait_count) and (job.started_at is None):
                 success = False
-                self.warn("Conversion Failed to start on job: " + job_id)
+                self.warn("Timeout Waiting for start on job: " + job_id)
                 break
 
             time.sleep(sleep_interval)  # delay before polling again
