@@ -9,7 +9,7 @@
 if [[ ${TRAVIS_EVENT_TYPE} == "push" && (${TRAVIS_BRANCH} == "master" || ${TRAVIS_BRANCH} == "develop") && ${TRAVIS_SECURE_ENV_VARS} == "true" ]]
 then
     echo "Deploying..."
-    repoDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    repoDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
     thisDir="$( dirname "${repoDir}" )"
     "${thisDir}/apex" deploy -C "${repoDir}" --env ${TRAVIS_BRANCH}
 else
