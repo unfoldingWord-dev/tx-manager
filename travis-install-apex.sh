@@ -5,7 +5,7 @@ PARENT_DIR="$( dirname "${THIS_DIR}" )"
 
 LATEST=$(curl -s https://api.github.com/repos/apex/apex/tags | grep -Eo '"name":.*?[^\\]",'  | head -n 1 | sed 's/[," ]//g' | cut -d ':' -f 2)
 if [ -z $LATEST ]; then
-    LATEST=v0.14.0
+    LATEST=v0.15.0
 fi
 URL="https://github.com/apex/apex/releases/download/${LATEST}/apex_linux_amd64"
 DEST="${PARENT_DIR}/apex"
