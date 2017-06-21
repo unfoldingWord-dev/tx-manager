@@ -7,7 +7,7 @@ import unittest
 from aws_tools.s3_handler import S3Handler
 from mock import patch
 from libraries.client.client_webhook import ClientWebhook
-from general_tools.file_utils import read_file
+from libraries.general_tools.file_utils import read_file
 from moto import mock_s3
 
 
@@ -41,8 +41,6 @@ class TestClientWebhook(unittest.TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch('client.client_webhook.download_file')
-    def test_downloadRepo(self, mock_download_file):
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
@@ -53,7 +51,7 @@ class TestClientWebhook(unittest.TestCase):
             pass
         cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
 
-    @patch('client.client_webhook.download_file')
+    @patch('libraries.client.client_webhook.download_file')
     def test_processWebhook(self, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
@@ -67,7 +65,7 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults(results, expected_job_count, expected_error_count)
 
-    @patch('client.client_webhook.download_file')
+    @patch('libraries.client.client_webhook.download_file')
     def test_processWebhookError(self, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
@@ -86,7 +84,7 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
 
-    @patch('client.client_webhook.download_file')
+    @patch('libraries.client.client_webhook.download_file')
     def test_processWebhookMultipleBooks(self, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)
@@ -99,7 +97,7 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults(results, expected_job_count, expected_error_count)
 
-    @patch('client.client_webhook.download_file')
+    @patch('libraries.client.client_webhook.download_file')
     def test_processWebhookMultipleBooksErrors(self, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)

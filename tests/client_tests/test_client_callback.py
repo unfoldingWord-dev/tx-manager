@@ -3,11 +3,11 @@ import json
 import tempfile
 import os
 import shutil
-from aws_tools.s3_handler import S3Handler
-from general_tools import file_utils
+from libraries.aws_tools.s3_handler import S3Handler
+from libraries.general_tools import file_utils
 from mock import patch
 from unittest import TestCase
-from client.client_callback import ClientCallback
+from libraries.client.client_callback import ClientCallback
 from moto import mock_s3
 
 
@@ -33,7 +33,7 @@ class TestClientCallback(TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch('client.client_callback.download_file')
+    @patch('libraries.client.client_callback.download_file')
     def test_clientCallbackSimpleJob(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
@@ -46,7 +46,7 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    @patch('client.client_callback.download_file')
+    @patch('libraries.client.client_callback.download_file')
     def test_clientCallbackMultipleJobPartial(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
@@ -60,7 +60,7 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    @patch('client.client_callback.download_file')
+    @patch('libraries.client.client_callback.download_file')
     def test_clientCallbackMultipleJobComplete(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
@@ -74,7 +74,7 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    @patch('client.client_callback.download_file')
+    @patch('libraries.client.client_callback.download_file')
     def test_clientCallbackMultipleJobCompleteError(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
@@ -88,7 +88,7 @@ class TestClientCallback(TestCase):
         # then
         self.assertIsNotNone(results)
 
-    @patch('client.client_callback.download_file')
+    @patch('libraries.client.client_callback.download_file')
     def test_clientCallbackMultipleNoJobsComplete(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")

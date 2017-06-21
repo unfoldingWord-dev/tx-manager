@@ -4,8 +4,7 @@ import os
 import tempfile
 import logging
 import time
-from logging import Logger
-from libraries.general_tools.file_utils import unzip, write_file
+from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
 from libraries.general_tools.url_utils import download_file
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.manager.job import TxJob
@@ -49,7 +48,7 @@ class ClientCallback(object):
         # Download the ZIP file of the converted files
         converted_zip_url = self.job.output
         converted_zip_file = os.path.join(self.temp_dir, converted_zip_url.rpartition('/')[2])
-        file_utils.remove(converted_zip_file)  # make sure old file not present
+        remove(converted_zip_file)  # make sure old file not present
         download_success = True
         self.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
         try:
@@ -57,7 +56,7 @@ class ClientCallback(object):
         except:
             download_success = False  # if multiple project we note fail and move on
             if not multiple_project:
-                file_utils.remove_tree(self.temp_dir)  # cleanup
+                remove_tree(self.temp_dir)  # cleanup
             if self.job.errors is None:
                 self.job.errors = []
                 self.job.errors.append("Missing converted file: " + converted_zip_url)
@@ -100,7 +99,7 @@ class ClientCallback(object):
 
             if len(missing_parts) > 0:
                 self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
-                file_utils.remove_tree(self.temp_dir)  # cleanup
+                remove_tree(self.temp_dir)  # cleanup
                 return build_log_json
 
             self.logger.debug('All parts finished. Merging.')
@@ -156,7 +155,7 @@ class ClientCallback(object):
             self.logger.debug('Updated project.json: ' + json.dumps(project_json))
 
             self.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
-            file_utils.remove_tree(self.temp_dir)  # cleanup
+            remove_tree(self.temp_dir)  # cleanup
             return build_log_json
 
         else:  # single part conversion
@@ -167,7 +166,7 @@ class ClientCallback(object):
             build_log_json = self.update_build_log(s3_commit_key)
 
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
-            file_utils.remove_tree(self.temp_dir)  # cleanup
+            remove_tree(self.temp_dir)  # cleanup
             return build_log_json
 
     def prefix_list(self, build_log_json, key, book):
