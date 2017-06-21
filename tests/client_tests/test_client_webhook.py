@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 import unittest
-from aws_tools.s3_handler import S3Handler
+from libraries.aws_tools.s3_handler import S3Handler
 from mock import patch
 from libraries.client.client_webhook import ClientWebhook
 from libraries.general_tools.file_utils import read_file
