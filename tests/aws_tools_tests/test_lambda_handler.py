@@ -3,7 +3,7 @@ import io
 import json
 import zipfile
 from unittest import TestCase
-from aws_tools.lambda_handler import LambdaHandler
+from libraries.aws_tools.lambda_handler import LambdaHandler
 from moto import mock_lambda
 
 
