@@ -7,7 +7,7 @@ import logging
 from glob import glob
 from shutil import copyfile
 from libraries.aws_tools.s3_handler import S3Handler
-from libraries.general_tools.file_utils import write_file
+from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import do_template
 from datetime import datetime, timedelta
 
@@ -32,6 +32,7 @@ class ProjectDeployer(object):
         self.lambda_client = None
         self.logger = logging.getLogger()
         self.setup_resources()
+        self.temp_dir = tempfile.mkdtemp(suffix="", prefix="deployer_")
 
     def setup_resources(self):
         self.cdn_handler = S3Handler(self.cdn_bucket)
@@ -53,6 +54,8 @@ class ProjectDeployer(object):
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log or 'repo_name' not in build_log:
             return False
 
+        self.logger.debug("Deploying, build log: " + json.dumps(build_log))
+
         user = build_log['repo_owner']
         repo_name = build_log['repo_name']
         commit_id = build_log['commit_id'][:10]
@@ -60,9 +63,9 @@ class ProjectDeployer(object):
         s3_commit_key = 'u/{0}/{1}/{2}'.format(user, repo_name, commit_id)
         s3_repo_key = 'u/{0}/{1}'.format(user, repo_name)
 
-        source_dir = tempfile.mkdtemp(prefix='source_')
-        output_dir = tempfile.mkdtemp(prefix='output_')
-        template_dir = tempfile.mkdtemp(prefix='template_')
+        source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
+        output_dir = tempfile.mkdtemp(prefix='output_', dir=self.temp_dir)
+        template_dir = tempfile.mkdtemp(prefix='template_', dir=self.temp_dir)
 
         self.cdn_handler.download_dir(s3_commit_key, source_dir)
         source_dir = os.path.join(source_dir, s3_commit_key)
@@ -147,6 +150,7 @@ class ProjectDeployer(object):
             self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
         except Exception:
             pass
+        remove_tree(self.temp_dir) # cleanup temp files
         return True
 
     def redeploy_all_projects(self, deploy_function):

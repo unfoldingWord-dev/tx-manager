@@ -39,10 +39,24 @@ class TestBiblePreprocessor(unittest.TestCase):
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
 
         # when
-        folder = self.runBiblePreprocessor(rc, repo_dir)
+        folder, preprocessor = self.runBiblePreprocessor(rc, repo_dir)
 
         #then
-        self.verifyTransform(folder, expectedOutput)
+        self.verifyTransform(folder, expectedOutput, preprocessor)
+
+    def test_BiblePreprocessorMultipleBooks(self):
+
+        #given
+        file_name = os.path.join('raw_sources', 'en-ulb.zip')
+        repo_name = 'en-ulb'
+        expectedOutput = [ '01-GEN.usfm', '02-EXO.usfm', '03-LEV.usfm', '05-DEU.usfm' ]
+        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
+
+        # when
+        folder, preprocessor = self.runBiblePreprocessor(rc, repo_dir)
+
+        #then
+        self.verifyTransform(folder, expectedOutput, preprocessor)
 
     def test_BiblePreprocessorActsWithSlashInText(self):
 
@@ -53,10 +67,10 @@ class TestBiblePreprocessor(unittest.TestCase):
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
 
         # when
-        folder = self.runBiblePreprocessor(rc, repo_dir)
+        folder, preprocessor = self.runBiblePreprocessor(rc, repo_dir)
 
         #then
-        self.verifyTransform(folder, expectedOutput)
+        self.verifyTransform(folder, expectedOutput, preprocessor)
 
     @classmethod
     def extractFiles(self, file_name, repo_name):
@@ -67,7 +81,7 @@ class TestBiblePreprocessor(unittest.TestCase):
         unzip(file_path, temp_dir)
         repo_dir = os.path.join(temp_dir, repo_name)
         if not os.path.isdir(repo_dir):
-            repo_dir = file_path
+            repo_dir = temp_dir
 
         # 2) Get the resource container
         rc = RC(repo_dir)
@@ -75,10 +89,23 @@ class TestBiblePreprocessor(unittest.TestCase):
 
     def runBiblePreprocessor(self, rc, repo_dir):
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        do_preprocess(rc, repo_dir, self.out_dir)
-        return self.out_dir
+        results, preprocessor = do_preprocess(rc, repo_dir, self.out_dir)
+        return self.out_dir, preprocessor
 
-    def verifyTransform(self, folder, expectedName):
+    def verifyTransform(self, folder, expectedName, preprocessor):
+        if (type(expectedName) is list):
+            for file in expectedName:
+                self.verifyFile(file, folder)
+
+            self.assertTrue(preprocessor.isMultipleJobs())
+            self.assertEqual(len(preprocessor.getBookList()), len(expectedName))
+
+        else:
+            self.verifyFile(expectedName, folder)
+            self.assertFalse(preprocessor.isMultipleJobs())
+            self.assertEqual(len(preprocessor.getBookList()), 0)
+
+    def verifyFile(self, expectedName, folder):
         file_name = os.path.join(folder, expectedName)
         self.assertTrue(os.path.isfile(file_name), 'Bible usfm file not found: {0}'.format(expectedName))
 
@@ -86,7 +113,7 @@ class TestBiblePreprocessor(unittest.TestCase):
         with codecs.open(file_name, 'r', 'utf-8-sig') as usfm_file:
             usfm = usfm_file.read()
 
-        self.assertIsNotNone(usfm);
+        self.assertIsNotNone(usfm)
         self.assertTrue(len(usfm) > 10, 'Bible usfm file contents missing: {0}'.format(expectedName))
 
 

@@ -5,6 +5,7 @@ import requests
 import logging
 from datetime import datetime
 from datetime import timedelta
+from libraries.aws_tools.lambda_handler import LambdaHandler
 from bs4 import BeautifulSoup
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.gogs_tools.gogs_handler import GogsHandler
@@ -19,7 +20,7 @@ class TxManager(object):
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
-                 job_table_name=None, module_table_name=None):
+                 job_table_name=None, module_table_name=None, prefix=''):
         """
         :param string api_url:
         :param string gogs_url:
@@ -29,6 +30,7 @@ class TxManager(object):
         :param string aws_secret_access_key:
         :param string job_table_name:
         :param string module_table_name:
+        :param string prefix:
         """
         self.api_url = api_url
         self.gogs_url = gogs_url
@@ -38,6 +40,7 @@ class TxManager(object):
         self.aws_secret_access_key = aws_secret_access_key
         self.job_table_name = job_table_name
         self.module_table_name = module_table_name
+        self.prefix = prefix
 
         if not self.job_table_name:
             self.job_table_name = TxManager.JOB_TABLE_NAME
@@ -47,6 +50,7 @@ class TxManager(object):
         self.job_db_handler = None
         self.module_db_handler = None
         self.gogs_handler = None
+        self.lambda_handler = None
 
         self.jobs_total = 0
         self.jobs_warnings = 0
@@ -64,6 +68,7 @@ class TxManager(object):
             self.module_db_handler = DynamoDBHandler(self.module_table_name)
         if self.gogs_url:
             self.gogs_handler = GogsHandler(self.gogs_url)
+        self.lambda_handler = LambdaHandler(self.aws_access_key_id, self.aws_secret_access_key)
 
     def get_user(self, user_token):
         return self.gogs_handler.get_user(user_token)
@@ -221,28 +226,33 @@ class TxManager(object):
             self.update_job(job)
 
             payload = {
-                'job': job.get_db_data(),
+                'data': {
+                    'job': job.get_db_data()
+                }
             }
 
-            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(converter_module.name,
+            converter_function = '{0}tx_convert_{1}'.format(self.prefix, converter_module.name)
+            job.log_message('Telling module {0} to convert {1} and put at {2}'.format(converter_function,
                                                                                       job.source,
                                                                                       job.output))
 
-            headers = {"content-type": "application/json"}
-            url = converter_module.public_links[0]
-            self.logger.debug("Payload to {0}:".format(url))
+            self.logger.debug("Payload to {0}:".format(converter_function))
             self.logger.debug(json.dumps(payload))
-            response = requests.post(url, json=payload, headers=headers)
+            response = self.lambda_handler.invoke(converter_function, payload)
             self.logger.debug('finished.')
 
-            self.logger.debug("Response from {0}:".format(converter_module.name))
-            self.logger.debug(response.json())
-
-            json_data = response.json()
-            if json_data:
-                # The json_data of the response could result in a few different formats:
+            if 'errorMessage' in response:
+                error = response['errorMessage']
+                if error.startswith('Bad Request: '):
+                    error = error[len('Bad Request: '):]
+                job.error_message(error)
+                self.logger.debug('Received error message from {0}: {1}'.format(converter_function, error))
+            elif 'Payload' in response:
+                json_data = json.loads(response['Payload'].read())
+                self.logger.debug("Payload from {0}: {1}".format(converter_function, json_data))
+                # The 'Payload' of the response could result in a few different formats:
                 # 1) It could be that an exception was thrown in the converter code, which the API Gateway puts
-                #    into a json array with "errorMessage" containing the exception message.
+                #    into a json array with "errorMessage" containing the exception message, which we handled above.
                 # 2) If a "success" key is in the payload, that means our code finished with
                 #    the expected results (see converters/converter.py's run() return value).
                 # 3) The other possibility is for the Lambda function to not finish executing
@@ -265,13 +275,10 @@ class TxManager(object):
                         job.log_message('{0} function returned with warnings.'.format(converter_module.name))
                     else:
                         job.log_message('{0} function returned successfully.'.format(converter_module.name))
-                elif 'errorMessage' in json_data or 'message' in json_data:
-                    error = json_data.get('errorMessage', json_data.get('message'))
-                    if error.startswith('Bad Request: '):
-                        error = error[len('Bad Request: '):]
-                    job.error_message(error)
                 else:
-                    job.error_message('Conversion failed for unknown reason: {0}'.format(json_data))
+                    job.error_message('Conversion failed for unknown reason.')
+            else:
+                job.error_message('Conversion failed for unknown reason.')
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 

@@ -18,7 +18,7 @@ def do_preprocess(rc, repo_dir, output_dir):
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
     else:
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
-    return preprocessor.run()
+    return preprocessor.run(), preprocessor
 
 
 class Preprocessor(object):
@@ -57,6 +57,12 @@ class Preprocessor(object):
                     file_name = '{0}.{1}'.format(chapter, self.rc.resource.file_ext)
                 write_file(os.path.join(self.output_dir, file_name), text)
         return True
+
+    def isMultipleJobs(self):
+        return False
+
+    def getBookList(self):
+        return None
 
 
 class ObsPreprocessor(Preprocessor):
@@ -156,12 +162,22 @@ class ObsPreprocessor(Preprocessor):
 class BiblePreprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(BiblePreprocessor, self).__init__(*args, **kwargs)
+        self.books = []
+
+    def isMultipleJobs(self):
+        return (len(self.books) > 1)
+
+    def getBookList(self):
+        self.books.sort()
+        return self.books
 
     def run(self):
         for project in self.rc.projects:
             content_dir = os.path.join(self.source_dir, project.path)
             # Copy all USFM files in the project root directory to the output directory
+            self.books = []
             for file_path in glob(os.path.join(content_dir, '*.usfm')):
+                self.books.append(os.path.basename(file_path))
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path):
                     copy(file_path, output_file_path)

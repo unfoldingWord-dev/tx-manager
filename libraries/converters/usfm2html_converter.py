@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import urlparse
 import os
 import tempfile
 import codecs
@@ -25,12 +26,31 @@ class Usfm2HtmlConverter(Converter):
         # find the first directory that has usfm files.
         files = self.get_files()
 
+        exclusive_convert = False
+        convert_only = []
+        if self.source and len(self.source) > 0:
+            parsed = urlparse.urlparse(self.source)
+            params = urlparse.parse_qsl(parsed.query)
+            if params and len(params) > 0:
+                for i in range(0, len(params)):
+                    item = params[i]
+                    if item[0] == 'convert_only':
+                        convert_only = item[1].split(',')
+                        exclusive_convert = True
+                        self.source = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+                        break
+
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
             template_html = template_file.read()
 
         for filename in files:
             if filename.endswith('.usfm'):
+                if exclusive_convert:
+                    base_name = os.path.basename(filename)
+                    if base_name not in convert_only:  # see if this is a file we are to convert
+                        continue
+
                 # Covert the USFM file
                 scratch_dir = tempfile.mkdtemp(prefix='scratch_')
                 copyfile(filename, os.path.join(scratch_dir, os.path.basename(filename)))

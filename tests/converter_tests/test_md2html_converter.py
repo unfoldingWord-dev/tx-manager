@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 import codecs
+import shutil
 from contextlib import closing
 from libraries.converters.md2html_converter import Md2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree, unzip, remove
@@ -57,6 +58,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         """Runs the converter and verifies the output."""
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'en-obs.zip')
+        zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
         with closing(Md2HtmlConverter('', 'obs', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -167,8 +169,11 @@ class TestMd2HtmlConverter(unittest.TestCase):
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
                             .format(file_to_verify))
 
+    # helpers
+
     def doTransformObs(self, file_name):
         zip_file_path = os.path.join(self.resources_dir, file_name)
+        zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
         self.out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
         self.return_val = None
         with closing(Md2HtmlConverter('', 'obs', None, self.out_zip_file)) as tx:
@@ -178,6 +183,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
 
     def doTransformTa(self, file_name):
         zip_file_path = os.path.join(self.resources_dir, file_name)
+        zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
         self.out_zip_file = tempfile.mktemp(prefix="en_ta", suffix=".zip")
         self.return_val = None
         with closing(Md2HtmlConverter('', 'ta', None, self.out_zip_file)) as tx:
@@ -246,6 +252,12 @@ class TestMd2HtmlConverter(unittest.TestCase):
             return None
 
         return content
+
+    def make_duplicate_zip_that_can_be_deleted(self, zip_file):
+        in_zip_file = tempfile.mktemp(prefix="test_data", suffix=".zip")
+        shutil.copy(zip_file, in_zip_file)
+        zip_file = in_zip_file
+        return zip_file
 
 
 if __name__ == '__main__':
