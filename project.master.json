@@ -4,6 +4,7 @@
   "memory": 512,
   "timeout": 300,
   "role": "arn:aws:iam::002723143144:role/tx_lambda_function",
+  "runtime": "python",
   "environment": {},
   "hooks": {
     "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",

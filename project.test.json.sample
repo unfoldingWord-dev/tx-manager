@@ -7,7 +7,7 @@
   "runtime": "python",
   "environment": {},
   "hooks": {
-    "build": "pip install --upgrade git+https://github.com/PhotoNomad0/tx-manager.git@Fix_556/repoConversionTimesOut -t .;cp -Rf ../../libraries .",
+    "build": "pip install --upgrade git+https://github.com/<username>/tx-manager.git@<branch> -t .;cp -Rf ../../libraries .",
     "clean": "rm -rf libraries"
   }
 }
