@@ -7,7 +7,7 @@
   "role": "arn:aws:iam::581647696645:role/tx_lambda_function",
   "environment": {},
   "hooks": {
-    "build": "pip install --upgrade git+https://github.com/PhotoNomad0/tx-manager.git@Fix_556/repoConversionTimesOut -t .;cp -Rf ../../libraries .",
+    "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
     "clean": "rm -rf libraries"
   }
 }
