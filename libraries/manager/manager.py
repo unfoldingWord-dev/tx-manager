@@ -5,12 +5,12 @@ import requests
 import logging
 from datetime import datetime
 from datetime import timedelta
+from libraries.aws_tools.lambda_handler import LambdaHandler
 from bs4 import BeautifulSoup
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.gogs_tools.gogs_handler import GogsHandler
 from job import TxJob
 from module import TxModule
-from aws_tools.lambda_handler import LambdaHandler
 
 
 class TxManager(object):

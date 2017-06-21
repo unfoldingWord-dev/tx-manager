@@ -185,7 +185,7 @@ class ClientWebhook(object):
 
         # Upload build_log.json to S3:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
-        file_utils.remove_tree(self.base_temp_dir)  # cleanup
+        remove_tree(self.base_temp_dir)  # cleanup
         if len(errors) > 0:
             raise Exception('; '.join(errors))
         else:

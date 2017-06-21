@@ -64,7 +64,8 @@ class TestConversions(TestCase):
         expected_output_name = "41-MAT"
 
         # when
-        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user, repo)
+        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
+                                                                                                       repo)
 
         # then
         self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
@@ -164,7 +165,8 @@ class TestConversions(TestCase):
     def test_usfm_ru_short_bundle_conversion(self):
         # given
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
-        git_url = "https://git.door43.org/tx-manager-test-data/bible_ru_short.git"  # shorter book list, but bigger books
+        # shorter book list, but bigger books
+        git_url = "https://git.door43.org/tx-manager-test-data/bible_ru_short.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = [
             "18-JOB",
