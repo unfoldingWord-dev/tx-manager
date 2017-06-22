@@ -47,8 +47,7 @@ class TestClientWebhook(unittest.TestCase):
             TestClientWebhook.setup_table = True
 
     def tearDown(self):
-        if os.path.isdir(self.temp_dir):
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
+        shutil.rmtree(self.base_temp_dir, ignore_errors=True)
 
     def init_table(self):
         self.db_handler.resource.create_table(

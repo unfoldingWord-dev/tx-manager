@@ -30,8 +30,7 @@ class TestClientCallback(TestCase):
         TestClientCallback.transfered_files = []
 
     def tearDown(self):
-        if os.path.isdir(self.temp_dir):
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
+        shutil.rmtree(self.base_temp_dir, ignore_errors=True)
 
     @patch('libraries.client.client_callback.download_file')
     def test_clientCallbackSimpleJob(self, mock_download_file):

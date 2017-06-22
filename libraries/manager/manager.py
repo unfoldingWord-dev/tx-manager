@@ -424,6 +424,9 @@ class TxManager(object):
         self.make_api_gateway_for_module(tx_module)  # Todo: develop this function
         return tx_module.get_db_data()
 
+    def get_view_count(self, path, increment=0):
+        return
+
     def generate_dashboard(self, max_failures=MAX_FAILURES):
         """
         Generate page with metrics indicating configuration of tx-manager.
