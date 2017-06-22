@@ -23,6 +23,7 @@ class ClientWebhookHandler(Handler):
             'cdn_bucket': self.retrieve(event['vars'], 'cdn_bucket', 'Environment Vars'),
             'gogs_url': self.retrieve(event['vars'], 'gogs_url', 'Environment Vars'),
             'gogs_user_token': self.retrieve(event['vars'], 'gogs_user_token', 'Environment Vars'),
-            'commit_data': self.retrieve(event, 'data', 'payload')
+            'commit_data': self.retrieve(event, 'data', 'payload'),
+            'manifest_table_name': self.retrieve(event['vars'], 'manifest_table_name', 'Environment Vars'),
         }
         return ClientWebhook(**env_vars).process_webhook()

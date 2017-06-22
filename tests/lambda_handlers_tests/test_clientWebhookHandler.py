@@ -20,7 +20,8 @@ class TestClientWebhookHandler(TestCase):
                 'api_url': 'https://api.example.com',
                 'cdn_bucket': 'cdn_test_bucket',
                 'pre_convert_bucket': 'pre_convert_bucket',
-                'gogs_user_token': 'token1'
+                'gogs_user_token': 'token1',
+                'manifest_table_name': 'tx-manifest',
             }
         }
         handler = ClientWebhookHandler()

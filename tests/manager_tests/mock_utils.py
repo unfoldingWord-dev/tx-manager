@@ -40,7 +40,9 @@ def mock_gogs_handler(tokens):
     """
     def get_user(token):
         if token in tokens:
-            return MagicMock()
+            user = MagicMock()
+            user.username = 'username'
+            return user
         else:
             return None
 

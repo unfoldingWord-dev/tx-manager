@@ -9,20 +9,18 @@ from libraries.aws_tools.lambda_handler import LambdaHandler
 from bs4 import BeautifulSoup
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.gogs_tools.gogs_handler import GogsHandler
-from job import TxJob
-from module import TxModule
-from manifest import TxManifest
+from libraries.models.job import TxJob
+from libraries.models.module import TxModule
 
 
 class TxManager(object):
     JOB_TABLE_NAME = 'tx-job'
     MODULE_TABLE_NAME = 'tx-module'
-    MANIFEST_TABLE_NAME = 'tx-manifest'
     MAX_FAILURES = 10
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
-                 job_table_name=None, module_table_name=None, manifest_table_name=None, prefix=''):
+                 job_table_name=None, module_table_name=None, prefix=''):
         """
         :param string api_url:
         :param string gogs_url:
@@ -42,19 +40,15 @@ class TxManager(object):
         self.aws_secret_access_key = aws_secret_access_key
         self.job_table_name = job_table_name
         self.module_table_name = module_table_name
-        self.manifest_table_name = manifest_table_name
         self.prefix = prefix
 
         if not self.job_table_name:
             self.job_table_name = TxManager.JOB_TABLE_NAME
         if not self.module_table_name:
             self.module_table_name = TxManager.MODULE_TABLE_NAME
-        if not self.manifest_table_name:
-            self.manifest_table_name = TxManager.MANIFEST_TABLE_NAME
 
         self.job_db_handler = None
         self.module_db_handler = None
-        self.manifest_db_handler = None
         self.gogs_handler = None
         self.lambda_handler = None
 
@@ -72,8 +66,6 @@ class TxManager(object):
             self.job_db_handler = DynamoDBHandler(self.job_table_name)
         if self.module_table_name:
             self.module_db_handler = DynamoDBHandler(self.module_table_name)
-        if self.manifest_table_name:
-            self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
         if self.gogs_url:
             self.gogs_handler = GogsHandler(self.gogs_url)
         self.lambda_handler = LambdaHandler(self.aws_access_key_id, self.aws_secret_access_key)
@@ -82,12 +74,12 @@ class TxManager(object):
         return self.gogs_handler.get_user(user_token)
 
     def get_converter_module(self, job):
-        modules = self.query_modules()
-        for module in modules:
-            if job.resource_type in module.resource_types:
-                if job.input_format in module.input_format:
-                    if job.output_format in module.output_format:
-                        return module
+        tx_modules = TxModule(db_handler=self.module_db_handler).query()
+        for tx_module in tx_modules:
+            if job.resource_type in tx_module.resource_types:
+                if job.input_format in tx_module.input_format:
+                    if job.output_format in tx_module.output_format:
+                        return tx_module
         return None
 
     def setup_job(self, data):
@@ -102,7 +94,7 @@ class TxManager(object):
         del data['gogs_user_token']
         data['user'] = user.username
 
-        job = TxJob(data)
+        job = TxJob(data, db_handler=self.job_db_handler)
 
         if not job.cdn_bucket:
             if not self.cdn_bucket:
@@ -118,13 +110,13 @@ class TxManager(object):
         if not job.output_format:
             raise Exception('"output_format" not given.')
 
-        converter_module = self.get_converter_module(job)
+        tx_module = self.get_converter_module(job)
 
-        if not converter_module:
+        if not tx_module:
             raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
                                                                                            job.input_format,
                                                                                            job.output_format))
-        job.convert_module = converter_module.name
+        job.convert_module = tx_module.name
         created_at = datetime.utcnow()
         expires_at = created_at + timedelta(days=1)
         eta = created_at + timedelta(seconds=20)
@@ -147,7 +139,7 @@ class TxManager(object):
         }
         # Saving this to the DynamoDB will start trigger a DB stream which will call
         # tx-manager again with the job info (see run() function)
-        self.insert_job(job)
+        job.insert()
         return {
             "job": job.get_db_data(),
             "links": [
@@ -180,7 +172,7 @@ class TxManager(object):
                 raise Exception('Invalid user_token. User not found.')
             data['user'] = user.username
             del data['gogs_user_token']
-        jobs = self.query_jobs(data)
+        jobs = TxJob(db_handler=self.job_db_handler).query(data)
         ret = []
         if jobs and len(jobs):
             for job in jobs:
@@ -205,7 +197,7 @@ class TxManager(object):
         }
 
     def start_job(self, job_id):
-        job = self.get_job(job_id)
+        job = TxJob(job_id, db_handler=self.job_db_handler)
 
         if not job.job_id:
             job.job_id = job_id
@@ -224,14 +216,14 @@ class TxManager(object):
         success = False
 
         try:
-            self.update_job(job)
-            converter_module = self.get_converter_module(job)
-            if not converter_module:
+            job.update()
+            tx_module = self.get_converter_module(job)
+            if not tx_module:
                 raise Exception('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
 
-            job.converter_module = converter_module.name
-            self.update_job(job)
+            job.converter_module = tx_module.name
+            job.update()
 
             payload = {
                 'data': {
@@ -239,7 +231,7 @@ class TxManager(object):
                 }
             }
 
-            converter_function = '{0}tx_convert_{1}'.format(self.prefix, converter_module.name)
+            converter_function = '{0}tx_convert_{1}'.format(self.prefix, tx_module.name)
             job.log_message('Telling module {0} to convert {1} and put at {2}'.format(converter_function,
                                                                                       job.source,
                                                                                       job.output))
@@ -278,11 +270,11 @@ class TxManager(object):
                         if message:
                             job.warning_message(message)
                     if len(json_data['errors']):
-                        job.log_message('{0} function returned with errors.'.format(converter_module.name))
+                        job.log_message('{0} function returned with errors.'.format(tx_module.name))
                     elif len(json_data['warnings']):
-                        job.log_message('{0} function returned with warnings.'.format(converter_module.name))
+                        job.log_message('{0} function returned with warnings.'.format(tx_module.name))
                     else:
-                        job.log_message('{0} function returned successfully.'.format(converter_module.name))
+                        job.log_message('{0} function returned successfully.'.format(tx_module.name))
                 else:
                     job.error_message('Conversion failed for unknown reason.')
             else:
@@ -310,7 +302,7 @@ class TxManager(object):
         job.log_message(message)
         job.log_message('Finished job {0} at {1}'.format(job.job_id, job.ended_at))
 
-        self.update_job(job)
+        job.update()
 
         callback_payload = job.get_db_data()
 
@@ -414,87 +406,23 @@ class TxManager(object):
         return
 
     def register_module(self, data):
-        module = TxModule(data)
+        tx_module = TxModule(data=data, db_handler=self.module_db_handler)
 
-        if not module.name:
+        if not tx_module.name:
             raise Exception('"name" not given.')
-        if not module.type:
+        if not tx_module.type:
             raise Exception('"type" not given.')
-        if not module.input_format:
+        if not tx_module.input_format:
             raise Exception('"input_format" not given.')
-        if not module.output_format:
+        if not tx_module.output_format:
             raise Exception('"output_format" not given.')
-        if not module.resource_types:
+        if not tx_module.resource_types:
             raise Exception('"resource_types" not given.')
 
-        module.public_links.append("{0}/tx/convert/{1}".format(self.api_url, module.name))
-        self.insert_module(module)
-        self.make_api_gateway_for_module(module)  # Todo: develop this function
-        return module.get_db_data()
-
-    def insert_job(self, job):
-        job_data = job.get_db_data()
-        self.job_db_handler.insert_item(job_data)
-
-    def query_jobs(self, data=None):
-        items = self.job_db_handler.query_items(data)
-        jobs = []
-        if items and len(items):
-            for item in items:
-                jobs.append(TxJob(item))
-        return jobs
-
-    def get_job(self, job_id):
-        return TxJob(self.job_db_handler.get_item({'job_id': job_id}))
-
-    def update_job(self, job):
-        return self.job_db_handler.update_item({'job_id': job.job_id}, job.get_db_data())
-
-    def delete_job(self, job):
-        return self.job_db_handler.delete_item({'job_id': job.job_id})
-
-    def insert_module(self, module):
-        module_data = module.get_db_data()
-        self.module_db_handler.insert_item(module_data)
-
-    def query_modules(self, data=None):
-        items = self.module_db_handler.query_items(data)
-        modules = []
-        if items and len(items):
-            for item in items:
-                modules.append(TxModule(item))
-        return modules
-
-    def get_module(self, name):
-        return TxModule(self.module_db_handler.get_item({'name': name}))
-
-    def update_module(self, module):
-        return self.module_db_handler.update_item({'name': module.name}, module.get_db_data())
-
-    def delete_module(self, module):
-        return self.module_db_handler.delete_item({'name': module.name})
-
-    def insert_manifest(self, manifest):
-        manifest_data = manifest.get_db_data()
-        self.manifest_db_handler.insert_item(manifest_data)
-
-    def query_manifests(self, data=None):
-        items = self.manifest_db_handler.query_items(data)
-        manifests = []
-        if items and len(items):
-            for item in items:
-                manifests.append(TxManifest(item))
-        return manifests
-
-    def get_manifest(self, repo_name, user_name):
-        return TxManifest(self.manifest_db_handler.get_item({'repo_name': repo_name, 'user_name': user_name}))
-
-    def update_manifest(self, manifest):
-        return self.manifest_db_handler.update_item({'repo_name': manifest.repo_name, 'user_name': manifest.user_name},
-                                                    manifest.get_db_data())
-
-    def delete_manifest(self, manifest):
-        return self.manifest_db_handler.delete_item({'repo_name': manifest.repo_name, 'user_name': manifest.user_name})
+        tx_module.public_links.append("{0}/tx/convert/{1}".format(self.api_url, tx_module.name))
+        tx_module.insert()
+        self.make_api_gateway_for_module(tx_module)  # Todo: develop this function
+        return tx_module.get_db_data()
 
     def generate_dashboard(self, max_failures=MAX_FAILURES):
         """
@@ -511,29 +439,29 @@ class TxManager(object):
 
         items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
         if items and len(items):
-            moduleNames = []
+            module_names = []
             for item in items:
-                moduleNames.append(item["name"])
+                module_names.append(item["name"])
 
-            registeredJobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : moduleNames}
+            registered_jobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : module_names}
                                     }, False)
-            totalJobCount = self.get_job_count()
-            registeredJobCount = len(registeredJobs)
-            if registeredJobCount > totalJobCount: # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
-                totalJobCount = registeredJobCount
+            total_job_count = self.get_job_count()
+            registered_job_count = len(registered_jobs)
+            if registered_job_count > total_job_count: # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
+                total_job_count = registered_job_count
 
             self.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
 
             body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
                                  'html.parser')
             for item in items:
-                moduleName = item["name"]
-                self.logger.debug(moduleName)
+                module_name = item["name"]
+                self.logger.debug(module_name)
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '"><td class="hdr" colspan="2">' + str(moduleName) + '</td></tr>',
+                    '<tr id="' + module_name + '"><td class="hdr" colspan="2">' + str(module_name) + '</td></tr>',
                     'html.parser'))
 
-                jobs = self.get_jobs_for_module(registeredJobs, moduleName)
+                jobs = self.get_jobs_for_module(registered_jobs, module_name)
                 self.get_jobs_counts(jobs)
 
                 # TBD the following code almosts walks the db record replacing next 11 lines
@@ -543,62 +471,62 @@ class TxManager(object):
                 # rec += '<tr><td colspan="2"></td></tr>'
 
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
+                    '<tr id="' + module_name + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
                     str(item["type"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
+                    '<tr id="' + module_name + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
                     json.dumps(item["input_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
+                    '<tr id="' + module_name + '-output" class="module-output"><td class="lbl">Output Format:</td><td>' +
                     json.dumps(item["output_format"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
+                    '<tr id="' + module_name + '-resource" class="module-resource"><td class="lbl">Resource Types:</td><td>' +
                     json.dumps(item["resource_types"]) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
+                    '<tr id="' + module_name + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
                     str(item["version"]) + '</td></tr>',
                     'html.parser'))
 
                 if len(item["options"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + moduleName + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
+                        '<tr id="' + module_name + '-options" class="module-options"><td class="lbl">Options:</td><td>' +
                         json.dumps(item["options"]) + '</td></tr>',
                         'html.parser'))
 
                 if len(item["private_links"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + moduleName + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
+                        '<tr id="' + module_name + '-private-links" class="module-private-links"><td class="lbl">Private Links:</td><td>' +
                         json.dumps(item["private_links"]) + '</td></tr>',
                         'html.parser'))
 
                 if len(item["public_links"]) > 0:
                     body.table.append(BeautifulSoup(
-                        '<tr id="' + moduleName + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
+                        '<tr id="' + module_name + '-public-links" class="module-public-links"><td class="lbl">Public Links:</td><td>' +
                         json.dumps(item["public_links"]) + '</td></tr>',
                         'html.parser'))
 
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-job-success" class="module-public-links"><td class="lbl">Job Successes:</td><td>' +
+                    '<tr id="' + module_name + '-job-success" class="module-public-links"><td class="lbl">Job Successes:</td><td>' +
                     str(self.jobs_success) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-job-warning" class="module-public-links"><td class="lbl">Job Warnings:</td><td>' +
+                    '<tr id="' + module_name + '-job-warning" class="module-public-links"><td class="lbl">Job Warnings:</td><td>' +
                     str(self.jobs_warnings) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-job-failure" class="module-public-links"><td class="lbl">Job Failures:</td><td>' +
+                    '<tr id="' + module_name + '-job-failure" class="module-public-links"><td class="lbl">Job Failures:</td><td>' +
                     str(self.jobs_failures) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
-                    '<tr id="' + moduleName + '-job-total" class="module-public-links"><td class="lbl">Jobs Total:</td><td>' +
+                    '<tr id="' + module_name + '-job-total" class="module-public-links"><td class="lbl">Jobs Total:</td><td>' +
                     str(self.jobs_total) + '</td></tr>',
                     'html.parser'))
 
-            self.get_jobs_counts(registeredJobs)
+            self.get_jobs_counts(registered_jobs)
             body.table.append(BeautifulSoup(
                 '<tr id="totals"><td class="hdr" colspan="2">Total Jobs</td></tr>',
                 'html.parser'))
@@ -616,19 +544,19 @@ class TxManager(object):
                 'html.parser'))
             body.table.append(BeautifulSoup(
                 '<tr id="totals-job-unregistered" class="module-public-links"><td class="lbl">Unregistered:</td><td>' +
-                str(totalJobCount - self.jobs_total) + '</td></tr>',
+                str(total_job_count - self.jobs_total) + '</td></tr>',
                 'html.parser'))
             body.table.append(BeautifulSoup(
                 '<tr id="totals-job-total" class="module-public-links"><td class="lbl">Total:</td><td>' +
-                str(totalJobCount) + '</td></tr>',
+                str(total_job_count) + '</td></tr>',
                 'html.parser'))
 
             # build job failures table
 
-            jobFailures = self.get_job_failures(registeredJobs)
+            job_failures = self.get_job_failures(registered_jobs)
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
-            failureTable = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
-            failureTable.table.append(BeautifulSoup(
+            failure_table = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
+            failure_table.table.append(BeautifulSoup(
                 '<tr id="header">'
                 '<th class="hdr">Time</th>'
                 '<th class="hdr">Errors</th>'
@@ -643,34 +571,34 @@ class TxManager(object):
                 gogs_url = 'https://git.door43.org'
 
             for i in range(0, max_failures):
-                if i >= len(jobFailures):
+                if i >= len(job_failures):
                     break
 
-                item = jobFailures[i]
+                item = job_failures[i]
 
                 try :
                     identifier = item['identifier']
                     owner_name, repo_name, commit_id = identifier.split('/')
-                    sourceSubPath = '{0}/{1}'.format(owner_name, repo_name)
+                    source_sub_path = '{0}/{1}'.format(owner_name, repo_name)
                     cdn_bucket = item['cdn_bucket']
-                    destinationUrl = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
-                    repoUrl = gogs_url + "/" + sourceSubPath
-                    preconvertedUrl = item['source']
-                    convertedUrl = item['output']
-                    failureTable.table.append(BeautifulSoup(
+                    destination_url = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
+                    repoUrl = gogs_url + "/" + source_sub_path
+                    preconverted_url = item['source']
+                    converted_url = item['output']
+                    failure_table.table.append(BeautifulSoup(
                         '<tr id="failure-' + str(i) + '" class="module-job-id">'
                         + '<td>' + item['created_at'] + '</td>'
                         + '<td>' + ','.join(item['errors']) + '</td>'
-                        + '<td><a href="' + repoUrl + '">' + sourceSubPath + '</a></td>'
-                        + '<td><a href="' + preconvertedUrl + '">' + preconvertedUrl.rsplit('/', 1)[1] + '</a></td>'
-                        + '<td><a href="' + convertedUrl + '">' + item['job_id'] + '.zip</a></td>'
-                        + '<td><a href="' + destinationUrl + '">Build Log</a></td>'
+                        + '<td><a href="' + repoUrl + '">' + source_sub_path + '</a></td>'
+                        + '<td><a href="' + preconverted_url + '">' + preconverted_url.rsplit('/', 1)[1] + '</a></td>'
+                        + '<td><a href="' + converted_url + '">' + item['job_id'] + '.zip</a></td>'
+                        + '<td><a href="' + destination_url + '">Build Log</a></td>'
                         + '</tr>',
                         'html.parser'))
                 except:
                     pass
 
-            body.append(failureTable)
+            body.append(failure_table)
             dashboard['body'] = body.prettify('UTF-8')
         else:
             self.logger.debug("No modules found.")
@@ -678,14 +606,14 @@ class TxManager(object):
         return dashboard
 
     def get_jobs_for_module(self, jobs, moduleName):
-        jobsInModule = []
+        jobs_in_module = []
         for job in jobs:
             if "convert_module" in job:
                 name = job["convert_module"]
                 if name == moduleName:
-                    jobsInModule.append(job)
+                    jobs_in_module.append(job)
 
-        return jobsInModule
+        return jobs_in_module
 
     def get_jobs_counts(self, jobs):
         self.jobs_total = len(jobs)
@@ -706,11 +634,11 @@ class TxManager(object):
             self.jobs_success+=1
 
     def get_job_failures(self, jobs):
-        failedJobs = []
+        failed_jobs = []
         for job in jobs:
             errors = job['errors']
             if len(errors) > 0:
-                failedJobs.append(job)
+                failed_jobs.append(job)
 
-        failedJobs = sorted(failedJobs, key=lambda k: k['created_at'], reverse=True)
-        return failedJobs
+        failed_jobs = sorted(failed_jobs, key=lambda k: k['created_at'], reverse=True)
+        return failed_jobs

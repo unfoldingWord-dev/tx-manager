@@ -3,26 +3,29 @@ import os
 from datetime import datetime
 from unittest import TestCase
 from moto import mock_dynamodb2
-from libraries.manager.manager import TxManager
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.general_tools.file_utils import load_yaml_object
+from libraries.models.manifest import TxManifest
 
 
 @mock_dynamodb2
-class ManifestTests(TestCase):
+class TxManifestTests(TestCase):
+    MANIFEST_TABLE_NAME = 'test-manifest'
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
+    setup_table = False
 
     def setUp(self):
-        self.manager = TxManager()
-        self.handler = self.manager.manifest_db_handler
-        self.table = None
-        self.items = []
-        self.init_table()
+        self.db_handler = DynamoDBHandler(TxManifestTests.MANIFEST_TABLE_NAME)
+        if not TxManifestTests.setup_table:
+            self.init_table()
+            TxManifestTests.setup_table = True
+        self.items = {}
         self.init_items()
         self.populate_table()
 
     def init_table(self):
-        self.table = self.handler.resource.create_table(
-            TableName=TxManager.MANIFEST_TABLE_NAME,
+        self.db_handler.resource.create_table(
+            TableName=TxManifestTests.MANIFEST_TABLE_NAME,
             KeySchema=[
                 {
                     'AttributeName': 'repo_name',
@@ -46,11 +49,12 @@ class ManifestTests(TestCase):
             ProvisionedThroughput={
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
-            }
+            },
         )
 
     def init_items(self):
-        self.items = [{
+        self.items = {
+            'Door43/en_obs': {
                 'repo_name': 'en_obs',
                 'user_name': 'Door43',
                 'lang_code': 'en',
@@ -61,7 +65,7 @@ class ManifestTests(TestCase):
                 'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'manifest': load_yaml_object(os.path.join(self.resources_dir, 'obs_manifest.yaml'))
             },
-            {
+            'johndoe/en_obs': {
                 'repo_name': 'en_obs',
                 'user_name': 'johndoe',
                 'lang_code': 'en',
@@ -72,7 +76,7 @@ class ManifestTests(TestCase):
                 'last_updated': '2016-12-21T05:23:01Z',
                 'manifest': load_yaml_object(os.path.join(self.resources_dir, 'obs_manifest.yaml'))
             },
-            {
+            'francis/fr_ulb': {
                 'repo_name': 'fr_ulb',
                 'user_name': 'francis',
                 'lang_code': 'fr',
@@ -82,30 +86,35 @@ class ManifestTests(TestCase):
                 'views': 12,
                 'last_updated': '2017-02-11T15:43:11Z',
                 'manifest': load_yaml_object(os.path.join(self.resources_dir, 'obs_manifest.yaml'))
-            }]
+            },
+        }
 
     def populate_table(self):
-        for item in self.items:
-            self.handler.insert_item(item)
+        for idx in self.items:
+            self.db_handler.insert_item(self.items[idx])
 
     def test_query_manifest(self):
-        self.assertEqual(self.table.name, TxManager.MANIFEST_TABLE_NAME)
-        self.assertEqual(len(self.manager.query_manifests()), 3)
-        manifest = self.manager.get_manifest(self.items[1]['repo_name'], self.items[1]['user_name'])
-        self.assertEqual(manifest.title, self.items[1]['title'])
-        self.assertEqual(manifest.manifest, self.items[1]['manifest'])
+        manifests = TxManifest(db_handler=self.db_handler).query()
+        for manifest in manifests:
+            self.assertEqual(manifest.get_db_data(), TxManifest(self.items['{0}/{1}'.format(manifest.user_name, manifest.repo_name)]).get_db_data())
 
     def test_update_manifest(self):
-        manifest = self.manager.get_manifest(self.items[2]['repo_name'], self.items[2]['user_name'])
+        manifest = TxManifest(db_handler=self.db_handler)
+        manifest.repo_name = self.items['francis/fr_ulb']['repo_name']
+        manifest.user_name = self.items['francis/fr_ulb']['user_name']
+        manifest.load()
         manifest.resource_id = 'udb'
         manifest.title = 'Unlocked Dynamic Bible'
-        self.manager.update_manifest(manifest)
-        manifest = self.manager.get_manifest(self.items[2]['repo_name'], self.items[2]['user_name'])
+        manifest.update()
+        manifest.load()
         self.assertEqual(manifest.resource_id, 'udb')
 
     def test_delete_manifest(self):
-        manifest = self.manager.get_manifest(self.items[0]['repo_name'], self.items[0]['user_name'])
+        manifest = TxManifest(db_handler=self.db_handler)
+        manifest.repo_name = self.items['Door43/en_obs']['repo_name']
+        manifest.user_name = self.items['Door43/en_obs']['user_name']
+        manifest.load()
         self.assertIsNotNone(manifest.repo_name)
-        self.manager.delete_manifest(manifest)
-        manifest = self.manager.get_manifest(self.items[0]['repo_name'], self.items[0]['user_name'])
+        manifest.delete()
+        manifest.load()
         self.assertIsNone(manifest.repo_name)

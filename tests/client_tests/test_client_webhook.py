@@ -8,11 +8,15 @@ from libraries.aws_tools.s3_handler import S3Handler
 from mock import patch
 from libraries.client.client_webhook import ClientWebhook
 from libraries.general_tools.file_utils import read_file
-from moto import mock_s3
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
+from libraries.models.manifest import TxManifest
+from moto import mock_s3, mock_dynamodb2
 
 
 @mock_s3
+@mock_dynamodb2
 class TestClientWebhook(unittest.TestCase):
+    MANIFEST_TABLE_NAME = 'client-webhook-test-manifest'
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     temp_dir = None
@@ -24,6 +28,7 @@ class TestClientWebhook(unittest.TestCase):
                                      'created_at': '2017-05-22T13:39:15Z', 'errors': []}
     mock_job_return_value = default_mock_job_return_value
     uploaded_files = []
+    setup_table = False
 
     def setUp(self):
         try:
@@ -36,10 +41,43 @@ class TestClientWebhook(unittest.TestCase):
         TestClientWebhook.mock_job_return_value = \
             json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value))  # do deep copy
         TestClientWebhook.uploaded_files = []
+        self.db_handler = DynamoDBHandler(TestClientWebhook.MANIFEST_TABLE_NAME)
+        if not TestClientWebhook.setup_table:
+            self.init_table()
+            TestClientWebhook.setup_table = True
 
     def tearDown(self):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def init_table(self):
+        self.db_handler.resource.create_table(
+            TableName=TestClientWebhook.MANIFEST_TABLE_NAME,
+            KeySchema=[
+                {
+                    'AttributeName': 'repo_name',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'user_name',
+                    'KeyType': 'RANGE'
+                },
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'repo_name',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'user_name',
+                    'AttributeType': 'S'
+                },
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+            },
+        )
 
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
@@ -176,9 +214,9 @@ class TestClientWebhook(unittest.TestCase):
         self.cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
         return self.cwh
 
-    @staticmethod
     def mock_download_repo(self, source, target):
-        shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
+        if source != target:
+            shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
     def mock_add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         TestClientWebhook.jobRequestCount += 1
@@ -216,6 +254,7 @@ class TestClientWebhook(unittest.TestCase):
         commit_path = '/tx-manager-test-data/en-ulb/commit/22f3d09f7a33d2496db6993648f0cd967a9006f6'
         repo = 'en-ulb'
         user = 'tx-manager-test-data'
+        manifest_table_name = TestClientWebhook.MANIFEST_TABLE_NAME
 
         if not source_path:
             source_path = base_url + commit_path
@@ -251,6 +290,7 @@ class TestClientWebhook(unittest.TestCase):
             'cdn_bucket': cdn_bucket,
             'gogs_url': gogs_url,
             'gogs_user_token': gogs_user_token,
-            'commit_data': webhook_data
+            'commit_data': webhook_data,
+            'manifest_table_name': manifest_table_name
         }
         return env_vars

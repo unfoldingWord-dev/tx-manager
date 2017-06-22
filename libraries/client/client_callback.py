@@ -3,11 +3,10 @@ import json
 import os
 import tempfile
 import logging
-import time
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
 from libraries.general_tools.url_utils import download_file
 from libraries.aws_tools.s3_handler import S3Handler
-from libraries.manager.job import TxJob
+from libraries.models.job import TxJob
 
 
 class ClientCallback(object):
