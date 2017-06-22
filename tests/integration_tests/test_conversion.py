@@ -16,6 +16,7 @@ from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
+from libraries.models.job import TxJob
 
 COMMIT_LENGTH = 40
 USE_WEB_HOOK_LAMBDA = True
@@ -876,7 +877,7 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxManifest(job_id, db_handler=tx_manager.job_db_handler)
+                job = TxJob(job_id, db_handler=tx_manager.job_db_handler)
                 self.assertIsNotNone(job)
                 elapsed_seconds = int(time.time() - start)
                 print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
@@ -916,7 +917,7 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxManifest(job_id, db_handler=tx_manager.job_db_handler)
+            job = TxJob(job_id, db_handler=tx_manager.job_db_handler)
             self.assertIsNotNone(job)
             elapsed_seconds = int(time.time() - start)
             print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
