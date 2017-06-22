@@ -39,7 +39,7 @@ def touch(client, bucket_name, key):
 
 
 def main():
-    if not sys.argv[1]:
+    if len(sys.argv) < 2:
         logger.critical('You must provide a bucket name!')
         exit(1)
     bucket_name = sys.argv[1]
