@@ -130,7 +130,7 @@ def add_to_manifest(resource, bucket_name, table_name, key):
             'resource_type': manifest['dublin_core']['type'],
             'title': manifest['dublin_core']['title'],
             'views': 0,
-            'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'manifest': json.dumps(manifest)
         }
     else:
@@ -149,23 +149,30 @@ def add_to_manifest(resource, bucket_name, table_name, key):
             'resource_type': resource_map[type]['type'],
             'title': resource_map[type]['title'],
             'views': 0,
-            'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
         }
         data['manifest'] = json.dumps({
-            'checking': {"checking_entity": ["Wycliffe Associates"], "checking_level": "1"},
+            'checking': {'checking_entity': ['Wycliffe Associates'], 'checking_level': '1'},
             'dublin_core': {
+                'conformsto': 'rc0.2',
+                'contributor': ['unfoldingWord', 'Wycliffe Associates'],
+                'creator': 'Wycliffe Associates',
+                'description': '',
+                'format': resource_map[type]['format'],
+                'issued': datetime.utcnow().strftime('%Y-%m-%d'),
+                'modified': datetime.utcnow().strftime('%Y-%m-%d'),
                 'identifier': data['resource_id'],
                 'language': {'identifier': data['lang_code']},
                 'type': data['resource_type'],
                 'title': data['title']
             },
-            "projects": [{
-                "sort": "1",
-                "identifier": data['resource_id'],
-                "title": data['title'],
-                "path": "./",
-                "versification": "",
-                "categories": []
+            'projects': [{
+                'sort': '1',
+                'identifier': data['resource_id'],
+                'title': data['title'],
+                'path': './',
+                'versification': '',
+                'categories': []
             }]
         })
     dbtable.put_item(Item=data)
