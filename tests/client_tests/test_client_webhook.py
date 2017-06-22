@@ -103,6 +103,16 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults(results, expected_job_count, expected_error_count)
 
+        # Check repo was added to manifest table
+        tx_manifest = TxManifest({
+                'repo_name': client_web_hook.commit_data['repository']['name'],
+                'user_name': client_web_hook.commit_data['repository']['owner']['username']
+            },
+            db_handler=self.db_handler)
+        self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
+        self.assertEqual(tx_manifest.resource_id, 'udb')
+        self.assertEqual(tx_manifest.lang_code, 'kpb')
+
     @patch('libraries.client.client_webhook.download_file')
     def test_processWebhookError(self, mock_download_file):
         # given
