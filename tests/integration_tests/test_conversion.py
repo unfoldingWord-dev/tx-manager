@@ -8,12 +8,14 @@ from unittest import TestCase
 import requests
 import shutil
 import time
+from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
 from libraries.manager.manager import TxManager
 from libraries.general_tools.file_utils import unzip
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
-from bs4 import BeautifulSoup
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
+from libraries.models.manifest import TxManifest
 
 COMMIT_LENGTH = 40
 USE_WEB_HOOK_LAMBDA = True
@@ -43,6 +45,7 @@ class TestConversions(TestCase):
         self.cdn_bucket = '{0}cdn.door43.org'.format(destination)
         self.job_table_name = '{0}tx-job'.format(destination)
         self.module_table_name = '{0}tx-module'.format(destination)
+        self.manifest_table_name = '{0}tx-manifest'.format(destination)
         self.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
         self.door43_bucket = '{0}door43.org'.format(destination)
 
@@ -569,6 +572,14 @@ class TestConversions(TestCase):
 
         self.assertTrue(success)
 
+        # Test that repo is in manifest table
+        tx_manifest = TxManifest({'repo_name': repo, 'user_name': user},
+                                 db_handler=DynamoDBHandler(self.manifest_table_name))
+        # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
+        # If that row doesn't exist, it will cause repo_name and user_name to be None, so just need to check them.
+        self.assertEqual(tx_manifest.repo_name, repo)
+        self.assertEqual(tx_manifest.user_name, user)
+
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
                 "compare_url", "convert_module", "created_at", "errors", "identifier", "input_format", "job_id", "log",
@@ -795,7 +806,8 @@ class TestConversions(TestCase):
             'cdn_bucket': self.cdn_bucket,
             'gogs_url': self.gogs_url,
             'gogs_user_token': gogs_user_token,
-            'commit_data': webhook_data
+            'commit_data': webhook_data,
+            'manifest_table_name': self.manifest_table_name,
         }
 
         start = time.time()
