@@ -1,9 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
-from libraries.manager.module import TxObject
+from libraries.models.module import Model
 
 
-class MyObject(TxObject):
+class MyModel(Model):
+    db_keys = [
+        'field1'
+    ]
+
     db_fields = [
         'field1',
         'field2'
@@ -12,14 +16,14 @@ class MyObject(TxObject):
     def __init__(self):
         self.field1 = None
         self.field2 = None
-        super(MyObject, self).__init__()
+        super(MyModel, self).__init__()
 
 
-class ObjectTest(unittest.TestCase):
+class ModelTests(unittest.TestCase):
 
     def test_populate(self):
         """Test populate method."""
-        obj = MyObject()
+        obj = MyModel()
         data = {
             'field1': 'value1',
             'field2': 'value2',

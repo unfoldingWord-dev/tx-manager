@@ -63,12 +63,19 @@ class DynamoDBHandler(object):
         self.logger.debug("NAMES:")
         self.logger.debug(names)
 
-        return self.table.update_item(
-            Key=keys,
-            UpdateExpression='SET {0}'.format(', '.join(expressions)),
-            ExpressionAttributeValues=values,
-            ExpressionAttributeNames=names
-        )
+        if names:
+            return self.table.update_item(
+                Key=keys,
+                UpdateExpression='SET {0}'.format(', '.join(expressions)),
+                ExpressionAttributeValues=values,
+                ExpressionAttributeNames=names
+            )
+        else:
+            return self.table.update_item(
+                Key=keys,
+                UpdateExpression='SET {0}'.format(', '.join(expressions)),
+                ExpressionAttributeValues=values
+            )
 
     def delete_item(self, keys):
         return self.table.delete_item(

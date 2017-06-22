@@ -1,9 +1,13 @@
 from __future__ import unicode_literals, print_function
 from six import string_types
-from object import TxObject
+from libraries.models.model import Model
 
 
-class TxJob(TxObject):
+class TxJob(Model):
+    db_keys = [
+        'job_id'
+    ]
+
     db_fields = [
         'job_id',
         'user',
@@ -28,10 +32,16 @@ class TxJob(TxObject):
         'message',
         'log',
         'warnings',
-        'errors'
+        'errors',
     ]
 
-    def __init__(self, data):
+    default_values = {
+        'log': [],
+        'warnings': [],
+        'errors': [],
+    }
+
+    def __init__(self, data=None, **kwargs):
         # Init attributes
         self.job_id = None
         self.user = None
@@ -56,10 +66,24 @@ class TxJob(TxObject):
         self.message = None
         self.api_base_url = None
         self.cdn_base_url = None
+        self.log = []
+        self.warnings = []
+        self.errors = []
 
-        super(TxJob, self).__init__()
+        super(TxJob, self).__init__(**kwargs)
 
         if isinstance(data, dict):
             self.populate(data)
         elif isinstance(data, string_types):
-            self.populate({'job_id': data})
+            self.job_id = data
+            if self.db_handler:
+                self.load()
+
+    def log_message(self, message):
+        self.log.append(message)
+
+    def error_message(self, message):
+        self.errors.append(message)
+
+    def warning_message(self, message):
+        self.warnings.append(message)

@@ -7,18 +7,20 @@ import requests
 import logging
 import json
 from datetime import datetime
-from libraries.general_tools.file_utils import unzip, get_subdirs, write_file, add_contents_to_zip, add_file_to_zip, \
-    remove_tree
+from libraries.general_tools.file_utils import unzip, write_file, add_contents_to_zip, remove_tree
 from libraries.general_tools.url_utils import download_file
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess
 from libraries.aws_tools.s3_handler import S3Handler
+from libraries.models.manifest import TxManifest
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 
 
 class ClientWebhook(object):
+    MANIFEST_TABLE_NAME = 'tx-manifest'
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
-                 gogs_url=None, gogs_user_token=None):
+                 gogs_url=None, gogs_user_token=None, manifest_table_name=None):
         """
         :param dict commit_data:
         :param string api_url:
@@ -33,6 +35,7 @@ class ClientWebhook(object):
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
         self.gogs_user_token = gogs_user_token
+        self.manifest_table_name = manifest_table_name
         self.logger = logging.getLogger()
 
         if self.pre_convert_bucket:
@@ -43,6 +46,10 @@ class ClientWebhook(object):
 
         self.cdn_handler = None
         self.preconvert_handler = None
+
+        if not self.manifest_table_name:
+            self.manifest_table_name = ClientWebhook.MANIFEST_TABLE_NAME
+        self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
 
         # move everything down one directory levek for simple delete
         self.intermediate_dir = 'tx-manager'
@@ -88,6 +95,30 @@ class ClientWebhook(object):
 
         # Get the resource container
         rc = RC(repo_dir, repo_name)
+
+        # Save manifest to manifest table
+        manifest_data = {
+            'repo_name': repo_name,
+            'user_name': repo_owner,
+            'lang_code': rc.resource.language.identifier,
+            'resource_id': rc.resource.identifier,
+            'resource_type': rc.resource.type,
+            'title': rc.resource.title,
+            'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'manifest': json.dumps(rc.as_dict()),
+        }
+        tx_manifest = TxManifest(db_handler=self.manifest_db_handler)
+        # First see if manifest already exists in DB and update it if it is
+        tx_manifest.repo_name = repo_name
+        tx_manifest.user_name = repo_owner
+        tx_manifest.load()
+        if tx_manifest.repo_name:
+            self.logger.debug('Updating manifest in manifest table: {0}'.format(manifest_data))
+            tx_manifest.update(manifest_data)
+        else:
+            tx_manifest.populate(manifest_data)
+            self.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest.get_db_data()))
+            tx_manifest.insert()
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
