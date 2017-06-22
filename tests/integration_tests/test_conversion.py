@@ -876,7 +876,7 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = tx_manager.get_job(job_id)
+                job = TxManifest(job_id, db_handler=tx_manager.job_db_handler)
                 self.assertIsNotNone(job)
                 elapsed_seconds = int(time.time() - start)
                 print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
@@ -916,7 +916,7 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = tx_manager.get_job(job_id)
+            job = TxManifest(job_id, db_handler=tx_manager.job_db_handler)
             self.assertIsNotNone(job)
             elapsed_seconds = int(time.time() - start)
             print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
