@@ -21,13 +21,10 @@ class TestClientWebhook(unittest.TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     temp_dir = None
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
-    shutil.rmtree(base_temp_dir, ignore_errors=True)
-    jobRequestCount = 0
     default_mock_job_return_value = {'job_id': '0', 'status': 'started', 'success': 'success', 'resource_type': 'obs',
                                      'input_format': 'md', 'output_format': 'html', 'convert_module': 'module1',
                                      'created_at': '2017-05-22T13:39:15Z', 'errors': []}
     mock_job_return_value = default_mock_job_return_value
-    uploaded_files = []
     setup_table = False
 
     def setUp(self):
@@ -37,17 +34,17 @@ class TestClientWebhook(unittest.TestCase):
             pass
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
-        TestClientWebhook.jobRequestCount = 0
+        self.job_request_count = 0
         TestClientWebhook.mock_job_return_value = \
             json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value))  # do deep copy
-        TestClientWebhook.uploaded_files = []
+        self.uploaded_files = []
         self.db_handler = DynamoDBHandler(TestClientWebhook.MANIFEST_TABLE_NAME)
         if not TestClientWebhook.setup_table:
             self.init_table()
             TestClientWebhook.setup_table = True
 
     def tearDown(self):
-        shutil.rmtree(self.base_temp_dir, ignore_errors=True)
+        shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
 
     def init_table(self):
         self.db_handler.resource.create_table(
@@ -169,7 +166,7 @@ class TestClientWebhook(unittest.TestCase):
 
     def validateResults(self, results, expected_job_count, expected_error_count):
         multipleJob = expected_job_count > 1
-        self.assertEqual(TestClientWebhook.jobRequestCount, expected_job_count)
+        self.assertEqual(self.job_request_count, expected_job_count)
         self.assertTrue(len(results['job_id']) > 16)
         self.assertTrue(len(results['commit_id']) > 8)
         self.assertTrue(len(results['repo_owner']) > 1)
@@ -228,7 +225,7 @@ class TestClientWebhook(unittest.TestCase):
             shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
     def mock_add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
-        TestClientWebhook.jobRequestCount += 1
+        self.job_request_count += 1
         mock_job_return_value = TestClientWebhook.mock_job_return_value
         mock_job_return_value['job_id'] = identifier
         return identifier, mock_job_return_value
