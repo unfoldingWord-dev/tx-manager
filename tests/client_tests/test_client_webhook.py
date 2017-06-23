@@ -100,11 +100,10 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(results, expected_job_count, expected_error_count)
 
         # Check repo was added to manifest table
-        tx_manifest = TxManifest({
+        tx_manifest = TxManifest(db_handler=self.db_handler).load({
                 'repo_name': client_web_hook.commit_data['repository']['name'],
                 'user_name': client_web_hook.commit_data['repository']['owner']['username']
-            },
-            db_handler=self.db_handler)
+            })
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')

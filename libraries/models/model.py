@@ -42,11 +42,17 @@ class Model(object):
                 data[field] = None
         return data
 
-    def insert(self):
+    def insert(self, data=None):
+        if data:
+            self.populate(data, clear_before_populate=False)
         self.db_handler.insert_item(self.get_db_data())
+        return self
 
-    def load(self):
+    def load(self, data=None):
+        if data:
+            self.populate(data, clear_before_populate=False)
         self.populate(self.db_handler.get_item(self.get_keys()))
+        return self
 
     def update(self, data=None):
         if not data:
@@ -56,7 +62,8 @@ class Model(object):
         for field in data.keys():
             if field not in self.db_fields or field in self.db_keys:
                 data.pop(field)
-        return self.db_handler.update_item(self.get_keys(), data)
+        self.db_handler.update_item(self.get_keys(), data)
+        return self
 
     def delete(self):
         return self.db_handler.delete_item(self.get_keys())

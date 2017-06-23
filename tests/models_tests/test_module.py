@@ -82,12 +82,10 @@ class TxModuleTests(TestCase):
             self.db_handler.insert_item(self.items[idx])
 
     def test_query_module(self):
-        self.assertEqual(len(self.db_handler.query_items()), len(self.items))
-        module = TxModule(db_handler=self.db_handler)
-        module.name = self.items['module2']['name']
-        module.load()
-        self.assertEqual(module.input_format, self.items['module2']['input_format'])
-        self.assertEqual(module.resource_types, self.items['module2']['resource_types'])
+        tx_modules = TxModule(db_handler=self.db_handler).query()
+        self.assertEqual(len(tx_modules), len(self.items))
+        for tx_module in tx_modules:
+            self.assertEqual(tx_module.get_db_data(), TxModule(self.items[tx_module.name]).get_db_data())
 
     def test_update_module(self):
         tx_module = TxModule(db_handler=self.db_handler)

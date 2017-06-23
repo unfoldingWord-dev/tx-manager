@@ -45,7 +45,8 @@ class TxModule(Model):
 
         if isinstance(data, dict):
             self.populate(data)
-        elif isinstance(data, string_types):
-            self.name = data
-            if self.db_handler:
+            if self.db_handler and len(data) == 1 and 'name' in data:
                 self.load()
+        elif isinstance(data, string_types):
+            if self.db_handler:
+                self.load({'name': data})
