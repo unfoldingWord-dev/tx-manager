@@ -1,43 +1,153 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import logging
+
+import datetime
+
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.manifest.view_count import ViewCount
 from moto import mock_dynamodb2
 
+from libraries.models.manifest import TxManifest
 
-# @mock_dynamodb2
+
+@mock_dynamodb2
 class ViewCountTest(unittest.TestCase):
-    # MOCK_API_URL = 'https://api.example.com'
-    # MOCK_CDN_URL = 'https://cdn.example.com'
-    # MOCK_CALLBACK_URL = 'https://callback.example.com/'
-    # MOCK_GOGS_URL = 'https://mock.gogs.io'
-    # MOCK_CDN_BUCKET = 'mock_bucket'
-    # MOCK_JOB_TABLE_NAME = 'mock-job'
-    # MOCK_MODULE_TABLE_NAME = 'mock-module'
+
     MOCK_MANIFEST_TABLE_NAME = 'view-count-test-tx-manifest'
+    USER_NAME = "dummy"
+    REPO_NAME = "repo"
+    INITIAL_VIEW_COUNT = 5
 
     env_vars = {
         'manifest_table_name': MOCK_MANIFEST_TABLE_NAME
     }
 
-    # @unittest.skip("skip")
-    def test_live(self):
+    def setUp(self):
+        self.db_handler = DynamoDBHandler(ViewCountTest.MOCK_MANIFEST_TABLE_NAME)
+        self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
 
-        # Set required env_vars
-        env_vars = { # for dev
-            'manifest_table_name': 'test-tx-manifest'
+    def test_valid(self):
+        # given
+        vc = ViewCount(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
+        self.repo_url = "https://live.door43.org/u/dummy/repo/96db55378e/"
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results)
+
+    def test_validIncrement(self):
+        # given
+        vc = ViewCount(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
+        self.repo_url = "https://live.door43.org/u/dummy/repo/96db55378e/"
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=1)
+
+        # then
+        self.validateResults(expected_view_count, results)
+
+    def test_validInvalidManifestTable(self):
+        # given
+        vc = ViewCount(**{})
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
+        self.repo_url = "https://live.door43.org/u/dummy/repo/96db55378e/"
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=1)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=ViewCount.DB_ACCESS_ERROR)
+
+    def test_validRepoNotInManifestTable(self):
+        # given
+        vc = ViewCount(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.repo_url = "https://live.door43.org/u/dummy/repo2/96db55378e/"
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results)
+
+    def test_validRepoNotInManifestTableIncrement(self):
+        # given
+        vc = ViewCount(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.repo_url = "https://live.door43.org/u/dummy/repo2/96db55378e/"
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=1)
+
+        # then
+        self.validateResults(expected_view_count, results)
+
+    #
+    # helpers
+    #
+
+    def validateResults(self, expected_view_count, results, error_type=None):
+        self.assertIsNotNone(results)
+        if error_type:
+            self.assertEquals(results['ErrorMessage'], error_type + self.repo_url, "Error message mismatch" )
+        else:
+            self.assertTrue('ErrorMessage' not in results)
+            self.assertEquals(results['view_count'], str(expected_view_count))
+
+    def init_table(self, view_count):
+        try:
+            self.db_handler.table.delete()
+        except:
+            pass
+
+        self.db_handler.resource.create_table(
+            TableName=ViewCountTest.MOCK_MANIFEST_TABLE_NAME,
+            KeySchema=[
+                {
+                    'AttributeName': 'repo_name',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'user_name',
+                    'KeyType': 'RANGE'
+                },
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'repo_name',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'user_name',
+                    'AttributeType': 'S'
+                },
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+            },
+        )
+
+        manifest_data = {
+            'repo_name': ViewCountTest.REPO_NAME,
+            'user_name': ViewCountTest.USER_NAME,
+            'lang_code': 'lang',
+            'resource_id': 'redID',
+            'resource_type': 'resType',
+            'title': 'title',
+            'last_updated': datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'manifest': '{}',
+            'views': ViewCountTest.INITIAL_VIEW_COUNT
         }
 
-        vc = ViewCount(**env_vars)
-        vc.logger.setLevel(logging.INFO)
-        expected_view_count = 0
+        tx_manifest = TxManifest(manifest_data, db_handler=self.db_handler).insert()
+        print("new repo: " + tx_manifest.repo_name)
 
-        # repo_url = "https://live.door43.org/u/tx-manager-test-data/awa_act_text_reg/96db55378e/"
-        repo_url = "https://live.door43.org/u/tx-manager-test-data/awa_act_text_reg2/96db55378e/"
-        results = vc.get_view_count(repo_url, increment=True)
-        self.assertIsNotNone(results)
-        self.assertTrue('ErrorMessage' not in results)
-        self.assertEquals(results['view_count'], str(expected_view_count))
 
 if __name__ == "__main__":
     unittest.main()

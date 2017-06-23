@@ -44,14 +44,8 @@ class ViewCount(object):
             return response
 
         del response['ErrorMessage']
-        if not self.manifest_table_name:
-            site = ''
-            netloc_parts = parsed.netloc.split('-')
-            if len(netloc_parts) > 1:
-                site = netloc_parts[0]
-            self.manifest_table_name = site + ViewCount.MANIFEST_TABLE_NAME
-
-        self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
+        if not self.manifest_db_handler:
+            self.init_manifest_table(parsed)
 
         self.logger.debug("Valid repo url: " + path)
         try:
@@ -75,3 +69,12 @@ class ViewCount(object):
             return response
 
         return response
+
+    def init_manifest_table(self, parsed):
+        if not self.manifest_table_name:
+            site = ''
+            netloc_parts = parsed.netloc.split('-')
+            if len(netloc_parts) > 1:
+                site = netloc_parts[0]
+            self.manifest_table_name = site + ViewCount.MANIFEST_TABLE_NAME
+        self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
