@@ -25,7 +25,7 @@ class TxManifest(Model):
         'manifest': {},
     }
 
-    def __init__(self, data=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         # Init attributes
         self.repo_name = None
         self.user_name = None
@@ -36,10 +36,4 @@ class TxManifest(Model):
         self.views = 0
         self.last_updated = None
         self.manifest = {}
-
-        super(TxManifest, self).__init__(**kwargs)
-
-        if isinstance(data, dict):
-            self.populate(data)
-            if self.db_handler and len(data) == 2 and 'repo_name' in data and 'user_name' in data:
-                self.load()
+        super(TxManifest, self).__init__(*args, **kwargs)

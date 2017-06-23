@@ -21,8 +21,7 @@ class ManagerTest(unittest.TestCase):
     MOCK_MODULE_TABLE_NAME = 'mock-module'
 
     mock_gogs = None
-    setup_tables = False
-    
+
     tx_manager_env_vars = {
         'api_url': MOCK_API_URL,
         'cdn_url': MOCK_CDN_URL,
@@ -49,15 +48,21 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager = TxManager(**self.tx_manager_env_vars)
         ManagerTest.mock_gogs.reset_mock()
         ManagerTest.requested_urls = []
-        if not ManagerTest.setup_tables:
-            self.init_tables()
-            ManagerTest.setup_tables = True
+        self.init_tables()
         self.job_items = {}
         self.module_items = {}
         self.init_items()
         self.populate_tables()
 
     def init_tables(self):
+        try:
+            self.tx_manager.job_db_handler.table.delete()
+        except:
+            pass
+        try:
+            self.tx_manager.module_db_handler.table.delete()
+        except:
+            pass
         self.tx_manager.job_db_handler.resource.create_table(
             TableName=ManagerTest.MOCK_JOB_TABLE_NAME,
             KeySchema=[

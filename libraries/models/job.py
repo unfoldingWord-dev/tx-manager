@@ -1,5 +1,4 @@
 from __future__ import unicode_literals, print_function
-from six import string_types
 from libraries.models.model import Model
 
 
@@ -42,7 +41,7 @@ class TxJob(Model):
         'errors': [],
     }
 
-    def __init__(self, data=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         # Init attributes
         self.job_id = None
         self.user = None
@@ -70,16 +69,7 @@ class TxJob(Model):
         self.log = []
         self.warnings = []
         self.errors = []
-
-        super(TxJob, self).__init__(**kwargs)
-
-        if isinstance(data, dict):
-            self.populate(data)
-            if self.db_handler and len(data) == 1 and 'job_id' in data:
-                self.load()
-        elif isinstance(data, string_types):
-            if self.db_handler:
-                self.load({'job_id': data})
+        super(TxJob, self).__init__(*args, **kwargs)
 
     def log_message(self, message):
         self.log.append(message)
