@@ -37,26 +37,36 @@ Setting Up a Developer Environment (CLI Version)
 
 Satisfy basic depedencies:
 
+.. highlight:: bash
+
     git clone git@github.com:unfoldingWord-dev/tx-manager.git
     sudo apt-get install libssl1.0.0 python-pip
     pip install virtualenv
 
 We recommend you create a Python virtual environment to help manage Python package dependencies:
 
+.. highlight:: bash
+
     cd tx-manager
     virtualenv venv
 
 Now load that virtual environment and install dependencies:
+
+.. highlight:: bash
 
     source venv/bin/activate
     pip install -r requirements.txt
 
 Set AWS variables:
 
+.. highlight:: bash
+
     export AWS_DEFAULT_REGION=us-west-2
     export AWS_REGION=us-west-2
 
 Run the test suite:
+
+.. highlight:: bash
 
     python test-setup.py test
 
@@ -183,6 +193,7 @@ Setting up as deployed in virtual environment
 In IntelliJ terminal, switch to virtual environment and install requirements.
 
 .. highlight:: bash
+
     source ~/venv/txml/bin/activate
     ./install-requirements.sh
 
