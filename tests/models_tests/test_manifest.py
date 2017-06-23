@@ -91,10 +91,11 @@ class TxManifestTests(TestCase):
 
     def populate_table(self):
         for idx in self.items:
-            self.db_handler.insert_item(self.items[idx])
+            TxManifest(db_handler=self.db_handler).insert(self.items[idx])
 
     def test_query_manifest(self):
         manifests = TxManifest(db_handler=self.db_handler).query()
+        self.assertEqual(len(manifests), len(self.items))
         for manifest in manifests:
             self.assertEqual(manifest.get_db_data(), TxManifest(self.items['{0}/{1}'.format(manifest.user_name, manifest.repo_name)]).get_db_data())
 

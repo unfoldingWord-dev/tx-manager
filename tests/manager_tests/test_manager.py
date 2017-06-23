@@ -241,9 +241,9 @@ class ManagerTest(unittest.TestCase):
 
     def populate_tables(self):
         for idx in self.job_items:
-            TxJob(self.job_items[idx], db_handler=self.tx_manager.job_db_handler).insert()
+            TxJob(db_handler=self.tx_manager.job_db_handler).insert(self.job_items[idx])
         for idx in self.module_items:
-            TxModule(self.module_items[idx], db_handler=self.tx_manager.module_db_handler).insert()
+            TxModule(db_handler=self.tx_manager.module_db_handler).insert(self.module_items[idx])
 
     @classmethod
     def tearDownClass(cls):
@@ -262,7 +262,7 @@ class ManagerTest(unittest.TestCase):
         }
         ret = self.tx_manager.setup_job(data)
         # assert an entry was added to job database
-        job = TxJob(data=ret['job']['job_id'], db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': ret['job']['job_id']})
         self.assertEqual(job.convert_module, 'module1')
         self.assertEqual(job.resource_type, 'obs')
         self.assertEqual(job.cdn_bucket, 'test_cdn_bucket')
@@ -400,7 +400,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job2')
 
         # job1's entry in database should have been updated
-        job = TxJob('job2', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job2'})
         self.assertEqual(job.job_id, 'job2')
         self.assertEqual(len(job.errors), 1)
         self.assertTrue(len(job.warnings) == 1)
@@ -427,7 +427,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job3')
 
         # job2's entry in database should have been updated
-        job = TxJob('job3', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job3'})
         self.assertEqual(job.job_id, 'job3')
         self.assertEqual(len(job.errors), 0)
 
@@ -457,7 +457,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job4')
 
         # job3's entry in database should have been updated
-        job = TxJob('job4', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job4'})
         self.assertEqual(job.job_id, 'job4')
         self.assertTrue(len(job.errors) > 0)
 
@@ -476,7 +476,7 @@ class ManagerTest(unittest.TestCase):
 
         # last existent job (4) should be updated in database to include error
         # messages
-        job = TxJob('job5', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job5'})
         self.assertEqual(job.job_id, 'job5')
         self.assertTrue(len(job.errors) > 0)
 
@@ -489,13 +489,13 @@ class ManagerTest(unittest.TestCase):
 
         Should fail due to the response having an errorMessage
         """
-        job = TxJob('job7', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job7'})
         error_to_check = 'something bad happened!'
         mock_invoke.return_value = {'errorMessage': 'Bad Request: {0}'.format(error_to_check)}
         mock_requests_post.return_value = None
         self.tx_manager.start_job('job7')
         # job 6's entry in database should have been updated
-        job = TxJob('job7', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job7'})
         self.assertEqual(job.job_id, 'job7')
         self.assertEqual(len(job.errors), 1)
         self.assertEqual(job.errors[0], error_to_check)
@@ -526,7 +526,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job8')
 
         # job 7's entry in database should have been updated
-        job = TxJob('job8', db_handler=self.tx_manager.job_db_handler)
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job8'})
         self.assertEqual(job.job_id, 'job8')
         self.assertEqual(len(job.errors), 2)
 
@@ -565,7 +565,7 @@ class ManagerTest(unittest.TestCase):
             'output_format': 'html'
         }
         self.tx_manager.register_module(data)
-        tx_module = TxModule(data=data['name'], db_handler=self.tx_manager.module_db_handler)
+        tx_module = TxModule(db_handler=self.tx_manager.module_db_handler).load({'name': data['name']})
         data['public_links'] = ['{0}/tx/convert/{1}'.format(self.MOCK_API_URL, data['name'])]
         self.assertEqual(tx_module.get_db_data(), TxModule(data).get_db_data())
 

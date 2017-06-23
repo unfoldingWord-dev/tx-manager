@@ -574,8 +574,10 @@ class TestConversions(TestCase):
         self.assertTrue(success)
 
         # Test that repo is in manifest table
-        tx_manifest = TxManifest({'repo_name': repo, 'user_name': user},
-                                 db_handler=DynamoDBHandler(self.manifest_table_name))
+        tx_manifest = TxManifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
+                'repo_name': repo,
+                'user_name': user
+        })
         # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
         # If that row doesn't exist, it will cause repo_name and user_name to be None, so just need to check them.
         self.assertEqual(tx_manifest.repo_name, repo)
@@ -877,7 +879,7 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxJob(job_id, db_handler=tx_manager.job_db_handler)
+                job = TxJob(db_handler=tx_manager.job_db_handler).load({'job_id': job_id})
                 self.assertIsNotNone(job)
                 elapsed_seconds = int(time.time() - start)
                 print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
@@ -917,7 +919,7 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxJob(job_id, db_handler=tx_manager.job_db_handler)
+            job = TxJob(db_handler=tx_manager.job_db_handler).load({'job_id': job_id})
             self.assertIsNotNone(job)
             elapsed_seconds = int(time.time() - start)
             print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))

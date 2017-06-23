@@ -36,6 +36,7 @@ class TxJob(Model):
     ]
 
     default_values = {
+        'links': [],
         'log': [],
         'warnings': [],
         'errors': [],
@@ -74,10 +75,11 @@ class TxJob(Model):
 
         if isinstance(data, dict):
             self.populate(data)
-        elif isinstance(data, string_types):
-            self.job_id = data
-            if self.db_handler:
+            if self.db_handler and len(data) == 1 and 'job_id' in data:
                 self.load()
+        elif isinstance(data, string_types):
+            if self.db_handler:
+                self.load({'job_id': data})
 
     def log_message(self, message):
         self.log.append(message)
