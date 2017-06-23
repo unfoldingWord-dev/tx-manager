@@ -198,7 +198,7 @@ class TestClientWebhook(unittest.TestCase):
         return None
 
     def get_last_uploaded_file(self, match):
-        for upload in reversed(TestClientWebhook.uploaded_files):
+        for upload in reversed(self.uploaded_files):
             if match in upload['key']:
                 return upload['file']
         return None
@@ -240,7 +240,7 @@ class TestClientWebhook(unittest.TestCase):
     def upload_file(self, bucket_name, project_file, s3_key):
         filename = tempfile.mktemp(dir=TestClientWebhook.base_temp_dir)
         shutil.copyfile(project_file, filename)
-        TestClientWebhook.uploaded_files.append({'file': filename, 'key': bucket_name + '/' + s3_key})
+        self.uploaded_files.append({'file': filename, 'key': bucket_name + '/' + s3_key})
         return
 
     def mock_cdn_get_json(self, project_json_key):
