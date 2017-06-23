@@ -107,11 +107,11 @@ class ClientWebhook(object):
             'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'manifest': json.dumps(rc.as_dict()),
         }
-        tx_manifest = TxManifest(db_handler=self.manifest_db_handler)
-        # First see if manifest already exists in DB and update it if it is
-        tx_manifest.repo_name = repo_name
-        tx_manifest.user_name = repo_owner
-        tx_manifest.load()
+        # First see if manifest already exists in DB and update it if it is (repo_name will not be None after load)
+        tx_manifest = TxManifest(db_handler=self.manifest_db_handler).load({
+                'repo_name': repo_name,
+                'user_name': repo_owner
+            })
         if tx_manifest.repo_name:
             self.logger.debug('Updating manifest in manifest table: {0}'.format(manifest_data))
             tx_manifest.update(manifest_data)

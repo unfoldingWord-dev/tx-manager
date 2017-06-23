@@ -79,23 +79,24 @@ class TxJobTests(TestCase):
 
     def populate_table(self):
         for idx in self.items:
-            self.db_handler.insert_item(self.items[idx])
+            TxJob(db_handler=self.db_handler).insert(self.items[idx])
 
     def test_query_job(self):
-        self.assertEqual(len(self.db_handler.query_items()), len(self.items))
-        job = TxJob(data=self.items['job2']['job_id'], db_handler=self.db_handler)
-        self.assertEqual(job.resource_type, self.items['job2']['resource_type'])
-        self.assertEqual(job.cdn_bucket, self.items['job2']['cdn_bucket'])
+        jobs = TxJob(db_handler=self.db_handler).query()
+        self.assertEqual(len(jobs), len(self.items))
+        self.maxDiff = None
+        for job in jobs:
+            self.assertEqual(job.get_db_data(), TxJob(self.items[job.job_id]).get_db_data())
 
     def test_update_job(self):
-        job = TxJob(data=self.items['job3']['job_id'], db_handler=self.db_handler)
+        job = TxJob(db_handler=self.db_handler).load({'job_id': self.items['job3']['job_id']})
         job.status = 'finished'
         job.update()
         job.load()
         self.assertEqual(job.status, 'finished')
 
     def test_delete_job(self):
-        job = TxJob(data=self.items['job1']['job_id'], db_handler=self.db_handler)
+        job = TxJob(db_handler=self.db_handler).load({'job_id': self.items['job1']['job_id']})
         self.assertIsNotNone(job.job_id)
         job.delete()
         job.load()
