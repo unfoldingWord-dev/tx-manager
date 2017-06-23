@@ -8,18 +8,19 @@ from libraries.models.job import TxJob
 @mock_dynamodb2
 class TxJobTests(TestCase):
     JOB_TABLE_NAME = 'tx-job'
-    setup_table = False
 
     def setUp(self):
         self.db_handler = DynamoDBHandler(TxJobTests.JOB_TABLE_NAME)
-        if not TxJobTests.setup_table:
-            self.init_table()
-            TxJobTests.setup_table = True
+        self.init_table()
         self.items = {}
         self.init_items()
         self.populate_table()
 
     def init_table(self):
+        try:
+            self.db_handler.table.delete()
+        except:
+            pass
         self.db_handler.resource.create_table(
             TableName=TxJobTests.JOB_TABLE_NAME,
             KeySchema=[
@@ -84,9 +85,16 @@ class TxJobTests(TestCase):
     def test_query_job(self):
         jobs = TxJob(db_handler=self.db_handler).query()
         self.assertEqual(len(jobs), len(self.items))
-        self.maxDiff = None
         for job in jobs:
             self.assertEqual(job.get_db_data(), TxJob(self.items[job.job_id]).get_db_data())
+
+    def test_load_job(self):
+        # Test loading by just giving it the job_id in the constructor
+        job = TxJob('job1', db_handler=self.db_handler)
+        self.assertEqual(job.get_db_data(), TxJob(self.items['job1']).get_db_data())
+        # Test loading by just giving it only the job_id in the data array in the constructor
+        job = TxJob({'job_id': 'job2'}, db_handler=self.db_handler)
+        self.assertEqual(job.get_db_data(), TxJob(self.items['job2']).get_db_data())
 
     def test_update_job(self):
         job = TxJob(db_handler=self.db_handler).load({'job_id': self.items['job3']['job_id']})

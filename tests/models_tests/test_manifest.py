@@ -12,18 +12,19 @@ from libraries.models.manifest import TxManifest
 class TxManifestTests(TestCase):
     MANIFEST_TABLE_NAME = 'test-manifest'
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
-    setup_table = False
 
     def setUp(self):
         self.db_handler = DynamoDBHandler(TxManifestTests.MANIFEST_TABLE_NAME)
-        if not TxManifestTests.setup_table:
-            self.init_table()
-            TxManifestTests.setup_table = True
+        self.init_table()
         self.items = {}
         self.init_items()
         self.populate_table()
 
     def init_table(self):
+        try:
+            self.db_handler.table.delete()
+        except:
+            pass
         self.db_handler.resource.create_table(
             TableName=TxManifestTests.MANIFEST_TABLE_NAME,
             KeySchema=[
@@ -99,16 +100,56 @@ class TxManifestTests(TestCase):
         for manifest in manifests:
             self.assertEqual(manifest.get_db_data(), TxManifest(self.items['{0}/{1}'.format(manifest.user_name, manifest.repo_name)]).get_db_data())
 
+    def test_load_manifest(self):
+        # Test loading by just giving it only the repo_name and user_name in the data array in the constructor
+        manifest = TxManifest({'repo_name': 'en_obs', 'user_name': 'Door43'}, db_handler=self.db_handler)
+        self.assertEqual(manifest.get_db_data(), TxManifest(self.items['Door43/en_obs']).get_db_data())
+        # Test loading by using the load method
+        manifest = TxManifest(db_handler=self.db_handler).load({'repo_name': 'en_obs', 'user_name': 'johndoe'})
+        self.assertEqual(manifest.get_db_data(), TxManifest(self.items['johndoe/en_obs']).get_db_data())
+
+    def test_insert_manifest(self):
+        # Insert by giving fields in the constructor
+        TxManifest({
+                'repo_name': 'test_repo1',
+                'user_name': 'test_user1',
+                'lang_code': 'es',
+                'resource_id': 'ta',
+                'resource_type': 'man',
+                'title': 'translationAcadamy',
+                'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+            },
+            db_handler=self.db_handler).insert()
+        manifest = TxManifest(db_handler=self.db_handler).load({'repo_name': 'test_repo1', 'user_name': 'test_user1'})
+        self.assertEqual(manifest.resource_id, 'ta')
+        # Insert by giving data to the insert() method
+        TxManifest(db_handler=self.db_handler).insert({
+                'repo_name': 'test_repo2',
+                'user_name': 'test_user2',
+                'lang_code': 'en',
+                'resource_id': 'tn',
+                'resource_type': 'help',
+                'title': 'translationNotes',
+                'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+            })
+        manifest = TxManifest(db_handler=self.db_handler).load({'repo_name': 'test_repo2', 'user_name': 'test_user2'})
+        self.assertEqual(manifest.resource_id, 'tn')
+
     def test_update_manifest(self):
-        manifest = TxManifest(db_handler=self.db_handler)
-        manifest.repo_name = self.items['francis/fr_ulb']['repo_name']
-        manifest.user_name = self.items['francis/fr_ulb']['user_name']
-        manifest.load()
+        repo_name = self.items['francis/fr_ulb']['repo_name']
+        user_name = self.items['francis/fr_ulb']['user_name']
+        manifest = TxManifest(db_handler=self.db_handler).load({'repo_name': repo_name, 'user_name': user_name})
+        # Update by setting fields and calling update()
         manifest.resource_id = 'udb'
         manifest.title = 'Unlocked Dynamic Bible'
         manifest.update()
-        manifest.load()
+        manifest = TxManifest(db_handler=self.db_handler).load({'repo_name': repo_name, 'user_name': user_name})
         self.assertEqual(manifest.resource_id, 'udb')
+        self.assertEqual(manifest.title, 'Unlocked Dynamic Bible')
+        # Update by giving a dict to update()
+        manifest.update({'views': 5})
+        manifest = TxManifest(db_handler=self.db_handler).load({'repo_name': repo_name, 'user_name': user_name})
+        self.assertEqual(manifest.views, 5)
 
     def test_delete_manifest(self):
         manifest = TxManifest(db_handler=self.db_handler)
