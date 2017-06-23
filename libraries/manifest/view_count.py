@@ -63,24 +63,7 @@ class ViewCount(object):
                     tx_manifest.update()
             else:  # table is not present
                 tx_manifest.views = 0
-                if increment:
-                    self.logger.debug('Inserting new page into manifest table')
-                    tx_manifest.views += 1
-                    manifest_data = {
-                        'repo_name': repo_name,
-                        'user_name': repo_owner,
-                        'lang_code': 'UNKNOWN',
-                        'resource_id': 'UNKNOWN',
-                        'resource_type': 'UNKNOWN',
-                        'title': 'UNKNOWN',
-                        'last_updated': None,
-                        'manifest': '{}',
-                        'views': tx_manifest.views
-                    }
-                    tx_manifest.populate(manifest_data)
-                    tx_manifest.insert()
-                else:
-                    self.logger.debug('No entries for page in manifest table')
+                self.logger.debug('No entries for page in manifest table')
 
             response['view_count'] = str(tx_manifest.views)
         except Exception as e:
