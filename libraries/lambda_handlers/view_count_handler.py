@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, print_function
-from libraries.manager.manager import TxManager
+import json
+import urllib
 from libraries.lambda_handlers.handler import Handler
+from libraries.manifest.view_count import ViewCount
 
 
 class ViewCountHandler(Handler):
@@ -22,13 +24,17 @@ class ViewCountHandler(Handler):
         }
 
         increment = 0
-        path = None
+        path = ''
+        callback = ''
         try:
             querystring = event['api-gateway']['params']['querystring']
-            path = querystring['path']
+            if 'callback' in querystring:
+                callback = querystring['callback']
+            path = urllib.unquote(querystring['path'])
             if 'increment' in querystring:
                 increment = int(querystring['increment'])
         except:
             pass
 
-        return TxManager(**env_vars).get_view_count(path, increment)
+        data = ViewCount(**env_vars).get_view_count(path, increment)
+        return callback + '(' + json.dumps(data) + ')'

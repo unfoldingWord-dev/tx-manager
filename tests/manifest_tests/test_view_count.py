@@ -30,7 +30,7 @@ class ViewCountTest(unittest.TestCase):
 
         vc = ViewCount(**env_vars)
         vc.logger.setLevel(logging.INFO)
-        expected_view_count = 1
+        expected_view_count = 0
 
         # repo_url = "https://live.door43.org/u/tx-manager-test-data/awa_act_text_reg/96db55378e/"
         repo_url = "https://live.door43.org/u/tx-manager-test-data/awa_act_text_reg2/96db55378e/"

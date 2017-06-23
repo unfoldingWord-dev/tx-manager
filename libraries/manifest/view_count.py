@@ -12,7 +12,7 @@ class ViewCount(object):
     INVALID_URL_ERROR = 'repo not found for: '
     DB_ACCESS_ERROR = 'could not access view counts for: '
 
-    def __init__(self, gogs_user_token=None, manifest_table_name=None):
+    def __init__(self, manifest_table_name=None):
         """
         :param string gogs_user_token:
         :param string manifest_table_name:
@@ -43,6 +43,7 @@ class ViewCount(object):
             self.logger.warning("Invalid repo url: " + path)
             return response
 
+        del response['ErrorMessage']
         if not self.manifest_table_name:
             site = ''
             netloc_parts = parsed.netloc.split('-')
@@ -61,6 +62,8 @@ class ViewCount(object):
                     tx_manifest.views += 1
                     self.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
                     tx_manifest.update()
+                else:
+                    self.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
             else:  # table is not present
                 tx_manifest.views = 0
                 self.logger.debug('No entries for page in manifest table')
@@ -71,5 +74,4 @@ class ViewCount(object):
             response['ErrorMessage'] = ViewCount.DB_ACCESS_ERROR + path
             return response
 
-        del response['ErrorMessage']
         return response
