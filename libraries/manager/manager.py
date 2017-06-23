@@ -556,14 +556,14 @@ class TxManager(object):
             job_failures = self.get_job_failures(registered_jobs)
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
             failure_table = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
-            failure_table.table.append(BeautifulSoup(
-                '<tr id="header">'
-                '<th class="hdr">Time</th>'
-                '<th class="hdr">Errors</th>'
-                '<th class="hdr">Repo</th>'
-                '<th class="hdr">PreConvert</th>'
-                '<th class="hdr">Converted</th>'
-                '<th class="hdr">Destination</th>'
+            failure_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Time</th>
+                <th class="hdr">Errors</th>
+                <th class="hdr">Repo</th>
+                <th class="hdr">PreConvert</th>
+                <th class="hdr">Converted</th>
+                <th class="hdr">Destination</th>''',
                 'html.parser'))
 
             gogs_url = self.gogs_url
