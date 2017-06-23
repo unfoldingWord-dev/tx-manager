@@ -1,5 +1,4 @@
 from __future__ import unicode_literals, print_function
-from six import string_types
 from libraries.models.model import Model
 
 
@@ -29,7 +28,7 @@ class TxModule(Model):
         'version': 1,
     }
 
-    def __init__(self, data=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Init attributes"""
         self.name = None
         self.input_format = None
@@ -40,13 +39,4 @@ class TxModule(Model):
         self.resource_types = []
         self.type = None
         self.version = 1
-
-        super(TxModule, self).__init__(**kwargs)
-
-        if isinstance(data, dict):
-            self.populate(data)
-            if self.db_handler and len(data) == 1 and 'name' in data:
-                self.load()
-        elif isinstance(data, string_types):
-            if self.db_handler:
-                self.load({'name': data})
+        super(TxModule, self).__init__(*args, **kwargs)

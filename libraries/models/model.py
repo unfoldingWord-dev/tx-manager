@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, print_function
-from six import iteritems
+from six import iteritems, string_types
 
 
 class Model(object):
@@ -7,8 +7,16 @@ class Model(object):
     db_fields = []
     default_values = {}
 
-    def __init__(self, db_handler=None):
+    def __init__(self, data=None, db_handler=None):
         self.db_handler = db_handler
+        if isinstance(data, dict):
+            self.populate(data)
+            if self.db_handler and len(data) == len(self.db_keys) and data.keys().sort() == self.db_keys.sort():
+                self.load()
+        elif isinstance(data, string_types) and len(self.db_keys) == 1:
+            setattr(self, self.db_keys[0], data)
+            if self.db_handler:
+                self.load()
 
     def populate(self, data, clear_before_populate=True):
         if clear_before_populate:
@@ -17,6 +25,7 @@ class Model(object):
             for field, value in iteritems(data):
                 if hasattr(self, field):
                     setattr(self, field, value)
+        return self
 
     def clear_db_fields(self):
         for field in self.db_fields:
@@ -57,16 +66,16 @@ class Model(object):
     def update(self, data=None):
         if not data:
             data = self.get_db_data()
-        else:
-            self.populate(data, clear_before_populate=False)
         for field in data.keys():
             if field not in self.db_fields or field in self.db_keys:
                 data.pop(field)
+            else:
+                setattr(self, field, data[field])
         self.db_handler.update_item(self.get_keys(), data)
         return self
 
     def delete(self):
-        return self.db_handler.delete_item(self.get_keys())
+        self.db_handler.delete_item(self.get_keys())
 
     def query(self, query=None):
         items = self.db_handler.query_items(query)

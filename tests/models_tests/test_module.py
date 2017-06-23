@@ -8,18 +8,19 @@ from libraries.models.module import TxModule
 @mock_dynamodb2
 class TxModuleTests(TestCase):
     MODULE_TABLE_NAME = 'tx-module'
-    setup_table = False
 
     def setUp(self):
         self.db_handler = DynamoDBHandler(TxModuleTests.MODULE_TABLE_NAME)
-        if not TxModuleTests.setup_table:
-            self.init_table()
-            TxModuleTests.setup_table = True
+        self.init_table()
         self.items = {}
         self.init_items()
         self.populate_table()
 
     def init_table(self):
+        try:
+            self.db_handler.table.delete()
+        except Exception as e:
+            pass
         self.db_handler.resource.create_table(
             TableName=TxModuleTests.MODULE_TABLE_NAME,
             KeySchema=[
@@ -86,6 +87,14 @@ class TxModuleTests(TestCase):
         self.assertEqual(len(tx_modules), len(self.items))
         for tx_module in tx_modules:
             self.assertEqual(tx_module.get_db_data(), TxModule(self.items[tx_module.name]).get_db_data())
+
+    def test_load_module(self):
+        # Test loading by just giving it the name in the constructor
+        job = TxModule('module1', db_handler=self.db_handler)
+        self.assertEqual(job.get_db_data(), TxModule(self.items['module1']).get_db_data())
+        # Test loading by just giving it only the name in the data array in the constructor
+        job = TxModule({'name': 'module2'}, db_handler=self.db_handler)
+        self.assertEqual(job.get_db_data(), TxModule(self.items['module2']).get_db_data())
 
     def test_update_module(self):
         tx_module = TxModule(db_handler=self.db_handler)
