@@ -32,6 +32,35 @@ Project description at `tX Manager Module`_.
 Issue for its creation at https://github.com/unfoldingWord-dev/door43.org/issues/53.
 
 
+Setting Up a Developer Environment (CLI Version)
+================================================
+
+Satisfy basic depedencies:
+
+    git clone git@github.com:unfoldingWord-dev/tx-manager.git
+    sudo apt-get install libssl1.0.0 python-pip
+    pip install virtualenv
+
+We recommend you create a Python virtual environment to help manage Python package dependencies:
+
+    cd tx-manager
+    virtualenv venv
+
+Now load that virtual environment and install dependencies:
+
+    source venv/bin/activate
+    pip install -r requirements.txt
+
+Set AWS variables:
+
+    export AWS_DEFAULT_REGION=us-west-2
+    export AWS_REGION=us-west-2
+
+Run the test suite:
+
+    python test-setup.py test
+
+
 tX Pipeline
 ===========
 
