@@ -21,7 +21,7 @@ class ViewCountHandler(Handler):
             'manifest_table_name': self.retrieve(event['vars'], 'manifest_table_name', 'Environment Vars')
         }
 
-        increment = 0
+        increment = 1
         path = None
         try:
             querystring = event['api-gateway']['params']['querystring']
