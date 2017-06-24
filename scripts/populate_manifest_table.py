@@ -4,11 +4,15 @@ Makes sure every project is in the manifest table based on what is in the cdn.do
 the table, it doesn't do anything
 
 """
+from __future__ import unicode_literals, print_function
+import os
 import boto3
 import logging
 import sys
 import yaml
 import json
+import tempfile
+import pickle
 from datetime import datetime
 
 
@@ -22,6 +26,9 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 already_in_db = {}
+
+keys_file = None 
+already_in_db_file = None
 
 resource_map = {
     'udb': {
@@ -76,6 +83,13 @@ resource_map = {
     }
 }
 
+def save_obj(obj, fname):
+    with open(fname, 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+def load_obj(fname):
+    with open(fname, 'rb') as f:
+        return pickle.load(f)
 
 def get_build_logs(bucket):
     build_logs = []
@@ -94,20 +108,17 @@ def add_to_manifest(resource, bucket_name, table_name, key):
     user_name = parts[1]
     commit = parts[3]
 
-    in_db_key = '{0}/{1}'.format(repo_name, user_name)
-    if in_db_key in already_in_db:
-        return
-
     logger.info('Processing {0}...'.format(key))
 
-    dbtable = boto3.resource('dynamodb').Table(table_name)
+    build_log = json.loads(resource.Object(bucket_name=bucket_name, key=key).get()['Body'].read())
+    if 'build_logs' in build_log:
+        build_log = build_log['build_logs'][0]
 
-    response = dbtable.get_item(
-        Key={'repo_name': repo_name, 'user_name': user_name}
-    )
-    if 'Item' in response:
-        already_in_db[in_db_key] = True
+    in_db_key = '{0}/{1}'.format(repo_name, user_name)
+    if in_db_key in already_in_db and already_in_db[in_db_key] > build_log['created_at']:
         return
+
+    dbtable = boto3.resource('dynamodb').Table(table_name)
 
     manifest = None
     try:
@@ -130,26 +141,51 @@ def add_to_manifest(resource, bucket_name, table_name, key):
             'resource_type': manifest['dublin_core']['type'],
             'title': manifest['dublin_core']['title'],
             'views': 0,
-            'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'last_updated': build_log['created_at'],
             'manifest': json.dumps(manifest)
         }
     else:
-        build_log = json.loads(resource.Object(bucket_name=bucket_name, key=key).get()['Body'].read())
-        if 'build_logs' in build_log:
-            build_log = build_log['build_logs'][0]
         parts = repo_name.split('_')
         if len(parts) == 1:
             parts = repo_name.split('-')
         type = build_log['resource_type']
+        if type in resource_map:
+            resource = resource_map[type]
+        else:
+            resource = {
+                'title': repo_name,
+                'type': 'book',
+                'format': 'text/md'
+            }
+        if not type:
+            if manifest and 'resource' in manifest and 'id' in manifest['resource'] and manifest['resource']['id']:
+                type = manifest['resource']['id']
+                resource['title'] = manifest['resource']['name']
+            else:
+                type = repo_name
+        if manifest and 'target_language' in manifest and 'id' in manifest['target_language'] and manifest['target_language']['id']:
+            lang = manifest['target_language']['id']
+            if 'direction' in manifest['target_language']:
+                direction = manifest['target_language']['direction']
+            else:
+                direction = 'ltr'
+            lang_title = manifest['target_language']['name']
+        else:
+            if len(parts) > 1 and parts[0] == 'uw':
+                lang = parts[-1]
+            else:
+                lang = parts[0]
+            direction = 'ltr'
+            lang_title = lang
         data = {
             'repo_name': repo_name,
             'user_name': user_name,
-            'lang_code': parts[0],
+            'lang_code': lang,
             'resource_id': type,
-            'resource_type': resource_map[type]['type'],
-            'title': resource_map[type]['title'],
+            'resource_type': resource['type'],
+            'title': resource['title'],
             'views': 0,
-            'last_updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'last_updated': build_log['created_at'] 
         }
         data['manifest'] = json.dumps({
             'checking': {'checking_entity': ['Wycliffe Associates'], 'checking_level': '1'},
@@ -158,11 +194,11 @@ def add_to_manifest(resource, bucket_name, table_name, key):
                 'contributor': ['unfoldingWord', 'Wycliffe Associates'],
                 'creator': 'Wycliffe Associates',
                 'description': '',
-                'format': resource_map[type]['format'],
+                'format': resource['format'],
                 'issued': datetime.utcnow().strftime('%Y-%m-%d'),
                 'modified': datetime.utcnow().strftime('%Y-%m-%d'),
                 'identifier': data['resource_id'],
-                'language': {'identifier': data['lang_code']},
+                'language': {'identifier': data['lang_code'], 'direction': direction, 'title': lang_title},
                 'type': data['resource_type'],
                 'title': data['title']
             },
@@ -176,10 +212,12 @@ def add_to_manifest(resource, bucket_name, table_name, key):
             }]
         })
     dbtable.put_item(Item=data)
-    already_in_db[in_db_key] = True
+    already_in_db[in_db_key] = build_log['created_at'] 
+    save_obj(already_in_db, already_in_db_file)
 
 
 def main():
+    global keys_file, already_in_db_file
     if len(sys.argv) < 3:
         logger.critical('You must provide a bucket name and table name.')
         logger.critical('Example: ./populate_manifest_table.py cdn.door43.org tx-manifest')
@@ -188,7 +226,15 @@ def main():
     table_name = sys.argv[2]
     resource = boto3.resource('s3')
     bucket = resource.Bucket(bucket_name)
-    keys = get_build_logs(bucket)
+    keys_file = os.path.join(tempfile.gettempdir(), 'populate_manifest_table_{0}_keys.txt'.format(bucket_name)) 
+    already_in_db_file = os.path.join(tempfile.gettempdir(), 'populate_manifest_table_{0}.txt'.format(table_name)) 
+    if os.path.isfile(keys_file):
+        keys = load_obj(keys_file)
+    else:
+        keys = get_build_logs(bucket)
+        save_obj(keys, keys_file)
+    if os.path.isfile(already_in_db_file):
+        already_in_db = load_obj(already_in_db_file)
     for k in keys:
         add_to_manifest(resource, bucket_name, table_name, k)
 
