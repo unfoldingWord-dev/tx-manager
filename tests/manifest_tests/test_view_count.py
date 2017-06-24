@@ -1,9 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
-import logging
-
 import datetime
-
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.manifest.view_count import ViewCount
 from moto import mock_dynamodb2
@@ -97,7 +94,7 @@ class ViewCountTest(unittest.TestCase):
             self.assertEquals(results['ErrorMessage'], error_type + self.repo_url, "Error message mismatch" )
         else:
             self.assertTrue('ErrorMessage' not in results)
-            self.assertEquals(results['view_count'], str(expected_view_count))
+            self.assertEquals(results['view_count'], expected_view_count)
 
     def init_table(self, view_count):
         try:

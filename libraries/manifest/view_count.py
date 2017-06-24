@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 import urlparse
+from decimal import Decimal
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 
@@ -62,7 +63,11 @@ class ViewCount(object):
                 tx_manifest.views = 0
                 self.logger.debug('No entries for page in manifest table')
 
-            response['view_count'] = str(tx_manifest.views)
+            view_count = tx_manifest.views
+            if type(view_count) is Decimal:
+                view_count = int(view_count.to_integral_value())
+            response['view_count'] = view_count
+
         except Exception as e:
             self.logger.exception('Error accessing manifest', exc_info=e)
             response['ErrorMessage'] = ViewCount.DB_ACCESS_ERROR + path
