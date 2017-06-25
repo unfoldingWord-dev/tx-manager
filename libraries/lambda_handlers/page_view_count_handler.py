@@ -5,7 +5,7 @@ from libraries.lambda_handlers.handler import Handler
 from libraries.manifest.page_metrics import PageMetrics
 
 
-class ViewCountHandler(Handler):
+class PageViewCountHandler(Handler):
 
     def _handle(self, event, context):
         """

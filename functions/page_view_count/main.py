@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, print_function
-from libraries.lambda_handlers.view_count_handler import ViewCountHandler
+from libraries.lambda_handlers.page_view_count_handler import PageViewCountHandler
 
 
 def handle(event, context):
@@ -9,4 +9,4 @@ def handle(event, context):
     :param context:
     :return dict:
     """
-    return ViewCountHandler().handle(event, context)
+    return PageViewCountHandler().handle(event, context)
