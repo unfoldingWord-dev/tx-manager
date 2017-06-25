@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 import json
 import urllib
 from libraries.lambda_handlers.handler import Handler
-from libraries.manifest.view_count import ViewCount
+from libraries.manifest.page_metrics import PageMetrics
 
 
 class ViewCountHandler(Handler):
@@ -36,5 +36,5 @@ class ViewCountHandler(Handler):
         except:
             pass
 
-        data = ViewCount(**env_vars).get_view_count(path, increment)
+        data = PageMetrics(**env_vars).get_view_count(path, increment)
         return callback + '(' + json.dumps(data) + ')'

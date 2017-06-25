@@ -8,7 +8,7 @@ from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 
 
-class ViewCount(object):
+class PageMetrics(object):
     MANIFEST_TABLE_NAME = 'tx-manifest'
     INVALID_URL_ERROR = 'repo not found for: '
     DB_ACCESS_ERROR = 'could not access view counts for: '
@@ -30,7 +30,7 @@ class ViewCount(object):
         self.logger.debug("Start: get_view_count")
 
         response = {  # default to error
-            'ErrorMessage': ViewCount.INVALID_URL_ERROR + path
+            'ErrorMessage': PageMetrics.INVALID_URL_ERROR + path
         }
 
         parsed = urlparse.urlparse(path)
@@ -70,7 +70,7 @@ class ViewCount(object):
 
         except Exception as e:
             self.logger.exception('Error accessing manifest', exc_info=e)
-            response['ErrorMessage'] = ViewCount.DB_ACCESS_ERROR + path
+            response['ErrorMessage'] = PageMetrics.DB_ACCESS_ERROR + path
             return response
 
         return response
@@ -81,5 +81,5 @@ class ViewCount(object):
             netloc_parts = parsed.netloc.split('-')
             if len(netloc_parts) > 1:
                 site = netloc_parts[0]
-            self.manifest_table_name = site + ViewCount.MANIFEST_TABLE_NAME
+            self.manifest_table_name = site + PageMetrics.MANIFEST_TABLE_NAME
         self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)

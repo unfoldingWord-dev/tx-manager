@@ -1,15 +1,11 @@
 from __future__ import absolute_import, unicode_literals, print_function
-
 import json
-
 import mock
 from unittest import TestCase
-
 from decimal import Decimal
-
 from libraries.lambda_handlers.view_count_handler import ViewCountHandler
-from libraries.manifest.view_count import ViewCount
-from libraries.manager.manager import TxManager
+from libraries.manifest.page_metrics import PageMetrics
+
 
 class ViewCountHandlerTest(TestCase):
 
@@ -19,7 +15,7 @@ class ViewCountHandlerTest(TestCase):
         self.return_view_count = 0
         self.error_response = None
 
-    @mock.patch('libraries.manifest.view_count.ViewCount.get_view_count')
+    @mock.patch('libraries.manifest.page_metrics.PageMetrics.get_view_count')
     def test_handle(self, mock_get_view_count):
         # given
         mock_get_view_count.side_effect = self.mock_get_view_count
@@ -36,7 +32,7 @@ class ViewCountHandlerTest(TestCase):
         # then
         self.validate_results(response)
 
-    @mock.patch('libraries.manifest.view_count.ViewCount.get_view_count')
+    @mock.patch('libraries.manifest.page_metrics.PageMetrics.get_view_count')
     def test_handleNoIncrement(self, mock_get_view_count):
         # given
         mock_get_view_count.side_effect = self.mock_get_view_count
@@ -53,7 +49,7 @@ class ViewCountHandlerTest(TestCase):
         # then
         self.validate_results(response)
 
-    @mock.patch('libraries.manifest.view_count.ViewCount.get_view_count')
+    @mock.patch('libraries.manifest.page_metrics.PageMetrics.get_view_count')
     def test_handleIncrement(self, mock_get_view_count):
         # given
         mock_get_view_count.side_effect = self.mock_get_view_count

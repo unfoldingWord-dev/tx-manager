@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import datetime
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
-from libraries.manifest.view_count import ViewCount
+from libraries.manifest.page_metrics import PageMetrics
 from moto import mock_dynamodb2
 
 from libraries.models.manifest import TxManifest
@@ -26,7 +26,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_valid(self):
         # given
-        vc = ViewCount(**ViewCountTest.env_vars)
+        vc = PageMetrics(**ViewCountTest.env_vars)
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.repo_url = "https://live.door43.org/u/dummy/repo/96db55378e/"
 
@@ -38,7 +38,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validIncrement(self):
         # given
-        vc = ViewCount(**ViewCountTest.env_vars)
+        vc = PageMetrics(**ViewCountTest.env_vars)
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
         self.repo_url = "https://live.door43.org/u/dummy/repo/96db55378e/"
 
@@ -50,7 +50,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validInvalidManifestTable(self):
         # given
-        vc = ViewCount(**{})
+        vc = PageMetrics(**{})
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
         self.repo_url = "https://live.door43.org/u/dummy/repo/96db55378e/"
 
@@ -58,11 +58,11 @@ class ViewCountTest(unittest.TestCase):
         results = vc.get_view_count(self.repo_url, increment=1)
 
         # then
-        self.validateResults(expected_view_count, results, error_type=ViewCount.DB_ACCESS_ERROR)
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.DB_ACCESS_ERROR)
 
     def test_validRepoNotInManifestTable(self):
         # given
-        vc = ViewCount(**ViewCountTest.env_vars)
+        vc = PageMetrics(**ViewCountTest.env_vars)
         expected_view_count = 0
         self.repo_url = "https://live.door43.org/u/dummy/repo2/96db55378e/"
 
@@ -74,7 +74,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validRepoNotInManifestTableIncrement(self):
         # given
-        vc = ViewCount(**ViewCountTest.env_vars)
+        vc = PageMetrics(**ViewCountTest.env_vars)
         expected_view_count = 0
         self.repo_url = "https://live.door43.org/u/dummy/repo2/96db55378e/"
 
