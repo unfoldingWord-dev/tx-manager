@@ -47,7 +47,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results)
 
-    def test_validInvalidManifestTable(self):
+    def test_invalidManifestTable(self):
         # given
         vc = PageMetrics(**{})
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
@@ -82,6 +82,43 @@ class ViewCountTest(unittest.TestCase):
 
         # then
         self.validateResults(expected_view_count, results)
+
+    def test_missingPath(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.repo_url = ""
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=1)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_URL_ERROR)
+
+    def test_unsupportedPath(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.repo_url = "https://other_url.com/dummy/stuff2/stuff3/"
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=1)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_URL_ERROR)
+
+    def test_missingEnvironment(self):
+        # given
+        vc = PageMetrics(**{})
+        expected_view_count = 0
+        self.repo_url = "https://dev-live.door43.org/u/dummy/repo2/96db55378e/"
+        self.db_handler = DynamoDBHandler("dev-" + PageMetrics.MANIFEST_TABLE_NAME)
+
+        # when
+        results = vc.get_view_count(self.repo_url, increment=1)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.DB_ACCESS_ERROR)
 
     #
     # helpers

@@ -51,7 +51,8 @@ class PageMetrics(object):
         self.logger.debug("Valid repo url: " + path)
         try:
             # First see record already exists in DB
-            tx_manifest = TxManifest({'repo_name': repo_name, 'user_name': repo_owner}, db_handler=self.manifest_db_handler)
+            tx_manifest = TxManifest({'repo_name': repo_name, 'user_name': repo_owner},
+                                     db_handler=self.manifest_db_handler)
             if tx_manifest.repo_name:
                 if increment:
                     tx_manifest.views += 1
@@ -81,5 +82,5 @@ class PageMetrics(object):
             netloc_parts = parsed.netloc.split('-')
             if len(netloc_parts) > 1:
                 site = netloc_parts[0]
-            self.manifest_table_name = site + PageMetrics.MANIFEST_TABLE_NAME
+            self.manifest_table_name = site + '-' + PageMetrics.MANIFEST_TABLE_NAME
         self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
