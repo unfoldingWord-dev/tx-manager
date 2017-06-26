@@ -1,10 +1,9 @@
 from __future__ import absolute_import, unicode_literals, print_function
-import unittest
 import datetime
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
-from libraries.manifest.page_metrics import PageMetrics
+import unittest
 from moto import mock_dynamodb2
-
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
+from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.models.manifest import TxManifest
 
 
