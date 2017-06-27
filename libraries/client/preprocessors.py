@@ -346,14 +346,16 @@ class TaPreprocessor(Preprocessor):
                 copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(str(idx+1).zfill(2), project.identifier)))
         return True
 
-    @staticmethod
-    def fix_links(content):
+    def fix_links(self, content):
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
         content = re.sub(r'\]\(\.\./([^/\)]+)/01.md\)', r'](#\1)', content)
         # fix links to other manuals (two ../ and a manual name and a section name)
         # e.g. [how to translate](../../translate/accurate/01.md) => [how to translate](translate.html#accurate)
-        content = re.sub(r'\]\(\.\./\.\./([^/\)]+)/([^/\)]+)/01.md\)', r'](\1.html#\2)', content)
+        for idx, project in enumerate(self.rc.projects):
+            pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/\)]+)/01.md\)'.format(project.identifier))
+            replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
+            content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
         content = re.sub(r'\]\(([^# :/\)]+)\)', r'](#\1)', content)
