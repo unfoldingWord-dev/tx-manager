@@ -12,6 +12,7 @@ function search($file) {
 		$content = "";
 		$num = 0;
 		$last_line_was_bullet = false;
+		$last_line_was_text = false;
 		if ($handle) {
 			while (! feof($handle)) {
 				++$num;
@@ -42,6 +43,9 @@ function search($file) {
 							print("LEVEL NOW ".$level." (IND ".$ind.")\n");
 						}
 						else if(isset($inds_level[$ind])){
+							if($inds_level[$ind] != $level && preg_match('/^[0-9]+\./', $bullet) && ($last_line_was_text || $last_line_was_bullet)){
+								$content .= "\n";	
+							}
 							$level = $inds_level[$ind];
 							print("LEVEL NOW ".$level." (IND ".$ind.")\n");
 						}
@@ -60,8 +64,12 @@ function search($file) {
 						$level_bullets[$level] = $bullet;
 						print("START NEW LIST\nLEVEL NOW ".$level." (IND ".$ind.")\n");
 					}
+					if($last_line_was_text){
+						$content .= "\n";
+					}
 					$content .= str_repeat("    ", $level).$bullet.' '.$text."\n";
 					$last_line_was_bullet = true;
+				 	$last_line_was_text = false;
 				}
 				else if(trim($line)){
 					print("STARTING OVER!\n");
@@ -74,11 +82,13 @@ function search($file) {
 						$content .= "\n";
 					}
 					$last_line_was_bullet = false;
+					$last_line_was_text = true;
 					$content .= $line;
 				}
-				else {
+				else if($line){
 					$content .= "\n";
 					$last_line_was_bullet = false;
+					$last_line_was_text = false;
 				}
 			}
 			print("==============================\n");
