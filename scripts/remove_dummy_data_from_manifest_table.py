@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Removes dummy data from manifest file starting from user1 repo1 until it can't find one in sequence
+Removes dummy data from manifest table starting from user1 repo1 until it can't find one in sequence
 
 """
 from __future__ import unicode_literals, print_function
