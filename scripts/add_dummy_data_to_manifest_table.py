@@ -75,15 +75,14 @@ resource_map = {
 
 
 def add_dummy_data_to_manifest_table(table_name, new_rows, start):
-    resource = boto3.resource('dynamodb')
-    dbtable = resource.Table(table_name)
+    manifest_table = boto3.resource('dynamodb').resource.Table(table_name)
 
     for i in range(start, start+new_rows):
-        print("I: {0}, {1}, {2}".format(i, start, start+new_rows-1))
-        type = resource_map.keys()[random.randint(1, len(resource_map.keys()))-1]
+        print("Adding row {0} of {1}".format(i, start+new_rows-1))
         repo_name = 'repo{0}'.format(i)
         user_name = 'user{0}'.format(i)
 
+        type = resource_map.keys()[random.randint(1, len(resource_map.keys()))-1]
         resource = resource_map[type]
 
         data = {
@@ -120,7 +119,7 @@ def add_dummy_data_to_manifest_table(table_name, new_rows, start):
                 'categories': []
             }]
         })
-        dbtable.put_item(Item=data)
+        manifest_table.put_item(Item=data)
 
 
 def main():

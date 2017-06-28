@@ -34,7 +34,7 @@ def remove_dummy_data_from_manifest_table(table_name):
             dbtable.delete_item(Key=key)
         else:
             delete_success = False
-            logger.info('Ended deleting at repo{0}, user{0}'.format(i))
+            logger.info('Ended deleting at repo{0}, user{0}'.format(i-1))
         i += 1
 
 
