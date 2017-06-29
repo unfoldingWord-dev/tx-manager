@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from botocore.exceptions import ClientError
 from unittest import TestCase
-from aws_tools.s3_handler import S3Handler
+from libraries.aws_tools.s3_handler import S3Handler
 from moto import mock_s3
 
 
@@ -20,13 +20,14 @@ class S3HandlerTests(TestCase):
         self.handler.create_bucket()
 
     def tearDown(self):
-        shutil.rmtree(self.temp_dir+'asdfa', ignore_errors=True)
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_setup_resources(self):
-        myHandler = S3Handler(aws_access_key_id='access_key', aws_secret_access_key='secret_key', aws_region_name='us-west-1')
-        self.assertEqual(myHandler.aws_access_key_id, 'access_key')
-        self.assertEqual(myHandler.aws_secret_access_key, 'secret_key')
-        self.assertEqual(myHandler.aws_region_name, 'us-west-1')
+        my_handler = S3Handler(aws_access_key_id='access_key', aws_secret_access_key='secret_key',
+                               aws_region_name='us-west-1')
+        self.assertEqual(my_handler.aws_access_key_id, 'access_key')
+        self.assertEqual(my_handler.aws_secret_access_key, 'secret_key')
+        self.assertEqual(my_handler.aws_region_name, 'us-west-1')
 
     def test_download_dir(self):
         key = 'from_dir/from_subdir/from_file.txt'

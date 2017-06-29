@@ -1,13 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
-from lambda_handlers.register_module_handler import RegisterModuleHandler
+from libraries.lambda_handlers.register_module_handler import RegisterModuleHandler
 
 
 class TestRegisterModuleHandler(TestCase):
 
-    @mock.patch('manager.manager.TxManager.setup_resources')
-    @mock.patch('manager.manager.TxManager.register_module')
+    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
+    @mock.patch('libraries.manager.manager.TxManager.register_module')
     def test_handle(self, mock_register_module, mock_setup_resources):
         mock_register_module.return_value = None
         event = {

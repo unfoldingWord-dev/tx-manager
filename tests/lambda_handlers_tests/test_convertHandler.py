@@ -1,13 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
-from lambda_handlers.convert_handler import ConvertHandler
-from converters.md2html_converter import Md2HtmlConverter
-from converters.usfm2html_converter import Usfm2HtmlConverter
+from libraries.lambda_handlers.convert_handler import ConvertHandler
+from libraries.converters.md2html_converter import Md2HtmlConverter
+from libraries.converters.usfm2html_converter import Usfm2HtmlConverter
 
 
 class TestConvertHandler(TestCase):
-    @mock.patch('converters.converter.Converter.run')
+    @mock.patch('libraries.converters.converter.Converter.run')
     def test_handle_for_obs(self, mock_convert_run):
         mock_convert_run.return_value = None
         event = {
@@ -49,7 +49,7 @@ class TestConvertHandler(TestCase):
         }
         self.assertIsNone(ConvertHandler(Md2HtmlConverter).handle(event, None))
 
-    @mock.patch('converters.converter.Converter.run')
+    @mock.patch('libraries.converters.converter.Converter.run')
     def test_handle_for_usfm(self, mock_convert_run):
         mock_convert_run.return_value = None
         event = {

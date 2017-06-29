@@ -1,12 +1,12 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
-from lambda_handlers.client_webhook_handler import ClientWebhookHandler
+from libraries.lambda_handlers.client_webhook_handler import ClientWebhookHandler
 
 
 class TestClientWebhookHandler(TestCase):
 
-    @mock.patch('client.client_webhook.ClientWebhook.process_webhook')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.process_webhook')
     def test_handle(self, mock_process_webhook):
         mock_process_webhook.return_value = None
         event = {
@@ -20,7 +20,8 @@ class TestClientWebhookHandler(TestCase):
                 'api_url': 'https://api.example.com',
                 'cdn_bucket': 'cdn_test_bucket',
                 'pre_convert_bucket': 'pre_convert_bucket',
-                'gogs_user_token': 'token1'
+                'gogs_user_token': 'token1',
+                'manifest_table_name': 'tx-manifest',
             }
         }
         handler = ClientWebhookHandler()
