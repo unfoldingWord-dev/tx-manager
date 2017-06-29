@@ -1,3 +1,0 @@
-{
-  "description": "Converts Markdown (MD) files to HTML, called by https://api.door43.org/tx/convert/md2html in the tx_start_job function"
-}

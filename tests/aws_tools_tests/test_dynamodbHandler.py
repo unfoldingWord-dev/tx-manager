@@ -1,15 +1,15 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 import unittest
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
+import aws_tools.dynamodb_handler
 
 
 class DynamoDBHandlerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with mock.patch("libraries.aws_tools.dynamodb_handler.boto3", mock.MagicMock()):
-            cls.handler = DynamoDBHandler("table_name")
+        with mock.patch("aws_tools.dynamodb_handler.boto3", mock.MagicMock()):
+            cls.handler = aws_tools.dynamodb_handler.DynamoDBHandler("table_name")
         cls.handler.table = mock.MagicMock()
 
     def setUp(self):

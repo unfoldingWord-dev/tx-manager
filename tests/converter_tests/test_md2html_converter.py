@@ -3,10 +3,9 @@ import os
 import tempfile
 import unittest
 import codecs
-import shutil
 from contextlib import closing
-from libraries.converters.md2html_converter import Md2HtmlConverter
-from libraries.general_tools.file_utils import remove_tree, unzip, remove
+from converters.md2html_converter import Md2HtmlConverter
+from general_tools.file_utils import remove_tree, unzip, remove
 from bs4 import BeautifulSoup
 
 
@@ -58,7 +57,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
         """Runs the converter and verifies the output."""
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'en-obs.zip')
-        zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
         with closing(Md2HtmlConverter('', 'obs', None, out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -76,7 +74,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
             file_name = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_name), 'OBS HTML file not found: {0}'.format(file_name))
 
-    def test_completeObs(self):
+    def test_completeMD(self):
         """
         Runs the converter and verifies the output
         """
@@ -151,42 +149,11 @@ class TestMd2HtmlConverter(unittest.TestCase):
         #then
         self.verifyTransform(tx, missing_chapters)
 
-    def test_ta(self):
-        """
-        Runs the converter and verifies the output
-        """
-        file_name = 'en_ta.zip'
-        self.doTransformTa(file_name)
-        self.assertTrue(os.path.isfile(self.out_zip_file), "There was no output zip file produced.")
-        self.assertIsNotNone(self.return_val, "There was no return value.")
-        self.out_dir = tempfile.mkdtemp(prefix='ta_')
-        unzip(self.out_zip_file, self.out_dir)
-        remove(self.out_zip_file)
-        files_to_verify = ['checking.html', 'checking-toc.yaml', 'intro.html', 'intro-toc.yaml',
-                           'process.html', 'process-toc.yaml', 'translate.html', 'translate-toc.yaml']
-        for file_to_verify in files_to_verify:
-            file_path = os.path.join(self.out_dir, file_to_verify)
-            self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
-                            .format(file_to_verify))
-
-    # helpers
-
     def doTransformObs(self, file_name):
         zip_file_path = os.path.join(self.resources_dir, file_name)
-        zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
         self.out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
         self.return_val = None
         with closing(Md2HtmlConverter('', 'obs', None, self.out_zip_file)) as tx:
-            tx.input_zip_file = zip_file_path
-            self.return_val = tx.run()
-        return tx
-
-    def doTransformTa(self, file_name):
-        zip_file_path = os.path.join(self.resources_dir, file_name)
-        zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
-        self.out_zip_file = tempfile.mktemp(prefix="en_ta", suffix=".zip")
-        self.return_val = None
-        with closing(Md2HtmlConverter('', 'ta', None, self.out_zip_file)) as tx:
             tx.input_zip_file = zip_file_path
             self.return_val = tx.run()
         return tx
@@ -252,12 +219,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
             return None
 
         return content
-
-    def make_duplicate_zip_that_can_be_deleted(self, zip_file):
-        in_zip_file = tempfile.mktemp(prefix="test_data", suffix=".zip")
-        shutil.copy(zip_file, in_zip_file)
-        zip_file = in_zip_file
-        return zip_file
 
 
 if __name__ == '__main__':

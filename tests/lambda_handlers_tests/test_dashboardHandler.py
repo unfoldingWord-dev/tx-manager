@@ -1,16 +1,16 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
-from libraries.lambda_handlers.dashboard_handler import DashboardHandler
-from libraries.manager.manager import TxManager
+from lambda_handlers.dashboard_handler import DashboardHandler
+from manager.manager import TxManager
 
 def new_generate_dashboard( max_failures):
     return max_failures; # return the parameter for testing
 
 class DashboardHandlerTest(TestCase):
 
-    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
-    @mock.patch('libraries.manager.manager.TxManager.generate_dashboard')
+    @mock.patch('manager.manager.TxManager.setup_resources')
+    @mock.patch('manager.manager.TxManager.generate_dashboard')
     def test_handle(self, mock_generate_dashboard, mock_setup_resources):
         mock_generate_dashboard.side_effect=new_generate_dashboard
         expectedMaxFailures = TxManager.MAX_FAILURES
@@ -30,8 +30,8 @@ class DashboardHandlerTest(TestCase):
         maxFailures = handler.handle(event, expectedMaxFailures)
         self.assertEqual(maxFailures, expectedMaxFailures)
 
-    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
-    @mock.patch('libraries.manager.manager.TxManager.generate_dashboard')
+    @mock.patch('manager.manager.TxManager.setup_resources')
+    @mock.patch('manager.manager.TxManager.generate_dashboard')
     def test_dashboard_handler_max_two(self, mock_generate_dashboard, mock_setup_resources):
         mock_generate_dashboard.side_effect=new_generate_dashboard
         expectedMaxFailures = 2

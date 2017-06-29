@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals, print_function
 import mock
 import unittest
 
-from libraries.gogs_tools.gogs_handler import GogsHandler
+from gogs_tools.gogs_handler import GogsHandler
 
 
 class GogsHandlerTests(unittest.TestCase):

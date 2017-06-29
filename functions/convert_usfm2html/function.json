@@ -1,3 +1,0 @@
-{
-  "description": "Converts USFM files to HTML, called by https://api.door43.org/tx/convert/usfm2html in the tx_start_job function"
-}

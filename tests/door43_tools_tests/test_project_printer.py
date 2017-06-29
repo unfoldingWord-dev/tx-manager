@@ -4,8 +4,8 @@ import os
 import tempfile
 from moto import mock_s3
 from bs4 import BeautifulSoup
-from libraries.door43_tools.project_printer import ProjectPrinter
-from libraries.general_tools.file_utils import unzip
+from door43_tools.project_printer import ProjectPrinter
+from general_tools.file_utils import unzip
 from shutil import rmtree
 
 
