@@ -1,13 +1,11 @@
 [run]
 source=
-    client
-    manager
-    converters
-    aws_tools
-    door43_tools
-    general_tools
-    gogs_tools
-    lambda_handlers
+    libraries
+    functions
+
+include =
+    functions/*/main.py
+    libraries/*
 
 omit =
     */__init__.py

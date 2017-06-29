@@ -1,0 +1,3 @@
+{
+  "description": "Deploys a revision of a repo to door43.org, triggered when build_log.json is added to a cdn.door43.org/u/<user>/<repo>/<commit> S3 directory"
+}

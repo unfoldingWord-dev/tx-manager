@@ -3,9 +3,9 @@ import os
 import tempfile
 import unittest
 import shutil
-from resource_container.ResourceContainer import RC
-from client.preprocessors import do_preprocess
-from general_tools.file_utils import unzip, add_contents_to_zip
+from libraries.resource_container.ResourceContainer import RC
+from libraries.client.preprocessors import do_preprocess
+from libraries.general_tools.file_utils import unzip, add_contents_to_zip
 
 
 class TestObsPreprocessor(unittest.TestCase):
