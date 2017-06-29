@@ -2,9 +2,10 @@ language: python
 python:
   - '2.7'
 
-before_install:
-  - pip install awscli
-  - scripts/travis_install_apex.sh
+before install:
+  - eval export AWS_ACCESS_KEY_ID=\$${TRAVIS_BRANCH}_AWS_ACCESS_KEY_ID
+  - eval export AWS_SECRET_ACCESS_KEY=\$${TRAVIS_BRANCH}_AWS_SECRET_ACCESS_KEY
+  - eval export AWS_REGION=\$${TRAVIS_BRANCH}_AWS_REGION
 
 install:
   - pip install -r requirements.txt
@@ -14,22 +15,3 @@ script: coverage run test-setup.py test
 
 after_success:
   - coveralls
-
-env:
-  global:
-    - PYTHONDONTWRITEBYTECODE=true
-
-deploy:
-- provider: script
-  skip_cleanup: true
-  script:
-  - scripts/deploy.sh && scripts/register_modules.sh https://dev-api.door43.org && scripts/integration_test.sh
-  on:
-    branch: develop
-- provider: script
-  skip_cleanup: true
-  script:
-  - scripts/deploy.sh && scripts/register_modules.sh https://api.door43.org && scripts/integration_test.sh
-  on:
-    branch: master
-

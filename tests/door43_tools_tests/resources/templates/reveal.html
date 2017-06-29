@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="{{ LANG_CODE }}">
+  <meta charset="utf-8">
+
+  <title>{{ HEADING }}</title>
+
+  <meta name="description" content="an unrestricted visual mini-Bible in any language">
+  <meta name="author"
+        content="Created by Distant Shores Media (http://distantshores.org) and the Door43 world missions community (http://door43.org).">
+
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" type="text/css" href="/css/reveal/reveal.min.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="/css/reveal/reveal.theme.css" media="screen" id="theme">
+  <link rel="stylesheet" type="text/css" href="/css/reveal/custom.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="/css/reveal/zenburn.css" media="screen">
+
+  <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+  <script>
+      if (window.location.search.match(/print-pdf/gi)) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.type = 'text/css';
+          link.href = '/css/reveal/print/pdf.css';
+          document.getElementsByTagName('head')[0].appendChild(link);
+      }
+  </script>
+
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <body itemscope="itemscope" itemtype="http://schema.org/WebPage">
+    <div class="meny">
+        <ul>{{ MENY }}</ul>
+        <p><a href="{{ HOME_LINK }}">{{ HOME }}</a></p>
+    </div>
+    <div class="meny-arrow"></div>
+    <div class="reveal">
+        <div class="slides"><p>{{ REVEAL_SLIDES }}</p>
+</div>
+    </div>
+    <script type="text/javascript" src="/js/reveal/head.min.js"></script>
+    <script type="text/javascript" src="/js/reveal/reveal.min.js"></script>
+    <script type="text/javascript" src="/js/reveal/meny.js"></script>
+    <script type="text/javascript" src="/js/reveal/custom.js"></script>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-60106521-4']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
+  </body>
+</html>

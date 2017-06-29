@@ -6,7 +6,7 @@ import tempfile
 import unittest
 import zipfile
 
-from libraries.general_tools import file_utils
+from general_tools import file_utils
 
 
 class FileUtilsTests(unittest.TestCase):
