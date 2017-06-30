@@ -50,7 +50,7 @@ def main():
     bucket = resource.Bucket(bucket_name)
     keys = get_build_logs(bucket)
     i = 0
-    for k in random.shuffle(keys):
+    for k in keys:
         touch(client, bucket_name, k)
         i += 1
         if i == 500:
