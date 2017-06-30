@@ -3,11 +3,10 @@ import os
 import tempfile
 import unittest
 import shutil
-import markdown
+import markdown2
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess, TaPreprocessor
 from libraries.general_tools.file_utils import unzip, read_file
-from libraries.resource_container.ResourceContainer import RC
 from bs4 import BeautifulSoup
 
 
@@ -42,7 +41,7 @@ class TestTaPreprocessor(unittest.TestCase):
         process = read_file(os.path.join(self.out_dir, '02-process.md'))
         translate = read_file(os.path.join(self.out_dir, '03-translate.md'))
         checking = read_file(os.path.join(self.out_dir, '04-checking.md'))
-        soup = BeautifulSoup(markdown.markdown(checking), 'html.parser')
+        soup = BeautifulSoup(markdown2.markdown(checking, extras=['markdown-in-html', 'tables']), 'html.parser')
         self.assertEqual(soup.h1.text, "Checking Manual")
         self.assertIsNotNone(soup.find("a", {"id": "accurate"}))
         self.assertEqual(len(soup.find_all('li')), 350)
