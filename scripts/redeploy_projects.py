@@ -6,6 +6,7 @@ Touches every build_log.json file in a given s3 CDN bucket to trigger the door43
 import boto3
 import logging
 import sys
+import time
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -47,8 +48,13 @@ def main():
     resource = boto3.resource('s3')
     bucket = resource.Bucket(bucket_name)
     keys = get_build_logs(bucket)
+    i = 0
     for k in keys:
         touch(client, bucket_name, k)
+        i += 1
+        if i == 500:
+            time.sleep(300)
+            i = 0
 
 
 if __name__ == '__main__':
