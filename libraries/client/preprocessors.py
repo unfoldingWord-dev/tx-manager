@@ -299,18 +299,18 @@ class TaPreprocessor(Preprocessor):
             bottom_box = ""
             question = self.get_question(project, link)
             if question:
-                top_box += '*This page answers the question: {0}*\n\n'.format(question)
+                top_box += 'This page answers the question: *{0}*\n\n'.format(question)
             config = project.config()
             if link in config:
                 if 'dependencies' in config[link] and config[link]['dependencies']:
-                    top_box += '*In order to understand this topic, it would be good to read:*\n\n'
+                    top_box += 'In order to understand this topic, it would be good to read:\n\n'
                     for dependency in config[link]['dependencies']:
-                        top_box += '  * [{0}]({1})\n'.\
+                        top_box += '  * *[{0}]({1}*)\n'.\
                             format(self.get_title(project, dependency), self.get_ref(project, dependency))
                 if 'recommended' in config[link] and config[link]['recommended']:
-                    bottom_box += '*Next we recommend you learn about:*\n\n'
+                    bottom_box += 'Next we recommend you learn about:\n\n'
                     for recommended in config[link]['recommended']:
-                        bottom_box += '  * [{0}]({1})\n'.\
+                        bottom_box += '  * *[{0}]({1})*\n'.\
                             format(self.get_title(project, recommended), self.get_ref(project, recommended))
             if top_box:
                 markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
