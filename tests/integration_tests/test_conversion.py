@@ -4,10 +4,12 @@ import json
 import tempfile
 import unittest
 import os
-from unittest import TestCase
+import codecs
+import sys
 import requests
 import shutil
 import time
+from unittest import TestCase
 from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
 from libraries.manager.manager import TxManager
@@ -18,6 +20,12 @@ from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 
+# replace default print with utf-8 writer, so it can work with pipes and redirects such as used with the latest
+#   Travis build system.
+UTF8Writer = codecs.getwriter('utf8')
+sys.stdout = UTF8Writer(sys.stdout)
+
+# defines
 COMMIT_LENGTH = 40
 USE_WEB_HOOK_LAMBDA = True
 
