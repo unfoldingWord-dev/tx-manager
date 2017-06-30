@@ -8,8 +8,7 @@ Touches every build_log.json file in a given s3 CDN bucket to trigger the door43
 import boto3
 import logging
 import sys
-
-from future.backports.datetime import time
+import time
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -75,4 +74,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
