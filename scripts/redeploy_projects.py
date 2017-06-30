@@ -7,6 +7,7 @@ import boto3
 import logging
 import sys
 import time
+import random
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -49,7 +50,7 @@ def main():
     bucket = resource.Bucket(bucket_name)
     keys = get_build_logs(bucket)
     i = 0
-    for k in keys:
+    for k in random.shuffle(keys):
         touch(client, bucket_name, k)
         i += 1
         if i == 500:
