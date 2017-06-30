@@ -305,7 +305,7 @@ class TaPreprocessor(Preprocessor):
                 if 'dependencies' in config[link] and config[link]['dependencies']:
                     top_box += 'In order to understand this topic, it would be good to read:\n\n'
                     for dependency in config[link]['dependencies']:
-                        top_box += '  * *[{0}]({1}*)\n'.\
+                        top_box += '  * *[{0}]({1})*\n'.\
                             format(self.get_title(project, dependency), self.get_ref(project, dependency))
                 if 'recommended' in config[link] and config[link]['recommended']:
                     bottom_box += 'Next we recommend you learn about:\n\n'
