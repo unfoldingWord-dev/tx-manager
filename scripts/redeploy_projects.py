@@ -17,14 +17,15 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-def get_build_logs(bucket):
-    build_logs = []
-    objects = bucket.objects.filter(Prefix='u/')
+def update_build_logs(client, bucket_name, bucket, prefix):
+    objects = bucket.objects.limit(100000).filter(Prefix=prefix)
+    count = 0
     for obj in objects:
         if obj.key.endswith('/build_log.json'):
-            build_logs.append(obj.key)
-    return build_logs
-
+            key = obj.key
+            count += 1
+            print(str(count) + ": Updating: " + key)
+            touch(client, bucket_name, key)
 
 def touch(client, bucket_name, key):
     source = bucket_name + "/" + key
@@ -43,12 +44,15 @@ def main():
         logger.critical('You must provide a bucket name!')
         exit(1)
     bucket_name = sys.argv[1]
+    prefix = 'u/'
+    if len(sys.argv) > 2:
+        prefix = sys.argv[2]
+        print("Using prefix of '" + prefix +"'")
     client = boto3.client('s3')
     resource = boto3.resource('s3')
     bucket = resource.Bucket(bucket_name)
-    keys = get_build_logs(bucket)
-    for k in keys:
-        touch(client, bucket_name, k)
+    update_build_logs(client, bucket_name, bucket, prefix)
+    print("Done")
 
 
 if __name__ == '__main__':
