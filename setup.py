@@ -82,6 +82,7 @@ setup(
         'boto3==1.4.4',
         'python-json-logger==0.1.5',
         'markdown==2.6.8',
+        'markdown2==2.3.4',
         'future==0.16.0',
         'pyparsing==2.1.10',
         'usfm-tools==0.0.12',

@@ -295,27 +295,31 @@ class TaPreprocessor(Preprocessor):
             self.section_container_id = self.section_container_id + 1
         markdown = '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, self.get_title(project, link, section['title']))
         if 'link' in section:
+            top_box = ""
+            bottom_box = ""
             question = self.get_question(project, link)
             if question:
-                markdown += '*This page answers the question: {0}*\n\n'.format(question)
+                top_box += '*This page answers the question: {0}*\n\n'.format(question)
             config = project.config()
             if link in config:
                 if 'dependencies' in config[link] and config[link]['dependencies']:
-                    markdown += '*In order to understand this topic, it would be good to read:*\n\n'
+                    top_box += '*In order to understand this topic, it would be good to read:*\n\n'
                     for dependency in config[link]['dependencies']:
-                        markdown += '  * [{0}]({1})\n'.\
+                        top_box += '  * [{0}]({1})\n'.\
                             format(self.get_title(project, dependency), self.get_ref(project, dependency))
-                    markdown += '\n'
-                content = self.get_content(project, link)
-                if content:
-                    markdown += '{0}\n\n'.format(content)
                 if 'recommended' in config[link] and config[link]['recommended']:
-                    markdown += '*Next we recommend you learn about:*\n\n'
+                    bottom_box += '*Next we recommend you learn about:*\n\n'
                     for recommended in config[link]['recommended']:
-                        markdown += '  * [{0}]({1})\n'.\
+                        bottom_box += '  * [{0}]({1})\n'.\
                             format(self.get_title(project, recommended), self.get_ref(project, recommended))
-                    markdown += '\n'
-                markdown += '---\n\n'  # horizontal rule
+            if top_box:
+                markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
+            content = self.get_content(project, link)
+            if content:
+                markdown += '{0}\n\n'.format(content)
+            if bottom_box:
+                markdown += '<div class="bottom-box box" markdown="1">\n{0}\n</div>\n\n'.format(bottom_box)
+            markdown += '---\n\n'  # horizontal rule
         if 'sections' in section:
             for subsection in section['sections']:
                 markdown += self.compile_section(project, subsection, level + 1)

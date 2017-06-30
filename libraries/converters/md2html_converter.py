@@ -1,7 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import string
-import markdown
+import markdown2
 import codecs
 from shutil import copyfile
 from bs4 import BeautifulSoup
@@ -38,7 +38,7 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                html = markdown.markdown(md)
+                html = markdown2.markdown(md)
                 html = html_template.safe_substitute(title=self.resource.upper(), content=html)
                 base_name = os.path.splitext(os.path.basename(filename))[0]
                 found_chapters[base_name] = True
@@ -86,13 +86,13 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                html = markdown.markdown(md)
+                html = markdown2.markdown(md, extras=['markdown-in-html', 'tables'])
                 html = html_template.safe_substitute(title=self.resource.upper(), content=html)
 
                 # Change headers like <h1><a id="verbs"/>Verbs</h1> to <h1 id="verbs">Verbs</h1>
                 soup = BeautifulSoup(html, 'html.parser')
                 for tag in soup.findAll('a', {'id': True}):
-                    if tag.parent and tag.parent.name in ['h1', 'h2', 'h3', 'h4', 'h5']:
+                    if tag.parent and tag.parent.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
                         tag.parent['id'] = tag['id']
                         tag.parent['class'] = tag.parent.get('class', []) + ['section-header']
                         tag.extract()

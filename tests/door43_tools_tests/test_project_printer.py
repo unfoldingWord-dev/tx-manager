@@ -30,6 +30,8 @@ class ProjectPrinterTests(unittest.TestCase):
         html = self.printer.cdn_handler.get_file_contents('u/{0}/print_all.html'.format(self.project_key))
         soup = BeautifulSoup(html, 'html.parser')
         self.assertEqual(len(soup.div), 69)
+        self.assertEqual(soup.html['lang'], 'en')
+        self.assertEqual(soup.html['dir'], 'ltr')
         # Run again, shouldn't have to generate
         self.printer.print_project(self.project_key)
         self.assertTrue(self.printer.cdn_handler.key_exists('u/{0}/print_all.html'.format(self.project_key)))
