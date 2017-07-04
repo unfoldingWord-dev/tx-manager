@@ -87,9 +87,9 @@ class TestTaPreprocessor(unittest.TestCase):
         self.assertEqual(converted, expected)
 
         content = """This [link](rc://en/tw/dict/bible/other/dream) is a rc link that should go to 
-            other/dream/01.md in the en_tw repo"""
-        expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream/01.md) is a rc link that should go to 
-            other/dream/01.md in the en_tw repo"""
+            other/dream.md in the en_tw repo"""
+        expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to 
+            other/dream.md in the en_tw repo"""
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
 
