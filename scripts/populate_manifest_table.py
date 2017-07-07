@@ -118,7 +118,8 @@ def add_to_manifest(resource, bucket_name, table_name, key):
         build_log = build_log['build_logs'][0]
 
     in_db_key = '{0}/{1}'.format(repo_name, user_name)
-    if in_db_key in already_in_db and 'created_at' in build_log and already_in_db[in_db_key] > build_log['created_at']:
+    if 'created_at' not in build_log or (in_db_key in already_in_db and
+                                                 already_in_db[in_db_key] > build_log['created_at']):
         return
 
     dbtable = boto3.resource('dynamodb').Table(table_name)
