@@ -396,7 +396,7 @@ class ClientWebhook(object):
         :return: None
         """
         repo_zip_url = commit_url.replace('commit', 'archive') + '.zip'
-        repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition('/')[2])
+        repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition(os.path.sep)[2])
 
         try:
             self.logger.debug('Downloading {0}...'.format(repo_zip_url))

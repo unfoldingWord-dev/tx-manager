@@ -51,21 +51,21 @@ class TestClientWebhook(unittest.TestCase):
             TableName=TestClientWebhook.MANIFEST_TABLE_NAME,
             KeySchema=[
                 {
-                    'AttributeName': 'repo_name',
+                    'AttributeName': 'repo_name_lower',
                     'KeyType': 'HASH'
                 },
                 {
-                    'AttributeName': 'user_name',
+                    'AttributeName': 'user_name_lower',
                     'KeyType': 'RANGE'
                 },
             ],
             AttributeDefinitions=[
                 {
-                    'AttributeName': 'repo_name',
+                    'AttributeName': 'repo_name_lower',
                     'AttributeType': 'S'
                 },
                 {
-                    'AttributeName': 'user_name',
+                    'AttributeName': 'user_name_lower',
                     'AttributeType': 'S'
                 },
             ],
@@ -115,14 +115,13 @@ class TestClientWebhook(unittest.TestCase):
                                                       mock_download_file)
         TestClientWebhook.mock_job_return_value['errors'] = ['error 1', 'error 2']
         expected_job_count = 1
-        captured_error = False
         expected_error_count = 2
 
         # when
         try:
             client_web_hook.process_webhook()
         except:
-            captured_error = True
+            pass
 
         # then
         self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
@@ -130,7 +129,8 @@ class TestClientWebhook(unittest.TestCase):
     @patch('libraries.client.client_webhook.download_file')
     def test_processWebhookMultipleBooks(self, mock_download_file):
         # given
-        client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)
+        client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'),
+                                                      self.resources_dir, mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
 
@@ -143,7 +143,7 @@ class TestClientWebhook(unittest.TestCase):
     @patch('libraries.client.client_webhook.download_file')
     def test_processWebhookMultipleBooksErrors(self, mock_download_file):
         # given
-        client_web_hook = self.setupClientWebhookMock('raw_sources/en-ulb', self.resources_dir, mock_download_file)
+        client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir, mock_download_file)
         TestClientWebhook.mock_job_return_value['errors'] = ['error 1', 'error 2']
         expected_job_count = 4
         expected_error_count = 2 * expected_job_count
