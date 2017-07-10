@@ -83,13 +83,16 @@ resource_map = {
     }
 }
 
+
 def save_obj(obj, fname):
     with open(fname, 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
+
 def load_obj(fname):
     with open(fname, 'rb') as f:
         return pickle.load(f)
+
 
 def get_build_logs(bucket):
     build_logs = []
@@ -115,7 +118,8 @@ def add_to_manifest(resource, bucket_name, table_name, key):
         build_log = build_log['build_logs'][0]
 
     in_db_key = '{0}/{1}'.format(repo_name, user_name)
-    if in_db_key in already_in_db and already_in_db[in_db_key] > build_log['created_at']:
+    if 'created_at' not in build_log or (in_db_key in already_in_db and
+                                                 already_in_db[in_db_key] > build_log['created_at']):
         return
 
     dbtable = boto3.resource('dynamodb').Table(table_name)
@@ -134,15 +138,18 @@ def add_to_manifest(resource, bucket_name, table_name, key):
 
     if manifest and 'dublin_core' in manifest:
         data = {
+            'repo_name_lower': repo_name.lower(),
+            'user_name_lower': user_name.lower(),
             'repo_name': repo_name,
             'user_name': user_name,
-            'lang_code': manifest['dublin_core']['language']['identifier'],
-            'resource_id': manifest['dublin_core']['identifier'],
-            'resource_type': manifest['dublin_core']['type'],
+            'lang_code': manifest['dublin_core']['language']['identifier'].lower(),
+            'resource_id': manifest['dublin_core']['identifier'].lower(),
+            'resource_type': manifest['dublin_core']['type'].lower(),
             'title': manifest['dublin_core']['title'],
             'views': 0,
             'last_updated': build_log['created_at'],
-            'manifest': json.dumps(manifest)
+            'manifest': json.dumps(manifest),
+            'manifest_lower':json.dumps(manifest).lower(),
         }
     else:
         parts = repo_name.split('_')
@@ -178,6 +185,8 @@ def add_to_manifest(resource, bucket_name, table_name, key):
             direction = 'ltr'
             lang_title = lang
         data = {
+            'repo_name_lower': repo_name.lower(),
+            'user_name_lower': user_name.lower(),
             'repo_name': repo_name,
             'user_name': user_name,
             'lang_code': lang,
@@ -211,6 +220,7 @@ def add_to_manifest(resource, bucket_name, table_name, key):
                 'categories': []
             }]
         })
+        data['manifest_lower'] = data['manifest'].lower()
     dbtable.put_item(Item=data)
     already_in_db[in_db_key] = build_log['created_at'] 
     save_obj(already_in_db, already_in_db_file)

@@ -583,13 +583,14 @@ class TestConversions(TestCase):
 
         # Test that repo is in manifest table
         tx_manifest = TxManifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
-                'repo_name': repo,
-                'user_name': user
+                'repo_name_lower': repo.lower(),
+                'user_name_lower': user.lower()
         })
         # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
-        # If that row doesn't exist, it will cause repo_name and user_name to be None, so just need to check them.
-        self.assertEqual(tx_manifest.repo_name, repo)
-        self.assertEqual(tx_manifest.user_name, user)
+        # If that row doesn't exist, it will cause repo_name_lower and user_name_lower to be None,
+        #   so just need to check them.
+        self.assertEqual(tx_manifest.repo_name_lower, repo.lower())
+        self.assertEqual(tx_manifest.user_name_lower, user.lower())
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",

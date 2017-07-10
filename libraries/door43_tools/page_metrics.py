@@ -51,7 +51,7 @@ class PageMetrics(object):
         self.logger.debug("Valid repo url: " + path)
         try:
             # First see record already exists in DB
-            tx_manifest = TxManifest({'repo_name': repo_name, 'user_name': repo_owner},
+            tx_manifest = TxManifest({'repo_name_lower': repo_name.lower(), 'user_name_lower': repo_owner.lower()},
                                      db_handler=self.manifest_db_handler)
             if tx_manifest.repo_name:
                 if increment:

@@ -325,7 +325,7 @@ class Resource:
     @property
     def type(self):
         if 'type' in self.resource and isinstance(self.resource['type'], basestring):
-            return self.resource['type']
+            return self.resource['type'].lower()
         elif self.identifier in BIBLE_RESOURCE_TYPES:
             if len(self.rc.usfm_files()):
                 return 'bundle'
@@ -339,11 +339,11 @@ class Resource:
     @property
     def identifier(self):
         if 'identifier' in self.resource and self.resource['identifier']:
-            return self.resource['identifier']
+            return self.resource['identifier'].lower()
         if 'id' in self.resource and self.resource['id']:
-            return self.resource['id']
+            return self.resource['id'].lower()
         elif 'slug' in self.resource and self.resource['slug']:
-            slug = self.resource['slug']
+            slug = self.resource['slug'].lower()
             if 'ulb' in slug:
                 return 'ulb'
             elif 'udb' in slug:
@@ -352,11 +352,11 @@ class Resource:
                 return 'obs'
             else:
                 return slug
-        elif 'ulb' in self.rc.repo_name:
+        elif 'ulb' in self.rc.repo_name.lower():
             return 'ulb'
-        elif 'udb' in self.rc.repo_name:
+        elif 'udb' in self.rc.repo_name.lower():
             return 'udb'
-        elif 'obs' in self.rc.repo_name:
+        elif 'obs' in self.rc.repo_name.lower():
             return 'obs'
         else:
             return 'bible'
@@ -490,11 +490,11 @@ class Language:
     @property
     def identifier(self):
         if 'identifier' in self.language and self.language['identifier']:
-            return self.language['identifier']
+            return self.language['identifier'].lower()
         elif 'slug' in self.language and self.language['slug']:
-            return self.language['slug']
+            return self.language['slug'].lower()
         elif 'id' in self.language and self.language['id']:
-            return self.language['id']
+            return self.language['id'].lower()
         else:
             return 'en'
 
