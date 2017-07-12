@@ -7,6 +7,7 @@ from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remov
 from shutil import copy
 import logging
 from convert_logger import ConvertLogger
+from libraries.checkers.checker_handler import get_checker
 from abc import ABCMeta, abstractmethod
 
 
@@ -68,6 +69,19 @@ class Converter(object):
             self.logger.debug("Converting files...")
             if self.convert():
                 self.logger.debug("Was able to convert {0}".format(self.resource))
+
+                # Run the corrisponding checker on the preconvert and/or converted files to look for issues
+                self.logger.debug("Checking for issues...")
+                checker = get_checker(self.resource)
+                if checker:
+                    try:
+                        checker(self.files_dir, self.output_dir, self.log).run()
+                    except Exception as e:
+                        self.logger.warning('Checker {0}: failed to run checker'.format(checker.__class__.__name__))
+                        self.log.warning('Failed to check for issues'.format(self.resource))
+                else:
+                    self.logger.warning("There is no checker for resource {0}".format(self.resource))
+
                 # zip the output dir to the output archive
                 self.logger.debug("Adding files in {0} to {1}".format(self.output_dir, self.output_zip_file))
                 add_contents_to_zip(self.output_zip_file, self.output_dir)

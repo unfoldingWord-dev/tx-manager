@@ -7,8 +7,6 @@ from shutil import copyfile
 from bs4 import BeautifulSoup
 from libraries.general_tools.file_utils import write_file
 from converter import Converter
-from libraries.door43_tools.obs_handler import OBSInspection
-from libraries.door43_tools.obs_data import obs_data
 
 
 class Md2HtmlConverter(Converter):
@@ -46,14 +44,6 @@ class Md2HtmlConverter(Converter):
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, html)
                 self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename), os.path.basename(html_filename)))
-
-                # Do the OBS inspection (this now operates on a single file instead of folder)
-                # QUESTION: Should this be done separately after conversion????
-                inspector = OBSInspection(output_file, self.log)
-                try:
-                    inspector.run()
-                except Exception as e:
-                    self.log.warning('Chapter {0}: failed to run OBS inspector: {1}'.format(base_name, e.message))
             else:
                 # Directly copy over files that are not markdown files
                 try:
@@ -62,11 +52,6 @@ class Md2HtmlConverter(Converter):
                         copyfile(filename, output_file)
                 except:
                     pass
-
-        for chapter in sorted(obs_data['chapters']): # verify all expected chapters are present
-            found_chapter = found_chapters.get(chapter)
-            if not found_chapter:
-                self.log.warning('Chapter {0} is missing!'.format(chapter))
         self.log.info('Finished processing OBS Markdown files.')
 
     def convert_markdown(self):
