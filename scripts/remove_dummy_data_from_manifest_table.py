@@ -28,7 +28,7 @@ def remove_dummy_data_from_manifest_table(table_name):
     while delete_success:
         repo_name_lower = 'repo{0}'.format(i)
         user_name_lower = 'user{0}'.format(i)
-        key = {'repo_name_lower': repo_name_lower, 'user_name': user_name_lower}
+        key = {'repo_name_lower': repo_name_lower, 'user_name_lower': user_name_lower}
         response = dbtable.get_item(Key=key)
         if 'Item' in response:
             dbtable.delete_item(Key=key)
