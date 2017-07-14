@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 """
 Adds N number of rows of dummy data to the manifest table specified
 
@@ -95,6 +97,21 @@ def strTimeProp(start, end, format, prop):
 def randomDate(start, end, prop):
     return strTimeProp(start, end, '%Y-%m-%dT%H:%M:%SZ', prop)
 
+lang_codes = {
+    'aa':'Afaraf',
+    'es': 'español',
+    'pt': 'português',
+    'pt-br': 'Português',
+    'en': 'English',
+    'de': 'Deutsch',
+    'ja': '日本語 (にほんご) ',
+    'fr': 'français',
+    'es-419': 'Español Latin America',
+    'zh': '中文 (Zhōngwén)',
+    'cfa-x-dijim': 'Dǝjim',
+    'tl': 'Wikang Tagalog',
+    'tpi': 'Tok Pisin'
+}
 
 
 def add_dummy_data_to_manifest_table(table_name, new_rows, start):
@@ -109,12 +126,13 @@ def add_dummy_data_to_manifest_table(table_name, new_rows, start):
         resource = resource_map[type]
 
         last_updated = randomDate("2015-01-01T00:00:00Z", datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"), random.random())
+        lang_code = random.choice(lang_codes.keys())
         data = {
             'repo_name_lower': repo_name_lower,
             'user_name_lower': user_name_lower,
             'repo_name': repo_name_lower,
             'user_name': user_name_lower,
-            'lang_code': 'en',
+            'lang_code': lang_code,
             'resource_id': type,
             'resource_type': resource['type'],
             'title': resource['title'],
@@ -132,7 +150,7 @@ def add_dummy_data_to_manifest_table(table_name, new_rows, start):
                 'issued': datetime.utcnow().strftime('%Y-%m-%d'),
                 'modified': datetime.utcnow().strftime('%Y-%m-%d'),
                 'identifier': data['resource_id'],
-                'language': {'identifier': data['lang_code'], 'direction': 'ltr', 'title': 'English'},
+                'language': {'identifier': data['lang_code'], 'direction': 'ltr', 'title': lang_codes[lang_code]},
                 'type': data['resource_type'],
                 'title': data['title']
             },
@@ -145,7 +163,7 @@ def add_dummy_data_to_manifest_table(table_name, new_rows, start):
                 'categories': []
             }]
         })
-        data['manifest_lower'] = data['manifest'].lower();
+        data['manifest_lower'] = data['manifest'].lower()
         manifest_table.put_item(Item=data)
 
 
