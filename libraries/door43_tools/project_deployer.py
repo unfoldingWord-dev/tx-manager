@@ -8,7 +8,7 @@ from glob import glob
 from shutil import copyfile
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.general_tools.file_utils import write_file, remove_tree
-from door43_tools.templaters import init_template
+from libraries.door43_tools.templaters import init_template
 from datetime import datetime, timedelta
 
 
@@ -119,17 +119,20 @@ class ProjectDeployer(object):
         templater = init_template(resource_type, source_dir, output_dir, template_file)
 
         # check for files already converted and remove from list
-        for i in range(len(templater.files) - 1, -1, -1):  # looping in reverse order
+        for i in range(len(templater.files) - 1, -1, -1):
             file_name = templater.files[i]
             dirname, basename = os.path.split(file_name)
             destination_modified = self.get_key_modified_time(self.door43_handler, s3_commit_key, basename)
             if destination_modified is None:
+                self.logger.debug("File has not been converted: " + basename)
                 continue
             source_modified = self.get_key_modified_time(self.cdn_handler, s3_commit_key, basename)
             if source_modified is None:
+                self.logger.debug("Source missing: " + basename)
                 continue
             if source_modified < destination_modified:  # see if this was templated after last conversion
-                # remove file since already templated
+                self.logger.debug("File has already been converted: " + basename)
+                # remove since already templated
                 del templater.files[i]
                 os.remove(file_name)
 
@@ -172,7 +175,7 @@ class ProjectDeployer(object):
 
     def get_key_modified_time(self, s3_handler, source_dir, key):
         try:
-            key_last_modified = s3_handler.key_modified_time( source_dir + '/' + key)
+            key_last_modified = s3_handler.key_modified_time(source_dir + '/' + key)
         except:
             key_last_modified = None
         return key_last_modified

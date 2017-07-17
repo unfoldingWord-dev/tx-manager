@@ -97,57 +97,16 @@ class ClientCallback(object):
                     missing_parts.append(file_name)
 
             if len(missing_parts) > 0:
+                build_log_json = self.merge_build_logs(s3_commit_key, build_log_json, count)
                 self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
                 remove_tree(self.temp_dir)  # cleanup
                 return build_log_json
 
             self.logger.debug('All parts finished. Merging.')
 
-            # all parts are present, merge together
+            # all parts are present
 
-            master_build_log_json = self.get_build_log(s3_commit_key)
-            build_logs_json = []
-            self.job.status = 'success'
-            self.job.log = []
-            self.job.warnings = []
-            self.job.errors = []
-            for i in range(0, count):
-                self.logger.debug('Merging part {0}'.format(i))
-
-                # Now download the existing build_log.json file
-                build_log_json = self.get_build_log(s3_commit_key, str(i) + "_")
-
-                self.build_log_sanity_check(build_log_json)
-
-                build_logs_json.append(build_log_json)
-
-                if 'book' in build_log_json:
-                    book = build_log_json['book']
-                else:
-                    book = build_log_json['commit_id']  # if no book then use commit_id
-
-                # merge build_log data
-                self.job.log += self.prefix_list(build_log_json, 'log', book)
-                self.job.errors += self.prefix_list(build_log_json, 'errors', book)
-                self.job.warnings += self.prefix_list(build_log_json, 'warnings', book)
-                if ('status' in build_log_json) and (build_log_json['status'] != 'success'):
-                    self.job.status = build_log_json['status']
-                if ('success' in build_log_json) and (build_log_json['success'] is not None):
-                    self.job.success = build_log_json['success']
-                if ('message' in build_log_json) and (build_log_json['message'] is not None):
-                    self.job.message = build_log_json['message']
-
-            # Now upload the merged build_log.json file, update it and upload it back to S3
-            master_build_log_json['build_logs'] = build_logs_json  # add record of all the parts
-            build_logs_json0 = build_logs_json[0]
-            master_build_log_json['commit_id'] = build_logs_json0['commit_id']
-            master_build_log_json['created_at'] = build_logs_json0['created_at']
-            master_build_log_json['started_at'] = build_logs_json0['started_at']
-            master_build_log_json['repo_owner'] = build_logs_json0['repo_owner']
-            master_build_log_json['repo_name'] = build_logs_json0['repo_name']
-            master_build_log_json['resource_type'] = build_logs_json0['resource_type']
-            build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key)
-            self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
+            build_log_json = self.merge_build_logs(s3_commit_key, build_log_json, count)
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             project_json = self.update_project_file(commit_id, owner_name, repo_name)
@@ -167,6 +126,52 @@ class ClientCallback(object):
             self.logger.debug('Finished deploying to cdn_bucket. Done.')
             remove_tree(self.temp_dir)  # cleanup
             return build_log_json
+
+    def merge_build_logs(self, s3_commit_key, build_log_json, count):
+        master_build_log_json = self.get_build_log(s3_commit_key)
+        build_logs_json = []
+        self.job.status = 'success'
+        self.job.log = []
+        self.job.warnings = []
+        self.job.errors = []
+        for i in range(0, count):
+            self.logger.debug('Merging part {0}'.format(i))
+
+            # Now download the existing build_log.json file
+            build_log_json = self.get_build_log(s3_commit_key, str(i) + "_")
+
+            self.build_log_sanity_check(build_log_json)
+
+            build_logs_json.append(build_log_json)
+
+            if 'book' in build_log_json:
+                book = build_log_json['book']
+            else:
+                book = build_log_json['commit_id']  # if no book then use commit_id
+
+            # merge build_log data
+            self.job.log += self.prefix_list(build_log_json, 'log', book)
+            self.job.errors += self.prefix_list(build_log_json, 'errors', book)
+            self.job.warnings += self.prefix_list(build_log_json, 'warnings', book)
+            if ('status' in build_log_json) and (build_log_json['status'] != 'success'):
+                self.job.status = build_log_json['status']
+            if ('success' in build_log_json) and (build_log_json['success'] is not None):
+                self.job.success = build_log_json['success']
+            if ('message' in build_log_json) and (build_log_json['message'] is not None):
+                self.job.message = build_log_json['message']
+
+        # Now upload the merged build_log.json file, update it and upload it back to S3
+        master_build_log_json['build_logs'] = build_logs_json  # add record of all the parts
+        build_logs_json0 = build_logs_json[0]
+        master_build_log_json['commit_id'] = build_logs_json0['commit_id']
+        master_build_log_json['created_at'] = build_logs_json0['created_at']
+        master_build_log_json['started_at'] = build_logs_json0['started_at']
+        master_build_log_json['repo_owner'] = build_logs_json0['repo_owner']
+        master_build_log_json['repo_name'] = build_logs_json0['repo_name']
+        master_build_log_json['resource_type'] = build_logs_json0['resource_type']
+        build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key)
+        self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
+        return build_log_json
 
     def prefix_list(self, build_log_json, key, book):
         if key not in build_log_json:
