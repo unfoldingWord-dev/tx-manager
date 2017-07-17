@@ -4,6 +4,7 @@ import tempfile
 import boto3
 import json
 import logging
+import time
 from glob import glob
 from shutil import copyfile
 from libraries.aws_tools.s3_handler import S3Handler
@@ -54,6 +55,7 @@ class ProjectDeployer(object):
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log or 'repo_name' not in build_log:
             return False
 
+        start = time.time()
         self.logger.debug("Deploying, build log: " + json.dumps(build_log))
 
         user = build_log['repo_owner']
@@ -132,9 +134,10 @@ class ProjectDeployer(object):
                 self.logger.debug("Source missing: " + basename)
                 continue
             if source_modified < destination_modified:  # see if this was templated after last conversion
-                self.logger.debug("File has already been templated: " + basename)
-                # skip over file if already templated
-                templater.already_converted.append(file_name)
+                self.logger.debug("File has already been templated, downloading: " + basename)
+                # download templated file
+                self.door43_handler.download_file(s3_commit_key + '/' + basename, os.path.join(source_dir, basename))
+                templater.already_converted.append(file_name)  # tell templater to skip over file if already templated
 
         # merge the source files with the template
         templater.run()
@@ -173,7 +176,11 @@ class ProjectDeployer(object):
             self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
         except Exception:
             pass
-        remove_tree(self.temp_dir) # cleanup temp files
+
+        elapsed_seconds = int(time.time() - start)
+        self.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
+
+        remove_tree(self.temp_dir)  # cleanup temp files
         return True
 
     def get_key_modified_time(self, s3_handler, source_dir, key):

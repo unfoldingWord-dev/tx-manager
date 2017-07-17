@@ -39,6 +39,8 @@ class Templater(object):
         self.template_html = ''
         self.logger = logging.getLogger()
         self.already_converted = []
+        self.titles = {}
+        self.chapters = {}
 
     def run(self):
         # get the resource container
@@ -75,12 +77,10 @@ class Templater(object):
                 <li><h1>Navigation</h1></li>
             """
         for fname in self.files:
-            with codecs.open(fname, 'r', 'utf-8-sig') as f:
-                soup = BeautifulSoup(f, 'html.parser')
-            if soup.find('h1'):
-                title = soup.h1.text
-            else:
-                title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
+            title = ""
+            if fname in self.titles:
+                title = self.titles[fname]
+
             if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
                 continue
             if filename != fname:
@@ -93,11 +93,23 @@ class Templater(object):
             """
         return html
 
+    def get_page_navigation(self):
+        for fname in self.files:
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f, 'html.parser')
+            if soup.find('h1'):
+                title = soup.h1.text
+            else:
+                title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
+            self.titles[fname] = title
+
     def apply_template(self):
         language_code = self.rc.resource.language.identifier
         language_name = self.rc.resource.language.title
         language_dir = self.rc.resource.language.direction
         resource_title = self.rc.resource.title
+
+        self.get_page_navigation()
 
         heading = '{0}: {1}'.format(language_name, resource_title)
         title = ''
@@ -191,6 +203,26 @@ class Templater(object):
                 self.logger.debug('Writing {0}.'.format(out_file))
                 write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
+            else:  # if already templated, need to update navigation bar
+                # read the templated file into a dom abject
+                with codecs.open(filename, 'r', 'utf-8-sig') as f:
+                    soup = BeautifulSoup(f, 'html.parser')
+
+                right_sidebar_div = soup.body.find('div', id='right-sidebar')
+                if right_sidebar_div:
+                    right_sidebar_html = self.build_right_sidebar(filename)
+                    right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
+                    right_sidebar_div.clear()
+                    right_sidebar_div.append(right_sidebar)
+
+                    # render the html as an unicode string
+                    html = unicode(soup)
+
+                    # write to output directory
+                    out_file = os.path.join(self.output_dir, os.path.basename(filename))
+                    self.logger.debug('Updating nav in {0}.'.format(out_file))
+                    write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
+
 
 class ObsTemplater(Templater):
     def __init__(self, *args, **kwargs):
@@ -200,6 +232,17 @@ class ObsTemplater(Templater):
 class BibleTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(BibleTemplater, self).__init__(*args, **kwargs)
+
+    def get_page_navigation(self):
+        for fname in self.files:
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f, 'html.parser')
+            if soup.find('h1'):
+                title = soup.h1.text
+            else:
+                title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
+            self.titles[fname] = title
+            self.chapters[fname] = soup.find_all('h2', {'c-num'})
 
     def build_page_nav(self, filename=None):
         html = """
@@ -217,12 +260,11 @@ class BibleTemplater(Templater):
                 # Assuming filename of <name.usfm, such as GEN.usfm
                 book_code = fileparts[0].lower()
             book_code.replace(' ', '-').replace('.', '-')  # replacing spaces and periods since used as tag class
-            with codecs.open(fname, 'r', 'utf-8-sig') as f:
-                soup = BeautifulSoup(f.read(), 'html.parser')
-            if soup.find('h1'):
-                title = soup.find('h1').text
-            else:
-                title = '{0}.'.format(book_code)
+
+            title = ""
+            if fname in self.titles:
+                title = self.titles[fname]
+
             if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
                 continue
             html += """
@@ -235,7 +277,12 @@ class BibleTemplater(Templater):
                     <div id="collapse{0}" class="panel-collapse collapse{2}">
                         <ul class="panel-body chapters">
                     """.format(book_code, title, ' in' if fname == filename else '')
-            for chapter in soup.find_all('h2', {'c-num'}):
+
+            chapters = {}
+            if fname in self.chapters:
+                chapters = self.chapters[fname]
+
+            for chapter in chapters:
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
                     """.format(os.path.basename(fname) if fname != filename else '', chapter['id'],
