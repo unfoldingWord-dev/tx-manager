@@ -38,6 +38,7 @@ class Templater(object):
         self.rc = None
         self.template_html = ''
         self.logger = logging.getLogger()
+        self.already_converted = []
 
     def run(self):
         # get the resource container
@@ -120,74 +121,75 @@ class Templater(object):
 
         # loop through the html files
         for filename in self.files:
-            self.logger.debug('Applying template to {0}.'.format(filename))
+            if filename not in self.already_converted:
+                self.logger.debug('Applying template to {0}.'.format(filename))
 
-            # read the downloaded file into a dom abject
-            with codecs.open(filename, 'r', 'utf-8-sig') as f:
-                fileSoup = BeautifulSoup(f, 'html.parser')
+                # read the downloaded file into a dom abject
+                with codecs.open(filename, 'r', 'utf-8-sig') as f:
+                    fileSoup = BeautifulSoup(f, 'html.parser')
 
-            # get the title from the raw html file
-            if not title and fileSoup.head and fileSoup.head.title:
-                title = fileSoup.head.title.text
-            else:
-                title = os.path.basename(filename)
-
-            # get the language code, if we haven't yet
-            if not language_code:
-                if 'lang' in fileSoup.html:
-                    language_code = fileSoup.html['lang']
+                # get the title from the raw html file
+                if not title and fileSoup.head and fileSoup.head.title:
+                    title = fileSoup.head.title.text
                 else:
-                    language_code = 'en'
+                    title = os.path.basename(filename)
 
-            # get the body of the raw html file
-            if not fileSoup.body:
-                body = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
-            else:
-                body = fileSoup.body.extract()
+                # get the language code, if we haven't yet
+                if not language_code:
+                    if 'lang' in fileSoup.html:
+                        language_code = fileSoup.html['lang']
+                    else:
+                        language_code = 'en'
 
-            # insert new HTML into the template
-            outer_content_div.clear()
-            outer_content_div.append(body)
-            soup.html['lang'] = language_code
-            soup.html['dir'] = language_dir
+                # get the body of the raw html file
+                if not fileSoup.body:
+                    body = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
+                else:
+                    body = fileSoup.body.extract()
 
-            soup.head.title.clear()
-            soup.head.title.append(heading+' - '+title)
+                # insert new HTML into the template
+                outer_content_div.clear()
+                outer_content_div.append(body)
+                soup.html['lang'] = language_code
+                soup.html['dir'] = language_dir
 
-            for a_tag in soup.body.find_all('a[rel="dct:source"]'):
-                a_tag.clear()
-                a_tag.append(title)
+                soup.head.title.clear()
+                soup.head.title.append(heading+' - '+title)
 
-            # set the page heading
-            heading_span = soup.body.find('span', id='h1')
-            heading_span.clear()
-            heading_span.append(heading)
+                for a_tag in soup.body.find_all('a[rel="dct:source"]'):
+                    a_tag.clear()
+                    a_tag.append(title)
 
-            if left_sidebar_div:
-                left_sidebar_html = self.build_left_sidebar(filename)
-                left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').nav.extract()
-                left_sidebar_div.clear()
-                left_sidebar_div.append(left_sidebar)
+                # set the page heading
+                heading_span = soup.body.find('span', id='h1')
+                heading_span.clear()
+                heading_span.append(heading)
 
-            if right_sidebar_div:
-                right_sidebar_html = self.build_right_sidebar(filename)
-                right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
-                right_sidebar_div.clear()
-                right_sidebar_div.append(right_sidebar)
+                if left_sidebar_div:
+                    left_sidebar_html = self.build_left_sidebar(filename)
+                    left_sidebar = BeautifulSoup(left_sidebar_html, 'html.parser').nav.extract()
+                    left_sidebar_div.clear()
+                    left_sidebar_div.append(left_sidebar)
 
-            # render the html as an unicode string
-            html = unicode(soup)
+                if right_sidebar_div:
+                    right_sidebar_html = self.build_right_sidebar(filename)
+                    right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
+                    right_sidebar_div.clear()
+                    right_sidebar_div.append(right_sidebar)
 
-            # fix the footer message, removing the title of this page in parentheses as it doesn't get filled
-            html = html.replace(
-                '("<a xmlns:dct="http://purl.org/dc/terms/" href="https://live.door43.org/templates/project-page.html" rel="dct:source">{{ HEADING }}</a>") ',
-                '')
-            # update the canonical URL - it is in several different locations
-            html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
-            # write to output directory
-            out_file = os.path.join(self.output_dir, os.path.basename(filename))
-            self.logger.debug('Writing {0}.'.format(out_file))
-            write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
+                # render the html as an unicode string
+                html = unicode(soup)
+
+                # fix the footer message, removing the title of this page in parentheses as it doesn't get filled
+                html = html.replace(
+                    '("<a xmlns:dct="http://purl.org/dc/terms/" href="https://live.door43.org/templates/project-page.html" rel="dct:source">{{ HEADING }}</a>") ',
+                    '')
+                # update the canonical URL - it is in several different locations
+                html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
+                # write to output directory
+                out_file = os.path.join(self.output_dir, os.path.basename(filename))
+                self.logger.debug('Writing {0}.'.format(out_file))
+                write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
 
 class ObsTemplater(Templater):

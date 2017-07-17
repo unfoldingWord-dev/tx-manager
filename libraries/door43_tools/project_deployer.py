@@ -119,6 +119,7 @@ class ProjectDeployer(object):
         templater = init_template(resource_type, source_dir, output_dir, template_file)
 
         # check for files already converted and remove from list
+        templater.already_converted = []
         for i in range(len(templater.files) - 1, -1, -1):
             file_name = templater.files[i]
             dirname, basename = os.path.split(file_name)
@@ -132,12 +133,14 @@ class ProjectDeployer(object):
                 continue
             if source_modified < destination_modified:  # see if this was templated after last conversion
                 self.logger.debug("File has already been templated: " + basename)
-                # remove since already templated
-                del templater.files[i]
-                os.remove(file_name)
+                # skip over file if already templated
+                templater.already_converted.append(file_name)
 
         # merge the source files with the template
         templater.run()
+
+        for file_name in templater.already_converted:
+            os.remove(file_name)  # remove already templated source files so we clobber templated files at destination
 
         # Copy first HTML file to index.html if index.html doesn't exist
         html_files = sorted(glob(os.path.join(output_dir, '*.html')))
