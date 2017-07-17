@@ -3,9 +3,7 @@ import os
 import json
 import boto3
 import botocore
-import time
 from boto3.session import Session
-from datetime import datetime
 from libraries.general_tools.file_utils import get_mime_type
 
 
@@ -96,16 +94,14 @@ class S3Handler(object):
             bucket = self.resource.Bucket(bucket_name)
 
         try:
-            s3_object = bucket.Object(key=key).load()
+            s3_object = bucket.Object(key=key)
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 return None
             else:
                 raise
 
-        modified = time.strptime(s3_object.last_modified, '%a, %d %b %Y %H:%M:%S %Z')
-        dt = datetime.fromtimestamp(time.mktime(modified))
-        return dt
+        return s3_object.last_modified
 
     def copy(self, from_key, from_bucket=None, to_key=None, catch_exception=True):
         if not to_key:
