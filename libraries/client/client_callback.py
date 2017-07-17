@@ -146,8 +146,10 @@ class ClientCallback(object):
 
             if 'book' in build_log_json:
                 book = build_log_json['book']
-            else:
+            elif 'commit_id' in build_log_json:
                 book = build_log_json['commit_id']  # if no book then use commit_id
+            else:
+                book = 'part_' + str(i)  # generate dummy name
 
             # merge build_log data
             self.job.log += self.prefix_list(build_log_json, 'log', book)
