@@ -116,8 +116,23 @@ class ProjectDeployer(object):
             repo_index_file = os.path.join(source_dir, 'index.html')
             write_file(repo_index_file, html)
 
+        templater = do_template(resource_type, source_dir, output_dir, template_file)
+
+        # check for files already converted and remove from list
+        for i in range(len(templater.files) - 1, -1, -1):
+            file_name = templater.files[i]
+            dirname, basename = os.path.split(file_name)
+            destination_modified = self.get_key_modified_time(self.cdn_handler, source_dir, basename)
+            if destination_modified is None:
+                continue
+            source_modified = self.get_key_modified_time(self.door43_handler, s3_commit_key, basename)
+            if source_modified is None:
+                continue
+            if source_modified < destination_modified:  # see if this was templated after last conversion
+                del templater.files[i]  # remove since already templated
+
         # merge the source files with the template
-        do_template(resource_type, source_dir, output_dir, template_file)
+        templater.run()
 
         # Copy first HTML file to index.html if index.html doesn't exist
         html_files = sorted(glob(os.path.join(output_dir, '*.html')))
@@ -152,6 +167,13 @@ class ProjectDeployer(object):
             pass
         remove_tree(self.temp_dir) # cleanup temp files
         return True
+
+    def get_key_modified_time(self, s3_handler, source_dir, key):
+        try:
+            key_last_modified = s3_handler.key_modified_time(self, source_dir + '/' + key)
+        except:
+            key_last_modified = None
+        return key_last_modified
 
     def redeploy_all_projects(self, deploy_function):
         i = 0

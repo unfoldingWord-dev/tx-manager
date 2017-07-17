@@ -11,6 +11,11 @@ from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 def do_template(resource_type, source_dir, output_dir, template_file):
+    templater = init_template(resource_type, source_dir, output_dir, template_file)
+    return templater.run()
+
+
+def init_template(resource_type, source_dir, output_dir, template_file):
     if resource_type in BIBLE_RESOURCE_TYPES:
         templater = BibleTemplater(resource_type, source_dir, output_dir, template_file)
     elif resource_type == 'obs':
@@ -19,7 +24,7 @@ def do_template(resource_type, source_dir, output_dir, template_file):
         templater = TaTemplater(resource_type, source_dir, output_dir, template_file)
     else:
         templater = Templater(resource_type, source_dir, output_dir, template_file)
-    return templater.run()
+    return templater
 
 
 class Templater(object):
