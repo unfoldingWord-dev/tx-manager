@@ -124,14 +124,14 @@ class ProjectDeployer(object):
             dirname, basename = os.path.split(file_name)
             destination_modified = self.get_key_modified_time(self.door43_handler, s3_commit_key, basename)
             if destination_modified is None:
-                self.logger.debug("File has not been converted: " + basename)
+                self.logger.debug("File has not been templated: " + basename)
                 continue
             source_modified = self.get_key_modified_time(self.cdn_handler, s3_commit_key, basename)
             if source_modified is None:
                 self.logger.debug("Source missing: " + basename)
                 continue
             if source_modified < destination_modified:  # see if this was templated after last conversion
-                self.logger.debug("File has already been converted: " + basename)
+                self.logger.debug("File has already been templated: " + basename)
                 # remove since already templated
                 del templater.files[i]
                 os.remove(file_name)

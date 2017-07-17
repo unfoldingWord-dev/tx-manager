@@ -28,7 +28,14 @@ sys.stdout = UTF8Writer(sys.stdout)
 # defines
 COMMIT_LENGTH = 40
 USE_WEB_HOOK_LAMBDA = True
-
+BIBLE_LIST_NT = ["41-MAT", "42-MRK", "43-LUK", "44-JHN", "45-ACT", "46-ROM", "47-1CO", "48-2CO", "49-GAL", "50-EPH",
+      "51-PHP", "52-COL", "53-1TH", "54-2TH", "55-1TI", "56-2TI", "57-TIT", "58-PHM", "59-HEB", "60-JAS",
+      "61-1PE", "62-2PE", "63-1JN", "64-2JN", "65-3JN", "66-JUD", "67-REV"]
+BIBLE_LIST_OT = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS", "07-JDG", "08-RUT", "09-1SA", "10-2SA",
+      "11-1KI", "12-2KI", "13-1CH", "14-2CH", "15-EZR", "16-NEH", "17-EST", "18-JOB", "19-PSA", "20-PRO",
+      "21-ECC", "22-SNG", "23-ISA", "24-JER", "25-LAM", "26-EZK", "27-DAN", "28-HOS", "29-JOL", "30-AMO",
+      "31-OBA", "32-JON", "33-MIC", "34-NAM", "35-HAB", "36-ZEP", "37-HAG", "38-ZEC", "39-MAL", ]
+FULL_BIBLE_LIST = BIBLE_LIST_OT + BIBLE_LIST_NT
 
 class TestConversions(TestCase):
     """
@@ -73,74 +80,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "01-GEN",
-            "02-EXO",
-            "03-LEV",
-            "04-NUM",
-            "05-DEU",
-            "06-JOS",
-            "07-JDG",
-            "08-RUT",
-            "09-1SA",
-            "10-2SA",
-            "11-1KI",
-            "12-2KI",
-            "13-1CH",
-            "14-2CH",
-            "15-EZR",
-            "16-NEH",
-            "17-EST",
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-            "25-LAM",
-            "26-EZK",
-            "27-DAN",
-            "28-HOS",
-            "29-JOL",
-            "30-AMO",
-            "31-OBA",
-            "32-JON",
-            "33-MIC",
-            "34-NAM",
-            "35-HAB",
-            "36-ZEP",
-            "37-HAG",
-            "38-ZEC",
-            "39-MAL",
-            "41-MAT",
-            "42-MRK",
-            "43-LUK",
-            "44-JHN",
-            "45-ACT",
-            "46-ROM",
-            "47-1CO",
-            "48-2CO",
-            "49-GAL",
-            "50-EPH",
-            "51-PHP",
-            "52-COL",
-            "53-1TH",
-            "54-2TH",
-            "55-1TI",
-            "56-2TI",
-            "57-TIT",
-            "58-PHM",
-            "59-HEB",
-            "60-JAS",
-            "61-1PE",
-            "62-2PE",
-            "63-1JN",
-            "64-2JN",
-            "65-3JN",
-            "66-JUD",
-            "67-REV"
-        ]
+        expected_output_names = FULL_BIBLE_LIST
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -262,15 +202,7 @@ class TestConversions(TestCase):
         # shorter book list, but bigger books
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru_short.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-        ]
+        expected_output_names = ["18-JOB", "19-PSA", "20-PRO", "21-ECC", "22-SNG", "23-ISA", "24-JER", ]
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -286,35 +218,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/nt_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "41-MAT",
-            "42-MRK",
-            "43-LUK",
-            "44-JHN",
-            "45-ACT",
-            "46-ROM",
-            "47-1CO",
-            "48-2CO",
-            "49-GAL",
-            "50-EPH",
-            "51-PHP",
-            "52-COL",
-            "53-1TH",
-            "54-2TH",
-            "55-1TI",
-            "56-2TI",
-            "57-TIT",
-            "58-PHM",
-            "59-HEB",
-            "60-JAS",
-            "61-1PE",
-            "62-2PE",
-            "63-1JN",
-            "64-2JN",
-            "65-3JN",
-            "66-JUD",
-            "67-REV"
-        ]
+        expected_output_names = BIBLE_LIST_NT
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -330,47 +234,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/ot_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "01-GEN",
-            "02-EXO",
-            "03-LEV",
-            "04-NUM",
-            "05-DEU",
-            "06-JOS",
-            "07-JDG",
-            "08-RUT",
-            "09-1SA",
-            "10-2SA",
-            "11-1KI",
-            "12-2KI",
-            "13-1CH",
-            "14-2CH",
-            "15-EZR",
-            "16-NEH",
-            "17-EST",
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-            "25-LAM",
-            "26-EZK",
-            "27-DAN",
-            "28-HOS",
-            "29-JOL",
-            "30-AMO",
-            "31-OBA",
-            "32-JON",
-            "33-MIC",
-            "34-NAM",
-            "35-HAB",
-            "36-ZEP",
-            "37-HAG",
-            "38-ZEC",
-            "39-MAL",
-        ]
+        expected_output_names = BIBLE_LIST_OT
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -386,74 +250,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "01-GEN",
-            "02-EXO",
-            "03-LEV",
-            "04-NUM",
-            "05-DEU",
-            "06-JOS",
-            "07-JDG",
-            "08-RUT",
-            "09-1SA",
-            "10-2SA",
-            "11-1KI",
-            "12-2KI",
-            "13-1CH",
-            "14-2CH",
-            "15-EZR",
-            "16-NEH",
-            "17-EST",
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-            "25-LAM",
-            "26-EZK",
-            "27-DAN",
-            "28-HOS",
-            "29-JOL",
-            "30-AMO",
-            "31-OBA",
-            "32-JON",
-            "33-MIC",
-            "34-NAM",
-            "35-HAB",
-            "36-ZEP",
-            "37-HAG",
-            "38-ZEC",
-            "39-MAL",
-            "41-MAT",
-            "42-MRK",
-            "43-LUK",
-            "44-JHN",
-            "45-ACT",
-            "46-ROM",
-            "47-1CO",
-            "48-2CO",
-            "49-GAL",
-            "50-EPH",
-            "51-PHP",
-            "52-COL",
-            "53-1TH",
-            "54-2TH",
-            "55-1TI",
-            "56-2TI",
-            "57-TIT",
-            "58-PHM",
-            "59-HEB",
-            "60-JAS",
-            "61-1PE",
-            "62-2PE",
-            "63-1JN",
-            "64-2JN",
-            "65-3JN",
-            "66-JUD",
-            "67-REV"
-        ]
+        expected_output_names = FULL_BIBLE_LIST
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
