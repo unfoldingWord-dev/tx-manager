@@ -71,11 +71,16 @@ class ProjectDeployer(object):
         if 'multiple' in build_log:
             multi_merge = build_log['multiple']
             self.logger.debug("found multi-part merge")
+
         elif 'part' in build_log:
             part = build_log['part']
             download_key += '/' + part
             partial = True
             self.logger.debug("found partial: " + part)
+
+            if not self.cdn_handler.key_exists(download_key + '/finished'):
+                self.logger.debug("Not ready to process partial")
+                return False
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
         output_dir = tempfile.mkdtemp(prefix='output_', dir=self.temp_dir)
@@ -143,11 +148,11 @@ class ProjectDeployer(object):
             # update index of templated files
             index_json_fname = 'index.json'
             index_json = self.get_templater_index(s3_commit_key, index_json_fname)
-            self.logger.debug("initial 'index.json': " + json.dumps(index_json))
+            self.logger.debug("initial 'index.json': " + json.dumps(index_json)[:120])
             self.update_index_key(index_json, templater, 'titles')
             self.update_index_key(index_json, templater, 'chapters')
             self.update_index_key(index_json, templater, 'book_codes')
-            self.logger.debug("final 'index.json': " + json.dumps(index_json))
+            self.logger.debug("final 'index.json': " + json.dumps(index_json)[:120])
             out_file = os.path.join(output_dir, index_json_fname)
             write_file(out_file, index_json)
             self.cdn_handler.upload_file(out_file, s3_commit_key + '/' + index_json_fname)

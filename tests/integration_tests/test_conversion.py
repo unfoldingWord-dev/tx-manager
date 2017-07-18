@@ -75,6 +75,7 @@ class TestConversions(TestCase):
         if hasattr(self, 'temp_dir') and os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
+    @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_en_udb_bundle_conversion(self):
         # given
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
