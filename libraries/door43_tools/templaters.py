@@ -41,6 +41,7 @@ class Templater(object):
         self.already_converted = []
         self.titles = {}
         self.chapters = {}
+        self.book_codes = {}
 
     def run(self):
         # get the resource container
@@ -235,21 +236,6 @@ class BibleTemplater(Templater):
 
     def get_page_navigation(self):
         for fname in self.files:
-            with codecs.open(fname, 'r', 'utf-8-sig') as f:
-                soup = BeautifulSoup(f, 'html.parser')
-            if soup.find('h1'):
-                title = soup.h1.text
-            else:
-                title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
-            self.titles[fname] = title
-            self.chapters[fname] = soup.find_all('h2', {'c-num'})
-
-    def build_page_nav(self, filename=None):
-        html = """
-        <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
-            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
-            """
-        for fname in self.files:
             filebase = os.path.splitext(os.path.basename(fname))[0]
             # Getting the book code for HTML tag references
             fileparts = filebase.split('-')
@@ -260,6 +246,25 @@ class BibleTemplater(Templater):
                 # Assuming filename of <name.usfm, such as GEN.usfm
                 book_code = fileparts[0].lower()
             book_code.replace(' ', '-').replace('.', '-')  # replacing spaces and periods since used as tag class
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f.read(), 'html.parser')
+            if soup.find('h1'):
+                title = soup.find('h1').text
+            else:
+                title = '{0}.'.format(book_code)
+            self.titles[fname] = title
+            self.book_codes[fname] = book_code
+            self.chapters[fname] = soup.find_all('h2', {'c-num'})
+
+    def build_page_nav(self, filename=None):
+        html = """
+        <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
+            """
+        for fname in self.files:
+            book_code = ""
+            if fname in self.book_codes:
+                book_code = self.book_codes[fname]
 
             title = ""
             if fname in self.titles:
