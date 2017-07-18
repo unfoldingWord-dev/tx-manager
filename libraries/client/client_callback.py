@@ -41,6 +41,9 @@ class ClientCallback(object):
 
         # The identifier is how to know which username/repo/commit this callback goes to
         s3_commit_key = 'u/{0}/{1}/{2}'.format(owner_name, repo_name, commit_id)
+        upload_key = s3_commit_key
+        if multiple_project:
+            upload_key += "/" + part_id
 
         self.logger.debug('Callback for commit {0}...'.format(s3_commit_key))
 
@@ -67,24 +70,24 @@ class ClientCallback(object):
             unzip_dir = self.unzip_converted_files(converted_zip_file)
 
             # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
-            self.upload_converted_files(s3_commit_key, unzip_dir)
+            self.upload_converted_files(upload_key, unzip_dir)
 
         if multiple_project:
             # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = self.update_build_log(s3_commit_key, part_id + "_")
+            build_log_json = self.update_build_log(s3_commit_key, part_id + "/")
 
             # mark part as finished
-            self.cdn_upload_contents(build_log_json, s3_commit_key + '/' + part_id + '.finished')
+            self.cdn_upload_contents({}, s3_commit_key + '/' + part_id + '/finished')
 
             # check if all parts are present, if not return
             missing_parts = []
-            finished_parts = self.cdn_handler.get_objects(prefix=s3_commit_key, suffix='.finished')
+            finished_parts = self.cdn_handler.get_objects(prefix=s3_commit_key, suffix='/finished')
             finished_parts_file_names = ','.join([finished_parts[x].key for x in range(len(finished_parts))])
             self.logger.debug('found finished files: ' + finished_parts_file_names)
 
             count = int(part_count)
             for i in range(0, count):
-                file_name = '{0}.finished'.format(i)
+                file_name = '{0}/finished'.format(i)
 
                 match_found = False
                 for part in finished_parts:
@@ -97,7 +100,7 @@ class ClientCallback(object):
                     missing_parts.append(file_name)
 
             if len(missing_parts) > 0:
-                build_log_json = self.merge_build_logs(s3_commit_key, build_log_json, count)
+                # build_log_json = self.merge_build_logs(s3_commit_key, count)
                 self.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
                 remove_tree(self.temp_dir)  # cleanup
                 return build_log_json
@@ -106,7 +109,8 @@ class ClientCallback(object):
 
             # all parts are present
 
-            build_log_json = self.merge_build_logs(s3_commit_key, build_log_json, count)
+            build_log_json = self.merge_build_logs(s3_commit_key, count)
+            self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             project_json = self.update_project_file(commit_id, owner_name, repo_name)
@@ -127,7 +131,7 @@ class ClientCallback(object):
             remove_tree(self.temp_dir)  # cleanup
             return build_log_json
 
-    def merge_build_logs(self, s3_commit_key, build_log_json, count):
+    def merge_build_logs(self, s3_commit_key, count):
         master_build_log_json = self.get_build_log(s3_commit_key)
         build_logs_json = []
         self.job.status = 'success'
@@ -135,10 +139,11 @@ class ClientCallback(object):
         self.job.warnings = []
         self.job.errors = []
         for i in range(0, count):
-            self.logger.debug('Merging part {0}'.format(i))
+            # self.logger.debug('Merging part {0}'.format(i))
 
             # Now download the existing build_log.json file
-            build_log_json = self.get_build_log(s3_commit_key, str(i) + "_")
+            part = str(i) + "/"
+            build_log_json = self.get_build_log(s3_commit_key, part)
 
             self.build_log_sanity_check(build_log_json)
 
@@ -172,7 +177,6 @@ class ClientCallback(object):
         master_build_log_json['repo_name'] = build_logs_json0['repo_name']
         master_build_log_json['resource_type'] = build_logs_json0['resource_type']
         build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key)
-        self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
         return build_log_json
 
     def prefix_list(self, build_log_json, key, book):
@@ -281,7 +285,7 @@ class ClientCallback(object):
 
     def get_build_log(self, s3_base_key, part=''):
         build_log_key = self.get_build_log_key(s3_base_key, part)
-        self.logger.debug('Reading build log from ' + build_log_key)
+        # self.logger.debug('Reading build log from ' + build_log_key)
         build_log_json = self.cdn_handler.get_json(build_log_key)
         # self.logger.debug('build_log contents: ' + json.dumps(build_log_json))
         return build_log_json

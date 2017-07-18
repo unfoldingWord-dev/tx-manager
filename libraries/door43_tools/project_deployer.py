@@ -64,86 +64,111 @@ class ProjectDeployer(object):
 
         s3_commit_key = 'u/{0}/{1}/{2}'.format(user, repo_name, commit_id)
         s3_repo_key = 'u/{0}/{1}'.format(user, repo_name)
+        download_key = s3_commit_key
+
+        partial = False
+        if 'part' in build_log:
+            part = build_log['part']
+            download_key += '/' + part
+            partial = True
+            self.logger.debug("found partial: " + part)
+
+        multi = False
+        if 'multiple' in build_log:
+            multi = build_log['multiple']
+            self.logger.debug("found multi-part merge")
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
         output_dir = tempfile.mkdtemp(prefix='output_', dir=self.temp_dir)
         template_dir = tempfile.mkdtemp(prefix='template_', dir=self.temp_dir)
 
-        self.cdn_handler.download_dir(s3_commit_key, source_dir)
-        source_dir = os.path.join(source_dir, s3_commit_key)
         resource_type = build_log['resource_type']
         template_key = 'templates/project-page.html'
         template_file = os.path.join(template_dir, 'project-page.html')
-        self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
-        self.door43_handler.download_file(template_key, template_file)
 
-        html_files = sorted(glob(os.path.join(source_dir, '*.html')))
-        if len(html_files) < 1:
-            content = ''
-            if len(build_log['errors']) > 0:
-                content += """
-                    <div style="text-align:center;margin-bottom:20px">
-                        <i class="fa fa-times-circle-o" style="font-size: 250px;font-weight: 300;color: red"></i>
-                        <br/>
-                        <h2>Critical!</h2>
-                        <h3>Here is what went wrong with this build:</h3>
-                    </div>
-                """
-                content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
-            elif len(build_log['warnings']) > 0:
-                content += """
-                    <div style="text-align:center;margin-bottom:20px">
-                        <i class="fa fa-exclamation-circle" style="font-size: 250px;font-weight: 300;color: yellow"></i>
-                        <br/>
-                        <h2>Warning!</h2>
-                        <h3>Here are some problems with this build:</h3>
-                    </div>
-                """
-                content += '<ul><li>' + '</li><li>'.join(build_log['warnings']) + '</li></ul>'
-            else:
-                content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
-                content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
-                content += """
-                <script type="text/javascript">setTimeout(function(){window.location.reload(1);}, 10000);</script>
-                """
-            html = """
-                <html lang="en">
-                    <head>
-                        <title>{0}</title>
-                    </head>
-                    <body>
-                        <div id="content">{1}</div>
-                    </body>
-                </html>""".format(repo_name, content)
-            repo_index_file = os.path.join(source_dir, 'index.html')
-            write_file(repo_index_file, html)
+        if not multi:
+            self.cdn_handler.download_dir(download_key, source_dir)
+            source_dir = os.path.join(source_dir, download_key)
+            self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
+            self.door43_handler.download_file(template_key, template_file)
 
-        templater = init_template(resource_type, source_dir, output_dir, template_file)
+            elapsed_seconds = int(time.time() - start)
+            self.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
 
-        # check for files already converted and remove from list
-        templater.already_converted = []
-        for i in range(len(templater.files) - 1, -1, -1):
-            file_name = templater.files[i]
-            dirname, basename = os.path.split(file_name)
-            destination_modified = self.get_key_modified_time(self.door43_handler, s3_commit_key, basename)
-            if destination_modified is None:
-                self.logger.debug("File has not been templated: " + basename)
-                continue
-            source_modified = self.get_key_modified_time(self.cdn_handler, s3_commit_key, basename)
-            if source_modified is None:
-                self.logger.debug("Source missing: " + basename)
-                continue
-            if source_modified < destination_modified:  # see if this was templated after last conversion
-                self.logger.debug("File has already been templated, downloading: " + basename)
-                # download templated file
-                self.door43_handler.download_file(s3_commit_key + '/' + basename, os.path.join(source_dir, basename))
-                templater.already_converted.append(file_name)  # tell templater to skip over file if already templated
+            html_files = sorted(glob(os.path.join(source_dir, '*.html')))
+            if len(html_files) < 1:
+                content = ''
+                if len(build_log['errors']) > 0:
+                    content += """
+                        <div style="text-align:center;margin-bottom:20px">
+                            <i class="fa fa-times-circle-o" style="font-size: 250px;font-weight: 300;color: red"></i>
+                            <br/>
+                            <h2>Critical!</h2>
+                            <h3>Here is what went wrong with this build:</h3>
+                        </div>
+                    """
+                    content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
+                elif len(build_log['warnings']) > 0:
+                    content += """
+                        <div style="text-align:center;margin-bottom:20px">
+                            <i class="fa fa-exclamation-circle" style="font-size: 250px;font-weight: 300;color: yellow"></i>
+                            <br/>
+                            <h2>Warning!</h2>
+                            <h3>Here are some problems with this build:</h3>
+                        </div>
+                    """
+                    content += '<ul><li>' + '</li><li>'.join(build_log['warnings']) + '</li></ul>'
+                else:
+                    content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
+                    content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
+                    content += """
+                    <script type="text/javascript">setTimeout(function(){window.location.reload(1);}, 10000);</script>
+                    """
+                html = """
+                    <html lang="en">
+                        <head>
+                            <title>{0}</title>
+                        </head>
+                        <body>
+                            <div id="content">{1}</div>
+                        </body>
+                    </html>""".format(repo_name, content)
+                repo_index_file = os.path.join(source_dir, 'index.html')
+                write_file(repo_index_file, html)
 
-        # merge the source files with the template
-        templater.run()
+            templater = init_template(resource_type, source_dir, output_dir, template_file)
 
-        for file_name in templater.already_converted:
-            os.remove(file_name)  # remove already templated source files so we clobber templated files at destination
+            # merge the source files with the template
+            templater.run()
+
+            # update index of templated files
+            index_json_fname = 'index.json'
+            index_json = self.get_templater_index(s3_commit_key, index_json_fname)
+            index_json['titles'] += templater.titles
+            index_json['chapters'] += templater.chapters
+            index_json['book_codes'] += templater.book_codes
+            write_file(os.path.join(output_dir, index_json_fname), index_json)
+
+        else:
+            # merge multi-part project
+            self.door43_handler.download_dir(download_key, source_dir)  # get previous templated files
+            source_dir = os.path.join(source_dir, download_key)
+            os.remove(os.path(source_dir, 'index.html'))  # remove index if already exists
+
+            elapsed_seconds = int(time.time() - start)
+            self.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
+
+            templater = init_template(resource_type, source_dir, output_dir, template_file)
+
+            # restore index from previous passes
+            index_json = self.get_templater_index(s3_commit_key, 'index.json')
+            templater.titles = index_json['titles']
+            templater.chapters = index_json['chapters']
+            templater.book_codes = index_json['book_codes']
+            templater.already_converted = templater.files  # do not reconvert files
+
+            # merge the source files with the template
+            templater.run()
 
         # Copy first HTML file to index.html if index.html doesn't exist
         html_files = sorted(glob(os.path.join(output_dir, '*.html')))
@@ -168,20 +193,29 @@ class ProjectDeployer(object):
                 self.logger.debug("Uploading {0} to {1}".format(path, key))
                 self.door43_handler.upload_file(path, key, 0)
 
-        # Now we place json files and make an index.html file for the whole repo
-        try:
-            self.door43_handler.copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=self.cdn_bucket)
-            self.door43_handler.copy(from_key='{0}/manifest.json'.format(s3_commit_key), to_key='{0}/manifest.json'.format(s3_repo_key))
-            self.door43_handler.redirect(s3_repo_key, '/' + s3_commit_key)
-            self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
-        except Exception:
-            pass
+        if not partial:
+            # Now we place json files and make an index.html file for the whole repo
+            try:
+                self.door43_handler.copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=self.cdn_bucket)
+                self.door43_handler.copy(from_key='{0}/manifest.json'.format(s3_commit_key), to_key='{0}/manifest.json'.format(s3_repo_key))
+                self.door43_handler.redirect(s3_repo_key, '/' + s3_commit_key)
+                self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
+            except Exception:
+                pass
 
         elapsed_seconds = int(time.time() - start)
         self.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
 
         remove_tree(self.temp_dir)  # cleanup temp files
         return True
+
+    def get_templater_index(self, s3_commit_key, index_json_fname):
+        index_json = self.door43_handler.get_json(s3_commit_key + '/' + index_json_fname)
+        if not index_json:
+            index_json['titles'] = {}
+            index_json['chapters'] = {}
+            index_json['book_codes'] = {}
+        return index_json
 
     def get_key_modified_time(self, s3_handler, source_dir, key):
         try:
