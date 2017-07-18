@@ -186,7 +186,7 @@ class ProjectDeployer(object):
 
         # Copy first HTML file to index.html if index.html doesn't exist
         html_files = sorted(glob(os.path.join(output_dir, '*.html')))
-        if len(html_files) > 0:
+        if (not partial) and (len(html_files) > 0):
             index_file = os.path.join(output_dir, 'index.html')
             if not os.path.isfile(index_file):
                 copyfile(os.path.join(output_dir, html_files[0]), index_file)
