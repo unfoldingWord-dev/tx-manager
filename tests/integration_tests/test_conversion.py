@@ -713,7 +713,7 @@ class TestConversions(TestCase):
             print('webhook finished with text:' + str(response.text))
             build_log_json = json.loads(response.text)
             if response.status_code == 504:  # on timeout, could be multi-part, so try to get build
-                build_log_json = self.pool_for_build_log(commit_sha, repo, user)
+                build_log_json = self.poll_for_build_log(commit_sha, repo, user)
 
             elif response.status_code != 200:
                 return build_log_json, False, (build_log_json['job_id'])
@@ -744,7 +744,7 @@ class TestConversions(TestCase):
             print("Final results:\n" + str(build_log_json))
         return build_log_json, success, job
 
-    def pool_for_build_log(self, commit_sha, repo, user):
+    def poll_for_build_log(self, commit_sha, repo, user):
         build_log_json = {}
         for i in range(0, 60):
             time.sleep(5)
