@@ -222,7 +222,7 @@ class ProjectDeployer(object):
         else:
             if self.cdn_handler.key_exists(s3_commit_key + '/final_build_log.json'):
                 self.logger.debug("conversions all finished, trigger final merge")
-                self.door43_handler.copy(from_key=s3_commit_key + '/final_build_log.json', to_key=s3_commit_key + '/build_log.json')
+                self.cdn_handler.copy(from_key=s3_commit_key + '/final_build_log.json', to_key=s3_commit_key + '/build_log.json')
 
         elapsed_seconds = int(time.time() - start)
         self.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
