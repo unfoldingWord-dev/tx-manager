@@ -186,7 +186,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-ulb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = ["01-GEN", "02-EXO", "03-LEV", "05-DEU"]
+        expected_output_names = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS"]
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
