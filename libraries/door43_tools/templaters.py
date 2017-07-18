@@ -78,9 +78,10 @@ class Templater(object):
                 <li><h1>Navigation</h1></li>
             """
         for fname in self.files:
+            key = os.path.basename(fname)
             title = ""
-            if fname in self.titles:
-                title = self.titles[fname]
+            if key in self.titles:
+                title = self.titles[key]
 
             if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
                 continue
@@ -96,13 +97,18 @@ class Templater(object):
 
     def get_page_navigation(self):
         for fname in self.files:
+            key = os.path.basename(fname)
+            if key in self.titles:  # skip if we already have data
+                continue
+
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
                 soup = BeautifulSoup(f, 'html.parser')
             if soup.find('h1'):
                 title = soup.h1.text
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
-            self.titles[fname] = title
+
+            self.titles[key] = title
 
     def apply_template(self):
         language_code = self.rc.resource.language.identifier
@@ -236,6 +242,10 @@ class BibleTemplater(Templater):
 
     def get_page_navigation(self):
         for fname in self.files:
+            key = os.path.basename(fname)
+            if key in self.titles:  # skip if we already have data
+                continue
+
             filebase = os.path.splitext(os.path.basename(fname))[0]
             # Getting the book code for HTML tag references
             fileparts = filebase.split('-')
@@ -252,9 +262,10 @@ class BibleTemplater(Templater):
                 title = soup.find('h1').text
             else:
                 title = '{0}.'.format(book_code)
-            self.titles[fname] = title
-            self.book_codes[fname] = book_code
-            self.chapters[fname] = soup.find_all('h2', {'c-num'})
+            self.titles[key] = title
+            self.book_codes[key] = book_code
+            chapters = soup.find_all('h2', {'c-num'})
+            self.chapters[key] = [c['id'] for c in chapters]
 
     def build_page_nav(self, filename=None):
         html = """
@@ -262,13 +273,15 @@ class BibleTemplater(Templater):
             <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
+            key = os.path.basename(fname)
+
             book_code = ""
-            if fname in self.book_codes:
-                book_code = self.book_codes[fname]
+            if key in self.book_codes:
+                book_code = self.book_codes[key]
 
             title = ""
-            if fname in self.titles:
-                title = self.titles[fname]
+            if key in self.titles:
+                title = self.titles[key]
 
             if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
                 continue
@@ -284,14 +297,14 @@ class BibleTemplater(Templater):
                     """.format(book_code, title, ' in' if fname == filename else '')
 
             chapters = {}
-            if fname in self.chapters:
-                chapters = self.chapters[fname]
+            if key in self.chapters:
+                chapters = self.chapters[key]
 
             for chapter in chapters:
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
-                    """.format(os.path.basename(fname) if fname != filename else '', chapter['id'],
-                               chapter['id'].split('-')[2].lstrip('0'))
+                    """.format(os.path.basename(fname) if fname != filename else '', chapter,
+                               chapter.split('-')[2].lstrip('0'))
             html += """
                         </ul>
                     </div>

@@ -67,16 +67,15 @@ class ProjectDeployer(object):
         download_key = s3_commit_key
 
         partial = False
-        if 'part' in build_log:
+        multi_merge = False
+        if 'multiple' in build_log:
+            multi_merge = build_log['multiple']
+            self.logger.debug("found multi-part merge")
+        elif 'part' in build_log:
             part = build_log['part']
             download_key += '/' + part
             partial = True
             self.logger.debug("found partial: " + part)
-
-        multi = False
-        if 'multiple' in build_log:
-            multi = build_log['multiple']
-            self.logger.debug("found multi-part merge")
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
         output_dir = tempfile.mkdtemp(prefix='output_', dir=self.temp_dir)
@@ -85,12 +84,12 @@ class ProjectDeployer(object):
         resource_type = build_log['resource_type']
         template_key = 'templates/project-page.html'
         template_file = os.path.join(template_dir, 'project-page.html')
+        self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
+        self.door43_handler.download_file(template_key, template_file)
 
-        if not multi:
-            self.cdn_handler.download_dir(download_key, source_dir)
+        if not multi_merge:
+            self.cdn_handler.download_dir(download_key + '/', source_dir)
             source_dir = os.path.join(source_dir, download_key)
-            self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
-            self.door43_handler.download_file(template_key, template_file)
 
             elapsed_seconds = int(time.time() - start)
             self.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
@@ -144,16 +143,26 @@ class ProjectDeployer(object):
             # update index of templated files
             index_json_fname = 'index.json'
             index_json = self.get_templater_index(s3_commit_key, index_json_fname)
-            index_json['titles'] += templater.titles
-            index_json['chapters'] += templater.chapters
-            index_json['book_codes'] += templater.book_codes
-            write_file(os.path.join(output_dir, index_json_fname), index_json)
+            self.logger.debug("initial 'index.json': " + json.dumps(index_json))
+            self.update_index_key(index_json, templater, 'titles')
+            self.update_index_key(index_json, templater, 'chapters')
+            self.update_index_key(index_json, templater, 'book_codes')
+            self.logger.debug("final 'index.json': " + json.dumps(index_json))
+            out_file = os.path.join(output_dir, index_json_fname)
+            write_file(out_file, index_json)
+            self.cdn_handler.upload_file(out_file, s3_commit_key + '/' + index_json_fname)
 
         else:
             # merge multi-part project
-            self.door43_handler.download_dir(download_key, source_dir)  # get previous templated files
+            self.door43_handler.download_dir(download_key + '/', source_dir)  # get previous templated files
             source_dir = os.path.join(source_dir, download_key)
-            os.remove(os.path(source_dir, 'index.html'))  # remove index if already exists
+            files = sorted(glob(os.path.join(source_dir, '*.*')))
+            for file in files:
+                self.logger.debug("Downloaded: " + file)
+
+            fname = os.path.join(source_dir, 'index.html')
+            if os.path.isfile(fname):
+                os.remove(fname)  # remove index if already exists
 
             elapsed_seconds = int(time.time() - start)
             self.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
@@ -183,6 +192,13 @@ class ProjectDeployer(object):
             if not os.path.exists(output_file) and not os.path.isdir(filename):
                 copyfile(filename, output_file)
 
+            if partial:  # move files to common area
+                basename = os.path.basename(filename)
+                if ('finished' not in basename) and ('build_log' not in basename) and ('index.html' not in basename):
+                    self.logger.debug("Moving {0} to common area".format(basename))
+                    self.cdn_handler.upload_file(filename, s3_commit_key + '/' + basename, 0)
+                    self.cdn_handler.delete_file(download_key + '/' + basename)
+
         # Upload all files to the door43.org bucket
         for root, dirs, files in os.walk(output_dir):
             for f in sorted(files):
@@ -203,14 +219,24 @@ class ProjectDeployer(object):
             except Exception:
                 pass
 
+        else:
+            if self.cdn_handler.key_exists(s3_commit_key + '/final_build_log.json'):
+                self.logger.debug("conversions all finished, trigger final merge")
+                self.door43_handler.copy(from_key=s3_commit_key + '/final_build_log.json', to_key=s3_commit_key + '/build_log.json')
+
         elapsed_seconds = int(time.time() - start)
         self.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
 
         remove_tree(self.temp_dir)  # cleanup temp files
         return True
 
+    def update_index_key(self, index_json, templater, key):
+        data = index_json[key]
+        data.update(getattr(templater, key))
+        index_json[key] = data
+
     def get_templater_index(self, s3_commit_key, index_json_fname):
-        index_json = self.door43_handler.get_json(s3_commit_key + '/' + index_json_fname)
+        index_json = self.cdn_handler.get_json(s3_commit_key + '/' + index_json_fname)
         if not index_json:
             index_json['titles'] = {}
             index_json['chapters'] = {}

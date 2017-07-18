@@ -109,7 +109,7 @@ class ClientCallback(object):
 
             # all parts are present
 
-            build_log_json = self.merge_build_logs(s3_commit_key, count)
+            build_log_json = self.merge_build_logs(s3_commit_key, count, 'final_')
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
@@ -131,7 +131,7 @@ class ClientCallback(object):
             remove_tree(self.temp_dir)  # cleanup
             return build_log_json
 
-    def merge_build_logs(self, s3_commit_key, count):
+    def merge_build_logs(self, s3_commit_key, count, prefix=''):
         master_build_log_json = self.get_build_log(s3_commit_key)
         build_logs_json = []
         self.job.status = 'success'
@@ -176,7 +176,7 @@ class ClientCallback(object):
         master_build_log_json['repo_owner'] = build_logs_json0['repo_owner']
         master_build_log_json['repo_name'] = build_logs_json0['repo_name']
         master_build_log_json['resource_type'] = build_logs_json0['resource_type']
-        build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key)
+        build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key, prefix)
         return build_log_json
 
     def prefix_list(self, build_log_json, key, book):
