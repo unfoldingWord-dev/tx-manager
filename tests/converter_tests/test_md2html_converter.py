@@ -101,7 +101,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
 
         # given
         file_name = 'en-obs-broken_chapter_01.zip'
-        self.expected_warnings = 2
+        self.expected_warnings = 3
         self.expected_errors = 0
         self.expected_success = True
         self.expected_info_empty = False
