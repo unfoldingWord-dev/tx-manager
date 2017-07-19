@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function
 import os
 import re
-from libraries.door43_tools import bible_books
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.general_tools.file_utils import write_file, read_file
 from shutil import copy
 from libraries.resource_container.ResourceContainer import RC
@@ -39,24 +39,43 @@ class Preprocessor(object):
         write_file(os.path.join(self.output_dir, 'manifest.yaml'), self.rc.as_dict())
 
     def run(self):
-        for project in self.rc.projects:
-            content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all the markdown files in the project root directory to the output directory
-            for file_path in glob(os.path.join(content_dir, '*.md')):
-                output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
-                if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
-                        and os.path.basename(file_path) not in self.ignoreFiles:
-                    copy(file_path, output_file_path)
-            for chapter in self.rc.chapters(project.identifier):
-                text = ''
-                for chunk in self.rc.chunks(project.identifier, chapter):
-                    text += read_file(os.path.join(content_dir, chapter, chunk))+"\n\n"
-                if self.rc.project_count > 1:
-                    file_name = '{0}-{1}.{2}'.format(project.identifier, chapter, self.rc.resource.file_ext)
+        for idx, project in enumerate(self.rc.projects):
+            project_path = os.path.join(self.source_dir, project.path)
+
+            if os.path.isfile(project_path):
+                # Case #1: Project path is a file, then we copy the file over to the output dir
+                if project.identifier.lower() in BOOK_NUMBERS:
+                    filename = '{0}-{1}.{2}'.format(BOOK_NUMBERS[project.identifier.lower()],
+                                                    project.identifier.upper(), self.rc.resource.file_ext)
                 else:
-                    file_name = '{0}.{1}'.format(chapter, self.rc.resource.file_ext)
-                write_file(os.path.join(self.output_dir, file_name), text)
-        return True
+                    filename = '{0}-{1}.{2}'.format(str(idx + 1).zfill(2), project.identifier,
+                                                    self.rc.resource.file_ext)
+                copy(project_path, os.path.join(self.output_dir, filename))
+            else:
+                # Case #2: It's a directory of files, so we copy them over to the output directory
+                files = glob(os.path.join(project_path, '*.{0}'.format(self.rc.resource.file_ext)))
+                if len(files):
+                    for file_path in files:
+                        output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
+                        if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
+                                and os.path.basename(file_path) not in self.ignoreFiles:
+                            copy(file_path, output_file_path)
+                else:
+                    # Case #3: The project path is multiple chapters, so we piece them together
+                    chapters = self.rc.chapters(project.identifier)
+                    if len(chapters):
+                        text = ''
+                        for chapter in chapters:
+                            for chunk in self.rc.chunks(project.identifier, chapter):
+                                text += read_file(os.path.join(project_path, chapter, chunk))+"\n\n"
+                        if project.identifier.lower() in BOOK_NUMBERS:
+                            filename = '{0}-{1}.{2}'.format(BOOK_NUMBERS[project.identifier.lower()],
+                                                             project.identifier.upper(), self.rc.resource.file_ext)
+                        else:
+                            filename = '{0}-{1}.{2}'.format(str(idx+1).zfill(2), project.identifier,
+                                                            self.rc.resource.file_ext)
+                        write_file(os.path.join(self.output_dir, filename), text)
+            return True
 
     def isMultipleJobs(self):
         return False
@@ -70,25 +89,25 @@ class ObsPreprocessor(Preprocessor):
         super(ObsPreprocessor, self).__init__(*args, **kwargs)
 
     @staticmethod
-    def get_chapters(content_dir):
+    def get_chapters(project_path):
         chapters = []
-        for chapter in sorted(os.listdir(content_dir)):
-            if os.path.isdir(os.path.join(content_dir, chapter)) and chapter not in ObsPreprocessor.ignoreDirectories:
+        for chapter in sorted(os.listdir(project_path)):
+            if os.path.isdir(os.path.join(project_path, chapter)) and chapter not in ObsPreprocessor.ignoreDirectories:
                 chapters.append({
                     'id': chapter,
-                    'title': ObsPreprocessor.get_chapter_title(content_dir, chapter),
-                    'reference': ObsPreprocessor.get_chapter_reference(content_dir, chapter),
-                    'frames': ObsPreprocessor.get_chapter_frames(content_dir, chapter)
+                    'title': ObsPreprocessor.get_chapter_title(project_path, chapter),
+                    'reference': ObsPreprocessor.get_chapter_reference(project_path, chapter),
+                    'frames': ObsPreprocessor.get_chapter_frames(project_path, chapter)
                 })
         return chapters
 
     @staticmethod
-    def get_chapter_title(content_dir, chapter):
+    def get_chapter_title(project_path, chapter):
         """
         Get a chapter title.
         if the title file does not exist, it will hand back the number with a period only.
         """
-        title_file = os.path.join(content_dir, chapter, 'title.txt')
+        title_file = os.path.join(project_path, chapter, 'title.txt')
         if os.path.exists(title_file):
             contents = read_file(title_file)
             title = contents.strip()
@@ -97,9 +116,9 @@ class ObsPreprocessor(Preprocessor):
         return title
 
     @staticmethod
-    def get_chapter_reference(content_dir, chapter):
+    def get_chapter_reference(project_path, chapter):
         """Get the chapters reference text"""
-        reference_file = os.path.join(content_dir, chapter, 'reference.txt')
+        reference_file = os.path.join(project_path, chapter, 'reference.txt')
         reference = ''
         if os.path.exists(reference_file):
             contents = read_file(reference_file)
@@ -107,12 +126,12 @@ class ObsPreprocessor(Preprocessor):
         return reference
 
     @staticmethod
-    def get_chapter_frames(content_dir, chapter):
+    def get_chapter_frames(project_path, chapter):
         frames = []
-        chapter_dir = os.path.join(content_dir, chapter)
+        chapter_dir = os.path.join(project_path, chapter)
         for frame in sorted(os.listdir(chapter_dir)):
             if frame not in ObsPreprocessor.ignoreFiles:
-                text = read_file(os.path.join(content_dir, chapter, frame))
+                text = read_file(os.path.join(project_path, chapter, frame))
                 frames.append({
                     'id': chapter + '-' + frame.strip('.txt'),
                     'text': text
@@ -130,15 +149,15 @@ class ObsPreprocessor(Preprocessor):
 
     def run(self):
         for project in self.rc.projects:
-            content_dir = os.path.join(self.source_dir, project.path)
+            project_path = os.path.join(self.source_dir, project.path)
             # Copy all the markdown files in the project root directory to the output directory
-            for file_path in glob(os.path.join(content_dir, '*.md')):
+            for file_path in glob(os.path.join(project_path, '*.md')):
                 output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
                 if os.path.isfile(file_path) and not os.path.exists(output_file_path) \
                         and os.path.basename(file_path) not in self.ignoreFiles:
                     copy(file_path, output_file_path)
             if self.is_chunked(project):
-                for chapter in self.get_chapters(content_dir):
+                for chapter in self.get_chapters(project_path):
                     markdown = '# {0}\n\n'.format(chapter['title'])
                     for frame in chapter['frames']:
                         markdown += '![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n' \
@@ -150,10 +169,10 @@ class ObsPreprocessor(Preprocessor):
             else:
                 for chapter in self.rc.chapters(project.identifier):
                     f = None
-                    if os.path.isfile(os.path.join(content_dir, chapter, "01.md")):
-                        f = os.path.join(content_dir, chapter, '01.md')
-                    elif os.path.isfile(os.path.join(content_dir, chapter, 'intro.md')):
-                        f = os.path.join(content_dir, chapter, 'intro.md')
+                    if os.path.isfile(os.path.join(project_path, chapter, "01.md")):
+                        f = os.path.join(project_path, chapter, '01.md')
+                    elif os.path.isfile(os.path.join(project_path, chapter, 'intro.md')):
+                        f = os.path.join(project_path, chapter, 'intro.md')
                     if f:
                         copy(f, os.path.join(self.output_dir, '{0}.md'.format(chapter)))
         return True
@@ -165,70 +184,91 @@ class BiblePreprocessor(Preprocessor):
         self.books = []
 
     def isMultipleJobs(self):
-        return (len(self.books) > 1)
+        return len(self.books) > 1
 
     def getBookList(self):
         self.books.sort()
         return self.books
 
     def run(self):
-        for project in self.rc.projects:
-            content_dir = os.path.join(self.source_dir, project.path)
-            # Copy all USFM files in the project root directory to the output directory
-            self.books = []
-            for file_path in glob(os.path.join(content_dir, '*.usfm')):
-                self.books.append(os.path.basename(file_path))
-                output_file_path = os.path.join(self.output_dir, os.path.basename(file_path))
-                if os.path.isfile(file_path) and not os.path.exists(output_file_path):
-                    copy(file_path, output_file_path)
-            # Look to see if there are chapters and if so, build the USFM file
-            chapters = self.rc.chapters(project.identifier)
-            if len(chapters):
-                title_file = os.path.join(content_dir, chapters[0], 'title.txt')
-                if os.path.isfile(title_file):
-                    title = read_file(title_file)
-                    title = re.sub(r' \d+$', '', title).strip()
+        for idx, project in enumerate(self.rc.projects):
+            project_path = os.path.join(self.source_dir, project.path)
+            file_format = '{0}-{1}.usfm'
+
+            # Case #1: The project path is a file, and thus is one book of the Bible, copy to standard filename
+            if os.path.isfile(project_path):
+                if project.identifier.lower() in BOOK_NUMBERS:
+                    filename = file_format.format(BOOK_NUMBERS[project.identifier.lower()], project.identifier.upper())
                 else:
-                    title = project.title
-                if not title and os.path.isfile(os.path.join(content_dir, 'title.txt')):
-                    title = read_file(os.path.join(content_dir, 'title.txt'))
-                usfm = """
-\\id {0} {1}
+                    filename = file_format.format(str(idx+1).zfill(2), project.identifier.upper())
+                copy(project_path, os.path.join(self.output_dir, filename))
+                self.books.append(filename)
+            else:
+                # Case #2: Project path is a dir with one or more USFM files, is one or more books of the Bible
+                usfm_files = glob(os.path.join(project_path, '*.usfm'))
+                if len(usfm_files):
+                    for usfm_path in usfm_files:
+                        book_code = os.path.splitext(os.path.basename(usfm_path))[0].split('-')[-1].lower()
+                        if book_code in BOOK_NUMBERS:
+                            filename = file_format.format(BOOK_NUMBERS[book_code], book_code.upper())
+                        else:
+                            filename = '{0}.usfm'.format(os.path.splitext(os.path.basename(usfm_path))[0])
+                        output_file_path = os.path.join(self.output_dir, filename)
+                        if os.path.isfile(usfm_path) and not os.path.exists(output_file_path):
+                            copy(usfm_path, output_file_path)
+                        self.books.append(filename)
+                else:
+                    # Case #3: Project path is a dir with one or more chapter dirs with chunk & title files
+                    chapters = self.rc.chapters(project.identifier)
+                    if len(chapters):
+                        #          Piece the USFM file together
+                        title_file = os.path.join(project_path, chapters[0], 'title.txt')
+                        if os.path.isfile(title_file):
+                            title = read_file(title_file)
+                            title = re.sub(r' \d+$', '', title).strip()
+                        else:
+                            title = project.title
+                        if not title and os.path.isfile(os.path.join(project_path, 'title.txt')):
+                            title = read_file(os.path.join(project_path, 'title.txt'))
+                        usfm = """
+    \\id {0} {1}
 \\ide UTF-8
 \\h {2}
 \\toc1 {2}
 \\toc2 {2}
 \\mt {2}
 """.format(project.identifier.upper(), self.rc.resource.title, title)
-                for chapter in chapters:
-                    if chapter in self.ignoreDirectories:
-                        continue
-                    chapter_num = chapter.lstrip('0')
-                    chunks = self.rc.chunks(project.identifier, chapter)
-                    if not len(chunks):
-                        continue
-                    first_chunk = read_file(os.path.join(content_dir, chapter, chunks[0]))
-                    usfm += "\n\n"
-                    if '\\c {0}'.format(chapter_num) not in first_chunk:
-                        usfm += "\\c {0}\n".format(chapter_num)
-                    if os.path.isfile(os.path.join(content_dir, chapter, 'title.txt')):
-                        translated_title = read_file(os.path.join(content_dir, chapter, 'title.txt'))
-                        book_name = re.sub(r' \d+$', '', translated_title).strip()
-                        if book_name.lower() != title.lower():
-                            usfm += "\cl {0}\n".format(translated_title)
-                    for chunk in chunks:
-                        if chunk in self.ignoreFiles:
-                            continue
-                        chunk_num = os.path.splitext(chunk)[0].lstrip('0')
-                        chunk_content = read_file(os.path.join(content_dir, chapter, chunk))
-                        if '\\v {0} '.format(chunk_num) not in chunk_content:
-                            chunk_content = '\\v {0} '.format(chunk_num) + chunk_content
-                        usfm += chunk_content+"\n"
-
-                usfm_file = os.path.join(self.output_dir,
-                                         '{0}-{1}.usfm'.format(bible_books.BOOK_NUMBERS[project.identifier],
-                                                               project.identifier.upper()))
-                write_file(usfm_file, usfm)
+                        for chapter in chapters:
+                            if chapter in self.ignoreDirectories:
+                                continue
+                            chapter_num = chapter.lstrip('0')
+                            chunks = self.rc.chunks(project.identifier, chapter)
+                            if not len(chunks):
+                                continue
+                            first_chunk = read_file(os.path.join(project_path, chapter, chunks[0]))
+                            usfm += "\n\n"
+                            if '\\c {0}'.format(chapter_num) not in first_chunk:
+                                usfm += "\\c {0}\n".format(chapter_num)
+                            if os.path.isfile(os.path.join(project_path, chapter, 'title.txt')):
+                                translated_title = read_file(os.path.join(project_path, chapter, 'title.txt'))
+                                book_name = re.sub(r' \d+$', '', translated_title).strip()
+                                if book_name.lower() != title.lower():
+                                    usfm += "\cl {0}\n".format(translated_title)
+                            for chunk in chunks:
+                                if chunk in self.ignoreFiles:
+                                    continue
+                                chunk_num = os.path.splitext(chunk)[0].lstrip('0')
+                                chunk_content = read_file(os.path.join(project_path, chapter, chunk))
+                                if '\\v {0} '.format(chunk_num) not in chunk_content:
+                                    chunk_content = '\\v {0} '.format(chunk_num) + chunk_content
+                                usfm += chunk_content+"\n"
+                        if project.identifier.lower() in BOOK_NUMBERS:
+                            filename = file_format.format(BOOK_NUMBERS[project.identifier.lower()],
+                                                          project.identifier.upper())
+                        else:
+                            filename = file_format.format(str(idx + 1).zfill(2), project.identifier.upper())
+                        write_file(os.path.join(self.output_dir, filename), usfm)
+                        self.books.append(filename)
         return True
 
 

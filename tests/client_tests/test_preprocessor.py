@@ -3,14 +3,12 @@ import os
 import tempfile
 import unittest
 import shutil
-import markdown
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess
 from libraries.general_tools.file_utils import unzip, read_file
-from bs4 import BeautifulSoup
 
 
-class TestTaPreprocessor(unittest.TestCase):
+class TestPreprocessor(unittest.TestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -33,12 +31,7 @@ class TestTaPreprocessor(unittest.TestCase):
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'other.md')))
-        soup = BeautifulSoup(markdown.markdown(read_file(os.path.join(self.out_dir, 'kt.md'))), 'html.parser')
-        self.assertEqual(len(soup.find_all('h1')), len(rc.project('bible').chunks('kt')))
-        soup = BeautifulSoup(markdown.markdown(read_file(os.path.join(self.out_dir, 'other.md'))), 'html.parser')
-        self.assertEqual(len(soup.find_all('h1')), len(rc.project('bible').chunks('other')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-bible.md')))
 
     def test_preprocessor_for_tq_two_books(self):
         file_name = os.path.join('raw_sources', 'en_tq_two_books.zip')
@@ -46,15 +39,20 @@ class TestTaPreprocessor(unittest.TestCase):
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'php-01.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'php-04.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'tit-01.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'tit-03.md')))
-        self.assertFalse(os.path.isfile(os.path.join(self.out_dir, 'tit-04.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
+        self.assertFalse(os.path.isfile(os.path.join(self.out_dir, '57-TIT.md')))
+
+    def test_preprocessor_for_project_with_one_md_file(self):
+        file_name = os.path.join('raw_sources', 'en_tq_with_one_md_file.zip')
+        repo_name = 'en_tq'
+        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
+        self.out_dir = tempfile.mkdtemp(prefix='output_')
+        do_preprocess(rc, repo_dir, self.out_dir)
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
 
     @classmethod
-    def extractFiles(self, file_name, repo_name):
-        file_path = os.path.join(TestTaPreprocessor.resources_dir, file_name)
+    def extractFiles(cls, file_name, repo_name):
+        file_path = os.path.join(TestPreprocessor.resources_dir, file_name)
 
         # 1) unzip the repo files
         temp_dir = tempfile.mkdtemp(prefix='repo_')
