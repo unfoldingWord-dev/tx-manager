@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import string
+import markdown
 import markdown2
 import codecs
 from shutil import copyfile
@@ -36,7 +37,7 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                html = markdown2.markdown(md)
+                html = markdown.markdown(md)
                 html = html_template.safe_substitute(title=self.resource.upper(), content=html)
                 base_name = os.path.splitext(os.path.basename(filename))[0]
                 found_chapters[base_name] = True
@@ -71,7 +72,10 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                html = markdown2.markdown(md, extras=['markdown-in-html', 'tables'])
+                if self.resource == 'ta':
+                    html = markdown2.markdown(md, extras=['markdown-in-html', 'tables'])
+                else:
+                    html = markdown.markdown(md)
                 html = html_template.safe_substitute(title=self.resource.upper(), content=html)
 
                 # Change headers like <h1><a id="verbs"/>Verbs</h1> to <h1 id="verbs">Verbs</h1>
