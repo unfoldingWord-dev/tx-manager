@@ -1,8 +1,9 @@
 from __future__ import absolute_import, unicode_literals, print_function
+import codecs
 import unittest
 import os
 import tempfile
-from glob import glob
+from bs4 import BeautifulSoup
 from moto import mock_s3
 from libraries.door43_tools.project_deployer import ProjectDeployer
 from libraries.general_tools import file_utils
@@ -87,6 +88,22 @@ class ProjectDeployerTests(unittest.TestCase):
         # then
         self.validate_bible_results(ret, build_log_key, expect_success, None)
 
+    def test_bible_deploy_mutli_part_merg_revision_to_door43(self):
+        # given
+        test_repo_name = 'en-ulb-4-books-multipart.zip'
+        project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.mock_s3_bible_project(test_repo_name, project_key, True)
+        build_log_key = '{0}/build_log.json'.format(self.project_key)
+        expect_success = True
+        output_file = '02-EXO.html'
+        output_key = '{0}/{1}'.format(self.project_key, output_file)
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.validate_bible_results(ret, build_log_key, expect_success, output_key)
+
     def test_redeploy_all_projects(self):
         self.mock_s3_obs_project()
         self.deployer.cdn_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
@@ -116,7 +133,7 @@ class ProjectDeployerTests(unittest.TestCase):
         self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
                                                  'templates/project-page.html')
 
-    def mock_s3_bible_project(self, test_file_name, project_key):
+    def mock_s3_bible_project(self, test_file_name, project_key, multi_part=False):
         converted_proj_dir = os.path.join(self.resources_dir, 'converted_projects')
         test_file_base = test_file_name.split('.zip')[0]
         zip_file = os.path.join(converted_proj_dir, test_file_name)
@@ -128,6 +145,21 @@ class ProjectDeployerTests(unittest.TestCase):
         for filename in self.project_files:
             sub_path = filename.split(project_dir)[1]
             self.deployer.cdn_handler.upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
+
+            if multi_part:  # copy files from cdn to door43
+                base_name = os.path.basename(filename)
+                if '.html' in base_name:
+                    with codecs.open(filename, 'r', 'utf-8-sig') as f:
+                        soup = BeautifulSoup(f, 'html.parser')
+
+                    # add nav tag
+                    new_tag = soup.new_tag('div', id='right-sidebar')
+                    soup.body.append(new_tag)
+                    html = unicode(soup)
+                    file_utils.write_file(filename, html.encode('ascii', 'xmlcharrefreplace'))
+
+                self.deployer.door43_handler.upload_file(filename, '{0}/{1}'.format(project_key, base_name))
+
         # u, user, repo = project_key
         # self.deployer.cdn_handler.upload_file(os.path.join(out_dir, user, repo, 'project.json'), 'u/{0}/{1}/project.json'.format(user, repo))
         self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),

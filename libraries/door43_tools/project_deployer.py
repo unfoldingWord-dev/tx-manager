@@ -140,9 +140,8 @@ class ProjectDeployer(object):
                 repo_index_file = os.path.join(source_dir, 'index.html')
                 write_file(repo_index_file, html)
 
-            templater = init_template(resource_type, source_dir, output_dir, template_file)
-
             # merge the source files with the template
+            templater = init_template(resource_type, source_dir, output_dir, template_file)
             templater.run()
 
             # update index of templated files
