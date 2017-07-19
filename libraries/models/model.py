@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function
+import copy
 from six import iteritems, string_types
 
 
@@ -31,7 +32,7 @@ class Model(object):
         for field in self.db_fields:
             if hasattr(self, field):
                 if field in self.default_values:
-                    setattr(self, field, self.default_values[field])
+                    setattr(self, field, copy.copy(self.default_values[field]))
                 else:
                     setattr(self, field, None)
 

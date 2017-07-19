@@ -61,7 +61,7 @@ class ClientCallback(object):
                 remove_tree(self.temp_dir)  # cleanup
             if self.job.errors is None:
                 self.job.errors = []
-                self.job.errors.append("Missing converted file: " + converted_zip_url)
+            self.job.errors.append("Missing converted file: " + converted_zip_url)
         finally:
             self.logger.debug('download finished, success={0}'.format(str(download_success)))
 
