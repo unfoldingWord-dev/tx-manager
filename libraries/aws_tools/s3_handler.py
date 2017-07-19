@@ -81,6 +81,28 @@ class S3Handler(object):
 
         return exists
 
+    def key_modified_time(self, key, bucket_name=None):
+        """
+        get last modified time for key
+        :param key:
+        :param bucket_name:
+        :return:
+        """
+        if not bucket_name:
+            bucket = self.bucket
+        else:
+            bucket = self.resource.Bucket(bucket_name)
+
+        try:
+            s3_object = bucket.Object(key=key)
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                return None
+            else:
+                raise
+
+        return s3_object.last_modified
+
     def copy(self, from_key, from_bucket=None, to_key=None, catch_exception=True):
         if not to_key:
             to_key = from_key

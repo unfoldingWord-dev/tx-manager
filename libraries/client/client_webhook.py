@@ -192,12 +192,13 @@ class ClientWebhook(object):
 
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                    pusher_username, repo_name, repo_owner)
-
+            part = str(i)
             if len(book) > 0:
                 build_log_json['book'] = book
+                build_log_json['part'] = part
 
             # Upload build_log.json to S3:
-            self.upload_build_log_to_s3(build_log_json, master_s3_commit_key, str(i) + "_")
+            self.upload_build_log_to_s3(build_log_json, master_s3_commit_key, part + "/")
 
             errors += job['errors']
             build_logs.append(build_log_json)

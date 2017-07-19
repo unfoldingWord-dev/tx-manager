@@ -6,7 +6,7 @@ import unittest
 import shutil
 import re
 from bs4 import BeautifulSoup
-from libraries.door43_tools.templaters import do_template
+from libraries.door43_tools.templaters import do_template, init_template
 from libraries.general_tools.file_utils import unzip, read_file
 
 
@@ -90,16 +90,38 @@ class TestTemplater(unittest.TestCase):
         self.assertIn('dir', soup.html.attrs)
         self.assertEqual('rtl', soup.html.attrs['dir'])
 
+    def testTemplaterBibleFourBooks(self):
+        test_folder_name = "converted_projects/en-ulb-4-books.zip"
+        expect_success = True
+        alreadyProcessed = True
+        test_file_path = self.extractZipFiles(test_folder_name)
+        success = self.doTemplater('bible', test_file_path, alreadyProcessed)
+        self.verifyBibleTemplater(success, expect_success, self.out_dir,
+                                  ['01-GEN.html', '02-EXO.html', '03-LEV.html', '05-DEU.html'])
+
     def extractZipFiles(self, test_folder_name):
         file_path = os.path.join(self.resources_dir, test_folder_name)
         self.temp_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(file_path, self.temp_dir)
         return self.temp_dir
 
-    def doTemplater(self, resource_type, test_folder_name):
+    def doTemplater(self, resource_type, test_folder_name, alreadyProcessed=False):
         template_file = os.path.join(self.resources_dir, 'templates', 'project-page.html')
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        return do_template(resource_type, test_folder_name, self.out_dir, template_file)
+        if not alreadyProcessed:
+            return do_template(resource_type, test_folder_name, self.out_dir, template_file)
+
+        # we pre-process to get title and chapter info
+        template_pre = init_template(resource_type, test_folder_name, self.out_dir, template_file)
+        template_pre.run()
+
+        # copy pre-processed data and run again
+        template = init_template(resource_type, self.out_dir, self.out_dir, template_file)
+        template.already_converted = template.files
+        template.book_codes = template_pre.book_codes
+        template.chapters = template_pre.chapters
+        template.titles = template_pre.titles
+        return template.run()
 
     def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters = []):
         self.assertIsNotNone(output_folder)
