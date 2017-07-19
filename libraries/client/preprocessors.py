@@ -75,7 +75,7 @@ class Preprocessor(object):
                             filename = '{0}-{1}.{2}'.format(str(idx+1).zfill(2), project.identifier,
                                                             self.rc.resource.file_ext)
                         write_file(os.path.join(self.output_dir, filename), text)
-            return True
+        return True
 
     def isMultipleJobs(self):
         return False
