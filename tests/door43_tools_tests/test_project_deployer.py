@@ -2,8 +2,10 @@ from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import os
 import tempfile
+from glob import glob
 from moto import mock_s3
 from libraries.door43_tools.project_deployer import ProjectDeployer
+from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip
 from shutil import rmtree
 
@@ -20,12 +22,12 @@ class ProjectDeployerTests(unittest.TestCase):
         self.deployer = ProjectDeployer(self.MOCK_CDN_BUCKET, self.MOCK_DOOR43_BUCKET)
         self.deployer.cdn_handler.create_bucket()
         self.deployer.door43_handler.create_bucket()
-        self.mock_s3_obs_project()
 
     def tearDown(self):
         rmtree(self.temp_dir, ignore_errors=True)
 
     def test_obs_deploy_revision_to_door43(self):
+        self.mock_s3_obs_project()
         build_log_key = '{0}/build_log.json'.format(self.project_key)
         ret = self.deployer.deploy_revision_to_door43(build_log_key)
         self.assertTrue(ret)
@@ -33,14 +35,73 @@ class ProjectDeployerTests(unittest.TestCase):
         self.assertTrue(self.deployer.door43_handler.key_exists('{0}/50.html'.format(self.project_key)))
 
     def test_bad_deploy_revision_to_door43(self):
+        self.mock_s3_obs_project()
         bad_key = 'u/test_user/test_repo/12345678/bad_build_log.json'
         ret = self.deployer.deploy_revision_to_door43(bad_key)
         self.assertFalse(ret)
 
+    def test_bible_deploy_part_revision_to_door43(self):
+        # given
+        test_repo_name = 'en-ulb-4-books-multipart.zip'
+        project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.mock_s3_bible_project(test_repo_name, project_key)
+        part = 1
+        build_log_key = '{0}/{1}/build_log.json'.format(self.project_key, part)
+        output_file = '02-EXO.html'
+        output_key = '{0}/{1}'.format(self.project_key, output_file)
+        expect_success = True
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.validate_bible_results(ret, build_log_key, expect_success, output_key)
+
+    def test_bible_deploy_part_not_ready_revision_to_door43(self):
+        # given
+        test_repo_name = 'en-ulb-4-books-multipart.zip'
+        project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.mock_s3_bible_project(test_repo_name, project_key)
+        part = 0
+        build_log_key = '{0}/{1}/build_log.json'.format(self.project_key, part)
+        expect_success = False
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.validate_bible_results(ret, build_log_key, expect_success, None)
+
+    def test_bible_deploy_part_file_missing_revision_to_door43(self):
+        # given
+        test_repo_name = 'en-ulb-4-books-multipart.zip'
+        project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.mock_s3_bible_project(test_repo_name, project_key)
+        part = 2
+        build_log_key = '{0}/{1}/build_log.json'.format(self.project_key, part)
+        expect_success = True
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.validate_bible_results(ret, build_log_key, expect_success, None)
+
     def test_redeploy_all_projects(self):
+        self.mock_s3_obs_project()
         self.deployer.cdn_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
         self.deployer.cdn_handler.put_contents('u/user2/project2/revision2/build_log.json', '{}')
         self.assertTrue(self.deployer.redeploy_all_projects('test-door43_deployer'))
+
+    #
+    # helpers
+    #
+
+    def validate_bible_results(self, ret, build_log_key, expect_success, output_key):
+        self.assertEqual(ret, expect_success)
+        if expect_success:
+            if output_key:
+                self.assertTrue(self.deployer.door43_handler.key_exists(output_key))
 
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')
@@ -52,5 +113,22 @@ class ProjectDeployerTests(unittest.TestCase):
         for filename in self.project_files:
             self.deployer.cdn_handler.upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key, filename))
         self.deployer.cdn_handler.upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')
+        self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+                                                 'templates/project-page.html')
+
+    def mock_s3_bible_project(self, test_file_name, project_key):
+        converted_proj_dir = os.path.join(self.resources_dir, 'converted_projects')
+        test_file_base = test_file_name.split('.zip')[0]
+        zip_file = os.path.join(converted_proj_dir, test_file_name)
+        out_dir = os.path.join(self.temp_dir, test_file_base)
+        unzip(zip_file, out_dir)
+        project_dir = os.path.join(out_dir, test_file_base) + '/'
+        self.project_files = file_utils.get_files(out_dir)
+        self.project_key = project_key
+        for filename in self.project_files:
+            sub_path = filename.split(project_dir)[1]
+            self.deployer.cdn_handler.upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
+        # u, user, repo = project_key
+        # self.deployer.cdn_handler.upload_file(os.path.join(out_dir, user, repo, 'project.json'), 'u/{0}/{1}/project.json'.format(user, repo))
         self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
                                                  'templates/project-page.html')
