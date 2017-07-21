@@ -391,6 +391,9 @@ class TaPreprocessor(Preprocessor):
         return True
 
     def fix_links(self, content):
+        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p\)\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content, flags=re.IGNORECASE)
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
         content = re.sub(r'\]\(\.\./([^/\)]+)/01.md\)', r'](#\1)', content)
@@ -404,7 +407,9 @@ class TaPreprocessor(Preprocessor):
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
         content = re.sub(r'\]\(([^# :/\)]+)\)', r'](#\1)', content)
         # convert URLs to links if not already
-        content = re.sub(r'([^"\(])((http|https|ftp)://[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](\2)', content, flags=re.IGNORECASE)
+        content = re.sub(r'([^"\(])((http|https|ftp)://[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
         # URLS wth just www at the start, no http
-        content = re.sub(r'([^A-Z0-9"\(\/])(www\.[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](http://\2)', content, flags=re.IGNORECASE)
+        content = re.sub(r'([^A-Z0-9"\(\/])(www\.[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
         return content

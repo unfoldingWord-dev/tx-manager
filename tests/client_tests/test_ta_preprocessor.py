@@ -86,6 +86,13 @@ class TestTaPreprocessor(unittest.TestCase):
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
 
+        content = """This [link](rc://en/tw/dict/bible/other/dream) is a rc link that should go to 
+            other/dream.md in the en_tw repo"""
+        expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to 
+            other/dream.md in the en_tw repo"""
+        converted = ta.fix_links(content)
+        self.assertEqual(converted, expected)
+
         content = """This url should be made into a link: http://example.com/somewhere/outthere and so should www.example.com/asdf.html?id=5&view=dashboard#report."""
         expected = """This url should be made into a link: [http://example.com/somewhere/outthere](http://example.com/somewhere/outthere) and so should [www.example.com/asdf.html?id=5&view=dashboard#report](http://www.example.com/asdf.html?id=5&view=dashboard#report)."""
         converted = ta.fix_links(content)
