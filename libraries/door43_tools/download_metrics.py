@@ -1,12 +1,6 @@
 from __future__ import print_function, unicode_literals
 import logging
-import os
-import tempfile
-import urlparse
-from decimal import Decimal
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.aws_tools.s3_handler import S3Handler
-from libraries.models.manifest import TxManifest
 
 
 class DownloadMetrics(object):
@@ -21,7 +15,7 @@ class DownloadMetrics(object):
         self.preconvert_handler = None
 
     def check_download(self, commit_id):
-        self.logger.debug("Start: check for download: ", commit_id)
+        self.logger.debug("Start: check for download: " + commit_id)
 
         response = {  # default to error
             'ErrorMessage': DownloadMetrics.ACCESS_FAILED_ERROR + commit_id
@@ -39,10 +33,10 @@ class DownloadMetrics(object):
         try:
             download_exists = self.preconvert_handler.key_exists(key)
         except Exception as e:
-            self.logger.error("Access failure for '" + key + "': " +str(e))
+            self.logger.error("Access failure for '" + key + "': " + str(e))
             return response
 
         del response['ErrorMessage']
-        self.logger.debug("Download exists for '" + key + "': " +str(download_exists))
+        self.logger.debug("Download exists for '" + key + "': " + str(download_exists))
         response['download_exists'] = download_exists
         return response
