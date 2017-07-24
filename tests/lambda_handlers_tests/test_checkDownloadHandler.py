@@ -100,6 +100,33 @@ class CheckDownloadsTest(unittest.TestCase):
         # then
         self.validate_results(results)
 
+    def test_check_access_error(self):
+        # given
+        commit_id = '39a099622d'
+        self.callback = 'callback'
+        event = {
+            'vars': {
+                'pre_convert_bucket': 'invalid-bucket'
+            },
+            "api-gateway": {
+                "params": {
+                    'querystring': {
+                        'commit_id': commit_id,
+                        'callback': self.callback
+                    }
+                }
+            }
+        }
+        self.expected_download_exists = False
+        self.error_response = DownloadMetrics.ACCESS_FAILED_ERROR + commit_id
+        handler = CheckDownloadHandler()
+
+        # when
+        results = handler.handle(event, None)
+
+        # then
+        self.validate_results(results)
+
     #
     # helpers
     #

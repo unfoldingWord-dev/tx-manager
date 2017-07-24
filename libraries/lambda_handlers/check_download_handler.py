@@ -10,13 +10,9 @@ class CheckDownloadHandler(Handler):
         """
         :param dict event:
         :param context:
-        :return dict:
+        :return jsonp:
         """
-        data = {}
-        if 'data' in event and isinstance(event['data'], dict):
-            data = event['data']
-        if 'body-json' in event and isinstance(event['body-json'], dict):
-            data.update(event['body-json'])
+
         # Set required env_vars
         env_vars = {
             'pre_convert_bucket': self.retrieve(event['vars'], 'pre_convert_bucket', 'Environment Vars'),
