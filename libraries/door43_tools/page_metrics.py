@@ -75,7 +75,7 @@ class PageMetrics(object):
 
         return response
 
-    def get_language_count(self, path, increment=0):
+    def get_language_view_count(self, path, increment=0):
         self.logger.debug("Start: get_language_count")
 
         response = {  # default to error
@@ -98,6 +98,7 @@ class PageMetrics(object):
             return response
 
         del response['ErrorMessage']
+        language_code = language_code.lower()
         if not self.language_stats_db_handler:
             self.init_language_stats_table(parsed)
 

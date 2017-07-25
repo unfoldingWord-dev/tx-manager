@@ -11,13 +11,8 @@ class LanguageViewCountHandler(Handler):
         """
         :param dict event:
         :param context:
-        :return dict:
+        :return jsonp:
         """
-        data = {}
-        if 'data' in event and isinstance(event['data'], dict):
-            data = event['data']
-        if 'body-json' in event and isinstance(event['body-json'], dict):
-            data.update(event['body-json'])
         # Set required env_vars
         env_vars = {
             'language_stats_table_name': self.retrieve(event['vars'], 'language_stats_table_name', 'Environment Vars')
@@ -36,5 +31,5 @@ class LanguageViewCountHandler(Handler):
         except:
             pass
 
-        data = PageMetrics(**env_vars).get_language_count(path, increment)
+        data = PageMetrics(**env_vars).get_language_view_count(path, increment)
         return callback + '(' + json.dumps(data) + ')'

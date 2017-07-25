@@ -1,5 +1,4 @@
 from __future__ import unicode_literals, print_function
-
 from libraries.lambda_handlers.language_view_count_handler import LanguageViewCountHandler
 
 
