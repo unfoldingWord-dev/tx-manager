@@ -12,6 +12,7 @@ class PageMetrics(object):
     MANIFEST_TABLE_NAME = 'tx-manifest'
     LANGUAGE_STATS_TABLE_NAME = 'language-stats'
     INVALID_URL_ERROR = 'repo not found for: '
+    INVALID_LANG_URL_ERROR = 'language not found for: '
     DB_ACCESS_ERROR = 'could not access view counts for: '
 
     def __init__(self, manifest_table_name=None, language_stats_table_name=None):
@@ -79,7 +80,7 @@ class PageMetrics(object):
         self.logger.debug("Start: get_language_count")
 
         response = {  # default to error
-            'ErrorMessage': PageMetrics.INVALID_URL_ERROR + path
+            'ErrorMessage': PageMetrics.INVALID_LANG_URL_ERROR + path
         }
 
         parsed = urlparse.urlparse(path)

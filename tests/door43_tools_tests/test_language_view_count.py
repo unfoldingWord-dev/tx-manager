@@ -104,7 +104,7 @@ class ViewCountTest(unittest.TestCase):
         results = vc.get_language_view_count(self.lang_url, increment=1)
 
         # then
-        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_URL_ERROR)
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
     def test_unsupportedPath(self):
         # given
@@ -116,7 +116,7 @@ class ViewCountTest(unittest.TestCase):
         results = vc.get_language_view_count(self.lang_url, increment=1)
 
         # then
-        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_URL_ERROR)
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
     def test_missingEnvironment(self):
         # given
@@ -142,7 +142,7 @@ class ViewCountTest(unittest.TestCase):
         results = vc.get_language_view_count(self.lang_url, increment=1)
 
         # then
-        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_URL_ERROR)
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
     def test_shortLanguage(self):
         # given
@@ -155,7 +155,7 @@ class ViewCountTest(unittest.TestCase):
         results = vc.get_language_view_count(self.lang_url, increment=1)
 
         # then
-        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_URL_ERROR)
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
     #
     # helpers
