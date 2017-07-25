@@ -14,10 +14,10 @@ class LanguageViewCountHandlerTest(TestCase):
         self.return_view_count = 0
         self.error_response = None
 
-    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_count')
-    def test_handle(self, mock_get_language_count):
+    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_view_count')
+    def test_handle(self, mock_get_language_view_count):
         # given
-        mock_get_language_count.side_effect = self.mock_get_language_count
+        mock_get_language_view_count.side_effect = self.mock_get_language_view_count
         increment = 0
         path = LanguageViewCountHandlerTest.SUPPORTED_PATH
         callback = 'cb'
@@ -31,10 +31,10 @@ class LanguageViewCountHandlerTest(TestCase):
         # then
         self.validate_results(response)
 
-    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_count')
-    def test_handleNoIncrement(self, mock_get_language_count):
+    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_view_count')
+    def test_handleNoIncrement(self, mock_get_language_view_count):
         # given
-        mock_get_language_count.side_effect = self.mock_get_language_count
+        mock_get_language_view_count.side_effect = self.mock_get_language_view_count
         increment = None
         path = LanguageViewCountHandlerTest.SUPPORTED_PATH
         callback = 'cb'
@@ -48,10 +48,10 @@ class LanguageViewCountHandlerTest(TestCase):
         # then
         self.validate_results(response)
 
-    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_count')
-    def test_handleIncrement(self, mock_get_language_count):
+    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_view_count')
+    def test_handleIncrement(self, mock_get_language_view_count):
         # given
-        mock_get_language_count.side_effect = self.mock_get_language_count
+        mock_get_language_view_count.side_effect = self.mock_get_language_view_count
         increment = 1
         path = LanguageViewCountHandlerTest.SUPPORTED_PATH
         callback = 'cb'
@@ -66,10 +66,10 @@ class LanguageViewCountHandlerTest(TestCase):
         # then
         self.validate_results(response)
 
-    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_count')
-    def test_handleError(self, mock_get_language_count):
+    @mock.patch('libraries.door43_tools.page_metrics.PageMetrics.get_language_view_count')
+    def test_handleError(self, mock_get_language_view_count):
         # given
-        mock_get_language_count.side_effect = self.mock_get_language_count
+        mock_get_language_view_count.side_effect = self.mock_get_language_view_count
         increment = 1
         path = LanguageViewCountHandlerTest.SUPPORTED_PATH
         callback = 'cb'
@@ -125,7 +125,7 @@ class LanguageViewCountHandlerTest(TestCase):
         self.return_view_count = Decimal(return_value)
         return event
 
-    def mock_get_language_count(self, path, increment=0):
+    def mock_get_language_view_count(self, path, increment=0):
         if self.error_response:
             response = {
                 'ErrorMessage': self.error_response
