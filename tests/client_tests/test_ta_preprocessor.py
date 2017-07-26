@@ -3,11 +3,10 @@ import os
 import tempfile
 import unittest
 import shutil
-import markdown
+import markdown2
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess, TaPreprocessor
 from libraries.general_tools.file_utils import unzip, read_file
-from libraries.resource_container.ResourceContainer import RC
 from bs4 import BeautifulSoup
 
 
@@ -42,7 +41,7 @@ class TestTaPreprocessor(unittest.TestCase):
         process = read_file(os.path.join(self.out_dir, '02-process.md'))
         translate = read_file(os.path.join(self.out_dir, '03-translate.md'))
         checking = read_file(os.path.join(self.out_dir, '04-checking.md'))
-        soup = BeautifulSoup(markdown.markdown(checking), 'html.parser')
+        soup = BeautifulSoup(markdown2.markdown(checking, extras=['markdown-in-html', 'tables']), 'html.parser')
         self.assertEqual(soup.h1.text, "Checking Manual")
         self.assertIsNotNone(soup.find("a", {"id": "accurate"}))
         self.assertEqual(len(soup.find_all('li')), 350)
@@ -84,6 +83,13 @@ class TestTaPreprocessor(unittest.TestCase):
 
         content = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
         expected = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
+        converted = ta.fix_links(content)
+        self.assertEqual(converted, expected)
+
+        content = """This [link](rc://en/tw/dict/bible/other/dream) is a rc link that should go to 
+            other/dream.md in the en_tw repo"""
+        expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to 
+            other/dream.md in the en_tw repo"""
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
 

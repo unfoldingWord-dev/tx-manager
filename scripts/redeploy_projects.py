@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 """
 Touches every build_log.json file in a given s3 CDN bucket to trigger the door43 deploy to re-template the files
+1st parameter is bucket name (required)
+2nd parameter is starting folder (default is '/u')
 
 """
 import boto3
 import logging
 import sys
+import time
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -15,15 +18,30 @@ formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+count = 0
 
 
-def get_build_logs(bucket):
-    build_logs = []
-    objects = bucket.objects.filter(Prefix='u/')
-    for obj in objects:
-        if obj.key.endswith('/build_log.json'):
-            build_logs.append(obj.key)
-    return build_logs
+def update_build_logs(client, bucket_name, prefix):
+    global count
+
+    # check for build log in folder
+    key = prefix + 'build_log.json'
+    result = client.list_objects(Bucket=bucket_name, Prefix=key)
+    if 'Contents' in result:
+        count += 1
+        print(str(count) + ": Updating: " + key)
+        touch(client, bucket_name, key)
+
+    # get sub-folders
+    result = client.list_objects(Bucket=bucket_name, Prefix=prefix, Delimiter='/')
+    if 'CommonPrefixes' in result:
+        folders = []
+        for object in result.get('CommonPrefixes'):
+            key = object.get('Prefix')
+            folders.append(key)
+        for key in folders:
+            print("Found folder: " + key)
+            update_build_logs(client, bucket_name, key)
 
 
 def touch(client, bucket_name, key):
@@ -43,14 +61,16 @@ def main():
         logger.critical('You must provide a bucket name!')
         exit(1)
     bucket_name = sys.argv[1]
+    prefix = 'u/'
+    if len(sys.argv) > 2:
+        prefix = sys.argv[2]
+        print("Using prefix of '" + prefix + "'")
     client = boto3.client('s3')
-    resource = boto3.resource('s3')
-    bucket = resource.Bucket(bucket_name)
-    keys = get_build_logs(bucket)
-    for k in keys:
-        touch(client, bucket_name, k)
+    start = time.time()
+    update_build_logs(client, bucket_name, prefix)
+    elapsed_seconds = time.time() - start
+    print("Done in '" + str(int(elapsed_seconds/60)) + "' minutes")
 
 
 if __name__ == '__main__':
     main()
-

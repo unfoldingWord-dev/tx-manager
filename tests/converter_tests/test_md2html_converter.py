@@ -104,7 +104,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         self.expected_warnings = 3
         self.expected_errors = 0
         self.expected_success = True
-        self.expected_info_empty = False;
+        self.expected_info_empty = False
         missing_chapters = [1]
 
         # when

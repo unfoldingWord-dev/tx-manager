@@ -98,6 +98,8 @@ class ClientWebhook(object):
 
         # Save manifest to manifest table
         manifest_data = {
+            'repo_name_lower': repo_name.lower(),
+            'user_name_lower': repo_owner.lower(),
             'repo_name': repo_name,
             'user_name': repo_owner,
             'lang_code': rc.resource.language.identifier,
@@ -106,13 +108,14 @@ class ClientWebhook(object):
             'title': rc.resource.title,
             'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'manifest': json.dumps(rc.as_dict()),
+            'manifest_lower': json.dumps(rc.as_dict()).lower(),
         }
         # First see if manifest already exists in DB and update it if it is (repo_name will not be None after load)
         tx_manifest = TxManifest(db_handler=self.manifest_db_handler).load({
-                'repo_name': repo_name,
-                'user_name': repo_owner
+                'repo_name_lower': repo_name.lower(),
+                'user_name_lower': repo_owner.lower(),
             })
-        if tx_manifest.repo_name:
+        if tx_manifest.repo_name_lower:
             self.logger.debug('Updating manifest in manifest table: {0}'.format(manifest_data))
             tx_manifest.update(manifest_data)
         else:
@@ -189,12 +192,13 @@ class ClientWebhook(object):
 
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                    pusher_username, repo_name, repo_owner)
-
+            part = str(i)
             if len(book) > 0:
                 build_log_json['book'] = book
+                build_log_json['part'] = part
 
             # Upload build_log.json to S3:
-            self.upload_build_log_to_s3(build_log_json, master_s3_commit_key, str(i) + "_")
+            self.upload_build_log_to_s3(build_log_json, master_s3_commit_key, part + "/")
 
             errors += job['errors']
             build_logs.append(build_log_json)
@@ -393,7 +397,7 @@ class ClientWebhook(object):
         :return: None
         """
         repo_zip_url = commit_url.replace('commit', 'archive') + '.zip'
-        repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition('/')[2])
+        repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition(os.path.sep)[2])
 
         try:
             self.logger.debug('Downloading {0}...'.format(repo_zip_url))

@@ -49,9 +49,9 @@ class ProjectPrinter(object):
             rc = RC(project_dir, repo_name)
             with codecs.open(print_all_file, 'w', 'utf-8-sig') as print_all:
                 print_all.write("""
-<html lang="{0}" dir="{1}>
+<html lang="{0}" dir="{1}">
     <head>
-        <meta charset="UTF-8">
+        <meta charset="UTF-8"/>
         <title>{2}: {3}</title>
         <style type="text/css">
             body > div {{

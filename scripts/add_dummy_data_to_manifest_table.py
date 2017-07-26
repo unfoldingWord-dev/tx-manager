@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 """
 Adds N number of rows of dummy data to the manifest table specified
 
@@ -9,6 +11,7 @@ import boto3
 import logging
 import sys
 import json
+import time
 from datetime import datetime
 
 logger = logging.getLogger()
@@ -74,26 +77,67 @@ resource_map = {
 }
 
 
+def strTimeProp(start, end, format, prop):
+    """Get a time at a proportion of a range of two formatted times.
+
+    start and end should be strings specifying times formated in the
+    given format (strftime-style), giving an interval [start, end].
+    prop specifies how a proportion of the interval to be taken after
+    start.  The returned time will be in the specified format.
+    """
+
+    stime = time.mktime(time.strptime(start, format))
+    etime = time.mktime(time.strptime(end, format))
+
+    ptime = stime + prop * (etime - stime)
+
+    return time.strftime(format, time.localtime(ptime))
+
+
+def randomDate(start, end, prop):
+    return strTimeProp(start, end, '%Y-%m-%dT%H:%M:%SZ', prop)
+
+lang_codes = {
+    'aa':'Afaraf',
+    'es': 'español',
+    'pt': 'português',
+    'pt-br': 'Português',
+    'en': 'English',
+    'de': 'Deutsch',
+    'ja': '日本語 (にほんご) ',
+    'fr': 'français',
+    'es-419': 'Español Latin America',
+    'zh': '中文 (Zhōngwén)',
+    'cfa-x-dijim': 'Dǝjim',
+    'tl': 'Wikang Tagalog',
+    'tpi': 'Tok Pisin'
+}
+
+
 def add_dummy_data_to_manifest_table(table_name, new_rows, start):
-    manifest_table = boto3.resource('dynamodb').resource.Table(table_name)
+    manifest_table = boto3.resource('dynamodb').Table(table_name)
 
     for i in range(start, start+new_rows):
         print("Adding row {0} of {1}".format(i, start+new_rows-1))
-        repo_name = 'repo{0}'.format(i)
-        user_name = 'user{0}'.format(i)
+        repo_name_lower = 'repo{0}'.format(i)
+        user_name_lower = 'user{0}'.format(i)
 
         type = resource_map.keys()[random.randint(1, len(resource_map.keys()))-1]
         resource = resource_map[type]
 
+        last_updated = randomDate("2015-01-01T00:00:00Z", datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"), random.random())
+        lang_code = random.choice(lang_codes.keys())
         data = {
-            'repo_name': repo_name,
-            'user_name': user_name,
-            'lang_code': 'en',
+            'repo_name_lower': repo_name_lower,
+            'user_name_lower': user_name_lower,
+            'repo_name': repo_name_lower,
+            'user_name': user_name_lower,
+            'lang_code': lang_code,
             'resource_id': type,
             'resource_type': resource['type'],
             'title': resource['title'],
-            'views': 0,
-            'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            'views': random.randint(0, 500),
+            'last_updated': last_updated
         }
         data['manifest'] = json.dumps({
             'checking': {'checking_entity': ['Wycliffe Associates'], 'checking_level': '1'},
@@ -106,7 +150,7 @@ def add_dummy_data_to_manifest_table(table_name, new_rows, start):
                 'issued': datetime.utcnow().strftime('%Y-%m-%d'),
                 'modified': datetime.utcnow().strftime('%Y-%m-%d'),
                 'identifier': data['resource_id'],
-                'language': {'identifier': data['lang_code'], 'direction': 'ltr', 'title': 'English'},
+                'language': {'identifier': data['lang_code'], 'direction': 'ltr', 'title': lang_codes[lang_code]},
                 'type': data['resource_type'],
                 'title': data['title']
             },
@@ -119,6 +163,7 @@ def add_dummy_data_to_manifest_table(table_name, new_rows, start):
                 'categories': []
             }]
         })
+        data['manifest_lower'] = data['manifest'].lower()
         manifest_table.put_item(Item=data)
 
 

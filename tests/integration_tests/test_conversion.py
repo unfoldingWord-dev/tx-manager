@@ -28,7 +28,14 @@ sys.stdout = UTF8Writer(sys.stdout)
 # defines
 COMMIT_LENGTH = 40
 USE_WEB_HOOK_LAMBDA = True
-
+BIBLE_LIST_NT = ["41-MAT", "42-MRK", "43-LUK", "44-JHN", "45-ACT", "46-ROM", "47-1CO", "48-2CO", "49-GAL", "50-EPH",
+      "51-PHP", "52-COL", "53-1TH", "54-2TH", "55-1TI", "56-2TI", "57-TIT", "58-PHM", "59-HEB", "60-JAS",
+      "61-1PE", "62-2PE", "63-1JN", "64-2JN", "65-3JN", "66-JUD", "67-REV"]
+BIBLE_LIST_OT = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS", "07-JDG", "08-RUT", "09-1SA", "10-2SA",
+      "11-1KI", "12-2KI", "13-1CH", "14-2CH", "15-EZR", "16-NEH", "17-EST", "18-JOB", "19-PSA", "20-PRO",
+      "21-ECC", "22-SNG", "23-ISA", "24-JER", "25-LAM", "26-EZK", "27-DAN", "28-HOS", "29-JOL", "30-AMO",
+      "31-OBA", "32-JON", "33-MIC", "34-NAM", "35-HAB", "36-ZEP", "37-HAG", "38-ZEC", "39-MAL", ]
+FULL_BIBLE_LIST = BIBLE_LIST_OT + BIBLE_LIST_NT
 
 class TestConversions(TestCase):
     """
@@ -67,6 +74,22 @@ class TestConversions(TestCase):
         # delete temp files
         if hasattr(self, 'temp_dir') and os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    @unittest.skip("Skip test for time reasons - leave for standalone testing")
+    def test_usfm_en_udb_bundle_conversion(self):
+        # given
+        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        git_url = "https://git.door43.org/tx-manager-test-data/en_udb.git"
+        base_url, repo, user = self.get_parts_of_git_url(git_url)
+        expected_output_names = FULL_BIBLE_LIST
+
+        # when
+        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
+                                                                                                       repo)
+
+        # then
+        self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
+                                 expected_output_names, job)
 
     def test_ts_mat_conversion(self):
         # given
@@ -163,7 +186,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-ulb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = ["01-GEN", "02-EXO", "03-LEV", "05-DEU"]
+        expected_output_names = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS"]
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -180,15 +203,7 @@ class TestConversions(TestCase):
         # shorter book list, but bigger books
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru_short.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-        ]
+        expected_output_names = ["18-JOB", "19-PSA", "20-PRO", "21-ECC", "22-SNG", "23-ISA", "24-JER", ]
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -204,35 +219,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/nt_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "41-MAT",
-            "42-MRK",
-            "43-LUK",
-            "44-JHN",
-            "45-ACT",
-            "46-ROM",
-            "47-1CO",
-            "48-2CO",
-            "49-GAL",
-            "50-EPH",
-            "51-PHP",
-            "52-COL",
-            "53-1TH",
-            "54-2TH",
-            "55-1TI",
-            "56-2TI",
-            "57-TIT",
-            "58-PHM",
-            "59-HEB",
-            "60-JAS",
-            "61-1PE",
-            "62-2PE",
-            "63-1JN",
-            "64-2JN",
-            "65-3JN",
-            "66-JUD",
-            "67-REV"
-        ]
+        expected_output_names = BIBLE_LIST_NT
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -248,47 +235,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/ot_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "01-GEN",
-            "02-EXO",
-            "03-LEV",
-            "04-NUM",
-            "05-DEU",
-            "06-JOS",
-            "07-JDG",
-            "08-RUT",
-            "09-1SA",
-            "10-2SA",
-            "11-1KI",
-            "12-2KI",
-            "13-1CH",
-            "14-2CH",
-            "15-EZR",
-            "16-NEH",
-            "17-EST",
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-            "25-LAM",
-            "26-EZK",
-            "27-DAN",
-            "28-HOS",
-            "29-JOL",
-            "30-AMO",
-            "31-OBA",
-            "32-JON",
-            "33-MIC",
-            "34-NAM",
-            "35-HAB",
-            "36-ZEP",
-            "37-HAG",
-            "38-ZEC",
-            "39-MAL",
-        ]
+        expected_output_names = BIBLE_LIST_OT
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -304,74 +251,7 @@ class TestConversions(TestCase):
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = [
-            "01-GEN",
-            "02-EXO",
-            "03-LEV",
-            "04-NUM",
-            "05-DEU",
-            "06-JOS",
-            "07-JDG",
-            "08-RUT",
-            "09-1SA",
-            "10-2SA",
-            "11-1KI",
-            "12-2KI",
-            "13-1CH",
-            "14-2CH",
-            "15-EZR",
-            "16-NEH",
-            "17-EST",
-            "18-JOB",
-            "19-PSA",
-            "20-PRO",
-            "21-ECC",
-            "22-SNG",
-            "23-ISA",
-            "24-JER",
-            "25-LAM",
-            "26-EZK",
-            "27-DAN",
-            "28-HOS",
-            "29-JOL",
-            "30-AMO",
-            "31-OBA",
-            "32-JON",
-            "33-MIC",
-            "34-NAM",
-            "35-HAB",
-            "36-ZEP",
-            "37-HAG",
-            "38-ZEC",
-            "39-MAL",
-            "41-MAT",
-            "42-MRK",
-            "43-LUK",
-            "44-JHN",
-            "45-ACT",
-            "46-ROM",
-            "47-1CO",
-            "48-2CO",
-            "49-GAL",
-            "50-EPH",
-            "51-PHP",
-            "52-COL",
-            "53-1TH",
-            "54-2TH",
-            "55-1TI",
-            "56-2TI",
-            "57-TIT",
-            "58-PHM",
-            "59-HEB",
-            "60-JAS",
-            "61-1PE",
-            "62-2PE",
-            "63-1JN",
-            "64-2JN",
-            "65-3JN",
-            "66-JUD",
-            "67-REV"
-        ]
+        expected_output_names = FULL_BIBLE_LIST
 
         # when
         build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
@@ -583,13 +463,14 @@ class TestConversions(TestCase):
 
         # Test that repo is in manifest table
         tx_manifest = TxManifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
-                'repo_name': repo,
-                'user_name': user
+                'repo_name_lower': repo.lower(),
+                'user_name_lower': user.lower()
         })
         # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
-        # If that row doesn't exist, it will cause repo_name and user_name to be None, so just need to check them.
-        self.assertEqual(tx_manifest.repo_name, repo)
-        self.assertEqual(tx_manifest.user_name, user)
+        # If that row doesn't exist, it will cause repo_name_lower and user_name_lower to be None,
+        #   so just need to check them.
+        self.assertEqual(tx_manifest.repo_name_lower, repo.lower())
+        self.assertEqual(tx_manifest.user_name_lower, user.lower())
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
@@ -831,7 +712,10 @@ class TestConversions(TestCase):
             print('webhook finished with code:' + str(response.status_code))
             print('webhook finished with text:' + str(response.text))
             build_log_json = json.loads(response.text)
-            if response.status_code != 200:
+            if response.status_code == 504:  # on timeout, could be multi-part, so try to get build
+                build_log_json = self.poll_for_build_log(commit_sha, repo, user)
+
+            elif response.status_code != 200:
                 return build_log_json, False, (build_log_json['job_id'])
 
         else:  # do preconvert locally
@@ -859,6 +743,15 @@ class TestConversions(TestCase):
         if build_log_json is not None:
             print("Final results:\n" + str(build_log_json))
         return build_log_json, success, job
+
+    def poll_for_build_log(self, commit_sha, repo, user):
+        build_log_json = {}
+        for i in range(0, 60):
+            time.sleep(5)
+            build_log_json = self.get_json_file(commit_sha, 'build_log.json', repo, user)
+            if build_log_json:
+                break
+        return build_log_json
 
     def poll_until_all_jobs_finished(self, build_logs):
         job = None

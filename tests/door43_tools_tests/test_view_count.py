@@ -142,21 +142,21 @@ class ViewCountTest(unittest.TestCase):
             TableName=ViewCountTest.MOCK_MANIFEST_TABLE_NAME,
             KeySchema=[
                 {
-                    'AttributeName': 'repo_name',
+                    'AttributeName': 'repo_name_lower',
                     'KeyType': 'HASH'
                 },
                 {
-                    'AttributeName': 'user_name',
+                    'AttributeName': 'user_name_lower',
                     'KeyType': 'RANGE'
                 },
             ],
             AttributeDefinitions=[
                 {
-                    'AttributeName': 'repo_name',
+                    'AttributeName': 'repo_name_lower',
                     'AttributeType': 'S'
                 },
                 {
-                    'AttributeName': 'user_name',
+                    'AttributeName': 'user_name_lower',
                     'AttributeType': 'S'
                 },
             ],
@@ -167,6 +167,8 @@ class ViewCountTest(unittest.TestCase):
         )
 
         manifest_data = {
+            'repo_name_lower': ViewCountTest.REPO_NAME.lower(),
+            'user_name_lower': ViewCountTest.USER_NAME.lower(),
             'repo_name': ViewCountTest.REPO_NAME,
             'user_name': ViewCountTest.USER_NAME,
             'lang_code': 'lang',

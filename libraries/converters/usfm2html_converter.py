@@ -71,9 +71,6 @@ class Usfm2HtmlConverter(Converter):
                 self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
                                                              os.path.basename(html_filename)))
                 remove_tree(scratch_dir)
-
-                # TODO 3/30/17 BLM - should be an inspection here like OBS has?
-
             else:
                 # Directly copy over files that are not USFM files
                 try:
@@ -82,12 +79,4 @@ class Usfm2HtmlConverter(Converter):
                         copyfile(filename, output_file)
                 except:
                     pass
-
-        # Do the Bible inspection HERE
-        #        inspector = BibleInspection(self.output_dir, self.log)
-        #        inspector.run()
-        #        complete_html = html_template.safe_substitute(content=complete_html)
-        #        write_file(os.path.join(self.output_dir, 'all.html'), complete_html)
-        #        self.log_message('Made one HTML of all bibles in all.html.')
-        #        self.log_message('Finished processing Markdown files.')
         self.log.info('Finished processing Bible USFM files.')

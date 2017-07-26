@@ -38,4 +38,6 @@ class ConvertHandler(Handler):
             options = job['options']
         converter = self.converter_class(source=source, resource=resource, cdn_bucket=cdn_bucket, cdn_file=cdn_file,
                                          options=options)
-        return converter.run()
+        results = converter.run()
+        converter.close()  # do cleanup after run
+        return results

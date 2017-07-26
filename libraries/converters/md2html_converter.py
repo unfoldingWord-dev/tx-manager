@@ -2,13 +2,12 @@ from __future__ import print_function, unicode_literals
 import os
 import string
 import markdown
+import markdown2
 import codecs
 from shutil import copyfile
 from bs4 import BeautifulSoup
 from libraries.general_tools.file_utils import write_file
 from converter import Converter
-from libraries.door43_tools.obs_handler import OBSInspection
-from libraries.door43_tools.obs_data import obs_data
 
 
 class Md2HtmlConverter(Converter):
@@ -46,14 +45,6 @@ class Md2HtmlConverter(Converter):
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, html)
                 self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename), os.path.basename(html_filename)))
-
-                # Do the OBS inspection (this now operates on a single file instead of folder)
-                # QUESTION: Should this be done separately after conversion????
-                inspector = OBSInspection(output_file, self.log)
-                try:
-                    inspector.run()
-                except Exception as e:
-                    self.log.warning('Chapter {0}: failed to run OBS inspector: {1}'.format(base_name, e.message))
             else:
                 # Directly copy over files that are not markdown files
                 try:
@@ -62,11 +53,6 @@ class Md2HtmlConverter(Converter):
                         copyfile(filename, output_file)
                 except:
                     pass
-
-        for chapter in sorted(obs_data['chapters']): # verify all expected chapters are present
-            found_chapter = found_chapters.get(chapter)
-            if not found_chapter:
-                self.log.warning('Chapter {0} is missing!'.format(chapter))
         self.log.info('Finished processing OBS Markdown files.')
 
     def convert_markdown(self):
@@ -86,13 +72,16 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                html = markdown.markdown(md)
+                if self.resource == 'ta':
+                    html = markdown2.markdown(md, extras=['markdown-in-html', 'tables'])
+                else:
+                    html = markdown.markdown(md)
                 html = html_template.safe_substitute(title=self.resource.upper(), content=html)
 
                 # Change headers like <h1><a id="verbs"/>Verbs</h1> to <h1 id="verbs">Verbs</h1>
                 soup = BeautifulSoup(html, 'html.parser')
                 for tag in soup.findAll('a', {'id': True}):
-                    if tag.parent and tag.parent.name in ['h1', 'h2', 'h3', 'h4', 'h5']:
+                    if tag.parent and tag.parent.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
                         tag.parent['id'] = tag['id']
                         tag.parent['class'] = tag.parent.get('class', []) + ['section-header']
                         tag.extract()
