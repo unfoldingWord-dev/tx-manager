@@ -46,7 +46,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results)
 
-    def test_invalidManifestTable(self):
+    def test_invalidManifestTableShouldFail(self):
         # given
         vc = PageMetrics(**{})
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
@@ -94,7 +94,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results)
 
-    def test_missingPath(self):
+    def test_missingPathShouldFail(self):
         # given
         vc = PageMetrics(**ViewCountTest.env_vars)
         expected_view_count = 0
@@ -106,7 +106,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
-    def test_unsupportedPath(self):
+    def test_unsupportedPathShouldFail(self):
         # given
         vc = PageMetrics(**ViewCountTest.env_vars)
         expected_view_count = 0
@@ -118,7 +118,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
-    def test_missingEnvironment(self):
+    def test_missingEnvironmentShouldFail(self):
         # given
         vc = PageMetrics(**{})
         expected_view_count = 0
@@ -131,7 +131,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results, error_type=PageMetrics.DB_ACCESS_ERROR)
 
-    def test_shortUrl(self):
+    def test_shortUrlShouldFail(self):
         # given
         vc = PageMetrics(**{})
         expected_view_count = 0
@@ -144,7 +144,7 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
 
-    def test_shortLanguage(self):
+    def test_shortLanguageShouldFail(self):
         # given
         vc = PageMetrics(**{})
         expected_view_count = 0
@@ -156,6 +156,78 @@ class ViewCountTest(unittest.TestCase):
 
         # then
         self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
+
+    def test_longLanguageShouldFail(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
+        self.lang_url = "https://live.door43.org/enxx/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
+
+    def test_longLanguageShouldFail2(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
+        self.lang_url = "https://live.door43.org/eng-/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
+
+    def test_longLanguageShouldFail3(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
+        self.lang_url = "https://live.door43.org/eng-a/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
+
+    def test_longLanguageShouldFail4(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
+        self.lang_url = "https://live.door43.org/eng-x/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
+
+    def test_longLanguageShouldFail5(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
+        self.lang_url = "https://live.door43.org/eng-x-/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
+
+    def test_extendedLanguage(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.lang_url = "https://live.door43.org/eng-x-a/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results)
 
     #
     # helpers

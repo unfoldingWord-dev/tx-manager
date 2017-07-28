@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 import logging
+import re
 import urlparse
 from decimal import Decimal
 from datetime import datetime
@@ -94,7 +95,9 @@ class PageMetrics(object):
             self.logger.warning("Invalid language page url: " + path)
             return response
 
-        if (empty != '') or (len(parts) > 3) or (not language_code) or (len(language_code) < 2):
+        pattern = re.compile("^[a-z]{2,3}(-x-[a-z]+)?$")
+        valid_lang_code = pattern.match(language_code)
+        if not valid_lang_code:
             self.logger.warning("Invalid language page url: " + path)
             return response
 
