@@ -95,11 +95,15 @@ class PageMetrics(object):
             self.logger.warning("Invalid language page url: " + path)
             return response
 
-        pattern = re.compile("^[a-z]{2,3}(-x-[a-z]+)?$")
-        valid_lang_code = pattern.match(language_code)
+        language_code = language_code.lower()
+        lang_code_pattern = re.compile("^[a-z]{2,3}(-[a-z0-9]{2,3})?$")
+        valid_lang_code = lang_code_pattern.match(language_code)
         if not valid_lang_code:
-            self.logger.warning("Invalid language page url: " + path)
-            return response
+            extended_lang_code_pattern = re.compile("^[a-z]{2,3}(-x-[a-z0-9]+)?$")
+            valid_lang_code = extended_lang_code_pattern.match(language_code)
+            if not valid_lang_code:
+                self.logger.warning("Invalid language page url: " + path)
+                return response
 
         del response['ErrorMessage']
         language_code = language_code.lower()
@@ -170,3 +174,15 @@ class PageMetrics(object):
                 site = netloc_parts[0]
             self.manifest_table_name = site + '-' + PageMetrics.MANIFEST_TABLE_NAME
         self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
+
+    def list_languages(self, must_be_authenticated=True):
+        if not self.language_stats_db_handler:
+            return None;
+
+        # First see record already exists in DB
+        languages = LanguageStats(db_handler=self.language_stats_db_handler).query({ "monitor" : { "condition": "=", "value": True}})
+        ret = []
+        if languages and len(languages):
+            for language in languages:
+                ret.append(languages.get_db_data())
+        return ret

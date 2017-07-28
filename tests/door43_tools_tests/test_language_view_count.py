@@ -229,6 +229,30 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results)
 
+    def test_localizedLanguage(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.lang_url = "https://live.door43.org/pt-BR/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results)
+
+    def test_localizedLanguage2(self):
+        # given
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        expected_view_count = 0
+        self.lang_url = "https://live.door43.org/es-419/"
+
+        # when
+        results = vc.get_language_view_count(self.lang_url, increment=0)
+
+        # then
+        self.validateResults(expected_view_count, results)
+
     #
     # helpers
     #
