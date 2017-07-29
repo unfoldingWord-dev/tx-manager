@@ -1,9 +1,11 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import datetime
+import os
 import unittest
 from moto import mock_dynamodb2
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.door43_tools.page_metrics import PageMetrics
+from libraries.general_tools import file_utils
 from libraries.models.language_stats import LanguageStats
 
 
@@ -13,6 +15,7 @@ class ViewCountTest(unittest.TestCase):
     MOCK_LANGUAGE_STATS_TABLE_NAME = 'test_language_stats'
     LANG_CODE = "en"
     INITIAL_VIEW_COUNT = 5
+    resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     env_vars = {
         'language_stats_table_name': MOCK_LANGUAGE_STATS_TABLE_NAME
@@ -136,7 +139,6 @@ class ViewCountTest(unittest.TestCase):
         vc = PageMetrics(**{})
         expected_view_count = 0
         self.lang_url = "https://live.door43.org/"
-        self.db_handler = DynamoDBHandler("dev-" + PageMetrics.LANGUAGE_STATS_TABLE_NAME)
 
         # when
         results = vc.get_language_view_count(self.lang_url, increment=1)
@@ -149,7 +151,6 @@ class ViewCountTest(unittest.TestCase):
         vc = PageMetrics(**{})
         expected_view_count = 0
         self.lang_url = "https://live.door43.org/e/"
-        self.db_handler = DynamoDBHandler("dev-" + PageMetrics.LANGUAGE_STATS_TABLE_NAME)
 
         # when
         results = vc.get_language_view_count(self.lang_url, increment=1)
@@ -229,18 +230,6 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results)
 
-    def test_localizedLanguage(self):
-        # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
-        expected_view_count = 0
-        self.lang_url = "https://live.door43.org/pt-BR/"
-
-        # when
-        results = vc.get_language_view_count(self.lang_url, increment=0)
-
-        # then
-        self.validateResults(expected_view_count, results)
-
     def test_localizedLanguage2(self):
         # given
         vc = PageMetrics(**ViewCountTest.env_vars)
@@ -252,6 +241,60 @@ class ViewCountTest(unittest.TestCase):
 
         # then
         self.validateResults(expected_view_count, results)
+
+    def test_listOfLanguageNames(self):
+        lang_names_file = os.path.join(self.resources_dir, "langnames.json")
+        lang_names = file_utils.load_json_object(lang_names_file)
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        success = True
+        msg = ""
+        for lang_name in lang_names:
+
+            # given
+            code = lang_name["lc"]
+            language_name = lang_name["ln"]
+            expected_language_code = code.lower()
+            self.lang_url = "https://live.door43.org/pt-BR/"
+
+            # when
+            lang_code = vc.validate_language_code(code)
+
+            # then
+            if lang_code != expected_language_code:
+                msg = "FAILURE: For language '{0}', expected code '{2}' but got '{1}'".format(language_name, lang_code,
+                                                                                              expected_language_code)
+                print(msg)
+                success = False
+
+        if not success:
+            self.assertTrue(success, msg)
+
+    def test_listOfTempLanguageNames(self):
+        lang_names_file = os.path.join(self.resources_dir, "templanguages.json")
+        lang_names = file_utils.load_json_object(lang_names_file)
+        vc = PageMetrics(**ViewCountTest.env_vars)
+        success = True
+        msg = ""
+        for lang_name in lang_names:
+
+            # given
+            code = lang_name["lc"]
+            language_name = lang_name["ln"]
+            expected_language_code = code.lower()
+            self.lang_url = "https://live.door43.org/pt-BR/"
+
+            # when
+            lang_code = vc.validate_language_code(code)
+
+            # then
+            if lang_code != expected_language_code:
+                msg = "FAILURE: For language '{0}', expected code '{2}' but got '{1}'".format(language_name, lang_code,
+                                                                                              expected_language_code)
+                print(msg)
+                success = False
+
+        if not success:
+            self.assertTrue(success, msg)
 
     #
     # helpers

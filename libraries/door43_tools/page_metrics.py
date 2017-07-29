@@ -95,15 +95,10 @@ class PageMetrics(object):
             self.logger.warning("Invalid language page url: " + path)
             return response
 
-        language_code = language_code.lower()
-        lang_code_pattern = re.compile("^[a-z]{2,3}(-[a-z0-9]{2,3})?$")
-        valid_lang_code = lang_code_pattern.match(language_code)
-        if not valid_lang_code:
-            extended_lang_code_pattern = re.compile("^[a-z]{2,3}(-x-[a-z0-9]+)?$")
-            valid_lang_code = extended_lang_code_pattern.match(language_code)
-            if not valid_lang_code:
-                self.logger.warning("Invalid language page url: " + path)
-                return response
+        language_code = self.validate_language_code(language_code)
+        if not language_code:
+            self.logger.warning("Invalid language page url: " + path)
+            return response
 
         del response['ErrorMessage']
         language_code = language_code.lower()
@@ -146,6 +141,20 @@ class PageMetrics(object):
             return response
 
         return response
+
+    def validate_language_code(self, language_code):
+        language_code = language_code.lower()
+        lang_code_pattern = re.compile("^[a-z]{2,3}(-[a-z0-9]{2,4})?$")
+        valid_lang_code = lang_code_pattern.match(language_code)
+        if not valid_lang_code:
+            extended_lang_code_pattern = re.compile("^[a-z]{2,3}(-x-[\w\d]+)?$", re.UNICODE)
+            valid_lang_code = extended_lang_code_pattern.match(language_code)
+            if not valid_lang_code:
+                extended_lang_code_pattern2 = re.compile("^(-x-[\w\d]+){1}$", re.UNICODE)
+                valid_lang_code = extended_lang_code_pattern2.match(language_code)
+                if not valid_lang_code:
+                    language_code = None
+        return language_code
 
     def updateLangStats(self, lang_stats):
         """
