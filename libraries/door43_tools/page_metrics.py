@@ -4,6 +4,7 @@ import re
 import urlparse
 from decimal import Decimal
 from datetime import datetime
+from operator import itemgetter
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.language_stats import LanguageStats
 from libraries.models.manifest import TxManifest
@@ -26,6 +27,7 @@ class PageMetrics(object):
         self.language_stats_table_name = language_stats_table_name
         self.language_stats_db_handler = None
         self.logger = logging.getLogger()
+        self.languages = None
 
     def get_view_count(self, path, increment=0):
         self.logger.debug("Start: get_view_count")
@@ -184,14 +186,29 @@ class PageMetrics(object):
             self.manifest_table_name = site + '-' + PageMetrics.MANIFEST_TABLE_NAME
         self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
 
-    def list_languages(self, must_be_authenticated=True):
+    def list_language_views(self):
         if not self.language_stats_db_handler:
-            return None;
+            return None
 
         # First see record already exists in DB
-        languages = LanguageStats(db_handler=self.language_stats_db_handler).query({ "monitor" : { "condition": "=", "value": True}})
-        ret = []
-        if languages and len(languages):
-            for language in languages:
-                ret.append(languages.get_db_data())
-        return ret
+        language_items = LanguageStats(db_handler=self.language_stats_db_handler).query({"monitor":
+                                                                                   {"condition": "eq", "value": True}})
+        self.languages = []
+        if language_items and len(language_items):
+            for language in language_items:
+                self.languages.append(language.get_db_data())
+        return self.languages
+
+    def get_language_views_sorted_by_count(self, reverse_sort=True):
+        if not self.languages:
+            self.list_language_views()
+
+        newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
+        return newlist
+
+    def get_language_views_sorted_by_date(self, reverse_sort=True):
+        if not self.languages:
+            self.list_language_views()
+
+        newlist = sorted(self.languages, key=itemgetter('last_updated'), reverse=reverse_sort)
+        return newlist
