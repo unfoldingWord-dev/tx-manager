@@ -72,8 +72,8 @@ class LanguageDashboardTest(unittest.TestCase):
         tx_manager.build_language_popularity_tables(body, max_count)
 
         # then
-        self.assertEquals(len(tx_manager.language_views), 10)
-        self.assertEquals(len(tx_manager.language_dates), 10)
+        self.assertEquals(len(tx_manager.language_views), max_count)
+        self.assertEquals(len(tx_manager.language_dates), max_count)
 
     def test_generate_most_recent_lang_table(self):
         # given
@@ -87,8 +87,37 @@ class LanguageDashboardTest(unittest.TestCase):
         tx_manager.generate_most_recent_lang_table(body, self.language_dates, max_count)
 
         # then
-        self.assertEquals(len(tx_manager.language_views), 0)
-        self.assertEquals(len(tx_manager.language_views), 0)
+        table_id = 'language-recent'
+        row_id = 'recent-'
+        self.validate_table(body, table_id, row_id, max_count)
+
+    def test_generate_highest_views_lang_table(self):
+        # given
+        max_count = 6
+        item_count = 10
+        self.get_view_items(item_count)
+        tx_manager = TxManager(**self.tx_manager_env_vars)
+        body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
+
+        # when
+        tx_manager.generate_highest_views_lang_table(body, self.language_dates, max_count)
+
+        # then
+        table_id = 'language-popularity'
+        row_id = 'popular-'
+        self.validate_table(body, table_id, row_id, max_count)
+
+    #
+    # helpers
+    #
+
+    def validate_table(self, body, table_id, row_id, expected_count):
+        html = body.prettify('UTF-8')
+        soup = BeautifulSoup(html, 'html.parser')
+        language_recent_table = soup.find('table', id=table_id)
+        rows = language_recent_table.findAll('tr', id=lambda x: x and x.startswith(row_id))
+        row_count = len(rows)
+        self.assertEquals(row_count, expected_count)
 
     def initialze_lang_stats_table(self, count):
         for i in range(0, count):

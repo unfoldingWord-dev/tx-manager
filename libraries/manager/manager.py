@@ -622,7 +622,7 @@ class TxManager(object):
     def generate_most_recent_lang_table(self, body, dates, max_count):
         body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
         language_recent_table = BeautifulSoup(
-            '<table id="language_recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            '<table id="language-recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
             'html.parser')
         language_recent_table.table.append(BeautifulSoup('''
                 <tr id="header">
@@ -635,7 +635,7 @@ class TxManager(object):
             item = dates[i]
             try:
                 language_recent_table.table.append(BeautifulSoup(
-                    '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                    '<tr id="recent-' + str(i) + '" class="module-job-id">'
                     + '<td>' + item['last_updated'] + '</td>'
                     + '<td>' + item['lang_code'] + '</td>'
                     + '</tr>',
@@ -647,7 +647,7 @@ class TxManager(object):
     def generate_highest_views_lang_table(self, body, views, max_count):
         body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))
         language_popularity_table = BeautifulSoup(
-            '<table id="language_popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            '<table id="language-popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
             'html.parser')
         language_popularity_table.table.append(BeautifulSoup('''
                 <tr id="header">
