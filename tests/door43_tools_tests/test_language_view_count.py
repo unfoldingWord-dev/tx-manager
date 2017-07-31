@@ -338,7 +338,7 @@ class ViewCountTest(unittest.TestCase):
             'lang_code': ViewCountTest.LANG_CODE.lower(),
             'last_updated': datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'manifest': '{}',
-            'views': ViewCountTest.INITIAL_VIEW_COUNT
+            'views': view_count
         }
 
         lang_stats = LanguageStats(lang_stats_data, db_handler=self.db_handler).insert()

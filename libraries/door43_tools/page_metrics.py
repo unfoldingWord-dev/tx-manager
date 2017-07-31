@@ -30,6 +30,12 @@ class PageMetrics(object):
         self.languages = None
 
     def get_view_count(self, path, increment=0):
+        """
+        get normal user page view count with optional increment
+        :param path:
+        :param increment:
+        :return:
+        """
         self.logger.debug("Start: get_view_count")
 
         response = {  # default to error
@@ -80,6 +86,12 @@ class PageMetrics(object):
         return response
 
     def get_language_view_count(self, path, increment=0):
+        """
+        get language page view count with optional increment
+        :param path:
+        :param increment:
+        :return:
+        """
         self.logger.debug("Start: get_language_count")
 
         response = {  # default to error
@@ -145,14 +157,19 @@ class PageMetrics(object):
         return response
 
     def validate_language_code(self, language_code):
+        """
+        verifies that language_code is valid format and returns the language code if it's valid, else returns None
+        :param language_code:
+        :return:
+        """
         language_code = language_code.lower()
-        lang_code_pattern = re.compile("^[a-z]{2,3}(-[a-z0-9]{2,4})?$")
+        lang_code_pattern = re.compile("^[a-z]{2,3}(-[a-z0-9]{2,4})?$")  # e.g. ab, abc, pt-br, es-419, sr-latn
         valid_lang_code = lang_code_pattern.match(language_code)
         if not valid_lang_code:
-            extended_lang_code_pattern = re.compile("^[a-z]{2,3}(-x-[\w\d]+)?$", re.UNICODE)
+            extended_lang_code_pattern = re.compile("^[a-z]{2,3}(-x-[\w\d]+)?$", re.UNICODE)  # e.g. abc-x-abcdefg
             valid_lang_code = extended_lang_code_pattern.match(language_code)
             if not valid_lang_code:
-                extended_lang_code_pattern2 = re.compile("^(-x-[\w\d]+){1}$", re.UNICODE)
+                extended_lang_code_pattern2 = re.compile("^(-x-[\w\d]+){1}$", re.UNICODE)  # e.g. -x-abcdefg
                 valid_lang_code = extended_lang_code_pattern2.match(language_code)
                 if not valid_lang_code:
                     language_code = None
