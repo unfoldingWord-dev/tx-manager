@@ -8,6 +8,7 @@ from datetime import timedelta
 from libraries.aws_tools.lambda_handler import LambdaHandler
 from bs4 import BeautifulSoup
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
+from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.gogs_tools.gogs_handler import GogsHandler
 from libraries.models.job import TxJob
 from libraries.models.module import TxModule
@@ -20,7 +21,8 @@ class TxManager(object):
 
     def __init__(self, api_url=None, gogs_url=None, cdn_url=None, cdn_bucket=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
-                 job_table_name=None, module_table_name=None, prefix=''):
+                 job_table_name=None, module_table_name=None, language_stats_table_name=None,
+                 prefix=''):
         """
         :param string api_url:
         :param string gogs_url:
@@ -41,6 +43,7 @@ class TxManager(object):
         self.job_table_name = job_table_name
         self.module_table_name = module_table_name
         self.prefix = prefix
+        self.language_stats_table_name = language_stats_table_name
 
         if not self.job_table_name:
             self.job_table_name = TxManager.JOB_TABLE_NAME
@@ -567,7 +570,7 @@ class TxManager(object):
                 'html.parser'))
 
             gogs_url = self.gogs_url
-            if gogs_url == None :
+            if gogs_url is None:
                 gogs_url = 'https://git.door43.org'
 
             for i in range(0, max_failures):
@@ -576,20 +579,20 @@ class TxManager(object):
 
                 item = job_failures[i]
 
-                try :
+                try:
                     identifier = item['identifier']
                     owner_name, repo_name, commit_id = identifier.split('/')
                     source_sub_path = '{0}/{1}'.format(owner_name, repo_name)
                     cdn_bucket = item['cdn_bucket']
                     destination_url = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
-                    repoUrl = gogs_url + "/" + source_sub_path
+                    repo_url = gogs_url + "/" + source_sub_path
                     preconverted_url = item['source']
                     converted_url = item['output']
                     failure_table.table.append(BeautifulSoup(
                         '<tr id="failure-' + str(i) + '" class="module-job-id">'
                         + '<td>' + item['created_at'] + '</td>'
                         + '<td>' + ','.join(item['errors']) + '</td>'
-                        + '<td><a href="' + repoUrl + '">' + source_sub_path + '</a></td>'
+                        + '<td><a href="' + repo_url + '">' + source_sub_path + '</a></td>'
                         + '<td><a href="' + preconverted_url + '">' + preconverted_url.rsplit('/', 1)[1] + '</a></td>'
                         + '<td><a href="' + converted_url + '">' + item['job_id'] + '.zip</a></td>'
                         + '<td><a href="' + destination_url + '">Build Log</a></td>'
@@ -599,11 +602,64 @@ class TxManager(object):
                     pass
 
             body.append(failure_table)
+            self.build_language_popularity_tables(body, max_failures)
             dashboard['body'] = body.prettify('UTF-8')
         else:
             self.logger.debug("No modules found.")
 
         return dashboard
+
+    def build_language_popularity_tables(self, body, max_count):
+        vc = PageMetrics(language_stats_table_name=self.language_stats_table_name)
+        vc.init_language_stats_table(None)
+        views = vc.get_language_views_sorted_by_count()
+        dates = vc.get_language_views_sorted_by_date()
+
+        body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))
+        language_popularity_table = BeautifulSoup(
+            '<table id="language_popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>', 'html.parser')
+        language_popularity_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Views</th>
+                <th class="hdr">Language Code</th>''',
+                                                             'html.parser'))
+        for i in range(0, max_count):
+            if i >= len(views):
+                break
+            item = views[i]
+            try:
+                language_popularity_table.table.append(BeautifulSoup(
+                    '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                    + '<td>' + str(item['views']) + '</td>'
+                    + '<td>' + item['lang_code'] + '</td>'
+                    + '</tr>',
+                    'html.parser'))
+            except:
+                pass
+        body.append(language_popularity_table)
+
+        body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
+        language_recent_table = BeautifulSoup(
+            '<table id="language_recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>', 'html.parser')
+        language_recent_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Updated</th>
+                <th class="hdr">Language Code</th>''',
+                                                             'html.parser'))
+        for i in range(0, max_count):
+            if i >= len(dates):
+                break
+            item = dates[i]
+            try:
+                language_recent_table.table.append(BeautifulSoup(
+                    '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                    + '<td>' + item['last_updated'] + '</td>'
+                    + '<td>' + item['lang_code'] + '</td>'
+                    + '</tr>',
+                    'html.parser'))
+            except:
+                pass
+        body.append(language_recent_table)
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobs_in_module = []

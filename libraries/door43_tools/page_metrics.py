@@ -187,6 +187,10 @@ class PageMetrics(object):
         self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
 
     def list_language_views(self):
+        """
+        get list of all the language view records
+        :return:
+        """
         if not self.language_stats_db_handler:
             return None
 
@@ -200,6 +204,11 @@ class PageMetrics(object):
         return self.languages
 
     def get_language_views_sorted_by_count(self, reverse_sort=True):
+        """
+        Get list of language views records sorted by views.
+        :param reverse_sort:
+        :return:
+        """
         if not self.languages:
             self.list_language_views()
 
@@ -207,6 +216,11 @@ class PageMetrics(object):
         return newlist
 
     def get_language_views_sorted_by_date(self, reverse_sort=True):
+        """
+        Get list of language views records sorted by time last viewed.
+        :param reverse_sort:
+        :return:
+        """
         if not self.languages:
             self.list_language_views()
 
