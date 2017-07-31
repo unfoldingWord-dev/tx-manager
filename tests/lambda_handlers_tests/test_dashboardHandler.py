@@ -23,7 +23,8 @@ class DashboardHandlerTest(TestCase):
                 'api_url': 'https://api.example.com',
                 'cdn_bucket': 'cdn_test_bucket',
                 'job_table_name': 'test-tx-job',
-                'module_table_name': 'test-tx-module'
+                'module_table_name': 'test-tx-module',
+                'language_stats_table_name': 'test-language-stats'
             }
         }
         handler = DashboardHandler()
@@ -43,7 +44,8 @@ class DashboardHandlerTest(TestCase):
                 'gogs_url': 'https://git.door43.org',
                 'cdn_url': 'https://test-cdn.door43.org',
                 'job_table_name': 'test-tx-job',
-                'module_table_name': 'test-tx-module'
+                'module_table_name': 'test-tx-module',
+                'language_stats_table_name': 'test-language-stats'
             },
             "api-gateway" : {
                 "params" : {
