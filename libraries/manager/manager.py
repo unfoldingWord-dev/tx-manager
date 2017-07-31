@@ -59,6 +59,8 @@ class TxManager(object):
         self.jobs_warnings = 0
         self.jobs_failures = 0
         self.jobs_success = 0
+        self.language_views = None
+        self.language_dates = None
 
         self.logger = logging.getLogger()
 
@@ -612,12 +614,41 @@ class TxManager(object):
     def build_language_popularity_tables(self, body, max_count):
         vc = PageMetrics(language_stats_table_name=self.language_stats_table_name)
         vc.init_language_stats_table(None)
-        views = vc.get_language_views_sorted_by_count()
-        dates = vc.get_language_views_sorted_by_date()
+        self.language_views = vc.get_language_views_sorted_by_count()
+        self.language_dates = vc.get_language_views_sorted_by_date()
+        self.generate_highest_views_lang_table(body, self.language_views, max_count)
+        self.generate_most_recent_lang_table(body, self.language_dates, max_count)
 
+    def generate_most_recent_lang_table(self, body, dates, max_count):
+        body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
+        language_recent_table = BeautifulSoup(
+            '<table id="language_recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            'html.parser')
+        language_recent_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Updated</th>
+                <th class="hdr">Language Code</th>''',
+                                                         'html.parser'))
+        for i in range(0, max_count):
+            if i >= len(dates):
+                break
+            item = dates[i]
+            try:
+                language_recent_table.table.append(BeautifulSoup(
+                    '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                    + '<td>' + item['last_updated'] + '</td>'
+                    + '<td>' + item['lang_code'] + '</td>'
+                    + '</tr>',
+                    'html.parser'))
+            except:
+                pass
+        body.append(language_recent_table)
+
+    def generate_highest_views_lang_table(self, body, views, max_count):
         body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))
         language_popularity_table = BeautifulSoup(
-            '<table id="language_popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>', 'html.parser')
+            '<table id="language_popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            'html.parser')
         language_popularity_table.table.append(BeautifulSoup('''
                 <tr id="header">
                 <th class="hdr">Views</th>
@@ -637,29 +668,6 @@ class TxManager(object):
             except:
                 pass
         body.append(language_popularity_table)
-
-        body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
-        language_recent_table = BeautifulSoup(
-            '<table id="language_recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>', 'html.parser')
-        language_recent_table.table.append(BeautifulSoup('''
-                <tr id="header">
-                <th class="hdr">Updated</th>
-                <th class="hdr">Language Code</th>''',
-                                                             'html.parser'))
-        for i in range(0, max_count):
-            if i >= len(dates):
-                break
-            item = dates[i]
-            try:
-                language_recent_table.table.append(BeautifulSoup(
-                    '<tr id="popular-' + str(i) + '" class="module-job-id">'
-                    + '<td>' + item['last_updated'] + '</td>'
-                    + '<td>' + item['lang_code'] + '</td>'
-                    + '</tr>',
-                    'html.parser'))
-            except:
-                pass
-        body.append(language_recent_table)
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobs_in_module = []

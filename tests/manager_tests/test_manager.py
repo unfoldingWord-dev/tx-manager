@@ -582,6 +582,7 @@ class ManagerTest(unittest.TestCase):
             self.assertRaises(Exception, self.tx_manager.register_module, missing)
 
     def test_generate_dashboard(self):
+        self.tx_manager.build_language_popularity_tables = self.mock_build_language_popularity_tables
         dashboard = self.tx_manager.generate_dashboard()
         # the title should be tX-Manager Dashboard
         self.assertEqual(dashboard['title'], 'tX-Manager Dashboard')
@@ -637,6 +638,7 @@ class ManagerTest(unittest.TestCase):
 
     def test_generate_dashboard_max_two(self):
         expected_max_failures = 2
+        self.tx_manager.build_language_popularity_tables = self.mock_build_language_popularity_tables
         dashboard = self.tx_manager.generate_dashboard(expected_max_failures)
 
         # the title should be tX-Manager Dashboard
@@ -721,13 +723,16 @@ class ManagerTest(unittest.TestCase):
             return 0
 
         data_fields = rows[0].findAll('td')
-        strings = data_fields[1].stripped_strings # get data from second column
+        strings = data_fields[1].stripped_strings  # get data from second column
         count = -1
         for string in strings:
             count = int(string)
             break
 
         return count
+
+    def mock_build_language_popularity_tables(self, body, max_count):
+        pass
 
     def call_args(self, mock_object, num_args, num_kwargs=0):
         """
