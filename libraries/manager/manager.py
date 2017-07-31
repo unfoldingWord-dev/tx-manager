@@ -629,19 +629,21 @@ class TxManager(object):
                 <th class="hdr">Updated</th>
                 <th class="hdr">Language Code</th>''',
                                                          'html.parser'))
-        for i in range(0, max_count):
-            if i >= len(dates):
-                break
-            item = dates[i]
-            try:
-                language_recent_table.table.append(BeautifulSoup(
-                    '<tr id="recent-' + str(i) + '" class="module-job-id">'
-                    + '<td>' + item['last_updated'] + '</td>'
-                    + '<td>' + item['lang_code'] + '</td>'
-                    + '</tr>',
-                    'html.parser'))
-            except:
-                pass
+
+        if dates is not None:
+            for i in range(0, max_count):
+                if i >= len(dates):
+                    break
+                item = dates[i]
+                try:
+                    language_recent_table.table.append(BeautifulSoup(
+                        '<tr id="recent-' + str(i) + '" class="module-job-id">'
+                        + '<td>' + item['last_updated'] + '</td>'
+                        + '<td>' + item['lang_code'] + '</td>'
+                        + '</tr>',
+                        'html.parser'))
+                except:
+                    pass
         body.append(language_recent_table)
 
     def generate_highest_views_lang_table(self, body, views, max_count):
@@ -654,19 +656,20 @@ class TxManager(object):
                 <th class="hdr">Views</th>
                 <th class="hdr">Language Code</th>''',
                                                              'html.parser'))
-        for i in range(0, max_count):
-            if i >= len(views):
-                break
-            item = views[i]
-            try:
-                language_popularity_table.table.append(BeautifulSoup(
-                    '<tr id="popular-' + str(i) + '" class="module-job-id">'
-                    + '<td>' + str(item['views']) + '</td>'
-                    + '<td>' + item['lang_code'] + '</td>'
-                    + '</tr>',
-                    'html.parser'))
-            except:
-                pass
+        if views is not None:
+            for i in range(0, max_count):
+                if i >= len(views):
+                    break
+                item = views[i]
+                try:
+                    language_popularity_table.table.append(BeautifulSoup(
+                        '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                        + '<td>' + str(item['views']) + '</td>'
+                        + '<td>' + item['lang_code'] + '</td>'
+                        + '</tr>',
+                        'html.parser'))
+                except:
+                    pass
         body.append(language_popularity_table)
 
     def get_jobs_for_module(self, jobs, moduleName):

@@ -75,6 +75,36 @@ class LanguageDashboardTest(unittest.TestCase):
         self.assertEquals(len(tx_manager.language_views), max_count)
         self.assertEquals(len(tx_manager.language_dates), max_count)
 
+    def test_build_language_popularity_tables_invalid_table_name(self):
+        # given
+        max_count = 10
+        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager.language_stats_table_name = 'dummy'
+        tx_manager.lang_stats_db_handler = None
+        body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
+
+        # when
+        tx_manager.build_language_popularity_tables(body, max_count)
+
+        # then
+        self.assertIsNone(tx_manager.language_views)
+        self.assertIsNone(tx_manager.language_dates)
+
+    def test_build_language_popularity_tables_no_table_name(self):
+        # given
+        max_count = 10
+        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager.language_stats_table_name = 'dummy'
+        tx_manager.lang_stats_db_handler = None
+        body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
+
+        # when
+        tx_manager.build_language_popularity_tables(body, max_count)
+
+        # then
+        self.assertIsNone(tx_manager.language_views)
+        self.assertIsNone(tx_manager.language_dates)
+
     def test_generate_most_recent_lang_table(self):
         # given
         max_count = 5

@@ -226,10 +226,16 @@ class PageMetrics(object):
         :param reverse_sort:
         :return:
         """
-        if not self.languages:
-            self.list_language_views()
+        newlist = None
+        if self.languages is None:
+            try:
+                self.list_language_views()
+            except:
+                pass
 
-        newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
+        if self.languages is not None:
+            newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
+
         return newlist
 
     def get_language_views_sorted_by_date(self, reverse_sort=True):
@@ -238,8 +244,14 @@ class PageMetrics(object):
         :param reverse_sort:
         :return:
         """
-        if not self.languages:
-            self.list_language_views()
+        newlist = None
+        if self.languages is None:
+            try:
+                self.list_language_views()
+            except:
+                pass
 
-        newlist = sorted(self.languages, key=itemgetter('last_updated'), reverse=reverse_sort)
+        if self.languages is not None:
+            newlist = sorted(self.languages, key=itemgetter('last_updated'), reverse=reverse_sort)
+
         return newlist
