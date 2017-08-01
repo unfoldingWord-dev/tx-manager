@@ -554,7 +554,7 @@ class TxManager(object):
                 'html.parser'))
 
             # build job failures table
-            job_failures = self.get_failures()
+            job_failures = self.get_failures( max_failures)
             #job_failures = self.get_job_failures(registered_jobs)
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
             failure_table = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
@@ -608,16 +608,16 @@ class TxManager(object):
 
         return dashboard
 
-    def get_failures(self):
+    def get_failures( self, limit ):
         client = boto3.client('dynamodb')
-        return client.query( TableName=u'dev-tx-job',
-            IndexName = u'status-created_at-index',
+        return client.query( TableName= self.job_table_name,
+            IndexName  = u'status-created_at-index',
             Select     = u'ALL_PROJECTED_ATTRIBUTES',
             KeyConditionExpression    = u'#stts = :st',
             ExpressionAttributeValues = {":st": {"S": "failed"}},
             ExpressionAttributeNames  = {"#stts": "status"},
             ScanIndexForward = False, # descending
-            Limit = 10 )
+            Limit = limit )
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobs_in_module = []
