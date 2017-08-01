@@ -577,7 +577,7 @@ class TxManager(object):
                     break
 
                 item = job_failures["Items"][i]
-                # index attributes: identifier, cdn_bucked, source, output, created_at, ended_at, errors, job_id, status
+                # index attributes: identifier, cdn_bucked, source, output, created_at, ended_at, started_at, errors, job_id, status
                 #                                                                         x        x      x
                 try :
                     identifier = item['identifier']
@@ -611,12 +611,13 @@ class TxManager(object):
     def get_failures(self):
         client = boto3.client('dynamodb')
         return client.query( TableName=u'dev-tx-job',
-            IndexName = u'status-index',
+            IndexName = u'status-created_at-index',
             Select     = u'ALL_PROJECTED_ATTRIBUTES',
-            KeyConditionExpression=u'#stts = :st',
+            KeyConditionExpression    = u'#stts = :st',
             ExpressionAttributeValues = {":st": {"S": "failed"}},
-            ExpressionAttributeNames = {"#stts": "status"},
-            Limit=10)
+            ExpressionAttributeNames  = {"#stts": "status"},
+            ScanIndexForward = False, # descending
+            Limit = 10 )
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobs_in_module = []
