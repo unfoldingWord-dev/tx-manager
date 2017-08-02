@@ -175,10 +175,6 @@ class Templater(object):
                 soup.head.title.clear()
                 soup.head.title.append(heading+' - '+title)
 
-                for a_tag in soup.body.find_all('a[rel="dct:source"]'):
-                    a_tag.clear()
-                    a_tag.append(title)
-
                 # set the page heading
                 heading_span = soup.body.find('span', id='h1')
                 heading_span.clear()
