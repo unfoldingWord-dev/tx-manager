@@ -73,7 +73,7 @@ class Templater(object):
 
     def build_page_nav(self, filename=None):
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+            <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
               <ul id="sidebar-nav" class="nav nav-stacked">
                 <li><h1>Navigation</h1></li>
             """
@@ -162,9 +162,9 @@ class Templater(object):
 
                 # get the body of the raw html file
                 if not fileSoup.body:
-                    body = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
+                    body = BeautifulSoup('<div>No content</div>', 'html.parser')
                 else:
-                    body = fileSoup.body.extract()
+                    body = BeautifulSoup(''.join(['%s' % x for x in fileSoup.body.contents]), 'html.parser')
 
                 # insert new HTML into the template
                 outer_content_div.clear()
@@ -269,7 +269,7 @@ class BibleTemplater(Templater):
 
     def build_page_nav(self, filename=None):
         html = """
-        <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+        <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
             <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
@@ -354,7 +354,7 @@ class TaTemplater(Templater):
     def build_page_nav(self, filename=None):
         self.section_container_id = 1
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+            <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
                 <ul id="sidebar-nav" class="nav nav-stacked">
         """
         for fname in self.files:
