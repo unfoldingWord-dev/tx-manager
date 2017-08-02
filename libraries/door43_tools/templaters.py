@@ -338,9 +338,10 @@ class TaTemplater(Templater):
                 <a href="#{0}">{1}</a>
             """.format(link, section['title'])
         if 'sections' in section:
-            html += """
-                <ul>
-            """
+            html += """ 
+                <a href="#" data-target="#{0}-sub" data-toggle="collapse" class="content-nav-expand collapsed"></a>
+                <ul id="{0}-sub" class="collapse">
+            """.format(link)
             for subsection in section['sections']:
                 html += self.build_section_toc(subsection)
             html += """
@@ -355,7 +356,7 @@ class TaTemplater(Templater):
         self.section_container_id = 1
         html = """
             <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
-                <ul id="sidebar-nav" class="nav nav-stacked">
+                <ul class="nav nav-stacked">
         """
         for fname in self.files:
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
