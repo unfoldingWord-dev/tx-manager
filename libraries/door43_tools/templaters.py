@@ -204,7 +204,7 @@ class Templater(object):
 
                 # Replace HEADING with page title in footer
                 html = html.replace('{{ HEADING }}', title)
-                
+
                 # write to output directory
                 out_file = os.path.join(self.output_dir, os.path.basename(filename))
                 self.logger.debug('Writing {0}.'.format(out_file))
@@ -269,7 +269,7 @@ class BibleTemplater(Templater):
 
     def build_page_nav(self, filename=None):
         html = """
-        <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+        <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
             <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
@@ -354,7 +354,7 @@ class TaTemplater(Templater):
     def build_page_nav(self, filename=None):
         self.section_container_id = 1
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+            <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
                 <ul id="sidebar-nav" class="nav nav-stacked">
         """
         for fname in self.files:
