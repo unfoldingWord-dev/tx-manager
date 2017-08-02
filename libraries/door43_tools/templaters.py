@@ -201,6 +201,10 @@ class Templater(object):
                     '')
                 # update the canonical URL - it is in several different locations
                 html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
+
+                # Replace HEADING with page title in footer
+                html = html.replace('{{ HEADING }}', title)
+                
                 # write to output directory
                 out_file = os.path.join(self.output_dir, os.path.basename(filename))
                 self.logger.debug('Writing {0}.'.format(out_file))
