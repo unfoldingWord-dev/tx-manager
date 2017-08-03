@@ -73,7 +73,7 @@ class Templater(object):
 
     def build_page_nav(self, filename=None):
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+            <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
               <ul id="sidebar-nav" class="nav nav-stacked">
                 <li><h1>Navigation</h1></li>
             """
@@ -162,9 +162,9 @@ class Templater(object):
 
                 # get the body of the raw html file
                 if not fileSoup.body:
-                    body = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
+                    body = BeautifulSoup('<div>No content</div>', 'html.parser')
                 else:
-                    body = fileSoup.body.extract()
+                    body = BeautifulSoup(''.join(['%s' % x for x in fileSoup.body.contents]), 'html.parser')
 
                 # insert new HTML into the template
                 outer_content_div.clear()
@@ -174,10 +174,6 @@ class Templater(object):
 
                 soup.head.title.clear()
                 soup.head.title.append(heading+' - '+title)
-
-                for a_tag in soup.body.find_all('a[rel="dct:source"]'):
-                    a_tag.clear()
-                    a_tag.append(title)
 
                 # set the page heading
                 heading_span = soup.body.find('span', id='h1')
@@ -205,6 +201,10 @@ class Templater(object):
                     '')
                 # update the canonical URL - it is in several different locations
                 html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
+
+                # Replace HEADING with page title in footer
+                html = html.replace('{{ HEADING }}', title)
+
                 # write to output directory
                 out_file = os.path.join(self.output_dir, os.path.basename(filename))
                 self.logger.debug('Writing {0}.'.format(out_file))
@@ -269,7 +269,7 @@ class BibleTemplater(Templater):
 
     def build_page_nav(self, filename=None):
         html = """
-        <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+        <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
             <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
@@ -338,9 +338,10 @@ class TaTemplater(Templater):
                 <a href="#{0}">{1}</a>
             """.format(link, section['title'])
         if 'sections' in section:
-            html += """
-                <ul>
-            """
+            html += """ 
+                <a href="#" data-target="#{0}-sub" data-toggle="collapse" class="content-nav-expand collapsed"></a>
+                <ul id="{0}-sub" class="collapse">
+            """.format(link)
             for subsection in section['sections']:
                 html += self.build_section_toc(subsection)
             html += """
@@ -354,8 +355,8 @@ class TaTemplater(Templater):
     def build_page_nav(self, filename=None):
         self.section_container_id = 1
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
-                <ul id="sidebar-nav" class="nav nav-stacked">
+            <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+                <ul class="nav nav-stacked">
         """
         for fname in self.files:
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
