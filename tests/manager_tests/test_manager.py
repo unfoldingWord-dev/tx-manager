@@ -81,6 +81,38 @@ class ManagerTest(unittest.TestCase):
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
             },
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'status-created_at-index',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'status',
+                            'KeyType': 'HASH'
+                        },
+                        {
+                            'AttributeName': 'created_at',
+                            'KeyType': 'RANGE'
+                        }
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'INCLUDE',
+                        'NonKeyAttributes': [
+                            'identifier',
+                            'cdn_bucket',
+                            'source',
+                            'output',
+                            'ended_at',
+                            'started_at',
+                            'errors',
+                            'job_id'
+                        ]
+                    },
+                    'ProvisionedThroughput': {
+                        'ReadCapacityUnits': 5,
+                        'WriteCapacityUnits': 5
+                    }
+                },
+            ],
         )
         self.tx_manager.module_db_handler.resource.create_table(
             TableName=ManagerTest.MOCK_MODULE_TABLE_NAME,
