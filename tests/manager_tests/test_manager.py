@@ -213,7 +213,7 @@ class ManagerTest(unittest.TestCase):
             },
             'job10': {
                 'job_id': 'job10',
-                'status': 'requested',
+                'status': 'requested', # TBD should be failed
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
@@ -227,7 +227,21 @@ class ManagerTest(unittest.TestCase):
             },
             'job11': {
                 'job_id': 'job11',
-                'status': 'requested',
+                'status': 'requested', # TBD should be failed
+                'resource_type': 'obs',
+                'input_format': 'md',
+                'output_format': 'html',
+                'convert_module': 'module2',
+                'identifier': 'tx-manager-test-data/en-ulb-jud/6778aa89bZZ',
+                'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bdZZ.zip',
+                'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip',
+                'errors': ['error1','error2','error3' ],
+                'cdn_bucket': 'cdn.door43.org',
+                'created_at':	'2017-05-12T17:03:04Z'
+            },
+            'job12': { # TBD added
+                'job_id': 'job12',
+                'status': 'failed',
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
@@ -239,6 +253,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'created_at':	'2017-05-12T17:03:04Z'
             }
+
         }
         self.module_items = {
             'module1': {
@@ -626,12 +641,12 @@ class ManagerTest(unittest.TestCase):
         expected_row_count = 12
         expected_success_count = 2
         expected_warning_count = 2
-        expected_failure_count = 1
+        expected_failure_count = 1 # TBD was 1
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count)
 
         module_name = 'module2'
-        expected_row_count = 11
+        expected_row_count = 11  # TBD was 11
         expected_success_count = 2
         expected_warning_count = 0
         expected_failure_count = 2
@@ -649,7 +664,7 @@ class ManagerTest(unittest.TestCase):
         module_name = 'module4'
         expected_row_count = 0
         expected_success_count = 0
-        expected_warning_count = 0
+        expected_warning_count = 3 # TBD was 0
         expected_failure_count = 0
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count)

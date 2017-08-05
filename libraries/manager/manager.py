@@ -610,7 +610,8 @@ class TxManager(object):
 
     def get_failures( self, limit ):
         client = boto3.client('dynamodb')
-        return client.query( TableName= self.job_table_name,
+
+        content = client.query( TableName= self.job_table_name,
             IndexName  = u'status-created_at-index',
             Select     = u'ALL_PROJECTED_ATTRIBUTES',
             KeyConditionExpression    = u'#stts = :st',
@@ -618,6 +619,7 @@ class TxManager(object):
             ExpressionAttributeNames  = {"#stts": "status"},
             ScanIndexForward = False, # descending
             Limit = limit )
+        return content
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobs_in_module = []
