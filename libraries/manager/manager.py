@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, print_function
 import json
 import hashlib
+
+import boto3
 import requests
 import logging
 from datetime import datetime
@@ -552,8 +554,8 @@ class TxManager(object):
                 'html.parser'))
 
             # build job failures table
-
-            job_failures = self.get_job_failures(registered_jobs)
+            job_failures = self.get_failures( max_failures)
+            #job_failures = self.get_job_failures(registered_jobs)
             body.append(BeautifulSoup('<h2>Failed Jobs</h2>', 'html.parser'))
             failure_table = BeautifulSoup('<table id="failed" cellpadding="4" border="1" style="border-collapse:collapse"></table>','html.parser')
             failure_table.table.append(BeautifulSoup('''
@@ -571,11 +573,12 @@ class TxManager(object):
                 gogs_url = 'https://git.door43.org'
 
             for i in range(0, max_failures):
-                if i >= len(job_failures):
+                if i >= len(job_failures["Items"]):
                     break
 
-                item = job_failures[i]
-
+                item = job_failures["Items"][i]
+                # index attributes: identifier, cdn_bucked, source, output, created_at, ended_at, started_at, errors, job_id, status
+                #                                                                         x        x      x
                 try :
                     identifier = item['identifier']
                     owner_name, repo_name, commit_id = identifier.split('/')
@@ -604,6 +607,19 @@ class TxManager(object):
             self.logger.debug("No modules found.")
 
         return dashboard
+
+    def get_failures( self, limit ):
+        client = boto3.client('dynamodb')
+
+        content = client.query( TableName= self.job_table_name,
+            IndexName  = u'status-created_at-index',
+            Select     = u'ALL_PROJECTED_ATTRIBUTES',
+            KeyConditionExpression    = u'#stts = :st',
+            ExpressionAttributeValues = {":st": {"S": "failed"}},
+            ExpressionAttributeNames  = {"#stts": "status"},
+            ScanIndexForward = False, # descending
+            Limit = limit )
+        return content
 
     def get_jobs_for_module(self, jobs, moduleName):
         jobs_in_module = []
