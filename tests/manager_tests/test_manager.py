@@ -106,12 +106,17 @@ class ManagerTest(unittest.TestCase):
         self.job_items = {
             'job1': {
                 'job_id': 'job1',
-                'status': 'started',
+                'status': 'requested',
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
                 'convert_module': 'module1',
-                'errors': []
+                'errors': [],
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'created_at':	'2017-04-12T17:03:05Z'
             },
             'job2': {
                 'job_id': 'job2',
@@ -120,7 +125,6 @@ class ManagerTest(unittest.TestCase):
                 'input_format': 'md',
                 'output_format': 'html',
                 'convert_module': 'module1',
-                'errors': ['error'],
                 'cdn_bucket': 'cdn.door43.org',
                 'identifier': 'tx-manager-test-data/en-ulb-jud/6778aa89bd',
                 'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip',
@@ -135,7 +139,12 @@ class ManagerTest(unittest.TestCase):
                 'output_format': 'html',
                 'callback': ManagerTest.MOCK_CALLBACK_URL,
                 'convert_module': 'module1',
-                'warnings': []
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'warnings': [],
+                'created_at':	'2017-04-12T17:03:07Z'
             },
             'job4': {
                 'job_id': 'job4',
@@ -144,7 +153,11 @@ class ManagerTest(unittest.TestCase):
                 'input_format': 'md',
                 'output_format': 'html',
                 'convert_module': 'module1',
-                'warnings': ['warning' ]
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'created_at':	'2017-04-12T17:03:08Z'
             },
             'job5': {
                 'job_id': 'job5',
@@ -153,7 +166,11 @@ class ManagerTest(unittest.TestCase):
                 'input_format': 'md',
                 'output_format': 'html',
                 'convert_module': 'module1',
-                'warnings': ['warning1', 'warning2' ]
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'created_at':	'2017-04-12T17:03:09Z'
             },
             'job7': {
                 'job_id': 'job7',
@@ -161,15 +178,25 @@ class ManagerTest(unittest.TestCase):
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
-                'convert_module': 'module2'
+                'convert_module': 'module2',
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'created_at':	'2017-04-12T17:03:10Z'
             },
             'job8': {
                 'job_id': 'job8',
-                'status': 'requested',
+                'status': 'success',
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
-                'convert_module': 'module2'
+                'convert_module': 'module2',
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'created_at':	'2017-04-12T17:03:11Z'
             },
             'job9': {
                 'job_id': 'job9',
@@ -177,11 +204,16 @@ class ManagerTest(unittest.TestCase):
                 'resource_type': 'obs',
                 'input_format': 'html',
                 'output_format': 'pdf',
-                'convert_module': 'module4'
+                'convert_module': 'module4',
+                'identifier': 'dummy-repo/dummy-user/dummy-commit',
+                'cdn_bucket': 'cdn.door43.org',
+                'source': 'https://door43.org/dummy_source',
+                'output': 'https://door43.org/dummy_output',
+                'created_at':	'2017-04-12T17:03:12Z'
             },
             'job10': {
                 'job_id': 'job10',
-                'status': 'requested',
+                'status': 'failed',
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
@@ -191,11 +223,11 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZ.zip',
                 'errors': ['error1', 'error2' ],
                 'cdn_bucket': 'cdn.door43.org',
-                'created_at':	'2017-03-12T17:03:076Z'
+                'created_at':	'2017-03-12T17:03:13Z'
             },
             'job11': {
                 'job_id': 'job11',
-                'status': 'requested',
+                'status': 'warnings',
                 'resource_type': 'obs',
                 'input_format': 'md',
                 'output_format': 'html',
@@ -205,7 +237,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip',
                 'errors': ['error1','error2','error3' ],
                 'cdn_bucket': 'cdn.door43.org',
-                'created_at':	'2017-05-12T17:03:04Z'
+                'created_at':	'2017-05-12T17:03:14Z'
             }
         }
         self.module_items = {
@@ -385,9 +417,9 @@ class ManagerTest(unittest.TestCase):
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job1(self, mock_request_post, mock_invoke):
+    def test_start_job2(self, mock_request_post, mock_invoke):
         """
-        Call start job in job 1 from mock data.
+        Call start job in job 2 from mock data.
 
         Should be a successful invocation with warnings.
         """
@@ -407,15 +439,15 @@ class ManagerTest(unittest.TestCase):
         # job1's entry in database should have been updated
         job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job2'})
         self.assertEqual(job.job_id, 'job2')
-        self.assertEqual(len(job.errors), 1)
-        self.assertTrue(len(job.warnings) == 1)
+        self.assertEqual(len(job.errors), 0)
+        self.assertEqual(len(job.warnings), 1)
 
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job2(self, mock_request_post, mock_invoke):
+    def test_start_job3(self, mock_request_post, mock_invoke):
         """
-        Call start_job in job 2 from mock data.
+        Call start_job in job 3 from mock data.
 
         Should be a successful invocation without warnings.
         """
@@ -439,9 +471,9 @@ class ManagerTest(unittest.TestCase):
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job3(self, mock_request_post, mock_invoke):
+    def test_start_job4(self, mock_request_post, mock_invoke):
         """
-        Call start_job on job 3 from mock data.
+        Call start_job on job 4 from mock data.
 
         Invocation should result in an error
 
@@ -464,7 +496,7 @@ class ManagerTest(unittest.TestCase):
         # job3's entry in database should have been updated
         job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job4'})
         self.assertEqual(job.job_id, 'job4')
-        self.assertTrue(len(job.errors) > 0)
+        self.assertGreater(len(job.errors), 0)
 
     def test_start_job_failure(self):
         """Call start_job with non-runnable/non-existent jobs."""
@@ -479,7 +511,7 @@ class ManagerTest(unittest.TestCase):
         self.assertFalse(ret5['success'])
         self.assertEqual(ret5['message'], 'No job with ID job6 has been requested')
 
-        # last existent job (4) should be updated in database to include error
+        # last existent job (5) should be updated in database to include error
         # messages
         job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job5'})
         self.assertEqual(job.job_id, 'job5')
@@ -490,7 +522,7 @@ class ManagerTest(unittest.TestCase):
     @mock.patch('requests.post')
     def test_start_job_bad_error(self, mock_requests_post, mock_invoke):
         """
-        Call start_job in job 6 from mock data.
+        Call start_job in job 7 from mock data.
 
         Should fail due to the response having an errorMessage
         """
@@ -528,19 +560,20 @@ class ManagerTest(unittest.TestCase):
 
         mock_requests_post.return_value = None
 
-        self.tx_manager.start_job('job8')
+        self.tx_manager.start_job('job7')
 
         # job 7's entry in database should have been updated
-        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job8'})
-        self.assertEqual(job.job_id, 'job8')
+        job = TxJob(db_handler=self.tx_manager.job_db_handler).load({'job_id': 'job7'})
+        self.assertEqual(job.job_id, 'job7')
         self.assertEqual(len(job.errors), 2)
 
     def test_list_jobs(self):
         """Test list_jobs and list_endpoint methods."""
         tx_manager = TxManager(**self.tx_manager_env_vars)
         jobs = tx_manager.list_jobs({'gogs_user_token': 'token2'}, True)
+        jobs_data = [job.get_db_data() for job in jobs]
         expected = [TxJob(self.job_items[job_id]).get_db_data() for job_id in self.job_items]
-        self.assertItemsEqual(jobs, expected)
+        self.assertItemsEqual(jobs_data, expected)
 
         self.assertRaises(Exception, tx_manager.list_jobs, {'bad_key': 'token1'})
         self.assertRaises(Exception, tx_manager.list_jobs, {'gogs_user_token': 'bad_token'})
@@ -593,16 +626,16 @@ class ManagerTest(unittest.TestCase):
 
         module_name = 'module1'
         expected_row_count = 12
-        expected_success_count = 2
-        expected_warning_count = 2
-        expected_failure_count = 1
+        expected_success_count = 0
+        expected_warning_count = 0
+        expected_failure_count = 5
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count)
 
         module_name = 'module2'
         expected_row_count = 11
-        expected_success_count = 2
-        expected_warning_count = 0
+        expected_success_count = 1
+        expected_warning_count = 1
         expected_failure_count = 2
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count)
@@ -625,15 +658,15 @@ class ManagerTest(unittest.TestCase):
 
         module_name = 'totals'
         expected_row_count = 5
-        expected_success_count = 5
-        expected_warning_count = 2
-        expected_failure_count = 3
+        expected_success_count = 1
+        expected_warning_count = 1
+        expected_failure_count = 8
         expected_unregistered = 0
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count, expected_unregistered)
 
         failure_table = soup.find('table', id='failed')
-        expected_failure_count = 3
+        expected_failure_count = 8
         self.validateFailureTable(failure_table, expected_failure_count)
 
     def test_generate_dashboard_max_two(self):
@@ -649,16 +682,16 @@ class ManagerTest(unittest.TestCase):
 
         module_name = 'module1'
         expected_row_count = 12
-        expected_success_count = 2
-        expected_warning_count = 2
-        expected_failure_count = 1
+        expected_success_count = 0
+        expected_warning_count = 0
+        expected_failure_count = 5
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count)
 
         module_name = 'module2'
         expected_row_count = 11
-        expected_success_count = 2
-        expected_warning_count = 0
+        expected_success_count = 1
+        expected_warning_count = 1
         expected_failure_count = 2
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count)
@@ -673,9 +706,9 @@ class ManagerTest(unittest.TestCase):
 
         module_name = 'totals'
         expected_row_count = 5
-        expected_success_count = 5
-        expected_warning_count = 2
-        expected_failure_count = 3
+        expected_success_count = 1
+        expected_warning_count = 1
+        expected_failure_count = 8
         expected_unregistered = 0
         self.validateModule(status_table, module_name, expected_row_count, expected_success_count, expected_failure_count,
                             expected_warning_count, expected_unregistered)
