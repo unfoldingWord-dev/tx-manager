@@ -1,8 +1,10 @@
 from __future__ import print_function, unicode_literals
 import logging
+import re
 import urlparse
 from decimal import Decimal
 from datetime import datetime
+from operator import itemgetter
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.language_stats import LanguageStats
 from libraries.models.manifest import TxManifest
@@ -25,8 +27,15 @@ class PageMetrics(object):
         self.language_stats_table_name = language_stats_table_name
         self.language_stats_db_handler = None
         self.logger = logging.getLogger()
+        self.languages = None
 
     def get_view_count(self, path, increment=0):
+        """
+        get normal user page view count with optional increment
+        :param path:
+        :param increment:
+        :return:
+        """
         self.logger.debug("Start: get_view_count")
 
         response = {  # default to error
@@ -77,6 +86,12 @@ class PageMetrics(object):
         return response
 
     def get_language_view_count(self, path, increment=0):
+        """
+        get language page view count with optional increment
+        :param path:
+        :param increment:
+        :return:
+        """
         self.logger.debug("Start: get_language_count")
 
         response = {  # default to error
@@ -94,7 +109,8 @@ class PageMetrics(object):
             self.logger.warning("Invalid language page url: " + path)
             return response
 
-        if (empty != '') or (len(parts) > 3) or (not language_code) or (len(language_code) < 2):
+        language_code = self.validate_language_code(language_code)
+        if not language_code:
             self.logger.warning("Invalid language page url: " + path)
             return response
 
@@ -140,6 +156,25 @@ class PageMetrics(object):
 
         return response
 
+    def validate_language_code(self, language_code):
+        """
+        verifies that language_code is valid format and returns the language code if it's valid, else returns None
+        :param language_code:
+        :return:
+        """
+        language_code = language_code.lower()
+        lang_code_pattern = re.compile("^[a-z]{2,3}(-[a-z0-9]{2,4})?$")  # e.g. ab, abc, pt-br, es-419, sr-latn
+        valid_lang_code = lang_code_pattern.match(language_code)
+        if not valid_lang_code:
+            extended_lang_code_pattern = re.compile("^[a-z]{2,3}(-x-[\w\d]+)?$", re.UNICODE)  # e.g. abc-x-abcdefg
+            valid_lang_code = extended_lang_code_pattern.match(language_code)
+            if not valid_lang_code:
+                extended_lang_code_pattern2 = re.compile("^(-x-[\w\d]+){1}$", re.UNICODE)  # e.g. -x-abcdefg
+                valid_lang_code = extended_lang_code_pattern2.match(language_code)
+                if not valid_lang_code:
+                    language_code = None
+        return language_code
+
     def updateLangStats(self, lang_stats):
         """
         update the entry in the database
@@ -167,3 +202,56 @@ class PageMetrics(object):
                 site = netloc_parts[0]
             self.manifest_table_name = site + '-' + PageMetrics.MANIFEST_TABLE_NAME
         self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
+
+    def list_language_views(self):
+        """
+        get list of all the language view records
+        :return:
+        """
+        if not self.language_stats_db_handler:
+            return None
+
+        # First see record already exists in DB
+        language_items = LanguageStats(db_handler=self.language_stats_db_handler).query({"monitor":
+                                                                                   {"condition": "eq", "value": True}})
+        self.languages = []
+        if language_items and len(language_items):
+            for language in language_items:
+                self.languages.append(language.get_db_data())
+        return self.languages
+
+    def get_language_views_sorted_by_count(self, reverse_sort=True):
+        """
+        Get list of language views records sorted by views.
+        :param reverse_sort:
+        :return:
+        """
+        newlist = None
+        if self.languages is None:
+            try:
+                self.list_language_views()
+            except:
+                pass
+
+        if self.languages is not None:
+            newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
+
+        return newlist
+
+    def get_language_views_sorted_by_date(self, reverse_sort=True):
+        """
+        Get list of language views records sorted by time last viewed.
+        :param reverse_sort:
+        :return:
+        """
+        newlist = None
+        if self.languages is None:
+            try:
+                self.list_language_views()
+            except:
+                pass
+
+        if self.languages is not None:
+            newlist = sorted(self.languages, key=itemgetter('last_updated'), reverse=reverse_sort)
+
+        return newlist

@@ -22,7 +22,8 @@ class DashboardHandler(Handler):
             'gogs_url': self.retrieve(event['vars'], 'gogs_url', 'Environment Vars'),
             'cdn_url': self.retrieve(event['vars'], 'cdn_url', 'Environment Vars'),
             'job_table_name': self.retrieve(event['vars'], 'job_table_name', 'Environment Vars'),
-            'module_table_name': self.retrieve(event['vars'], 'module_table_name', 'Environment Vars')
+            'module_table_name': self.retrieve(event['vars'], 'module_table_name', 'Environment Vars'),
+            'language_stats_table_name': self.retrieve(event['vars'], 'language_stats_table_name', 'Environment Vars')
         }
 
         max_failures = TxManager.MAX_FAILURES
