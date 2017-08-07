@@ -1,5 +1,4 @@
 from __future__ import unicode_literals, print_function
-import heapq
 import json
 import hashlib
 import requests
