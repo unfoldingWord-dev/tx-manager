@@ -89,9 +89,9 @@ class DynamoDBHandler(object):
         """
         return self.table.item_count
 
-    def query_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):
+    def scan_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):
         """
-        gets items from database
+        scans items from database
         :param query: 
         :param only_fields_with_values: 
         :param queryChunkLimit: not an absolute count, but a threshold where we stop fetching more chunks
@@ -162,10 +162,10 @@ class DynamoDBHandler(object):
             if filter_expression is not None:
                 response = self.table.scan(
                     FilterExpression=filter_expression,
-                    ExclusiveStartKey = response['LastEvaluatedKey']
+                    ExclusiveStartKey=response['LastEvaluatedKey']
                 )
             else:
-                response = self.table.scan(ExclusiveStartKey = response['LastEvaluatedKey'])
+                response = self.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
 
             if response and ('Items' in response):
                 items += response['Items']

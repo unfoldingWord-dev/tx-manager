@@ -322,6 +322,24 @@ class TxManager(object):
             requests.post(url, json=payload, headers=headers)
             self.logger.debug('finished.')
 
+    def handle_unfinished_jobs(self):
+        """
+        Looks through the tx-jobs table to find jobs that never finished and marks them as finished with the proper status
+
+        :param int max_failures:
+        :return list:
+        """
+        jobs = TxJob(db_handler=self.job_db_handler).query({
+            'success': {
+                'condition': 'eq',
+                'status': None
+             }
+        })
+        ids = []
+        for job in jobs:
+            ids.append(job.id)
+        return jobs
+
     def make_api_gateway_for_module(self, module):
         # lambda_func_name = module['name']
         # AWS_LAMBDA_API_ID = '7X97xCLPDE16Jep5Zv85N6zy28wcQfJz79E2H3ln'
@@ -438,7 +456,7 @@ class TxManager(object):
             'body': 'No modules found'
         }
 
-        items = sorted(self.module_db_handler.query_items(), key=lambda k: k['name'])
+        items = sorted(self.module_db_handler.scan_items(), key=lambda k: k['name'])
         if items and len(items):
             module_names = []
             for item in items:
