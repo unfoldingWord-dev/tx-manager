@@ -126,7 +126,7 @@ class ProjectDeployer(object):
                     content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
                     content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
                     content += """
-                    <script type="text/javascript">setTimeout(function(){window.location.reload(1);}, 10000);</script>
+                    <script type="text/javascript">CONV_REQUESTED=setTimeout(function(){window.location.reload(1);}, 10000);</script>
                     """
                 html = """
                     <html lang="en">
