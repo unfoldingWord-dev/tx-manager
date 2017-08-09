@@ -3,7 +3,7 @@ from libraries.manager.manager import TxManager
 from libraries.lambda_handlers.handler import Handler
 
 
-class ListJobsHandler(Handler):
+class UnfinishedJobsHandler(Handler):
 
     def _handle(self, event, context):
         """

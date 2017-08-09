@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, print_function
-from libraries.lambda_handlers.unfinished_jobs_handler import UnfinishedJobsHandler
+from libraries.lambda_handlers.handle_unfinished_jobs_handler import UnfinishedJobsHandler
 
 
 def handle(event, context):

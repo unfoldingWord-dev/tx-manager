@@ -1,4 +1,4 @@
-*.dist-info/
+g*.dist-info/
 *.egg-info/
 .gitignore
 *.pyc
