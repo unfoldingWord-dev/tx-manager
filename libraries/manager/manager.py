@@ -337,7 +337,7 @@ class TxManager(object):
         })
         ids = []
         for job in jobs:
-            ids.append(job.id)
+            ids.append(job.job_id)
         return ids
 
     def make_api_gateway_for_module(self, module):
