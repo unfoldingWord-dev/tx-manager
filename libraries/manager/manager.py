@@ -332,13 +332,13 @@ class TxManager(object):
         jobs = TxJob(db_handler=self.job_db_handler).query({
             'success': {
                 'condition': 'eq',
-                'status': None
+                'value': None
              }
         })
         ids = []
         for job in jobs:
             ids.append(job.id)
-        return jobs
+        return ids
 
     def make_api_gateway_for_module(self, module):
         # lambda_func_name = module['name']

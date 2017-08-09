@@ -30,3 +30,15 @@ class TestBibleChecker(unittest.TestCase):
     def verify_results(self, expected_errors, expected_warnings, checker):
         self.assertEqual(len(checker.log.logs["warning"]) > 0, expected_warnings)
         self.assertEqual(len(checker.log.logs["error"]) > 0, expected_errors)
+
+    def test_query(self):
+        from libraries.models.job import TxJob
+        from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
+        db_handler = DynamoDBHandler('test-tx-job')
+        jobs = TxJob(db_handler=db_handler).query({
+            'success': {
+                'condition': 'eq',
+                'value': None
+            }
+        })
+        print(jobs)
