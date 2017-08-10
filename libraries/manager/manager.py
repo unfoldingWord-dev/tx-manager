@@ -574,7 +574,7 @@ class TxManager(object):
 
                 try:
                     identifier = item.identifier
-                    owner_name, repo_name, commit_id = identifier.split('/')
+                    owner_name, repo_name, commit_id = identifier.split('/')[:3]
                     source_sub_path = '{0}/{1}'.format(owner_name, repo_name)
                     cdn_bucket = item.cdn_bucket
                     destination_url = 'https://{0}/u/{1}/{2}/{3}/build_log.json'.format(cdn_bucket, owner_name, repo_name, commit_id)
