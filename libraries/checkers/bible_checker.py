@@ -45,7 +45,6 @@ class BibleChecker(Checker):
                     if len(book.validation_errors) > 0:
                         there_were_errors = True
 
-
         if there_were_errors:
             print_warning('There are source errors.')
             return

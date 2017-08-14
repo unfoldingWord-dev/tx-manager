@@ -360,6 +360,12 @@ class Book(object):
             for key, value in iter(books.items()):
 
                 book = Book(key, value[0], int(value[1]))
+                if len(book_key) == 3:
+                    if book.book_id != book_key:
+                        continue
+                else:
+                    if book.dir_name != book_key:
+                        continue
 
                 # find the key in the lines
                 line = [line for line in lines if line[0:3] == key]
@@ -374,12 +380,7 @@ class Book(object):
 
             Book.book_skeletons = scheme
 
-        # is the book_key a directory name?
-        if len(book_key) == 3:
-            found = [book for book in Book.book_skeletons if book.book_id == book_key]
-        else:
-            found = [book for book in Book.book_skeletons if book.dir_name == book_key]
-
+        found = Book.book_skeletons
         return found[0] if found else None
 
 
