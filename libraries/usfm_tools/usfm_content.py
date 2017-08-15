@@ -1,9 +1,9 @@
 from __future__ import print_function, unicode_literals
-import json
-from future.builtins import chr
-import re
-from general_tools.url_utils import get_url
 import usfm_classes
+import json
+import re
+from future.builtins import chr
+from general_tools.url_utils import get_url
 
 
 class Book(object):

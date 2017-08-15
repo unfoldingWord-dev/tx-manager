@@ -39,6 +39,16 @@ class TestUsfmChecker(unittest.TestCase):
         checker.run()
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_PhpMissingID(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'id', '')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     def test_PhpMissingV1(self):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='')  # remove v1
@@ -79,11 +89,41 @@ class TestUsfmChecker(unittest.TestCase):
         checker.run()
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_PhpDuplicateV1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v 1 stuff \\v 1 more stuff ')  # replace v1
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpV2beforeV1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=2, end_vs=4, replace='\\v 3 stuff \\v 2 more stuff ')  # replace v2-3
+
+        expected_warnings = 2
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     def test_PhpMissingLastVerse(self):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_verse(out_dir, '51-PHP.usfm', chapter=4, start_vs=23, end_vs=24, replace='')  # remove last verse
 
         expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingAfterC2V28(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=2, start_vs=28, end_vs=40, replace='')  # remove last verse
+
+        expected_warnings = 3
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -132,6 +172,18 @@ class TestUsfmChecker(unittest.TestCase):
     #
     # helpers
     #
+
+    def replace_tag(self, out_dir, file_name, tag, replace):
+        book_path = os.path.join(out_dir, file_name)
+        book_text = read_file(book_path)
+        start_marker = '\\{0}'.format(tag)
+        end_marker = '\\'
+        c_start_pos = book_text.find(start_marker)
+        c_end_pos = book_text.find(end_marker, c_start_pos)
+        previous_section = book_text[:c_start_pos]
+        next_section = book_text[c_end_pos:]
+        new_text = previous_section + replace + next_section
+        write_file(book_path, new_text)
 
     def replace_chapter(self, out_dir, file_name, start_ch, end_ch, replace):
         book_path = os.path.join(out_dir, file_name)

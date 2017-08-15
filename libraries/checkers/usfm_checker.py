@@ -1,9 +1,8 @@
 from __future__ import print_function, unicode_literals
 import codecs
 import os
-from general_tools.print_utils import print_warning
 from libraries.checkers.checker import Checker
-from libraries.checkers.usfm_content import Book
+from libraries.usfm_tools.usfm_content import Book
 
 
 class UsfmChecker(Checker):
@@ -46,7 +45,3 @@ class UsfmChecker(Checker):
                                 self.log.warning(error)
                     except Exception as e:
                         self.log.error("Failed to open book '{0}', exception: {1}".format(book_name, str(e)))
-
-        if there_were_errors:
-            print_warning('There are source errors.')
-            return
