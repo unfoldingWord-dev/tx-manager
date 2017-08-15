@@ -1,8 +1,8 @@
 from __future__ import print_function, unicode_literals
-from libraries.checkers.bible_checker import BibleChecker
+from libraries.checkers.usfm_checker import UsfmChecker
 
 
-class UdbChecker(BibleChecker):
+class UdbChecker(UsfmChecker):
 
     def run(self):
         """

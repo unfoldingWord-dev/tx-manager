@@ -2,9 +2,8 @@ from __future__ import print_function, unicode_literals
 import json
 from future.builtins import chr
 import re
-from general_tools.print_utils import print_error
 from general_tools.url_utils import get_url
-import bible_classes
+import usfm_classes
 
 
 class Book(object):
@@ -15,7 +14,7 @@ class Book(object):
     book_file = api_root + '/versification/ufw/books.json'
     chunk_url = api_root + '/versification/ufw/chunks/{0}.json'
 
-    verse_re = re.compile(r'(\\v[\u00A0 ][0-9-\u2013\u2014]*\s+)', re.UNICODE)
+    verse_re = re.compile(r'(\\v[\u00A0 ][0-9]*[-\u2013\u2014]?[0-9]*\s+)', re.UNICODE)
     chapter_re = re.compile(r'(\\c[\u00A0 ][0-9]+\s*\n)', re.UNICODE)
 
     # chapter tag with other characters following the chapter number
@@ -25,10 +24,10 @@ class Book(object):
     empty_tag_re = re.compile(r'\n(.*?\\[\u00A0 ]*?\n.*?)\n', re.UNICODE)
 
     # chapter or verse with missing number
-    missing_num_re = re.compile(r'(\\[cv][\u00A0 ][^0-9]+?)[\u00A0\s]+?', re.UNICODE)
+    missing_num_re = re.compile(r'(\\[cv][\u00A0\s](?:[0-9]+[-\u2013\u2014])?)[^0-9]+?[\u00A0\s]+?', re.UNICODE)
 
     # verse with no text
-    missing_verse_text_re = re.compile(r'(\\v[\u00A0 ][0-9-\u2013\u2014]*[\u00A0 ]*[\r\n])', re.UNICODE)
+    missing_verse_text_re = re.compile(r'(\\v[\u00A0 ][0-9-\u2013\u2014]*[\u00A0\s\r]*)[\\]', re.UNICODE)
 
     # git merge conflicts
     git_conflict_re = re.compile(r'<<<<<<<.*?=======.*?>>>>>>>', re.UNICODE | re.DOTALL)
@@ -41,9 +40,6 @@ class Book(object):
     # clean-up usfm
     s5_re = re.compile(r'\\s5\s*')
     nl_re = re.compile(r'\n{2,}')
-
-    # initialization
-    book_skeletons = None  # type: list<Book>
 
     def __init__(self, book_id, name, number):
         """
@@ -139,7 +135,7 @@ class Book(object):
                 # get all tags
                 matches = re.findall(self.tag_re, chapter_usfm)
                 for match in matches:
-                    if not bible_classes.USFM.is_valid_tag(match):
+                    if not usfm_classes.USFM.is_valid_tag(match):
 
                         # check the exceptions
                         if not match.startswith(self.tag_exceptions):
@@ -159,7 +155,6 @@ class Book(object):
                                                                                     no_text.group(1).strip()))
 
     def check_chapters(self, blocks):
-
         self.header_usfm = ''
 
         # find the first chapter marker, should be the second block
@@ -307,8 +302,6 @@ class Book(object):
         return last_verse
 
     def append_error(self, message, prefix='** '):
-
-        print_error(prefix + message)
         self.validation_errors.append(message)
 
     def get_chunks(self):
@@ -346,42 +339,38 @@ class Book(object):
         :param str|unicode book_key: Either the 3 letter USFM code or a 6 character repo directory name, like 01-GEN.
         :return: Book|None
         """
-        if not Book.book_skeletons:
 
-            # get the list of books
-            books = json.loads(get_url(Book.book_file))
+        # get the list of books
+        books = json.loads(get_url(Book.book_file))
 
-            # get the versification file
-            raw = get_url(Book.vrs_file)
-            lines = [l for l in raw.replace('\r', '').split('\n') if l and l[0:1] != '#']
+        # get the versification file
+        raw = get_url(Book.vrs_file)
+        lines = [l for l in raw.replace('\r', '').split('\n') if l and l[0:1] != '#']
 
-            scheme = []
+        book = None
 
-            for key, value in iter(books.items()):
+        for key, value in iter(books.items()):
 
-                book = Book(key, value[0], int(value[1]))
-                if len(book_key) == 3:
-                    if book.book_id != book_key:
-                        continue
-                else:
-                    if book.dir_name != book_key:
-                        continue
+            book = Book(key, value[0], int(value[1]))
+            if len(book_key) == 3:
+                if book.book_id != book_key:
+                    continue
+            else:
+                if book.dir_name != book_key:
+                    continue
 
-                # find the key in the lines
-                line = [line for line in lines if line[0:3] == key]
-                if not line:
-                    raise Exception('Could not load chapter information for ' + key)
+            # find the key in the lines
+            line = [line for line in lines if line[0:3] == key]
+            if not line:
+                raise Exception('Could not load chapter information for ' + key)
 
-                chapters = line[0][4:].split()
-                for chapter in chapters:
-                    parts = chapter.split(':')
-                    book.chapters.append(Chapter(int(parts[0]), int(parts[1])))
-                scheme.append(book)
+            chapters = line[0][4:].split()
+            for chapter in chapters:
+                parts = chapter.split(':')
+                book.chapters.append(Chapter(int(parts[0]), int(parts[1])))
+            break
 
-            Book.book_skeletons = scheme
-
-        found = Book.book_skeletons
-        return found[0] if found else None
+        return book
 
 
 class Chapter(object):

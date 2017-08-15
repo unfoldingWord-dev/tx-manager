@@ -3,10 +3,10 @@ import codecs
 import os
 from general_tools.print_utils import print_warning
 from libraries.checkers.checker import Checker
-from libraries.checkers.content import Book
+from libraries.checkers.usfm_content import Book
 
 
-class BibleChecker(Checker):
+class UsfmChecker(Checker):
 
     def run(self):
         """

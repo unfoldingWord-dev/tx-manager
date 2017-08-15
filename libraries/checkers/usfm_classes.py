@@ -6,8 +6,8 @@ from datetime import datetime
 from json import JSONEncoder
 from general_tools.file_utils import load_json_object
 from general_tools.url_utils import get_url
-import bible_paragraphs
-import content
+import usfm_paragraphs
+import usfm_content
 # from app_code.util import app_utils
 from libraries.checkers import app_utils
 
@@ -68,7 +68,7 @@ class Bible(object):
         scheme = []
         for key, value in iter(books.items()):
 
-            book = content.Book(key, value[0], int(value[1]))
+            book = usfm_content.Book(key, value[0], int(value[1]))
 
             # find the key in the lines
             for line in lines:
@@ -76,7 +76,7 @@ class Bible(object):
                     chapters = line[4:].split()
                     for chapter in chapters:
                         parts = chapter.split(':')
-                        book.chapters.append(content.Chapter(int(parts[0]), int(parts[1])))
+                        book.chapters.append(usfm_content.Chapter(int(parts[0]), int(parts[1])))
                     scheme.append(book)
                     break
 
@@ -106,12 +106,12 @@ class Bible(object):
         # chunk it
         for chapter in json.loads(chunk_str):
             for first_verse in chapter['first_verses']:
-                book.chunks.append(content.Chunk(chapter['chapter'], first_verse))
+                book.chunks.append(usfm_content.Chunk(chapter['chapter'], first_verse))
 
     @staticmethod
     def insert_paragraph_markers(book):
 
-        paragraph_list = bible_paragraphs.bible_paragraphs
+        paragraph_list = usfm_paragraphs.bible_paragraphs
 
         chapter_data = next(p for p in paragraph_list if p['usfm_id'] == book.book_id)['chapters']
         for chapter in book.chapters:
