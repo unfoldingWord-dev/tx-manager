@@ -6,7 +6,7 @@ import markdown2
 import codecs
 from shutil import copyfile
 from bs4 import BeautifulSoup
-from libraries.general_tools.file_utils import write_file
+from libraries.general_tools.file_utils import write_file, get_files
 from converter import Converter
 
 
@@ -24,7 +24,7 @@ class Md2HtmlConverter(Converter):
         self.log.info('Processing OBS markdown files')
 
         # find the first directory that has md files.
-        files = self.get_files()
+        files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
@@ -59,7 +59,7 @@ class Md2HtmlConverter(Converter):
         self.log.info('Processing Markdown files')
 
         # find the first directory that has md files.
-        files = self.get_files()
+        files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:

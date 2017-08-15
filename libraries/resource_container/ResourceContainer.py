@@ -61,20 +61,27 @@ resource_map = {
 class RC:
     current_version = '0.2'
 
-    def __init__(self, directory, repo_name=None):
+    def __init__(self, directory=None, repo_name=None, manifest=None):
         """
         :param string directory:
+        :param string repo_name:
+        :param dict manifest:
         """
         self.dir = directory
+        self.manifest = manifest
+        self._repo_name = repo_name
         self._resource = None
         self._projects = []
-        self._repo_name = repo_name
 
-        if not isinstance(self.dir, str) and not isinstance(self.dir, unicode):
-            raise Exception('Missing string parameter: dir')
+        if not self.manifest:
+            if self.dir:
+                self.get_manifest_from_dir()
+            else:
+                self.manifest = manifest_from_repo_name(self.repo_name)
 
+    def get_manifest_from_dir(self):
         if not os.path.isdir(self.dir):
-            raise Exception('Directory doesn\'t exist: {0}'.format(self.dir))
+            raise Exception('Directory does not exist: {0}'.format(self.dir))
 
         self.manifest = load_yaml_object(os.path.join(self.dir, 'manifest.yaml'))
         if not self.manifest:
@@ -132,9 +139,11 @@ class RC:
     def repo_name(self):
         if self._repo_name:
             return self._repo_name
-        else:
+        elif self.path:
             path = self.path.rstrip('/')
             return os.path.basename(path)
+        else:
+            return ''  # Use empty string instead of None
 
     @property
     def resource(self):
@@ -359,7 +368,7 @@ class Resource:
         elif 'obs' in self.rc.repo_name.lower():
             return 'obs'
         else:
-            return 'bible'
+            return None
 
     @property
     def title(self):
@@ -610,26 +619,32 @@ def manifest_from_repo_name(repo_name):
         'dublin_core': {},
     }
 
+    if not repo_name:
+        return manifest
+
     parts = re.findall(r'[A-Za-z0-9]+', repo_name)
 
+    language_set = False;
     for i, part in enumerate(parts):
-        if part == 'en':
-            # Speeds things up for English repos
-            manifest['dublin_core']['language'] = {
-                'identifier': 'en',
-                'title': 'English',
-                'direction': 'ltr'
-            }
-            continue
-        else:
-            lang = TdLanguage.get_language(part)
-            if lang and 'language' not in manifest['dublin_core']:
+        if not language_set:
+            if part == 'en':
+                # Speeds things up for English repos
                 manifest['dublin_core']['language'] = {
-                    'identifier': lang.lc,
-                    'title': lang.ln,
-                    'direction': lang.ld
+                    'identifier': 'en',
+                    'title': 'English',
+                    'direction': 'ltr'
                 }
+                language_set = True
                 continue
+            else:
+                lang = TdLanguage.get_language(part)
+                if lang and 'language' not in manifest['dublin_core']:
+                    manifest['dublin_core']['language'] = {
+                        'identifier': lang.lc,
+                        'title': lang.ln,
+                        'direction': lang.ld
+                    }
+                    continue
 
         if part.lower() in resource_map:
             manifest['dublin_core']['identifier'] = part

@@ -145,7 +145,7 @@ class FileUtilsTests(unittest.TestCase):
         _, tmp_file2 = tempfile.mkstemp(dir=self.tmp_dir)
         tmp_subdir = self.tmp_dir + "/subdir"
         os.mkdir(tmp_subdir)
-        _, tmp_file3 = tempfile.mkstemp(dir=tmp_subdir)
+        _, tmp_file3 = tempfile.mkstemp(dir=tmp_subdir, suffix=".md")
 
         files = file_utils.get_files(self.tmp_dir, relative_paths=False, include_directories=True)
         self.assertEqual(len(files), 4)
@@ -153,6 +153,9 @@ class FileUtilsTests(unittest.TestCase):
         self.assertTrue(any(self.paths_equal(tmp_file2, d) for d in files))
         self.assertTrue(any(self.paths_equal(tmp_subdir, d) for d in files))
         self.assertTrue(any(self.paths_equal(tmp_file3, d) for d in files))
+
+        files = file_utils.get_files(self.tmp_dir, extensions=['.md'])
+        self.assertEqual(len(files), 1)
 
         files = file_utils.get_files(self.tmp_dir, relative_paths=True, include_directories=True)
         self.assertEqual(len(files), 4)
