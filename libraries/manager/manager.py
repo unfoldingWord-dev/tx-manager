@@ -333,7 +333,10 @@ class TxManager(object):
             'success': {
                 'condition': 'eq',
                 'value': None
-             }
+             },
+            'started_at': {
+
+            }
         })
         ids = []
         for job in jobs:
