@@ -27,7 +27,17 @@ class TestUsfmChecker(unittest.TestCase):
         expected_errors = False
         checker = UsfmChecker(self.preconvert_dir, self.converted_dir)
         checker.run()
-        self.verify_results(expected_errors, expected_warnings, checker)
+        self.assertEqual(len(checker.log.logs["warning"]) > 0, expected_warnings)
+        self.assertEqual(len(checker.log.logs["error"]) > 0, expected_errors)
+
+    def test_PhpValid(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+
+        expected_warnings = 0
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingV1(self):
         out_dir = self.unzip_resource('51-PHP.zip')
@@ -51,7 +61,7 @@ class TestUsfmChecker(unittest.TestCase):
 
     def test_PhpNoSpace2V1(self):
         out_dir = self.unzip_resource('51-PHP.zip')
-        self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v 1b')  # replace v1
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v 1b ')  # replace v1
 
         expected_warnings = 1
         expected_errors = 0
@@ -102,7 +112,7 @@ class TestUsfmChecker(unittest.TestCase):
         c_end_pos = book_text.find(end_chapter_marker)
         previous_section = book_text[:c_start_pos]
         next_section = book_text[c_end_pos:]
-        new_text = previous_section + previous_section + replace + next_section
+        new_text = previous_section + replace + next_section
         write_file(book_path, new_text)
 
     def replace_verse(self, out_dir, file_name, chapter, start_vs, end_vs, replace):
@@ -138,10 +148,6 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = os.path.join(self.temp_dir, 'checker_test')
         unzip(zip_file, out_dir)
         return out_dir
-
-    def verify_results(self, expected_errors, expected_warnings, checker):
-        self.assertEqual(len(checker.log.logs["warning"]) > 0, expected_warnings)
-        self.assertEqual(len(checker.log.logs["error"]) > 0, expected_errors)
 
     def verify_results_counts(self, expected_errors, expected_warnings, checker):
         self.assertEqual(len(checker.log.logs["warning"]), expected_warnings)
