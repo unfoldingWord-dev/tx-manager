@@ -1,96 +1,142 @@
 from __future__ import absolute_import, unicode_literals, print_function
-import mock
 import unittest
+from moto import mock_dynamodb2
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 
 
+@mock_dynamodb2
 class DynamoDBHandlerTests(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        with mock.patch("libraries.aws_tools.dynamodb_handler.boto3", mock.MagicMock()):
-            cls.handler = DynamoDBHandler("table_name")
-        cls.handler.table = mock.MagicMock()
+    MOCK_TABLE_NAME = 'employees'
 
     def setUp(self):
-        self.handler.table.reset_mock()
+        self.db_handler = DynamoDBHandler(self.MOCK_TABLE_NAME)
+        self.init_table()
+        self.items = {}
+        self.init_items()
+        self.populate_table()
+
+    def init_table(self):
+        try:
+            self.db_handler.table.delete()
+        except:
+            pass
+        self.db_handler.resource.create_table(
+            TableName=self.MOCK_TABLE_NAME,
+            KeySchema=[
+                {
+                    'AttributeName': 'id',
+                    'KeyType': 'HASH'
+                },
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'full_name',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'sex',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'age',
+                    'AttributeType': 'N'
+                },
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+            },
+        )
+
+    def init_items(self):
+        self.items = {
+            '121': {
+                'id': '121',
+                'full_name': 'John Smith',
+                'sex': 'M',
+                'age': 39
+            },
+            '122': {
+                'id': '122',
+                'full_name': 'Sally Jones',
+                'sex': 'F',
+                'age': 23
+            },
+            '123': {
+                'id': '123',
+                'full_name': 'Harriet Lott',
+                'sex': 'F',
+                'age': 43
+            }
+        }
+
+    def populate_table(self):
+        for idx in self.items:
+            self.db_handler.insert_item(self.items[idx])
 
     def test_get_item(self):
         """Test a successful invocation of `get_item`."""
-        expected = dict(field1="1", field2="2")
-        self.handler.table.get_item.return_value = {
-            "Item": expected
-        }
-        self.assertEqual(self.handler.get_item("key"), expected)
+        item = self.db_handler.get_item({'id': '123'})
+        expected = self.items['123']
+        self.assertItemsEqual(item, expected)
 
     def test_get_item_malformed(self):
         """Test an unsuccessful invocation of `get_item`."""
-        self.handler.table.get_item.return_value = {
-            "TheWrongKey": dict(field1="1", field2="2")
-        }
-        self.assertIsNone(self.handler.get_item("key"))
+        self.assertIsNone(self.db_handler.get_item({'id': 'doesnotexist'}))
 
     def test_insert_item(self):
         """Test a successful invocation of `insert_item`."""
-        data = dict(x="x", y="y", three=3)
-        self.handler.insert_item(data)
-        self.handler.table.put_item.assert_called_once_with(Item=data)
+        data = {
+            'id': '555',
+            'full_time': 'Richard Nixon',
+            'sex': 'M',
+            'age': 90
+        }
+        self.db_handler.insert_item(data)
+        self.assertItemsEqual(self.db_handler.get_item({'id': data['id']}), data)
 
     def test_update_item(self):
         """Test a successful invocation of `update_item`."""
-        key = {"id": 1}
-        data = {"age": 40, "name": "John Doe"}
-        self.handler.update_item(key, data)
-        self.handler.table.update_item.assert_called_once()
-        _, kwargs = self.handler.table.update_item.call_args
-
-        self.assertIn("Key", kwargs)
-        self.assertEqual(kwargs["Key"], key)
-
-        self.assertIn("UpdateExpression", kwargs)
-        # ignore whitespace and order of assignments
-        expr = kwargs["UpdateExpression"].replace(" ", "")
-        self.assertTrue(expr.startswith("SET"))
-        self.assertIn("age=:age", expr)
-        self.assertIn("#item_name=:name", expr)
-
-        self.assertIn("ExpressionAttributeValues", kwargs)
-        self.assertEqual(kwargs["ExpressionAttributeValues"],
-                         {":age": 40, ":name": "John Doe"})
-
-        self.assertIn("ExpressionAttributeNames", kwargs)
-        self.assertEqual(kwargs["ExpressionAttributeNames"],
-                         {"#item_name": "name"})
+        key = {"id": "121"}
+        data = {"age": 40, "full_name": "John Doe"}
+        self.db_handler.update_item(key, data)
+        item = self.db_handler.get_item({'id': key['id']})
+        self.assertEqual(item['age'], data['age'])
+        self.assertEqual(item['full_name'], data['full_name'])
 
     def test_delete_item(self):
         """Test a successful invocation of `delete_item`."""
-        key = {"id": 1234}
-        self.handler.delete_item(key)
-        self.handler.table.delete_item.assert_called_once_with(Key=key)
+        key = {"id": '123'}
+        self.db_handler.delete_item(key)
+        self.assertIsNone(self.db_handler.get_item(key))
+        self.assertEqual(self.db_handler.get_item_count(), len(self.items)-1)
 
-    def test_query_item(self):
-        """ Test a successful invocation of `query_item`."""
-        for cond in ("ne", "lt", "lte", "gt", "gte",
-                     "begins_with", "is_in", "contains"):
-            self.handler.table.reset_mock()
+    def test_scan_items(self):
+        """ Test a successful invocation of `scan_items`."""
+        # Note: Moto currently doesn't support FilterExpression, See: https://github.com/spulec/moto/issues/715
+        for cond in ('ne', 'lt', 'lte', 'gt', 'gte'):
             query = {
-                "age": {
-                    "condition": "eq",
-                    "value": 25
+                'age': {
+                    'condition': cond,
+                    'value': 39
                 },
-                "full_name": {
-                    "condition": cond,
-                    "value": "John Doe"
-                }
             }
-            data = {"age": 30, "full_name": "John Doe"}
-            self.handler.table.scan.return_value = {"Items": data}
-            self.assertEqual(self.handler.query_items(query), data)
-            self.handler.table.scan.assert_called_once()
+            items = self.db_handler.scan_items(query)
+            self.assertEqual(len(items), len(self.items))
+            for item in items:
+                self.assertItemsEqual(item, self.items[item['id']])
+        for cond in ('begins_with', 'is_in', 'contains'):
+            query = {
+                'full_name': {
+                    'condition': cond,
+                    'value': 'John'
+                },
+            }
+            items = self.db_handler.scan_items(query)
+            self.assertEqual(len(items), len(self.items))
+            for item in items:
+                self.assertItemsEqual(item, self.items[item['id']])
 
-    def test_query_item_no_query(self):
-        """Test a invocation of `query_item` with no query."""
-        data = {"age": 30, "full_name": "John Doe"}
-        self.handler.table.scan.return_value = {"Items": data}
-        self.assertEqual(self.handler.query_items(), data)
-        self.handler.table.scan.assert_called_once_with()
+    def test_scan_items_no_query(self):
+        """Test a invocation of `scan_items` with no query."""
+        self.assertEqual(len(self.db_handler.scan_items()), len(self.items))

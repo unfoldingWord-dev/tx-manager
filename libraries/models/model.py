@@ -79,7 +79,7 @@ class Model(object):
         self.db_handler.delete_item(self.get_keys())
 
     def query(self, query=None):
-        items = self.db_handler.query_items(query)
+        items = self.db_handler.scan_items(query)
         models = []
         if items and len(items):
             for item in items:

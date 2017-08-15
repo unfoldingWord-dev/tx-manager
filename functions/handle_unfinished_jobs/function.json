@@ -1,0 +1,3 @@
+{
+  "description": "Handles jobs that are unfinished after a certain amount of time, triggered by an AWS cron job"
+}

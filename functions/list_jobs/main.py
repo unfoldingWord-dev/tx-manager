@@ -4,11 +4,9 @@ from libraries.lambda_handlers.list_jobs_handler import ListJobsHandler
 
 def handle(event, context):
     """
-    Called by the wbhook client to list jobs to get their status
+    Called by the web hook client to list jobs to get their status
     :param dict event:
     :param context:
     :return dict:
     """
-    print("EVENT:")
-    print(event)
     return ListJobsHandler().handle(event, context)
