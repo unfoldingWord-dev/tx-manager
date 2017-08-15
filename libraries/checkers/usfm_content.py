@@ -160,6 +160,7 @@ class Book(object):
         # find the first chapter marker, should be the second block
         # the first block should be everything before the first chapter marker
         current_index = 0
+        last_chapter = 0
         while blocks[current_index][:2] != '\c':
             self.header_usfm += blocks[current_index].rstrip()
             current_index += 1
@@ -175,6 +176,14 @@ class Book(object):
             # compare this chapter number to the numbers from the versification file
             try:
                 chapter_num = int(test_num)
+                if chapter_num > (last_chapter + 1):
+                    self.error_missing_chapters(last_chapter, chapter_num)
+                elif chapter_num != (last_chapter + 1):
+                    self.append_error('Missing chapter number out of order, ' + self.book_id + ' chapter '
+                                      + str(chapter_num) + ' comes after number ' + str(last_chapter))
+
+                last_chapter = chapter_num
+
             except ValueError:
                 self.append_error('Invalid chapter number, ' + self.book_id + ' "' + blocks[current_index] + '"')
                 continue
@@ -200,6 +209,14 @@ class Book(object):
             # increment the counter
             current_index += 2
 
+        maximum_chapter = self.chapters[-1].number
+        if maximum_chapter > last_chapter:
+            self.error_missing_chapters(last_chapter, maximum_chapter + 1)
+
+    def error_missing_chapters(self, last_chapter_num, current_chapter_num):
+        for i in range(last_chapter_num + 1, current_chapter_num):
+            self.append_error('Missing chapter , ' + self.book_id + ' chapter ' + str(i))
+
     def check_verses(self, found_chapter, verse_blocks):
 
         last_verse = 0
@@ -207,7 +224,7 @@ class Book(object):
 
         # go to the first verse marker
         current_cv_index = 0
-        while current_cv_index < len(verse_blocks) and verse_blocks[current_cv_index][:2] != '\\v':
+        while current_cv_index < len(verse_blocks) and not self.is_verse_marker(verse_blocks[current_cv_index]):
             current_cv_index += 1
 
         # are all the verse markers missing?
@@ -261,13 +278,19 @@ class Book(object):
                     verse_num = int(test_num)
                     last_verse = self.check_this_verse(found_chapter, verse_num, last_verse, processed_verses)
 
-            current_cv_index += 2
+            current_cv_index += 1
+            if not self.is_verse_marker(verse_blocks[current_cv_index]):
+                current_cv_index += 1
 
         # are there verses missing from the end
         if last_verse < found_chapter.expected_max_verse_number:
             self.append_error('Verses ' + str(last_verse + 1) + ' through ' +
                               str(found_chapter.expected_max_verse_number) + ' for ' + self.book_id + ' ' +
                               str(found_chapter.number) + ' are missing.')
+
+    def is_verse_marker(self, item):
+        verse_marker = (item[:2] == '\\v')
+        return verse_marker
 
     def check_this_verse(self, found_chapter, verse_num, last_verse, processed_verses):
 

@@ -53,7 +53,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v1 ')  # replace v1
 
-        expected_warnings = 1
+        expected_warnings = 2
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -63,7 +63,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v 1b ')  # replace v1
 
-        expected_warnings = 1
+        expected_warnings = 2
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -94,6 +94,36 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, '51-PHP.usfm', start_ch=1, end_ch=2, replace='')  # remove c1
 
         expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpEmptyC1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_chapter(out_dir, '51-PHP.usfm', start_ch=1, end_ch=2, replace='\\c 01\n')  # replace c1
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingC4(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_chapter(out_dir, '51-PHP.usfm', start_ch=4, end_ch=5, replace='')  # remove c4
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingC3C4(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_chapter(out_dir, '51-PHP.usfm', start_ch=3, end_ch=5, replace='')  # remove c3-4
+
+        expected_warnings = 2
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
