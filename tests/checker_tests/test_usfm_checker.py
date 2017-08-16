@@ -111,10 +111,10 @@ class TestUsfmChecker(unittest.TestCase):
 
     def test_PhpMissingMasterAndChapterClError(self):
         out_dir = self.unzip_resource('51-PHP.zip')
-        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove master
-        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove chapter
+        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove master label
+        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove chapter label
 
-        expected_warnings = 0
+        expected_warnings = 1
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -274,7 +274,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\c01\n')  # replace c1
 
-        expected_warnings = 5
+        expected_warnings = 4
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -284,7 +284,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\c 016b\n')  # replace c1
 
-        expected_warnings = 7
+        expected_warnings = 6
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -294,7 +294,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\c b\n')  # replace c1
 
-        expected_warnings = 7
+        expected_warnings = 6
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -304,7 +304,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\cb\n')  # replace c1
 
-        expected_warnings = 4
+        expected_warnings = 3
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
