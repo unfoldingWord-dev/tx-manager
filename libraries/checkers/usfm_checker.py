@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 import codecs
 import os
 from libraries.checkers.checker import Checker
+from libraries.usfm_tools import verifyUSFM
 from libraries.usfm_tools.usfm_content import Book
 
 
@@ -43,5 +44,14 @@ class UsfmChecker(Checker):
                             there_were_errors = True
                             for error in book.validation_errors:
                                 self.log.warning(error)
+
+                        try:
+                            errors = verifyUSFM.verify_contents_quiet(book_text, book_name[0])
+                            for error in errors:
+                                self.log.warning(error)
+
+                        except Exception as e:
+                            self.log.error("Failed to verify book '{0}', exception: {1}".format(book_name, str(e)))
+
                     except Exception as e:
                         self.log.error("Failed to open book '{0}', exception: {1}".format(book_name, str(e)))
