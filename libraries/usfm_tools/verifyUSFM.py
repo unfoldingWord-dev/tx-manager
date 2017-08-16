@@ -257,15 +257,22 @@ def verifyIdentification():
 def verifyChapterAndVerseMarkers(text):
     # check for chapter or verse tags without numbers
     for no_num in missing_num_re.finditer(text):
-        report_error('Chapter or verse tag invalid: "{0}"'.format(no_num.group(1)))
+        report_error('Chapter or verse tag invalid: "{0}"'.format(getNotEmptyGroup(no_num)))
 
     # check for chapter tags missing space after number
     for space in chapter_missing_space_re.finditer(text):
-        report_error('Chapter tag invalid: "{0}"'.format(space.group(1)))
+        report_error('Chapter tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
 
     # check for verse tags missing space after number
     for space in verse_missing_space_re.finditer(text):
-        report_error('Verse tag invalid: "{0}"'.format(space.group(1)))
+        report_error('Verse tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+
+def getNotEmptyGroup(match):
+    for i in range(1, len(match.groups()) + 1):
+        value = match.group(i)
+        if value is not None:
+            return value
+    return None
 
 def verifyChapterCount():
     state = State()
@@ -358,7 +365,7 @@ def takeV(v):
             report_error("Missing chapter tag: " + state.reference + '\n')
         if state.nParagraphs == 0:
             report_error("Missing paragraph marker (\\p) before: " + state.reference + '\n')
-        if not state.chapter_label or not state.master_chapter_label:
+        if not state.chapter_label and not state.master_chapter_label:
             report_error("Missing chapter label (\\cl) before : " + state.reference + '\n')
 
     if state.verse < state.lastVerse and state.addError(state.lastRef):

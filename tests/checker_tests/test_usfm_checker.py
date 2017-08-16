@@ -49,6 +49,77 @@ class TestUsfmChecker(unittest.TestCase):
         checker.run()
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_PhpIdInvalidCode(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'ide', '\id PH Unlocked Literal Bible')
+
+        expected_warnings = 2
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingHeading(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'h', '')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingToc1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'toc1', '')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingToc2(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'toc2', '')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingToc3(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'toc3', '')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingMasterClNoError(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove master
+
+        expected_warnings = 0
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingMasterAndChapterClError(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove master
+        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove chapter
+
+        expected_warnings = 0
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     def test_PhpMissingV1(self):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='')  # remove v1
@@ -79,11 +150,51 @@ class TestUsfmChecker(unittest.TestCase):
         checker.run()
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_PhpInvalidV1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v b ')  # replace v1
+
+        expected_warnings = 2
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     def test_PhpEmptyV1(self):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_verse(out_dir, '51-PHP.usfm', chapter=1, start_vs=1, end_vs=2, replace='\\v 1 ')  # replace v1
 
         expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpEmptyV1V4(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=3, start_vs=1, end_vs=5, replace='\\v 1-4 ')  # replace v1-4
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpEmptyV1V4NoSpace(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=3, start_vs=1, end_vs=5, replace='\\v1-4 ')  # replace v1-4
+
+        expected_warnings = 2
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpEmptyV1V4NoSpaceAfter(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_verse(out_dir, '51-PHP.usfm', chapter=3, start_vs=1, end_vs=5, replace='\\v 1-4b ')  # replace v1-4
+
+        expected_warnings = 2
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -154,6 +265,46 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, '51-PHP.usfm', start_ch=4, end_ch=5, replace='')  # remove c4
 
         expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpNoSpaceC1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\c01\n')  # replace c1
+
+        expected_warnings = 5
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpNoSpaceAfterC1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\c 016b\n')  # replace c1
+
+        expected_warnings = 7
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpInvalidChapterNumber(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\c b\n')  # replace c1
+
+        expected_warnings = 7
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpInvalidChapterNumberNoSpace(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', tag='c 01', replace='\cb\n')  # replace c1
+
+        expected_warnings = 4
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
