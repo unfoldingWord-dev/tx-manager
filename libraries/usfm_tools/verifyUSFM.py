@@ -9,7 +9,7 @@ from __future__ import print_function, unicode_literals
 
 import codecs
 import io
-# import chardet # $ pip install chardet
+# import charset # $ pip install chardet
 import json
 import os
 import re
@@ -27,6 +27,16 @@ from libraries.usfm_tools import parseUsfm, usfm_verses
 lastToken = None
 vv_re = re.compile(r'([0-9]+)-([0-9]+)')
 error_log = None
+
+# chapter or verse missing number or space before
+missing_num_re = re.compile(r'(\\[cv][^\u00A0 \na-z]+)|(\\[cv][\u00A0 ][^0-9\n]+)', re.UNICODE)
+
+# chapter with missing missing space after number
+chapter_missing_space_re = re.compile(r'(\\c[\u00A0 ][0-9]+[\u00A0 ]*[^^0-9\n\u00A0 ])', re.UNICODE)
+
+#  verse with missing missing space after number
+verse_missing_space_re = re.compile(r'(\\v[\u00A0 ][0-9]+[^0-9\n -])|(\\v[\u00A0 ](?:[0-9]+[-\u2013\u2014])[0-9]+[^0-9\n ])', re.UNICODE)
+
 
 class State:
     IDs = []
@@ -47,6 +57,7 @@ class State:
     textOkayHere = False
     reference = ""
     lastRef = ""
+    chapters = set()
     verseCounts = {}
     errorRefs = set()
 
@@ -72,6 +83,7 @@ class State:
         State.verse = 0
         State.needVerseText = False
         State.textOkayHere = False
+        State.chapters = set()
 
     def addID(self, id):
         self.reset_book()
@@ -110,6 +122,7 @@ class State:
     def addChapter(self, c):
         State.lastChapter = State.chapter
         State.chapter = int(c)
+        State.chapters.add(State.chapter)
         State.lastVerse = 0
         State.verse = 0
         State.needVerseText = False
@@ -206,6 +219,9 @@ def report_error(msg):
 
 def verifyVerseCount():
     state = State()
+    if not state.ID:
+        return -1
+
     if state.chapter > 0 and state.verse != state.nVerses(state.ID, state.chapter):
         if state.reference != 'REV 12:18':  # Revelation 12 may have 17 or 18 verses
             report_error("Chapter should have " + str(state.nVerses(state.ID, state.chapter)) + " verses: " + state.reference + '\n')
@@ -238,11 +254,27 @@ def verifyIdentification():
     if not state.mt:
         report_error("missing \\mt tag")
 
+def verifyChapterAndVerseMarkers(text):
+    # check for chapter or verse tags without numbers
+    for no_num in missing_num_re.finditer(text):
+        report_error('Chapter or verse tag invalid: "{0}"'.format(no_num.group(1)))
+
+    # check for chapter tags missing space after number
+    for space in chapter_missing_space_re.finditer(text):
+        report_error('Chapter tag invalid: "{0}"'.format(space.group(1)))
+
+    # check for verse tags missing space after number
+    for space in verse_missing_space_re.finditer(text):
+        report_error('Verse tag invalid: "{0}"'.format(space.group(1)))
 
 def verifyChapterCount():
     state = State()
-    if state.ID and state.chapter != state.nChapters(state.ID):
-        report_error(state.ID + " should have " + str(state.nChapters(state.ID)) + " chapters but " + str(state.chapter) + " chapters are found.\n")
+    if state.ID:
+        expected_chapters = state.nChapters(state.ID)
+        if len(state.chapters) != expected_chapters:
+            for i in range(1, expected_chapters + 1):
+                if i not in state.chapters:
+                    report_error(state.ID + " missing chapter " + str(i) + "\n")
 
 def printToken(token):
     if token.isV():
@@ -410,9 +442,11 @@ def verifyFile(filename):
 
     print("CHECKING " + filename + ":")
     sys.stdout.flush()
+    verifyChapterAndVerseMarkers(str)
     for token in parseUsfm.parseString(str):
         take(token)
     verifyNotEmpty(filename)
+    verifyVerseCount()  # for last chapter
     verifyChapterCount()
     state = State()
     state.addID("")
@@ -424,10 +458,12 @@ def verify_contents_quiet(unicodestring, filename):
     error_log = []  # enable error logging
     state = State()
     state.reset_all()  # clear out previous values
+    verifyChapterAndVerseMarkers(unicodestring)
     for token in parseUsfm.parse_string(unicodestring):
         take(token)
     verifyNotEmpty(filename)
     verifyIdentification()
+    verifyVerseCount()  # for last chapter
     verifyChapterCount()
     errors = error_log
     error_log = None  # turn error logging back off

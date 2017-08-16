@@ -43,7 +43,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_tag(out_dir, '51-PHP.usfm', 'id', '')
 
-        expected_warnings = 1
+        expected_warnings = 6
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -133,7 +133,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_chapter(out_dir, '51-PHP.usfm', start_ch=1, end_ch=2, replace='')  # remove c1
 
-        expected_warnings = 1
+        expected_warnings = 2
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
@@ -179,7 +179,7 @@ class TestUsfmChecker(unittest.TestCase):
         start_marker = '\\{0}'.format(tag)
         end_marker = '\\'
         c_start_pos = book_text.find(start_marker)
-        c_end_pos = book_text.find(end_marker, c_start_pos)
+        c_end_pos = book_text.find(end_marker, c_start_pos + 1)
         previous_section = book_text[:c_start_pos]
         next_section = book_text[c_end_pos:]
         new_text = previous_section + replace + next_section
@@ -232,5 +232,16 @@ class TestUsfmChecker(unittest.TestCase):
         return out_dir
 
     def verify_results_counts(self, expected_errors, expected_warnings, checker):
-        self.assertEqual(len(checker.log.logs["warning"]), expected_warnings)
-        self.assertEqual(len(checker.log.logs["error"]), expected_errors)
+        errors = checker.log.logs["error"]
+        if len(errors) != expected_errors:
+            print("\nErrors:")
+            for error in errors:
+                print(error)
+        warnings = checker.log.logs["warning"]
+        if len(warnings) != expected_warnings:
+            print("\nWarnings:")
+            for warning in warnings:
+                print(warning)
+
+        self.assertEqual(len(errors), expected_errors)
+        self.assertEqual(len(warnings), expected_warnings)

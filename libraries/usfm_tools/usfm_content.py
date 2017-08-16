@@ -14,7 +14,7 @@ class Book(object):
     book_file = api_root + '/versification/ufw/books.json'
     chunk_url = api_root + '/versification/ufw/chunks/{0}.json'
 
-    verse_re = re.compile(r'(\\v[\u00A0 ][0-9]*[-\u2013\u2014]?[0-9]*\s+)', re.UNICODE)
+    verse_re = re.compile(r'(\\v[\u00A0 ](?:[0-9]+[-\u2013\u2014])?[0-9]+\s+)', re.UNICODE)
     chapter_re = re.compile(r'(\\c[\u00A0 ][0-9]+\s*\n)', re.UNICODE)
 
     # chapter tag with other characters following the chapter number
@@ -23,8 +23,14 @@ class Book(object):
     # back-slash with no tag character following it
     empty_tag_re = re.compile(r'\n(.*?\\[\u00A0 ]*?\n.*?)\n', re.UNICODE)
 
-    # chapter or verse with missing number
-    missing_num_re = re.compile(r'(\\[cv][\u00A0\s](?:[0-9]+[-\u2013\u2014])?)[^0-9]+?[\u00A0\s]+?', re.UNICODE)
+    # chapter or verse missing number or space before
+    missing_num_re = re.compile(r'(\\[cv][^\u00A0 \na-z]+)|(\\[cv][\u00A0 ][^0-9\n]+)', re.UNICODE)
+
+    # chapter with missing missing space after number
+    chapter_missing_space_re = re.compile(r'(\\c[\u00A0 ][0-9]+[\u00A0 ]*[^^0-9\n\u00A0 ])', re.UNICODE)
+
+    #  verse with missing missing space after number
+    verse_missing_space_re = re.compile(r'(\\v[\u00A0 ][0-9]+[^0-9\n -])|(\\v[\u00A0 ](?:[0-9]+[-\u2013\u2014])[0-9]+[^0-9\n ])', re.UNICODE)
 
     # verse with no text
     missing_verse_text_re = re.compile(r'(\\v[\u00A0 ][0-9-\u2013\u2014]*[\u00A0\s\r]*)[\\]', re.UNICODE)
@@ -112,7 +118,15 @@ class Book(object):
 
         # check for chapter or verse tags without numbers
         for no_num in self.missing_num_re.finditer(self.usfm):
-            self.append_error('Chapter or verse tag without a number: "{0}"'.format(no_num.group(1)))
+            self.append_error('Chapter or verse tag invalid: "{0}"'.format(no_num.group(1)))
+
+        # check for chapter tags missing space after number
+        for space in self.chapter_missing_space_re.finditer(self.usfm):
+            self.append_error('Chapter tag invalid: "{0}"'.format(space.group(1)))
+
+        # check for verse tags missing space after number
+        for space in self.verse_missing_space_re.finditer(self.usfm):
+            self.append_error('Verse tag invalid: "{0}"'.format(space.group(1)))
 
         # split into chapters
         self.check_chapters(self.chapter_re.split(self.usfm))
