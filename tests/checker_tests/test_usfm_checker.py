@@ -39,15 +39,46 @@ class TestUsfmChecker(unittest.TestCase):
         checker.run()
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
-    def test_PhpMissingID(self):
+    def test_PhpInvalidUsfmFileName(self):
         out_dir = self.unzip_resource('51-PHP.zip')
-        self.replace_tag(out_dir, '51-PHP.usfm', 'id', '')
+        os.rename(os.path.join(out_dir, '51-PHP.usfm'), os.path.join(out_dir, '51-PHs.usfm'))
 
-        expected_warnings = 6
+        expected_warnings = 1
         expected_errors = 0
         checker = UsfmChecker(out_dir, self.converted_dir)
         checker.run()
         self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingUsfmFileName(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+
+        os.rename(os.path.join(out_dir, '51-PHP.usfm'), os.path.join(out_dir, '51-PHP.txt'))
+
+        expected_warnings = 0
+        expected_errors = 1
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpDuplicateUsfmFileName(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        shutil.copy(os.path.join(out_dir, '51-PHP.usfm'), os.path.join(out_dir, 'PHP.usfm'))
+
+        expected_warnings = True
+        expected_errors = True
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingID(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'id', '')
+
+        expected_warnings = True
+        expected_errors = False
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpIdInvalidCode(self):
         out_dir = self.unzip_resource('51-PHP.zip')
@@ -396,3 +427,20 @@ class TestUsfmChecker(unittest.TestCase):
 
         self.assertEqual(len(errors), expected_errors)
         self.assertEqual(len(warnings), expected_warnings)
+
+    def verify_results(self, expected_errors, expected_warnings, checker):
+        errors = checker.log.logs["error"]
+        have_errors = len(errors) > 0
+        if have_errors != expected_errors:
+            print("\nErrors:")
+            for error in errors:
+                print(error)
+        warnings = checker.log.logs["warning"]
+        have_warnings = len(warnings) > 0
+        if have_warnings != expected_warnings:
+            print("\nWarnings:")
+            for warning in warnings:
+                print(warning)
+
+        self.assertEqual(have_errors, expected_errors)
+        self.assertEqual(have_warnings, expected_warnings)

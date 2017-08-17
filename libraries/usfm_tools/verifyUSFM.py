@@ -333,9 +333,9 @@ def takeID(id):
         report_error("Invalid ID: " + id + '\n')
     code = id[0:3]
     state.loadVerseCounts()
+    state.addID(code)
     for k in State.verseCounts:  # look for match in bible names
         if k == code:
-            state.addID(code)
             return
     report_error("Invalid Code '" + code + "' in ID: '" + id + "'\n")
 
@@ -477,7 +477,7 @@ def verify_contents_quiet(unicodestring, filename, book_code):
     verifyChapterCount()
     errors = error_log
     error_log = None  # turn error logging back off
-    return errors
+    return errors, state.ID
 
 # def detect_by_bom(path, default):
 #     with open(path, 'rb') as f:

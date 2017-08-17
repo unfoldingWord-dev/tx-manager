@@ -8,6 +8,10 @@ from libraries.usfm_tools import verifyUSFM, usfm_verses
 
 class UsfmChecker(Checker):
 
+    def __init__(self, preconvert_dir, converted_dir, log=None):
+        super(UsfmChecker, self).__init__(preconvert_dir, converted_dir, log=None)
+        self.found_books = []
+
     def run(self):
         """
         Checks for issues with all Bibles, such as missing books or chapters
@@ -25,9 +29,21 @@ class UsfmChecker(Checker):
                     continue
 
                 file_path = os.path.join(root, f)
-                self.parse_file(file_path, f)
+                sub_path = '.' + file_path[len(unzipped_dir):]
+                self.parse_file(file_path, sub_path, f)
 
-    def parse_file(self, file_path, file_name):
+        found_book_count = len(self.found_books)
+        if found_book_count == 0:
+            self.log.error("No translations found")
+        elif found_book_count == 1:
+            pass  # this is OK, presume this was a single book project
+        elif found_book_count < len(usfm_verses.verses):
+            for book in usfm_verses.verses:
+                if book not in self.found_books:
+                    book_data = usfm_verses.verses[book]
+                    self.log.warning("Missing translation for " + book_data["en_name"])
+
+    def parse_file(self, file_path, sub_path, file_name):
 
         # which bible book is this?
         file_name_parts = file_name.split('.')
@@ -36,27 +52,31 @@ class UsfmChecker(Checker):
         book_name_parts = book_full_name.split('-')
         if len(book_name_parts) > 1:
             book_code = book_name_parts[1]
-        valid_book_name = False
-        for book in usfm_verses.verses:
-            if book == book_code:
-                valid_book_name = True
-                break
-        if not valid_book_name:
-            book_code = None
+
         try:
             with codecs.open(file_path, 'r', 'utf-8') as in_file:
                 book_text = in_file.read()
 
-            self.parse_usfm_text(file_name, book_text, book_full_name, book_code)
+            self.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
 
         except Exception as e:
             self.log.error("Failed to open book '{0}', exception: {1}".format(file_name, str(e)))
 
-    def parse_usfm_text(self, file_name, book_text, book_full_name, book_code):
+    def parse_usfm_text(self, sub_path, file_name, book_text, book_full_name, book_code):
         try:
-            errors = verifyUSFM.verify_contents_quiet(book_text, book_full_name, book_code)
-            for error in errors:
-                self.log.warning(error)
+            errors, found_book_code = verifyUSFM.verify_contents_quiet(book_text, book_full_name, book_code)
+            if found_book_code:
+                book_code = found_book_code
+
+            if book_code:
+                if book_code in self.found_books:
+                    self.log.error("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
+                self.found_books.append(book_code)
+
+            if len(errors):
+                prefix = "File '{0}' book code '{1}': ".format(sub_path, book_code)
+                for error in errors:
+                    self.log.warning(prefix + error)
 
         except Exception as e:
             self.log.error("Failed to verify book '{0}', exception: {1}\n{2}".format(file_name, str(e),
