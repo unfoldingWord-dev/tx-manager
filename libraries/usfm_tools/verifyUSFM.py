@@ -226,9 +226,9 @@ class State:
         return n
 
 def report_error(msg):
-    # if error_log is None:  # if error logging is enabled then don't print
-    #     sys.stderr.write(msg)
-    # else:
+    if error_log is None:  # if error logging is enabled then don't print
+        sys.stderr.write(msg)
+    else:
         error_log.append(msg.rstrip(' \t\n\r'))
 
 def verifyVerseCount():

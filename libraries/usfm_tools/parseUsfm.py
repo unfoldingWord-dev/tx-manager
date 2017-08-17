@@ -325,15 +325,15 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
 usfm    = OneOrMore(element)
 
 # input string
-def parseString(unicodeString):
-    try:
-        cleaned = clean(unicodeString)
-        tokens = usfm.parseString(cleaned, parseAll=True)
-    except Exception as e:
-        print(e)
-        print(repr(unicodeString[:50]))
-        sys.exit()
-    return [createToken(t) for t in tokens]
+# def parseString(unicodeString):
+#     try:
+#         cleaned = clean(unicodeString)
+#         tokens = usfm.parseString(cleaned, parseAll=True)
+#     except Exception as e:
+#         print(e)
+#         print(repr(unicodeString[:50]))
+#         sys.exit()
+#     return [createToken(t) for t in tokens]
 
 def parse_string(unicodeString):
     """
@@ -657,8 +657,7 @@ class UsfmToken(object):
     def is_bk_e(self):  return False
 
 class UnknownToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderUnknown(self)
+    def renderOn(self, printer): return printer.renderUnknown(self)
     def isUnknown(self):     return True
 
 class EscapedToken(UsfmToken):
@@ -668,273 +667,219 @@ class EscapedToken(UsfmToken):
     def isUnknown(self): return True
 
 class IDToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderID(self)
+    def renderOn(self, printer): return printer.renderID(self)
     def isID(self):     return True
 
 class IDEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderIDE(self)
+    def renderOn(self, printer): return printer.renderIDE(self)
     def isIDE(self):    return True
 
 class HToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderH(self)
+    def renderOn(self, printer): return printer.renderH(self)
     def isH(self):      return True
 
 class TOC1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTOC1(self)
+    def renderOn(self, printer): return printer.renderTOC1(self)
     def isTOC1(self):     return True
 
 class TOC2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTOC2(self)
+    def renderOn(self, printer): return printer.renderTOC2(self)
     def isTOC2(self):     return True
 
 class TOC3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTOC3(self)
+    def renderOn(self, printer): return printer.renderTOC3(self)
     def isTOC3(self):     return True
 
 class MTToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMT(self)
+    def renderOn(self, printer): return printer.renderMT(self)
     def isMT(self):     return True
 
 class MT2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMT2(self)
+    def renderOn(self, printer): return printer.renderMT2(self)
     def isMT2(self):     return True
 
 class MT3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMT3(self)
+    def renderOn(self, printer): return printer.renderMT3(self)
     def isMT3(self):    return True
 
 class MSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMS(self)
+    def renderOn(self, printer): return printer.renderMS(self)
     def isMS(self):     return True
 
 class MS2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMS2(self)
+    def renderOn(self, printer): return printer.renderMS2(self)
     def isMS2(self):    return True
 
 class MRToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMR(self)
+    def renderOn(self, printer): return printer.renderMR(self)
     def isMR(self):    return True
 
 class MIToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderMI(self)
+    def renderOn(self, printer): return printer.renderMI(self)
     def isMI(self):     return True
 
 class RToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderR(self)
+    def renderOn(self, printer): return printer.renderR(self)
     def isR(self):    return True
 
 class PToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderP(self)
+    def renderOn(self, printer): return printer.renderP(self)
     def isP(self):      return True
 
 class BToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderB(self)
+    def renderOn(self, printer): return printer.renderB(self)
     def isB(self):      return True
 
 class CToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderC(self)
+    def renderOn(self, printer): return printer.renderC(self)
     def isC(self):      return True
 
 class CASToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderCAS(self)
+    def renderOn(self, printer): return printer.renderCAS(self)
     def isCAS(self):    return True
 
 class CAEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderCAE(self)
+    def renderOn(self, printer): return printer.renderCAE(self)
     def isCAE(self):    return True
 
 class CLToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderCL(self)
+    def renderOn(self, printer): return printer.renderCL(self)
     def isCL(self):     return True
 
 class VToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderV(self)
+    def renderOn(self, printer): return printer.renderV(self)
     def isV(self):      return True
 
 class TEXTToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTEXT(self)
+    def renderOn(self, printer): return printer.renderTEXT(self)
     def isTEXT(self):   return True
 
 class WJSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderWJS(self)
+    def renderOn(self, printer): return printer.renderWJS(self)
     def isWJS(self):    return True
 
 class WJEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderWJE(self)
+    def renderOn(self, printer): return printer.renderWJE(self)
     def isWJE(self):    return True
 
 class SToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderS(self)
+    def renderOn(self, printer): return printer.renderS(self)
     def isS(self):      return True
 
 class S2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderS2(self)
+    def renderOn(self, printer): return printer.renderS2(self)
     def isS2(self):      return True
 
 class S3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderS3(self)
+    def renderOn(self, printer): return printer.renderS3(self)
     def isS3(self):      return True
 
 class S4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderS4(self)
+    def renderOn(self, printer): return printer.renderS4(self)
     def isS4(self):      return True
 
 class S5Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderS5(self)
+    def renderOn(self, printer): return printer.renderS5(self)
     def isS5(self):      return True
 
 class SRToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderSR(self)
+    def renderOn(self, printer): return printer.renderSR(self)
     def isSR(self):    return True
 
 class STSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderSTS(self)
+    def renderOn(self, printer): return printer.renderSTS(self)
     def isSTS(self):    return True
 
 class QToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQ(self)
+    def renderOn(self, printer): return printer.renderQ(self)
     def isQ(self):      return True
 
 class Q1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQ1(self)
+    def renderOn(self, printer): return printer.renderQ1(self)
     def isQ1(self):      return True
 
 class Q2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQ2(self)
+    def renderOn(self, printer): return printer.renderQ2(self)
     def isQ2(self):      return True
 
 class Q3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQ3(self)
+    def renderOn(self, printer): return printer.renderQ3(self)
     def isQ3(self):      return True
 
 class Q4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQ4(self)
+    def renderOn(self, printer): return printer.renderQ4(self)
     def isQ4(self):      return True
 
 class QAToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQA(self)
+    def renderOn(self, printer): return printer.renderQA(self)
     def isQA(self):      return True
 
 class QACToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQAC(self)
+    def renderOn(self, printer): return printer.renderQAC(self)
     def isQAC(self):     return True
 
 class QCToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQC(self)
+    def renderOn(self, printer): return printer.renderQC(self)
     def isQC(self):      return True
 
 class QMToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQM(self)
+    def renderOn(self, printer): return printer.renderQM(self)
     def isQM(self):      return True
 
 class QM1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQM1(self)
+    def renderOn(self, printer): return printer.renderQM1(self)
     def isQM1(self):     return True
 
 class QM2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQM2(self)
+    def renderOn(self, printer): return printer.renderQM2(self)
     def isQM2(self):     return True
 
 class QM3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQM3(self)
+    def renderOn(self, printer): return printer.renderQM3(self)
     def isQM3(self):     return True
 
 class QRToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQR(self)
+    def renderOn(self, printer): return printer.renderQR(self)
     def isQR(self):      return True
 
 class QSSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQSS(self)
+    def renderOn(self, printer): return printer.renderQSS(self)
     def isQSS(self):     return True
 
 class QSEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQSE(self)
+    def renderOn(self, printer): return printer.renderQSE(self)
     def isQSE(self):     return True
 
 class QTSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQTS(self)
+    def renderOn(self, printer): return printer.renderQTS(self)
     def isQTS(self):     return True
 
 class QTEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderQTE(self)
+    def renderOn(self, printer): return printer.renderQTE(self)
     def isQTE(self):     return True
 
 class NBToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderNB(self)
+    def renderOn(self, printer): return printer.renderNB(self)
     def isNB(self):      return True
 
 class FSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFS(self)
+    def renderOn(self, printer): return printer.renderFS(self)
     def isFS(self):      return True
 
 class FRToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFR(self)
+    def renderOn(self, printer): return printer.renderFR(self)
     def isFR(self):      return True
 
 class FREToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFRE(self)
+    def renderOn(self, printer): return printer.renderFRE(self)
     def isFRE(self):      return True
 
 class FKToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFK(self)
+    def renderOn(self, printer): return printer.renderFK(self)
     def isFK(self):      return True
 
 class FTToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFT(self)
+    def renderOn(self, printer): return printer.renderFT(self)
     def isFT(self):      return True
 
 class FQToken(UsfmToken):
@@ -943,188 +888,152 @@ class FQToken(UsfmToken):
     def isFQ(self):      return True
 
 class FQAToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFQA(self)
+    def renderOn(self, printer): return printer.renderFQA(self)
     def isFQA(self):     return True
 
 class FQAEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFQAE(self)
+    def renderOn(self, printer): return printer.renderFQAE(self)
     def isFQAE(self):    return True
 
 class FQBToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFQAE(self)
+    def renderOn(self, printer): return printer.renderFQAE(self)
     def isFQB(self):     return True
 
 class FEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFE(self)
+    def renderOn(self, printer): return printer.renderFE(self)
     def isFE(self):      return True
 
 class FPToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderFP(self)
+    def renderOn(self, printer): return printer.renderFP(self)
     def isFP(self):      return True
 
 class ISToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderIS(self)
+    def renderOn(self, printer): return printer.renderIS(self)
     def isIS(self):      return True
 
 class IEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderIE(self)
+    def renderOn(self, printer): return printer.renderIE(self)
     def isIE(self):      return True
 
 class BDSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderBDS(self)
+    def renderOn(self, printer): return printer.renderBDS(self)
     def isBDS(self):      return True
 
 class BDEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderBDE(self)
+    def renderOn(self, printer): return printer.renderBDE(self)
     def isBDE(self):      return True
 
 class BDITSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderBDITS(self)
+    def renderOn(self, printer): return printer.renderBDITS(self)
     def isBDITS(self):     return True
 
 class BDITEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderBDITE(self)
+    def renderOn(self, printer): return printer.renderBDITE(self)
     def isBDITE(self):      return True
 
 class LIToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderLI(self)
+    def renderOn(self, printer): return printer.renderLI(self)
     def isLI(self):      return True
 
 class LI1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderLI1(self)
+    def renderOn(self, printer): return printer.renderLI1(self)
     def isLI1(self):     return True
 
 class LI2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderLI2(self)
+    def renderOn(self, printer): return printer.renderLI2(self)
     def isLI1(self):     return True
 
 class LI3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderLI3(self)
+    def renderOn(self, printer): return printer.renderLI3(self)
     def isLI1(self):     return True
 
 class LI4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderLI4(self)
+    def renderOn(self, printer): return printer.renderLI4(self)
     def isLI1(self):     return True
 
 class DToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderD(self)
+    def renderOn(self, printer): return printer.renderD(self)
     def isD(self):      return True
 
 class SPToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderSP(self)
+    def renderOn(self, printer): return printer.renderSP(self)
     def isSP(self):      return True
 
 class ADDSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderADDS(self)
+    def renderOn(self, printer): return printer.renderADDS(self)
     def isADDS(self):    return True
 
 class ADDEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderADDE(self)
+    def renderOn(self, printer): return printer.renderADDE(self)
     def isADDE(self):    return True
 
 class NDSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderNDS(self)
+    def renderOn(self, printer): return printer.renderNDS(self)
     def isNDS(self):    return True
 
 class NDEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderNDE(self)
+    def renderOn(self, printer): return printer.renderNDE(self)
     def isNDE(self):    return True
 
 class PBRToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderPBR(self)
+    def renderOn(self, printer): return printer.renderPBR(self)
     def isPBR(self):    return True
 
 
 # Cross References
 class XSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderXS(self)
+    def renderOn(self, printer): return printer.renderXS(self)
     def isXS(self):      return True
 
 class XDCSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderXDCS(self)
+    def renderOn(self, printer): return printer.renderXDCS(self)
     def isXDCS(self):      return True
 
 class XDCEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderXDCE(self)
+    def renderOn(self, printer): return printer.renderXDCE(self)
     def isXDCE(self):      return True
 
 class XOToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderXO(self)
+    def renderOn(self, printer): return printer.renderXO(self)
     def isXO(self):      return True
 
 class XTToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderXT(self)
+    def renderOn(self, printer): return printer.renderXT(self)
     def isXT(self):      return True
 
 class XEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderXE(self)
+    def renderOn(self, printer): return printer.renderXE(self)
     def isXE(self):      return True
 
 class MToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderM(self)
+    def renderOn(self, printer): return printer.renderM(self)
     def isM(self):      return True
 
 # Transliterated Words
 class TLSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTLS(self)
+    def renderOn(self, printer): return printer.renderTLS(self)
     def isTLS(self):      return True
 
 class TLEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTLE(self)
+    def renderOn(self, printer): return printer.renderTLE(self)
     def isTLE(self):      return True
 
 # Indenting paragraphs
 class PIToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderPI(self)
+    def renderOn(self, printer): return printer.renderPI(self)
     def isPI(self):      return True
 
 class PI2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderPI2(self)
+    def renderOn(self, printer): return printer.renderPI2(self)
     def isPI2(self): return True
 
 # Small caps
 class SCSToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderSCS(self)
+    def renderOn(self, printer): return printer.renderSCS(self)
     def isSCS(self):      return True
 
 class SCEToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderSCE(self)
+    def renderOn(self, printer): return printer.renderSCE(self)
     def isSCE(self):      return True
 
 # REMarks
@@ -1134,128 +1043,103 @@ class REMToken(UsfmToken):
 
 # Tables
 class TRToken(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTR(self)
+    def renderOn(self, printer): return printer.renderTR(self)
     def isTR(self):     return True
 
 class TH1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTH1(self)
+    def renderOn(self, printer): return printer.renderTH1(self)
     def isTH1(self):    return True
 
 class TH2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTH2(self)
+    def renderOn(self, printer): return printer.renderTH2(self)
     def isTH2(self):    return True
 
 class TH3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTH3(self)
+    def renderOn(self, printer): return printer.renderTH3(self)
     def isTH3(self):    return True
 
 class TH4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTH4(self)
+    def renderOn(self, printer): return printer.renderTH4(self)
     def isTH4(self):    return True
 
 class TH5Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTH5(self)
+    def renderOn(self, printer): return printer.renderTH5(self)
     def isTH5(self):    return True
 
 class TH6Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTH6(self)
+    def renderOn(self, printer): return printer.renderTH6(self)
     def isTH6(self):    return True
 
 class THR1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTHR1(self)
+    def renderOn(self, printer): return printer.renderTHR1(self)
     def isTHR1(self):   return True
 
 class THR2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTHR2(self)
+    def renderOn(self, printer): return printer.renderTHR2(self)
     def isTHR2(self):   return True
 
 class THR3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTHR3(self)
+    def renderOn(self, printer): return printer.renderTHR3(self)
     def isTHR3(self):   return True
 
 class THR4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTHR4(self)
+    def renderOn(self, printer): return printer.renderTHR4(self)
     def isTHR4(self):   return True
 
 class THR5Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTHR5(self)
+    def renderOn(self, printer): return printer.renderTHR5(self)
     def isTHR5(self):   return True
 
 class THR6Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTHR6(self)
+    def renderOn(self, printer): return printer.renderTHR6(self)
     def isTHR6(self):   return True
 
 class TC1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTC1(self)
+    def renderOn(self, printer): return printer.renderTC1(self)
     def isTC1(self):    return True
 
 class TC2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTC2(self)
+    def renderOn(self, printer): return printer.renderTC2(self)
     def isTC2(self):    return True
 
 class TC3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTC3(self)
+    def renderOn(self, printer): return printer.renderTC3(self)
     def isTC3(self):    return True
 
 class TC4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTC4(self)
+    def renderOn(self, printer): return printer.renderTC4(self)
     def isTC4(self):    return True
 
 class TC5Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTC5(self)
+    def renderOn(self, printer): return printer.renderTC5(self)
     def isTC5(self):    return True
 
 class TC6Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTC6(self)
+    def renderOn(self, printer): return printer.renderTC6(self)
     def isTC6(self):    return True
 
 class TCR1Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTCR1(self)
+    def renderOn(self, printer): return printer.renderTCR1(self)
     def isTCR1(self):   return True
 
 class TCR2Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTCR2(self)
+    def renderOn(self, printer): return printer.renderTCR2(self)
     def isTCR2(self):   return True
 
 class TCR3Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTCR3(self)
+    def renderOn(self, printer): return printer.renderTCR3(self)
     def isTCR3(self):   return True
 
 class TCR4Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTCR4(self)
+    def renderOn(self, printer): return printer.renderTCR4(self)
     def isTCR4(self):   return True
 
 class TCR5Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTCR5(self)
+    def renderOn(self, printer): return printer.renderTCR5(self)
     def isTCR5(self):   return True
 
 class TCR6Token(UsfmToken):
-    def renderOn(self, printer):
-        return printer.renderTCR6(self)
+    def renderOn(self, printer): return printer.renderTCR6(self)
     def isTCR6(self):   return True
 
 # Introductions
