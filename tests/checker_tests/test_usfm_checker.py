@@ -22,14 +22,6 @@ class TestUsfmChecker(unittest.TestCase):
         """Runs after each test."""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_success(self):
-        expected_warnings = False
-        expected_errors = False
-        checker = UsfmChecker(self.preconvert_dir, self.converted_dir)
-        checker.run()
-        self.assertEqual(len(checker.log.logs["warning"]) > 0, expected_warnings)
-        self.assertEqual(len(checker.log.logs["error"]) > 0, expected_errors)
-
     def test_PhpValid(self):
         out_dir = self.unzip_resource('51-PHP.zip')
 
@@ -144,6 +136,76 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.unzip_resource('51-PHP.zip')
         self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove master label
         self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '')  # remove chapter label
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingMt(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'mt', '')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpUntranslatedHeading(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'h', '\\h Genesis')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpUntranslatedToc1(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'toc1', '\\toc1 Genesis')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpUntranslatedToc2(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'toc2', '\\toc2 Genesis')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpUntranslatedToc3(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'toc3', '\\toc3 Genesis')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpUntranslatedCl(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'cl', '\\cl Genesis')
+
+        expected_warnings = 1
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpUntranslatedMt(self):
+        out_dir = self.unzip_resource('51-PHP.zip')
+        self.replace_tag(out_dir, '51-PHP.usfm', 'mt', '\\mt Genesis')
 
         expected_warnings = 1
         expected_errors = 0

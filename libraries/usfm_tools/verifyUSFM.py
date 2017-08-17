@@ -60,6 +60,7 @@ class State:
     chapters = set()
     verseCounts = {}
     errorRefs = set()
+    englishWords = []
 
     def reset_all(self):
         self.reset_book()
@@ -67,6 +68,7 @@ class State:
         State.lastRef = ""
         State.reference = ""
         State.errorRefs = set()
+        State.englishWords = []
 
     def reset_book(self):
         State.ID = ""
@@ -171,7 +173,6 @@ class State:
     def addQuote(self):
         State.textOkayHere = True
 
-
     # Adds the specified reference to the set of error references
     # Returns True if reference can be added
     # Returns False if reference was previously added
@@ -182,19 +183,31 @@ class State:
             success = True
         return success
 
+    def getEnglishWords(self):
+        if len(State.englishWords) == 0:
+            for book in usfm_verses.verses:
+                book_data = usfm_verses.verses[book]
+                english_name = book_data["en_name"].lower()
+                english_words = english_name.split(' ')
+                for word in english_words:
+                    if word and not isNumber(word):
+                        State.englishWords.append(word)
+            State.englishWords.sort()
+        return State.englishWords
+
     def loadVerseCounts(self):
         if len(State.verseCounts) == 0:
             State.verseCounts = usfm_verses.verses
 
-        # jsonPath = 'verses.json'
-        # if not os.access(jsonPath, os.F_OK):
-        #     jsonPath = os.path.dirname(os.path.abspath(__file__)) + "\\" + jsonPath
-        # if os.access(jsonPath, os.F_OK):
-        #     f = open(jsonPath, 'r')
-        #     State.verseCounts = json.load(f)
-        #     f.close()
-        # else:
-        #     report_error("File not found: verses.json\n")
+            # jsonPath = 'verses.json'
+            # if not os.access(jsonPath, os.F_OK):
+            #     jsonPath = os.path.dirname(os.path.abspath(__file__)) + "\\" + jsonPath
+            # if os.access(jsonPath, os.F_OK):
+            #     f = open(jsonPath, 'r')
+            #     State.verseCounts = json.load(f)
+            #     f.close()
+            # else:
+            #     report_error("File not found: verses.json\n")
 
     # Returns the number of chapters that the specified book should contain
     def nChapters(self, id):
@@ -297,29 +310,76 @@ def printToken(token):
     else:
         print(token)
 
+def verifyTextTranslated(text, token):
+    found, word = hasEnglishBookNames(text)
+    if found:
+        report_error("Token '\\{0}' has untranslated word '{1}'".format(token, word))
+
+def hasEnglishBookNames(text):
+    state = State()
+    english = state.getEnglishWords()
+    words = text.split(' ')
+    for word in words:
+        if word:
+            found = binarySearch(english, word.lower())
+            if found:
+                return found, word
+    return False, None
+
+def binarySearch(alist, item):
+    first = 0
+    last = len(alist)-1
+    found = False
+
+    while first <= last and not found:
+        midpoint = (first + last)//2
+        mid_value = alist[midpoint]
+        if mid_value == item:
+            found = True
+        else:
+            if item < mid_value:
+                last = midpoint-1
+            else:
+                first = midpoint+1
+
+    return found
+
+def isNumber(s):
+    if s:
+        char = s[0]
+        if (char >= '0') and (char <= '9'):
+            return True
+    return False
+
 def takeCL(text):
     state = State()
     state.addChapterLabel(text)
+    verifyTextTranslated(text, 'cl')
 
 def takeTOC1(text):
     state = State()
     state.addTOC1(text)
+    verifyTextTranslated(text, 'toc1')
 
 def takeTOC2(text):
     state = State()
     state.addTOC2(text)
+    verifyTextTranslated(text, 'toc2')
 
 def takeTOC3(text):
     state = State()
     state.addTOC3(text)
+    verifyTextTranslated(text, 'toc3')
 
 def takeMT(text):
     state = State()
     state.addMT(text)
+    verifyTextTranslated(text, 'mt')
 
 def takeH(heading):
     state = State()
     state.addHeading(heading)
+    verifyTextTranslated(heading, 'h')
 
 def takeIDE(ide):
     state = State()
@@ -333,9 +393,9 @@ def takeID(id):
         report_error("Invalid ID: " + id + '\n')
     code = id[0:3]
     state.loadVerseCounts()
-    state.addID(code)
     for k in State.verseCounts:  # look for match in bible names
         if k == code:
+            state.addID(code)
             return
     report_error("Invalid Code '" + code + "' in ID: '" + id + "'\n")
 
