@@ -212,9 +212,9 @@ class State:
         return n
 
 def report_error(msg):
-    if error_log is None:  # if error logging is enabled then don't print
-        sys.stderr.write(msg)
-    else:
+    # if error_log is None:  # if error logging is enabled then don't print
+    #     sys.stderr.write(msg)
+    # else:
         error_log.append(msg.rstrip(' \t\n\r'))
 
 def verifyVerseCount():
@@ -231,10 +231,12 @@ def verifyNotEmpty(filename):
     if not state.ID or state.chapter == 0:
         report_error(filename + " -- may be empty.\n")
 
-def verifyIdentification():
+def verifyIdentification(book_code):
     state = State()
     if not state.ID:
         report_error("missing \\id tag")
+    elif (book_code is not None) and (book_code != state.ID):
+        report_error("book code '" + state.ID + "' found in \\id tag does not match code '" + book_code + "' found in file name")
 
     if not state.IDE:
         report_error("missing \\ide tag")
@@ -439,28 +441,29 @@ def take(token):
     global lastToken
     lastToken = token
 
-def verifyFile(filename):
-    # detect file encoding
-    enc = detect_by_bom(filename, default="utf-8")
-    # print "DECODING: " + enc
-    input = io.open(filename, "tr", 1, encoding=enc)
-    str = input.read(-1)
-    input.close
+# def verifyFile(filename):
+#     # detect file encoding
+#     enc = detect_by_bom(filename, default="utf-8")
+#     # print "DECODING: " + enc
+#     input = io.open(filename, "tr", 1, encoding=enc)
+#     str = input.read(-1)
+#     input.close
+#
+#     print("CHECKING " + filename + ":")
+#     sys.stdout.flush()
+#     verifyChapterAndVerseMarkers(str)
+#     for token in parseUsfm.parseString(str):
+#         take(token)
+#     verifyNotEmpty(filename)
+#     verifyIdentification(None)
+#     verifyVerseCount()  # for last chapter
+#     verifyChapterCount()
+#     state = State()
+#     state.addID("")
+#     sys.stderr.flush()
+#     print("FINISHED CHECKING.\n")
 
-    print("CHECKING " + filename + ":")
-    sys.stdout.flush()
-    verifyChapterAndVerseMarkers(str)
-    for token in parseUsfm.parseString(str):
-        take(token)
-    verifyNotEmpty(filename)
-    verifyVerseCount()  # for last chapter
-    verifyChapterCount()
-    state = State()
-    state.addID("")
-    sys.stderr.flush()
-    print("FINISHED CHECKING.\n")
-
-def verify_contents_quiet(unicodestring, filename):
+def verify_contents_quiet(unicodestring, filename, book_code):
     global error_log
     error_log = []  # enable error logging
     state = State()
@@ -469,44 +472,44 @@ def verify_contents_quiet(unicodestring, filename):
     for token in parseUsfm.parse_string(unicodestring):
         take(token)
     verifyNotEmpty(filename)
-    verifyIdentification()
+    verifyIdentification(book_code)
     verifyVerseCount()  # for last chapter
     verifyChapterCount()
     errors = error_log
     error_log = None  # turn error logging back off
     return errors
 
-def detect_by_bom(path, default):
-    with open(path, 'rb') as f:
-        raw = f.read(4)
-    for enc,boms in \
-            ('utf-8-sig',(codecs.BOM_UTF8)), \
-            ('utf-16',(codecs.BOM_UTF16_LE,codecs.BOM_UTF16_BE)), \
-            ('utf-32',(codecs.BOM_UTF32_LE,codecs.BOM_UTF32_BE)):
-        if any(raw.startswith(bom) for bom in boms):
-            return enc
-    return default
+# def detect_by_bom(path, default):
+#     with open(path, 'rb') as f:
+#         raw = f.read(4)
+#     for enc,boms in \
+#             ('utf-8-sig',(codecs.BOM_UTF8)), \
+#             ('utf-16',(codecs.BOM_UTF16_LE,codecs.BOM_UTF16_BE)), \
+#             ('utf-32',(codecs.BOM_UTF32_LE,codecs.BOM_UTF32_BE)):
+#         if any(raw.startswith(bom) for bom in boms):
+#             return enc
+#     return default
+#
+# def verifyDir(dirpath):
+#     for f in os.listdir(dirpath):
+#         path = os.path.join(dirpath, f)
+#         if os.path.isdir(path):
+#             # It's a directory, recurse into it
+#             verifyDir(path)
+#         elif os.path.isfile(path) and path[-3:].lower() == 'sfm':
+#             verifyFile(path)
 
-def verifyDir(dirpath):
-    for f in os.listdir(dirpath):
-        path = os.path.join(dirpath, f)
-        if os.path.isdir(path):
-            # It's a directory, recurse into it
-            verifyDir(path)
-        elif os.path.isfile(path) and path[-3:].lower() == 'sfm':
-            verifyFile(path)
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        source = raw_input("Enter path to .usfm file or directory containing .usfm files: ")
-    # elif sys.argv[1] == 'hard-coded-path':
-    #     source = r'C:\Users\Larry\Documents\GitHub\Bengali\BENGALI-ULB-OT.BCS\STAGE3'
-    else:
-        source = sys.argv[1]
-
-    if os.path.isdir(source):
-        verifyDir(source)
-    elif os.path.isfile(source):
-        verifyFile(source)
-    else:
-        sys.stderr.write("File not found: " + source + '\n')
+# if __name__ == "__main__":
+#     if len(sys.argv) < 2:
+#         source = raw_input("Enter path to .usfm file or directory containing .usfm files: ")
+#     # elif sys.argv[1] == 'hard-coded-path':
+#     #     source = r'C:\Users\Larry\Documents\GitHub\Bengali\BENGALI-ULB-OT.BCS\STAGE3'
+#     else:
+#         source = sys.argv[1]
+#
+#     if os.path.isdir(source):
+#         verifyDir(source)
+#     elif os.path.isfile(source):
+#         verifyFile(source)
+#     else:
+#         sys.stderr.write("File not found: " + source + '\n')

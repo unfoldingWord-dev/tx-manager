@@ -3,8 +3,7 @@ import codecs
 import os
 import traceback
 from libraries.checkers.checker import Checker
-from libraries.usfm_tools import verifyUSFM
-from libraries.usfm_tools.usfm_content import Book
+from libraries.usfm_tools import verifyUSFM, usfm_verses
 
 
 class UsfmChecker(Checker):
@@ -20,39 +19,45 @@ class UsfmChecker(Checker):
         """
 
         unzipped_dir = self.preconvert_dir
-        there_were_errors = False
         for root, dirs, files in os.walk(unzipped_dir):
             for f in files:
                 if f[-3:].lower() != 'sfm':  # only usfm files
                     continue
 
-                # which book is this?
-                book_name = f.split('.')
-                book = Book.create_book(book_name[0])  # type: Book
+                file_path = os.path.join(root, f)
+                self.parse_file(file_path, f)
 
-                if book:
-                    try:
-                        with codecs.open(os.path.join(root, f), 'r', 'utf-8') as in_file:
-                            book_text = in_file.read()
+    def parse_file(self, file_path, file_name):
 
-                        # book.set_usfm(book_text)
-                        # book.clean_usfm()
-                        #
-                        # # do basic checks
-                        # book.verify_usfm_tags()
-                        # book.verify_chapters_and_verses()
-                        # if len(book.validation_errors) > 0:
-                        #     there_were_errors = True
-                        #     for error in book.validation_errors:
-                        #         self.log.warning(error)
+        # which bible book is this?
+        file_name_parts = file_name.split('.')
+        book_full_name = file_name_parts[0].upper()
+        book_code = book_full_name
+        book_name_parts = book_full_name.split('-')
+        if len(book_name_parts) > 1:
+            book_code = book_name_parts[1]
+        valid_book_name = False
+        for book in usfm_verses.verses:
+            if book == book_code:
+                valid_book_name = True
+                break
+        if not valid_book_name:
+            book_code = None
+        try:
+            with codecs.open(file_path, 'r', 'utf-8') as in_file:
+                book_text = in_file.read()
 
-                        try:
-                            errors = verifyUSFM.verify_contents_quiet(book_text, book_name[0])
-                            for error in errors:
-                                self.log.warning(error)
+            self.parse_usfm_text(file_name, book_text, book_full_name, book_code)
 
-                        except Exception as e:
-                            self.log.error("Failed to verify book '{0}', exception: {1}\n{2}".format(book_name, str(e),traceback.format_exc()))
+        except Exception as e:
+            self.log.error("Failed to open book '{0}', exception: {1}".format(file_name, str(e)))
 
-                    except Exception as e:
-                        self.log.error("Failed to open book '{0}', exception: {1}".format(book_name, str(e)))
+    def parse_usfm_text(self, file_name, book_text, book_full_name, book_code):
+        try:
+            errors = verifyUSFM.verify_contents_quiet(book_text, book_full_name, book_code)
+            for error in errors:
+                self.log.warning(error)
+
+        except Exception as e:
+            self.log.error("Failed to verify book '{0}', exception: {1}\n{2}".format(file_name, str(e),
+                                                                                     traceback.format_exc()))
