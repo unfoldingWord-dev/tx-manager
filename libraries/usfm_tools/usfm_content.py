@@ -3,7 +3,7 @@ import usfm_classes
 import json
 import re
 from future.builtins import chr
-from general_tools.url_utils import get_url
+from libraries.general_tools.url_utils import get_url
 
 
 class Book(object):

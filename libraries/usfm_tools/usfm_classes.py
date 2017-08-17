@@ -4,12 +4,12 @@ import json
 import os
 from datetime import datetime
 from json import JSONEncoder
-from general_tools.file_utils import load_json_object
-from general_tools.url_utils import get_url
-import usfm_paragraphs
+from libraries.general_tools.file_utils import load_json_object
+from libraries.general_tools.url_utils import get_url
 import usfm_content
+import usfm_paragraphs
 # from app_code.util import app_utils
-from libraries.checkers import app_utils
+from libraries.usfm_tools import app_utils
 
 
 class BibleMetaData(object):
