@@ -86,6 +86,7 @@ class State:
         State.needVerseText = False
         State.textOkayHere = False
         State.chapters = set()
+        State.nParagraphs = 0
 
     def addID(self, id):
         self.reset_book()
@@ -298,17 +299,17 @@ def verifyChapterCount():
                 if i not in state.chapters:
                     report_error(state.ID + " missing chapter " + str(i) + "\n")
 
-def printToken(token):
-    if token.isV():
-        print("Verse number " + token.value)
-    elif token.isC():
-        print("Chapter " + token.value)
-    elif token.isP():
-        print("Paragraph " + token.value)
-    elif token.isTEXT():
-        print("Text: <" + token.value + ">")
-    else:
-        print(token)
+# def printToken(token):
+#     if token.isV():
+#         print("Verse number " + token.value)
+#     elif token.isC():
+#         print("Chapter " + token.value)
+#     elif token.isP():
+#         print("Paragraph " + token.value)
+#     elif token.isTEXT():
+#         print("Text: <" + token.value + ">")
+#     else:
+#         print(token)
 
 def verifyTextTranslated(text, token):
     found, word = hasEnglishBookNames(text)
@@ -408,7 +409,7 @@ def takeC(c):
         report_error("Chapter out of order: " + state.reference + '\n')
     elif state.chapter == state.lastChapter:
         report_error("Duplicate chapter: " + state.reference + '\n')
-    elif state.chapter > state.lastChapter + 2:
+    elif state.chapter > state.lastChapter + 1:
         report_error("Missing chapters before: " + state.reference + '\n')
     elif state.chapter > state.lastChapter + 1:
         report_error("Missing chapter(s) between: " + state.lastRef + " and " + state.reference + '\n')
