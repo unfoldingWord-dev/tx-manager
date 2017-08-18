@@ -61,6 +61,7 @@ class State:
     verseCounts = {}
     errorRefs = set()
     englishWords = []
+    lang_code = None
 
     def reset_all(self):
         self.reset_book()
@@ -69,6 +70,7 @@ class State:
         State.reference = ""
         State.errorRefs = set()
         State.englishWords = []
+        State.lang_code = None
 
     def reset_book(self):
         State.ID = ""
@@ -312,12 +314,14 @@ def verifyChapterCount():
 #         print(token)
 
 def verifyTextTranslated(text, token):
-    found, word = hasEnglishBookNames(text)
+    found, word = isNotTranslated(text)
     if found:
         report_error("Token '\\{0}' has untranslated word '{1}'".format(token, word))
 
-def hasEnglishBookNames(text):
+def isNotTranslated(text):
     state = State()
+    if not state.lang_code or (state.lang_code[0:2] == 'en'):  # no need to translate english
+        return False
     english = state.getEnglishWords()
     words = text.split(' ')
     for word in words:
@@ -532,11 +536,12 @@ def take(token):
 #     sys.stderr.flush()
 #     print("FINISHED CHECKING.\n")
 
-def verify_contents_quiet(unicodestring, filename, book_code):
+def verify_contents_quiet(unicodestring, filename, book_code, lang_code):
     global error_log
     error_log = []  # enable error logging
     state = State()
     state.reset_all()  # clear out previous values
+    state.lang_code = lang_code
     verifyChapterAndVerseMarkers(unicodestring)
     for token in parseUsfm.parse_string(unicodestring):
         take(token)

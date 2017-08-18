@@ -5,6 +5,9 @@ import tempfile
 import shutil
 from libraries.checkers.usfm_checker import UsfmChecker
 from libraries.general_tools.file_utils import write_file, read_file
+from libraries.resource_container.ResourceContainer import RC
+
+testRC = RC(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources'))
 
 
 class TestUsfmChecker(unittest.TestCase):
@@ -26,8 +29,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
         expected_warnings = 0
         expected_errors = 0
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
     def test_PhpInvalidUsfmFileName(self):
@@ -35,8 +37,7 @@ class TestUsfmChecker(unittest.TestCase):
         os.rename(os.path.join(out_dir, TestUsfmChecker.php_file_name), os.path.join(out_dir, '51-PHs.usfm'))
         expected_warnings = 1
         expected_errors = 0
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingUsfmFileName(self):
@@ -44,8 +45,7 @@ class TestUsfmChecker(unittest.TestCase):
         os.rename(os.path.join(out_dir, TestUsfmChecker.php_file_name), os.path.join(out_dir, '51-PHP.txt'))
         expected_warnings = 0
         expected_errors = 1
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
     def test_PhpDuplicateUsfmFileName(self):
@@ -53,8 +53,7 @@ class TestUsfmChecker(unittest.TestCase):
         shutil.copy(os.path.join(out_dir, TestUsfmChecker.php_file_name), os.path.join(out_dir, 'PHP.usfm'))
         expected_warnings = True
         expected_errors = True
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingID(self):
@@ -62,8 +61,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEmptyID(self):
@@ -71,8 +69,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '\id')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingIDAndC1(self):
@@ -81,8 +78,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'c 01', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpIdInvalidCode(self):
@@ -90,8 +86,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '\id PH Unlocked Literal Bible')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpInvalidIdLength(self):
@@ -99,8 +94,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '\id PH')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpDuplicateID(self):
@@ -108,8 +102,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\id  PHP Unlocked Literal Bible')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingHeading(self):
@@ -117,8 +110,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'h', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingToc1(self):
@@ -126,8 +118,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'toc1', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingToc2(self):
@@ -135,8 +126,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'toc2', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingToc3(self):
@@ -144,8 +134,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'toc3', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingMasterClNoError(self):
@@ -153,8 +142,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'cl', '')  # remove master
         expected_warnings = 0
         expected_errors = 0
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingMasterAndChapterClError(self):
@@ -163,8 +151,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'cl', '')  # remove chapter label
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingMt(self):
@@ -172,8 +159,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'mt', '')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpUntranslatedHeading(self):
@@ -181,8 +167,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'h', '\\h Genesis')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpUntranslatedToc1(self):
@@ -190,8 +175,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'toc1', '\\toc1 Genesis')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpUntranslatedToc2(self):
@@ -199,8 +183,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'toc2', '\\toc2 Genesis')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpUntranslatedToc3(self):
@@ -208,8 +191,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'toc3', '\\toc3 Genesis')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpUntranslatedCl(self):
@@ -217,8 +199,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'cl', '\\cl Genesis')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpUntranslatedMt(self):
@@ -226,8 +207,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'mt', '\\mt Genesis')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingP(self):
@@ -235,8 +215,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='p', replace='')  # remove p
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingV1(self):
@@ -244,8 +223,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='')  # remove v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingV1Tag(self):
@@ -253,8 +231,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='v 1', replace='first verse stuff\n')  # remove v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpNoSpaceV1(self):
@@ -262,8 +239,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v1 ')  # replace v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpNoSpace2V1(self):
@@ -271,8 +247,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v 1b ')  # replace v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpInvalidV1(self):
@@ -280,8 +255,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v b ')  # replace v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEmptyV1(self):
@@ -289,8 +263,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v 1 ')  # replace v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEmptyV1V4(self):
@@ -298,8 +271,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=3, start_vs=1, end_vs=5, replace='\\v 1-4 ')  # replace v1-4
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEmptyV1V4NoSpace(self):
@@ -307,8 +279,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=3, start_vs=1, end_vs=5, replace='\\v1-4 ')  # replace v1-4
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEmptyV1V4NoSpaceAfter(self):
@@ -316,8 +287,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=3, start_vs=1, end_vs=5, replace='\\v 1-4b ')  # replace v1-4
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpDuplicateV1(self):
@@ -325,8 +295,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v 1 stuff \\v 1 more stuff ')  # replace v1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpV2beforeV1(self):
@@ -334,8 +303,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=1, start_vs=2, end_vs=4, replace='\\v 3 stuff \\v 2 more stuff ')  # replace v2-3
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingtoken(self):
@@ -343,8 +311,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\n\\\n')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingtokenEof(self):
@@ -352,8 +319,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\n\\')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEscapedtoken(self):
@@ -361,8 +327,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\n\\\\\n')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEscapedtokenEOF(self):
@@ -370,8 +335,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\n\\\\')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingLastVerse(self):
@@ -379,8 +343,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=4, start_vs=23, end_vs=24, replace='')  # remove last verse
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingAfterC2V28(self):
@@ -388,8 +351,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=2, start_vs=28, end_vs=40, replace='')  # remove last verse
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingC1(self):
@@ -397,8 +359,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, TestUsfmChecker.php_file_name, start_ch=1, end_ch=2, replace='')  # remove c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpEmptyC1(self):
@@ -406,8 +367,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, TestUsfmChecker.php_file_name, start_ch=1, end_ch=2, replace='\\c 01\n')  # replace c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingC4(self):
@@ -415,8 +375,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, TestUsfmChecker.php_file_name, start_ch=4, end_ch=5, replace='')  # remove c4
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpExtraC4(self):
@@ -424,8 +383,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\n\\c 4\n')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpExtraC2(self):
@@ -433,8 +391,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.append_text(out_dir, TestUsfmChecker.php_file_name, '\n\\c 2\n')
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingC1Tag(self):
@@ -442,8 +399,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='c 01', replace='')  # remove c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpNoSpaceC1(self):
@@ -451,8 +407,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='c 01', replace='\c01\n')  # replace c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpNoSpaceAfterC1(self):
@@ -460,8 +415,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='c 01', replace='\c 016b\n')  # replace c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpInvalidChapterNumber(self):
@@ -469,8 +423,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='c 01', replace='\c b\n')  # replace c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpInvalidChapterNumberNoSpace(self):
@@ -478,8 +431,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, tag='c 01', replace='\cb\n')  # replace c1
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingC2C3(self):
@@ -487,8 +439,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, TestUsfmChecker.php_file_name, start_ch=2, end_ch=4, replace='')  # remove c2-3
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_PhpMissingC3C4(self):
@@ -496,8 +447,7 @@ class TestUsfmChecker(unittest.TestCase):
         self.replace_chapter(out_dir, TestUsfmChecker.php_file_name, start_ch=3, end_ch=5, replace='')  # remove c3-4
         expected_warnings = True
         expected_errors = False
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
 
     def test_parse_file_missing_file(self):
@@ -540,6 +490,12 @@ class TestUsfmChecker(unittest.TestCase):
     #
     # helpers
     #
+
+    def run_checker(self, out_dir):
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.rc = testRC
+        checker.run()
+        return checker
 
     def append_text(self, out_dir, file_name, append):
         book_path = os.path.join(out_dir, file_name)

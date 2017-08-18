@@ -3,6 +3,7 @@ import codecs
 import os
 import traceback
 from libraries.checkers.checker import Checker
+from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.usfm_tools import verifyUSFM, usfm_verses
 
 
@@ -11,6 +12,8 @@ class UsfmChecker(Checker):
     def __init__(self, preconvert_dir, converted_dir, log=None):
         super(UsfmChecker, self).__init__(preconvert_dir, converted_dir, log=None)
         self.found_books = []
+        self.commit_data = {}
+        self.rc = {}
 
     def run(self):
         """
@@ -22,14 +25,18 @@ class UsfmChecker(Checker):
         :return:
         """
 
-        unzipped_dir = self.preconvert_dir
-        for root, dirs, files in os.walk(unzipped_dir):
+        lang_code = self.rc.resource.language.identifier
+        valid_lang_code = PageMetrics().validate_language_code(lang_code)
+        if not valid_lang_code:
+            self.log.warning("Invalid language code: " + lang_code)
+
+        for root, dirs, files in os.walk(self.preconvert_dir):
             for f in files:
                 if f[-3:].lower() != 'sfm':  # only usfm files
                     continue
 
                 file_path = os.path.join(root, f)
-                sub_path = '.' + file_path[len(unzipped_dir):]
+                sub_path = '.' + file_path[len(self.preconvert_dir):]
                 self.parse_file(file_path, sub_path, f)
 
         found_book_count = len(self.found_books)
@@ -64,7 +71,8 @@ class UsfmChecker(Checker):
 
     def parse_usfm_text(self, sub_path, file_name, book_text, book_full_name, book_code):
         try:
-            errors, found_book_code = verifyUSFM.verify_contents_quiet(book_text, book_full_name, book_code)
+            lang_code = self.rc.resource.language.identifier
+            errors, found_book_code = verifyUSFM.verify_contents_quiet(book_text, book_full_name, book_code, lang_code)
             if found_book_code:
                 book_code = found_book_code
 
