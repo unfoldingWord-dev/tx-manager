@@ -388,11 +388,13 @@ def takeIDE(ide):
 
 def takeID(id):
     state = State()
-    if id in state.getIDs():
-        report_error("Duplicate ID: " + id + '\n')
-    if len(id) < 3:
+    code = '' if not id else id.split(' ')[0]
+    if len(code) < 3:
         report_error("Invalid ID: " + id + '\n')
-    code = id[0:3]
+        return
+    if code in state.getIDs():
+        report_error("Duplicate ID: " + id + '\n')
+        return
     state.loadVerseCounts()
     for k in State.verseCounts:  # look for match in bible names
         if k == code:

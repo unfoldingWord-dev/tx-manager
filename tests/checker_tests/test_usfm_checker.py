@@ -66,9 +66,46 @@ class TestUsfmChecker(unittest.TestCase):
         checker.run()
         self.verify_results(expected_errors, expected_warnings, checker)
 
+    def test_PhpEmptyID(self):
+        out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '\id')
+        expected_warnings = True
+        expected_errors = False
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results(expected_errors, expected_warnings, checker)
+
+    def test_PhpMissingIDAndC1(self):
+        out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '')
+        self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'c 01', '')
+        expected_warnings = True
+        expected_errors = False
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results(expected_errors, expected_warnings, checker)
+
     def test_PhpIdInvalidCode(self):
         out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
-        self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'ide', '\id PH Unlocked Literal Bible')
+        self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '\id PH Unlocked Literal Bible')
+        expected_warnings = True
+        expected_errors = False
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results(expected_errors, expected_warnings, checker)
+
+    def test_PhpInvalidIdLength(self):
+        out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'id', '\id PH')
+        expected_warnings = True
+        expected_errors = False
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.run()
+        self.verify_results(expected_errors, expected_warnings, checker)
+
+    def test_PhpDuplicateID(self):
+        out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        self.append_text(out_dir, TestUsfmChecker.php_file_name, '\id  PHP Unlocked Literal Bible')
         expected_warnings = True
         expected_errors = False
         checker = UsfmChecker(out_dir, self.converted_dir)
