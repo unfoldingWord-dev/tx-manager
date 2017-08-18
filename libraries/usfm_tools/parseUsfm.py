@@ -352,6 +352,7 @@ def clean(unicodeString):
     ret_value = unicodeString.replace('\xa0', ' ')
 
     # escape illegal USFM sequences
+    ret_value = ret_value.replace('\\\\', '\\ \\ ')  # replace so pyparsing doesn't crash, but still get warnings
     ret_value = ret_value.replace('\\ ',  '\\\\ ')
     ret_value = ret_value.replace('\\\n', '\\\\\n')
     ret_value = ret_value.replace('\\\r', '\\\\\r')

@@ -409,10 +409,10 @@ def takeC(c):
         report_error("Chapter out of order: " + state.reference + '\n')
     elif state.chapter == state.lastChapter:
         report_error("Duplicate chapter: " + state.reference + '\n')
+    elif state.chapter > state.lastChapter + 2:
+        report_error("Missing chapters between: " + state.lastRef + " and " + state.reference + '\n')
     elif state.chapter > state.lastChapter + 1:
-        report_error("Missing chapters before: " + state.reference + '\n')
-    elif state.chapter > state.lastChapter + 1:
-        report_error("Missing chapter(s) between: " + state.lastRef + " and " + state.reference + '\n')
+        report_error("Missing chapter between " + state.lastRef + " and " + state.reference + '\n')
 
 def takeP():
     state = State()
@@ -460,6 +460,10 @@ def takeText(t):
             report_error("  no preceding Token\n")
     state.addText()
 
+def takeUnknown(state, token):
+    value = token.getValue()
+    report_error("Unknown Token: '\\" + value + "' at " + state.reference + '\n')
+
 # Returns True if token is the start of a footnote for a verse that does not appear in some manuscripts.
 def isFootnoted(token):
     state = State()
@@ -499,6 +503,8 @@ def take(token):
         takeText(token.value)
     elif token.isQ() or token.isQ1() or token.isQ2() or token.isQ3():
         state.addQuote()
+    elif token.isUnknown():
+        takeUnknown(state, token)
     global lastToken
     lastToken = token
 

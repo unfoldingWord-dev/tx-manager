@@ -79,5 +79,7 @@ class UsfmChecker(Checker):
                     self.log.warning(prefix + error)
 
         except Exception as e:
-            self.log.error("Failed to verify book '{0}', exception: {1}\n{2}".format(file_name, str(e),
-                                                                                     traceback.format_exc()))
+            # for debugging
+            print("Failed to verify book '{0}', exception: {1}\n{2}".format(file_name, str(e),
+                                                                            traceback.format_exc()))
+            self.log.error("Failed to verify book '{0}', exception: {1}".format(file_name, str(e)))
