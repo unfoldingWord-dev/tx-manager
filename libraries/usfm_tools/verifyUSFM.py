@@ -69,8 +69,6 @@ class State:
         State.lastRef = ""
         State.reference = ""
         State.errorRefs = set()
-        State.englishWords = []
-        State.lang_code = None
 
     def reset_book(self):
         State.ID = ""
@@ -89,6 +87,9 @@ class State:
         State.textOkayHere = False
         State.chapters = set()
         State.nParagraphs = 0
+
+    def setLanguageCode(self, code):
+        State.lang_code = code
 
     def addID(self, id):
         self.reset_book()
@@ -314,11 +315,11 @@ def verifyChapterCount():
 #         print(token)
 
 def verifyTextTranslated(text, token):
-    found, word = isNotTranslated(text)
+    found, word = needsTranslation(text)
     if found:
         report_error("Token '\\{0}' has untranslated word '{1}'".format(token, word))
 
-def isNotTranslated(text):
+def needsTranslation(text):
     state = State()
     if not state.lang_code or (state.lang_code[0:2] == 'en'):  # no need to translate english
         return False
@@ -328,7 +329,7 @@ def isNotTranslated(text):
         if word:
             found = binarySearch(english, word.lower())
             if found:
-                return found, word
+                return True, word
     return False, None
 
 def binarySearch(alist, item):
@@ -541,7 +542,7 @@ def verify_contents_quiet(unicodestring, filename, book_code, lang_code):
     error_log = []  # enable error logging
     state = State()
     state.reset_all()  # clear out previous values
-    state.lang_code = lang_code
+    state.setLanguageCode(lang_code)
     verifyChapterAndVerseMarkers(unicodestring)
     for token in parseUsfm.parse_string(unicodestring):
         take(token)

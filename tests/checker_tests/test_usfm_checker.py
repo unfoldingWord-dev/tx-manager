@@ -1,19 +1,20 @@
+# coding=utf-8
 from __future__ import absolute_import, unicode_literals, print_function
 import os
 import unittest
 import tempfile
 import shutil
 from libraries.checkers.usfm_checker import UsfmChecker
+from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
-
-testRC = RC(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources'))
 
 
 class TestUsfmChecker(unittest.TestCase):
 
     php_file_name = '51-PHP.usfm'
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
+    testRC = RC(resources_dir)
 
     def setUp(self):
         """Runs before each test."""
@@ -27,6 +28,15 @@ class TestUsfmChecker(unittest.TestCase):
 
     def test_PhpValid(self):
         out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        expected_warnings = 0
+        expected_errors = 0
+        checker = self.run_checker(out_dir)
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_PhpValidWithFootnoteAndRefsTags(self):
+        out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        replace = file_utils.read_file(os.path.join(self.resources_dir, 'footnote_n_refs_example.txt'))
+        self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=2, start_vs=1, end_vs=16, replace=replace)  # replace v1
         expected_warnings = 0
         expected_errors = 0
         checker = self.run_checker(out_dir)
@@ -493,7 +503,7 @@ class TestUsfmChecker(unittest.TestCase):
 
     def run_checker(self, out_dir):
         checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.rc = testRC
+        checker.rc = TestUsfmChecker.testRC
         checker.run()
         return checker
 

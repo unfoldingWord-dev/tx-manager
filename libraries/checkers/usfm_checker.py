@@ -11,6 +11,8 @@ class UsfmChecker(Checker):
 
     def __init__(self, preconvert_dir, converted_dir, log=None):
         super(UsfmChecker, self).__init__(preconvert_dir, converted_dir, log=None)
+
+        # TODO blm - these are stubs until ported over to lint handler
         self.found_books = []
         self.commit_data = {}
         self.rc = {}
