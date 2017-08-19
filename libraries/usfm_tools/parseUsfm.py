@@ -102,7 +102,9 @@ fqb     = usfmTokenValue("fqb", phrase)
 fe      = usfmEndToken("f")
 fp      = usfmToken("fp")
 fv      = usfmTokenValue("fv", phrase)
-fve      = usfmEndToken("fv")
+fve     = usfmEndToken("fv")
+fdc     = usfmTokenValue("fdc", phrase)
+fdce    = usfmEndToken("fdc")
 
 # Cross References
 xs      = usfmTokenValue("x", plus)
@@ -257,6 +259,8 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
                        fp,
                        fv,
                        fve,
+                       fdc,
+                       fdce,
                        xs,
                        xdcs,
                        xdce,
@@ -433,6 +437,8 @@ def createToken(t):
         'f*':   FEToken,
         'fv':   FVSToken,
         'fv*':  FVEToken,
+        'fdc':  FDCSToken,
+        'fdc*': FDCEToken,
         'fp':   FPToken,
         'x':    XSToken,
         'xdc':  XDCSToken,
@@ -592,6 +598,10 @@ class UsfmToken(object):
     def isFQB(self):    return False
     def isFE(self):     return False
     def isFP(self):     return False
+    def isFVS(self):    return False
+    def isFVE(self):    return False
+    def isFDCS(self):   return False
+    def isFDCE(self):   return False
     def isXS(self):     return False
     def isXDCS(self):   return False
     def isXDCE(self):   return False
@@ -917,6 +927,14 @@ class FVSToken(UsfmToken):
 class FVEToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFVE(self)
     def isFVE(self):      return True
+
+class FDCSToken(UsfmToken):
+    def renderOn(self, printer): return printer.renderFDCS(self)
+    def isFDCS(self):      return True
+
+class FDCEToken(UsfmToken):
+    def renderOn(self, printer): return printer.renderFDCE(self)
+    def isFDCE(self):      return True
 
 class FPToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFP(self)

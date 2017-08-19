@@ -42,6 +42,15 @@ class TestUsfmChecker(unittest.TestCase):
         checker = self.run_checker(out_dir)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_PhpValidWithFormattingTags(self):
+        out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
+        replace = file_utils.read_file(os.path.join(self.resources_dir, 'formatting_example.txt'))
+        self.replace_verse(out_dir, TestUsfmChecker.php_file_name, chapter=2, start_vs=1, end_vs=13, replace=replace)  # replace v1
+        expected_warnings = 0
+        expected_errors = 0
+        checker = self.run_checker(out_dir)
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     def test_PhpInvalidUsfmFileName(self):
         out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
         os.rename(os.path.join(out_dir, TestUsfmChecker.php_file_name), os.path.join(out_dir, '51-PHs.usfm'))

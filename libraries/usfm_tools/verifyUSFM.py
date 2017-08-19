@@ -479,9 +479,16 @@ def isFootnoted(token):
         state.addText()     # footnote counts as text for our purposes
     return footnoted
 
+def isCrossRef(token):
+    state = State()
+    xref = token.isXS()
+    if xref:
+        state.addText()     # cross reference counts as text for our purposes
+    return xref
+
 def take(token):
     state = State()
-    if state.needText() and not token.isTEXT() and not isFootnoted(token):
+    if state.needText() and not token.isTEXT() and not isFootnoted(token) and not isCrossRef(token):
         report_error("Empty verse: " + state.reference + '\n')
     if token.isID():
         takeID(token.value)
