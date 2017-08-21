@@ -71,7 +71,7 @@ class TestUsfmChecker(unittest.TestCase):
     def test_PhpDuplicateUsfmFileName(self):
         out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
         shutil.copy(os.path.join(out_dir, TestUsfmChecker.php_file_name), os.path.join(out_dir, 'PHP.usfm'))
-        expected_warnings = True
+        expected_warnings = False
         expected_errors = True
         checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
@@ -491,6 +491,7 @@ class TestUsfmChecker(unittest.TestCase):
         expected_warnings = 0
         expected_errors = 1
         checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.rc = TestUsfmChecker.testRC
         checker.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
@@ -504,6 +505,7 @@ class TestUsfmChecker(unittest.TestCase):
         expected_warnings = 0
         expected_errors = 1
         checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.rc = TestUsfmChecker.testRC
         checker.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
@@ -519,22 +521,7 @@ class TestUsfmChecker(unittest.TestCase):
         print("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
-    def test_checkBookCountForBible(self):
-        out_dir = self.unzip_resource('en_ulb.zip')
-        expected_warnings = 0
-        expected_errors = 0
-        checker = UsfmChecker(out_dir, self.converted_dir)
-        checker.warn_on_missing_books_in_folder()
-        self.verify_results_counts(expected_errors, expected_warnings, checker)
-
-    def test_CheckBookCountWithMissing(self):
-        expected_warnings = 65
-        expected_errors = 0
-        checker = UsfmChecker(self.resources_dir, self.converted_dir)
-        checker.warn_on_missing_books_in_folder()
-        self.verify_results_counts(expected_errors, expected_warnings, checker)
-
-    #
+   #
     # helpers
     #
 

@@ -9,8 +9,8 @@ from libraries.usfm_tools import verifyUSFM, usfm_verses
 
 class UsfmChecker(Checker):
 
-    def __init__(self, preconvert_dir, converted_dir, log=None):
-        super(UsfmChecker, self).__init__(preconvert_dir, converted_dir, log=None)
+    def __init__(self, *args, **kwargs):
+        super(UsfmChecker, self).__init__(*args, **kwargs)
 
         # TODO blm - these are stubs until ported over to lint handler
         self.found_books = []
@@ -34,7 +34,7 @@ class UsfmChecker(Checker):
 
         for root, dirs, files in os.walk(self.preconvert_dir):
             for f in files:
-                if f[-3:].lower() != 'sfm':  # only usfm files
+                if os.path.splitext(f)[1].lower() != '.usfm':  # only usfm files
                     continue
 
                 file_path = os.path.join(root, f)
@@ -44,32 +44,6 @@ class UsfmChecker(Checker):
         found_book_count = len(self.found_books)
         if found_book_count == 0:
             self.log.error("No translations found")
-        elif found_book_count == 1:
-            pass  # this is OK, presume this was a single book project
-        else:
-            self.warn_on_missing_books(self.found_books)
-
-    def warn_on_missing_books_in_folder(self):
-        found_books = []
-        for root, dirs, files in os.walk(self.preconvert_dir):
-            for f in files:
-                if f[-3:].lower() != 'sfm':  # only usfm files
-                    continue
-
-                file_name = os.path.basename(f)
-                book_code, book_full_name = self.get_book_ids(file_name)
-                found_books.append(book_code)
-
-        for book in usfm_verses.verses:
-            if book not in found_books:
-                book_data = usfm_verses.verses[book]
-                self.log.warning("Missing translation for " + book_data["en_name"])
-
-    def warn_on_missing_books(self, found_books):
-        for book in usfm_verses.verses:
-            if book not in found_books:
-                book_data = usfm_verses.verses[book]
-                self.log.warning("Missing translation for " + book_data["en_name"])
 
     def parse_file(self, file_path, sub_path, file_name):
 
