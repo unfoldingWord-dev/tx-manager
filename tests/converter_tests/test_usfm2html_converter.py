@@ -203,8 +203,9 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.assertFalse(result['success'])
         self.assertEqual(result['errors'], ['Resource bad_resource currently not supported.'])
 
-
-        # helpers
+    #
+    # helpers
+    #
 
     def verifyFiles(self, files_to_verify):
         for file_to_verify in files_to_verify:
@@ -215,7 +216,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
             with codecs.open(file_name, 'r', 'utf-8-sig') as usfm_file:
                 usfm = usfm_file.read()
 
-            self.assertIsNotNone(usfm);
+            self.assertIsNotNone(usfm)
             self.assertTrue(len(usfm) > 10, 'Bible usfm file contents missing: {0}'.format(file_to_verify))
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):

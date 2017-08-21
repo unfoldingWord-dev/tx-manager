@@ -1,5 +1,5 @@
 from __future__ import print_function, unicode_literals
-from libraries.checkers.bible_checker import BibleChecker
+from libraries.checkers.usfm_checker import UsfmChecker
 from libraries.checkers.obs_checker import ObsChecker
 from libraries.checkers.udb_checker import UdbChecker
 from libraries.checkers.ulb_checker import UlbChecker
@@ -26,4 +26,4 @@ def get_checker(resource_id):
     elif resource_id == 'ulb':
         return UlbChecker
     elif resource_id in BIBLE_RESOURCE_TYPES:
-        return BibleChecker
+        return UsfmChecker

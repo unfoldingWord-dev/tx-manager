@@ -1,0 +1,20 @@
+{
+  "format": "usfm",
+  "target_language": {
+    "id": "es",
+    "name": "Espanol",
+    "direction": "ltr"
+  },
+  "project": {
+    "id": "php",
+    "name": "Philippians"
+  },
+  "type": {
+    "id": "text",
+    "name": "Text"
+  },
+  "resource": {
+    "id": "ulb",
+    "name": "Unlocked Literal Bible"
+  }
+}
