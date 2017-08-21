@@ -46,7 +46,7 @@ class UsfmChecker(Checker):
             self.log.error("No translations found")
         elif found_book_count == 1:
             pass  # this is OK, presume this was a single book project
-        elif found_book_count < len(usfm_verses.verses):
+        else:
             for book in usfm_verses.verses:
                 if book not in self.found_books:
                     book_data = usfm_verses.verses[book]
@@ -75,6 +75,7 @@ class UsfmChecker(Checker):
         try:
             lang_code = self.rc.resource.language.identifier
             errors, found_book_code = verifyUSFM.verify_contents_quiet(book_text, book_full_name, book_code, lang_code)
+
             if found_book_code:
                 book_code = found_book_code
 

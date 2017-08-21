@@ -51,6 +51,7 @@ class State:
     chapter_label = ""
     chapter = 0
     nParagraphs = 0
+    nQuotes = 0
     verse = 0
     lastVerse = 0
     needVerseText = False
@@ -87,6 +88,7 @@ class State:
         State.textOkayHere = False
         State.chapters = set()
         State.nParagraphs = 0
+        State.nQuotes = 0
 
     def setLanguageCode(self, code):
         State.lang_code = code
@@ -130,6 +132,8 @@ class State:
         State.chapter = int(c)
         State.chapters.add(State.chapter)
         State.lastVerse = 0
+        State.nParagraphs = 0
+        State.nQuotes = 0
         State.verse = 0
         State.needVerseText = False
         State.textOkayHere = False
@@ -175,6 +179,7 @@ class State:
         State.textOkayHere = True
 
     def addQuote(self):
+        State.nQuotes += State.nQuotes + 1
         State.textOkayHere = True
 
     # Adds the specified reference to the set of error references
@@ -321,15 +326,14 @@ def verifyTextTranslated(text, token):
 
 def needsTranslation(text):
     state = State()
-    if not state.lang_code or (state.lang_code[0:2] == 'en'):  # no need to translate english
-        return False
-    english = state.getEnglishWords()
-    words = text.split(' ')
-    for word in words:
-        if word:
-            found = binarySearch(english, word.lower())
-            if found:
-                return True, word
+    if state.lang_code and (state.lang_code[0:2] != 'en'):  # no need to translate english
+        english = state.getEnglishWords()
+        words = text.split(' ')
+        for word in words:
+            if word:
+                found = binarySearch(english, word.lower())
+                if found:
+                    return True, word
     return False, None
 
 def binarySearch(alist, item):
@@ -433,10 +437,8 @@ def takeV(v):
             report_error("Missing ID before verse: " + v + '\n')
         if state.chapter == 0:
             report_error("Missing chapter tag: " + state.reference + '\n')
-        if state.nParagraphs == 0:
-            report_error("Missing paragraph marker (\\p) before: " + state.reference + '\n')
-        if not state.chapter_label and not state.master_chapter_label:
-            report_error("Missing chapter label (\\cl) before : " + state.reference + '\n')
+        if (state.nParagraphs == 0) and (state.nQuotes == 0):
+            report_error("Missing paragraph marker (\\p) or quote (\\q) before: " + state.reference + '\n')
 
     if state.verse < state.lastVerse and state.addError(state.lastRef):
         report_error("Verse out of order: " + state.reference + " after " + state.lastRef + '\n')
@@ -454,7 +456,8 @@ def takeV(v):
 def takeText(t):
     state = State()
     global lastToken
-    if not state.textOkay() and not lastToken.isM() and not lastToken.isFS() and not lastToken.isFE():
+    if not state.textOkay() and not lastToken.isM() and not lastToken.isFS() and not lastToken.isFE()\
+            and not lastToken.isSP() and not lastToken.isD():
         if t[0] == '\\':
             report_error("Uncommon or invalid marker around " + state.reference + '\n')
         else:
@@ -471,10 +474,12 @@ def takeUnknown(state, token):
     value = token.getValue()
     report_error("Unknown Token: '\\" + value + "' at " + state.reference + '\n')
 
-# Returns True if token is the start of a footnote for a verse that does not appear in some manuscripts.
+# Returns True if token is the start of a footnote - note that verse can contain footnote for more reasons than just
+#       does not appear in some manuscripts.
 def isFootnoted(token):
     state = State()
-    footnoted = token.isFS() and state.reference in { 'MAT 17:21', 'MAT 18:11', 'MAT 23:14', 'MRK 7:16', 'MRK 9:44', 'MRK 9:46', 'MRK 11:26', 'MRK 15:28', 'MRK 16:9', 'MRK 16:12', 'MRK 16:14', 'MRK 16:17', 'MRK 16:19', 'LUK 17:36', 'LUK 23:17', 'JHN 5:4', 'JHN 7:53', 'JHN 8:1', 'JHN 8:4', 'JHN 8:7', 'JHN 8:9', 'ACT 8:37', 'ACT 15:34', 'ACT 24:7', 'ACT 28:29', 'ROM 16:24' }
+    footnoted = token.isFS()
+    # and state.reference in { 'MAT 17:21', 'MAT 18:11', 'MAT 23:14', 'MRK 7:16', 'MRK 9:44', 'MRK 9:46', 'MRK 11:26', 'MRK 15:28', 'MRK 16:9', 'MRK 16:12', 'MRK 16:14', 'MRK 16:17', 'MRK 16:19', 'LUK 17:36', 'LUK 23:17', 'JHN 5:4', 'JHN 7:53', 'JHN 8:1', 'JHN 8:4', 'JHN 8:7', 'JHN 8:9', 'ACT 8:37', 'ACT 15:34', 'ACT 24:7', 'ACT 28:29', 'ROM 16:24' }
     if footnoted:
         state.addText()     # footnote counts as text for our purposes
     return footnoted
@@ -509,7 +514,7 @@ def take(token):
     elif token.isC():
         verifyVerseCount()
         takeC(token.value)
-    elif token.isP() or token.isPI():
+    elif token.isP() or token.isPI() or token.isNB():
         takeP()
     elif token.isV():
         takeV(token.value)

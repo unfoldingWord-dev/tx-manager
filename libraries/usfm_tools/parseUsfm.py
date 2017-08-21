@@ -96,6 +96,7 @@ fre     = usfmEndToken("fr")
 fk      = usfmTokenValue("fk", phrase)
 ft      = usfmTokenValue("ft", phrase)
 fq      = usfmTokenValue("fq", phrase)
+fqe     = usfmEndToken("fq")
 fqa     = usfmTokenValue("fqa", phrase)
 fqae    = usfmEndToken("fqa")
 fqb     = usfmTokenValue("fqb", phrase)
@@ -138,7 +139,7 @@ li2     = usfmToken("li2")
 li3     = usfmToken("li3")
 li4     = usfmToken("li4")
 d       = usfmTokenValue("d", phrase)
-sp      = usfmToken("sp")
+sp      = usfmTokenValue("sp", phrase)
 adds    = usfmToken("add")
 adde    = usfmEndToken("add")
 nds     = usfmToken("nd")
@@ -204,6 +205,7 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
                        ms1,
                        ms2,
                        mr,
+                       d,
                        s,
                        s1,
                        s2,
@@ -252,6 +254,7 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
                        fk,
                        ft,
                        fq,
+                       fqe,
                        fqa,
                        fqae,
                        fqb,
@@ -431,6 +434,7 @@ def createToken(t):
         'fk':   FKToken,
         'ft':   FTToken,
         'fq':   FQToken,
+        'fq*':  FQEToken,
         'fqa':  FQAToken,
         'fqa*': FQAEToken,
         'fqb':  FQAEToken,
@@ -903,6 +907,11 @@ class FQToken(UsfmToken):
     def renderOn(self, printer):
         return printer.renderFQ(self)
     def isFQ(self):      return True
+
+class FQEToken(UsfmToken):
+    def renderOn(self, printer):
+        return printer.renderFQE(self)
+    def isFQE(self):      return True
 
 class FQAToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFQA(self)

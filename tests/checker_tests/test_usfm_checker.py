@@ -4,9 +4,10 @@ import os
 import unittest
 import tempfile
 import shutil
+import time
 from libraries.checkers.usfm_checker import UsfmChecker
 from libraries.general_tools import file_utils
-from libraries.general_tools.file_utils import write_file, read_file
+from libraries.general_tools.file_utils import write_file, read_file, unzip
 from libraries.resource_container.ResourceContainer import RC
 
 
@@ -168,7 +169,7 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = self.copy_resource(TestUsfmChecker.php_file_name)
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'cl', '')  # remove master label
         self.replace_tag(out_dir, TestUsfmChecker.php_file_name, 'cl', '')  # remove chapter label
-        expected_warnings = True
+        expected_warnings = False
         expected_errors = False
         checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
@@ -506,6 +507,18 @@ class TestUsfmChecker(unittest.TestCase):
         checker.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_EnUlbValid(self):
+        out_dir = self.unzip_resource('en_ulb.zip')
+        expected_warnings = 0
+        expected_errors = 0
+        start = time.time()
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.rc = RC(out_dir)
+        checker.run()
+        elapsed_seconds = int(time.time() - start)
+        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     #
     # helpers
     #
@@ -579,6 +592,12 @@ class TestUsfmChecker(unittest.TestCase):
         out_dir = os.path.join(self.temp_dir, 'checker_test')
         os.mkdir(out_dir)
         shutil.copy(file_path, out_dir)
+        return out_dir
+
+    def unzip_resource(self, zip_name):
+        zip_file = os.path.join(self.resources_dir, zip_name)
+        out_dir = os.path.join(self.temp_dir, 'checker_test')
+        unzip(zip_file, out_dir)
         return out_dir
 
     def verify_results_counts(self, expected_errors, expected_warnings, checker):
