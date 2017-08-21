@@ -4,6 +4,9 @@ from libraries.checkers.usfm_checker import UsfmChecker
 
 class UdbChecker(UsfmChecker):
 
+    def __init__(self, preconvert_dir, converted_dir, log=None):
+        super(UdbChecker, self).__init__(preconvert_dir, converted_dir, log=None)
+
     def run(self):
         """
         Checks for issues with the UDB

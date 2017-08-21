@@ -4,6 +4,9 @@ from libraries.checkers.usfm_checker import UsfmChecker
 
 class UlbChecker(UsfmChecker):
 
+    def __init__(self, preconvert_dir, converted_dir, log=None):
+        super(UlbChecker, self).__init__(preconvert_dir, converted_dir, log=None)
+
     def run(self):
         """
         Checks for issues with the ULB
