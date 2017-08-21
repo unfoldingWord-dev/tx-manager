@@ -519,6 +519,21 @@ class TestUsfmChecker(unittest.TestCase):
         print("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
+    def test_checkBookCountForBible(self):
+        out_dir = self.unzip_resource('en_ulb.zip')
+        expected_warnings = 0
+        expected_errors = 0
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.warn_on_missing_books_in_folder()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    def test_CheckBookCountWithMissing(self):
+        expected_warnings = 65
+        expected_errors = 0
+        checker = UsfmChecker(self.resources_dir, self.converted_dir)
+        checker.warn_on_missing_books_in_folder()
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
     #
     # helpers
     #

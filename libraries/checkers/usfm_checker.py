@@ -47,20 +47,33 @@ class UsfmChecker(Checker):
         elif found_book_count == 1:
             pass  # this is OK, presume this was a single book project
         else:
-            for book in usfm_verses.verses:
-                if book not in self.found_books:
-                    book_data = usfm_verses.verses[book]
-                    self.log.warning("Missing translation for " + book_data["en_name"])
+            self.warn_on_missing_books(self.found_books)
+
+    def warn_on_missing_books_in_folder(self):
+        found_books = []
+        for root, dirs, files in os.walk(self.preconvert_dir):
+            for f in files:
+                if f[-3:].lower() != 'sfm':  # only usfm files
+                    continue
+
+                file_name = os.path.basename(f)
+                book_code, book_full_name = self.get_book_ids(file_name)
+                found_books.append(book_code)
+
+        for book in usfm_verses.verses:
+            if book not in found_books:
+                book_data = usfm_verses.verses[book]
+                self.log.warning("Missing translation for " + book_data["en_name"])
+
+    def warn_on_missing_books(self, found_books):
+        for book in usfm_verses.verses:
+            if book not in found_books:
+                book_data = usfm_verses.verses[book]
+                self.log.warning("Missing translation for " + book_data["en_name"])
 
     def parse_file(self, file_path, sub_path, file_name):
 
-        # which bible book is this?
-        file_name_parts = file_name.split('.')
-        book_full_name = file_name_parts[0].upper()
-        book_code = book_full_name
-        book_name_parts = book_full_name.split('-')
-        if len(book_name_parts) > 1:
-            book_code = book_name_parts[1]
+        book_code, book_full_name = self.get_book_ids(file_name)
 
         try:
             with codecs.open(file_path, 'r', 'utf-8') as in_file:
@@ -70,6 +83,15 @@ class UsfmChecker(Checker):
 
         except Exception as e:
             self.log.error("Failed to open book '{0}', exception: {1}".format(file_name, str(e)))
+
+    def get_book_ids(self, file_name):
+        file_name_parts = file_name.split('.')
+        book_full_name = file_name_parts[0].upper()
+        book_code = book_full_name
+        book_name_parts = book_full_name.split('-')
+        if len(book_name_parts) > 1:
+            book_code = book_name_parts[1]
+        return book_code, book_full_name
 
     def parse_usfm_text(self, sub_path, file_name, book_text, book_full_name, book_code):
         try:
