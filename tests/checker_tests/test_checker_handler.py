@@ -6,7 +6,7 @@ from libraries.checkers.checker_handler import get_checker
 class TestCheckerHandler(unittest.TestCase):
 
     def test_instantiate_abstract_class(self):
-        self.assertEqual(get_checker('bible').__name__, 'BibleChecker')
+        self.assertEqual(get_checker('bible').__name__, 'UsfmChecker')
         self.assertEqual(get_checker('obs').__name__, 'ObsChecker')
         self.assertEqual(get_checker('ta').__name__, 'TaChecker')
         self.assertEqual(get_checker('tn').__name__, 'TnChecker')

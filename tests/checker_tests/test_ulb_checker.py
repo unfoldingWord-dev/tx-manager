@@ -4,11 +4,14 @@ import unittest
 import tempfile
 import shutil
 from libraries.checkers.ulb_checker import UlbChecker
+from libraries.resource_container.ResourceContainer import RC
 
 
 class TestUlbChecker(unittest.TestCase):
 
+    php_file_name = '51-PHP.usfm'
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
+    testRC = RC(resources_dir)
 
     def setUp(self):
         """Runs before each test."""
@@ -20,13 +23,30 @@ class TestUlbChecker(unittest.TestCase):
         """Runs after each test."""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_success(self):
+    def test_PhpValid(self):  # for now use same source as for usfm
+        out_dir = self.copy_resource(TestUlbChecker.php_file_name)
         expected_warnings = False
         expected_errors = False
-        checker = UlbChecker(self.preconvert_dir, self.converted_dir)
-        checker.run()
+        checker = self.run_checker(out_dir)
         self.verify_results(expected_errors, expected_warnings, checker)
+
+    #
+    # helpers
+    #
+
+    def run_checker(self, out_dir):
+        checker = UlbChecker(out_dir, self.converted_dir)
+        checker.rc = TestUlbChecker.testRC
+        checker.run()
+        return checker
 
     def verify_results(self, expected_errors, expected_warnings, checker):
         self.assertEqual(len(checker.log.logs["warning"]) > 0, expected_warnings)
         self.assertEqual(len(checker.log.logs["error"]) > 0, expected_errors)
+
+    def copy_resource(self, file_name):
+        file_path = os.path.join(self.resources_dir, file_name)
+        out_dir = os.path.join(self.temp_dir, 'checker_test')
+        os.mkdir(out_dir)
+        shutil.copy(file_path, out_dir)
+        return out_dir
