@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
-from bs4 import BeautifulSoup
+
+import re
 from libraries.checkers.checker import Checker
 from libraries.checkers.obs_data import obs_data
 from libraries.general_tools.file_utils import read_file
@@ -17,35 +18,45 @@ class ObsChecker(Checker):
         self.converted_dir is the directory of converted files
         :return:
         """
-        for chapter in range(1, 51):
-            filename = os.path.join(self.converted_dir, str(chapter).zfill(2)+'.html')
+        for chapter in range( 1, 51 ):
+            chapter_number = str(chapter).zfill(2)                                       # chapter check
+            filename = os.path.join(self.preconvert_dir, chapter_number + '.md')
 
             if not os.path.isfile(filename):
-                self.log.warning('Chapter {0} does not exist!'.format(chapter))
+                self.log.warning('Chapter {0} does not exist!'.format(chapter_number))
                 continue
 
-            chapter_html = read_file(filename)
-            soup = BeautifulSoup(chapter_html, 'html.parser')
+            chapter_md = read_file(filename)
+            is_title = chapter_md.find('# ')
 
-            if not soup.find('body'):
-                self.log.warning('Chapter {0} has no body!'.format(chapter))
-                return
+            if is_title < 0:                                                             # Find chapter headings
+                self.log.warning('Chapter {0} does not have a title!'.format(chapter_number))
 
-            content = soup.body.find(id='content')
+            expected_frame_count = obs_data['chapters'][str(chapter).zfill(2)]['frames'] # Identify missing frames
 
-            if not content:
-                self.log.warning('Chapter {0} has no content!'.format(chapter))
-                return
+            for frame_idx in range( 1, expected_frame_count ):
+                frame_index = str(frame_idx).zfill(2)
+                pattern = '-{0}-{1}.'.format(chapter_number, frame_index)
 
-            if not content.find('h1'):
-                self.log.warning('Chapter {0} does not have a title!'.format(chapter))
+                if chapter_md.find( pattern ) < 0:
+                    self.log.warning('Missing frame: {0}-{1}'.format(chapter_number, frame_index))
 
-            frame_count = len(content.find_all('img'))
-            expected_frame_count = obs_data['chapters'][str(chapter).zfill(2)]['frames']
-            if frame_count != expected_frame_count:
-                self.log.warning(
-                    'Chapter {0} has only {1} frame(s).There should be {2}!'.format(chapter, frame_count,
-                                                                                    expected_frame_count))
 
-            if len(content.find_all('p')) != (frame_count * 2 + 1):
-                self.log.warning('Bible reference not found at end of chapter {0}!'.format(chapter))
+            if re.search( r'^_.*:.*_[ ]*$', chapter_md, re.M ) == None:                                     # look for verse reference
+                self.log.warning('Bible reference not found at end of chapter {0}!'.format(chapter_number))
+
+        for book_end in [ 'front', 'back' ]:                                         # misssing back matter
+            filename = os.path.join(self.preconvert_dir, book_end + '.md')
+
+            lines = { 'front': 'The licensor cannot revoke',
+                      'back':  'We want to make this visual'}
+
+            if not os.path.isfile(filename):
+                self.log.warning('Chapter {0} does not exist!'.format(book_end))
+                continue
+
+            end_content = read_file( filename )
+            pat = lines[book_end]
+
+            if end_content.find( pat ) >= 0:
+                self.log.warning('Story {0} matter is not translated!'.format(book_end) )
