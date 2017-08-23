@@ -14,7 +14,7 @@ class TxManifestTests(TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
-        self.db_handler = DynamoDBHandler(TxManifestTests.MANIFEST_TABLE_NAME)
+        self.db_handler = DynamoDBHandler(self.MANIFEST_TABLE_NAME)
         self.init_table()
         self.items = {}
         self.init_items()
@@ -26,7 +26,7 @@ class TxManifestTests(TestCase):
         except:
             pass
         self.db_handler.resource.create_table(
-            TableName=TxManifestTests.MANIFEST_TABLE_NAME,
+            TableName=self.MANIFEST_TABLE_NAME,
             KeySchema=[
                 {
                     'AttributeName': 'repo_name_lower',

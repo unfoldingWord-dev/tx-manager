@@ -201,12 +201,12 @@ class ClientWebhook(object):
         build_logs = []
         jobs = []
 
-        master_identifier = self.create_new_job_id(repo_owner, repo_name, commit_id)
+        master_identifier = self.create_new_identifier(repo_owner, repo_name, commit_id)
         master_s3_commit_key = 'u/{0}'.format(master_identifier)
         self.clear_commit_directory_in_cdn(master_s3_commit_key)
 
         book_count = len(books)
-        last_job_id = 0
+        last_job_id = '0'
         for i in range(0, book_count):
             book = books[i]
             part_id = '{0}_of_{1}'.format(i, book_count)
@@ -361,7 +361,7 @@ class ClientWebhook(object):
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
 
-        identifier = self.create_new_job_id(repo_owner, repo_name, commit_id, count, part, book)
+        identifier = self.create_new_identifier(repo_owner, repo_name, commit_id, count, part, book)
 
         payload = {
             "identifier": identifier,
@@ -375,7 +375,7 @@ class ClientWebhook(object):
         }
         return self.add_payload_to_tx_converter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
 
-    def create_new_job_id(self, repo_owner, repo_name, commit_id, count=0, part=0, book=None):
+    def create_new_identifier(self, repo_owner, repo_name, commit_id, count=0, part=0, book=None):
         if not count:
             identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                               commit_id)  # The way to know which repo/commit goes to this job request
