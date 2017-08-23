@@ -222,7 +222,10 @@ class TestClientWebhook(unittest.TestCase):
             self.assertTrue(len(results['source']) > 1)
         self.assertEqual(len(results['errors']), expected_error_count)
         self.assertEqual(multipleJob, 'multiple' in results)
-        self.assertEqual(results, self.getBuildLogJson())
+
+        print(json.dumps(results, indent=4))
+        print(json.dumps(self.getBuildLogJson(), indent=4))
+        self.assertDictEqual(results, self.getBuildLogJson())
         self.assertTrue(len(self.getProjectJson()) >= 4)
 
     def getBuildLogJson(self):

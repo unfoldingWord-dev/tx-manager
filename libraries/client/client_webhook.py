@@ -173,7 +173,7 @@ class ClientWebhook(object):
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             self.update_project_json(commit_id, job, repo_name, repo_owner)
 
-            # Send lint request to tx-manager - giving the git.door43.org URL
+            # Send lint request
             lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
             job = TxJob(job.job_id, db_handler=self.job_db_handler)
             if 'success' in lint_results and lint_results['success']:
@@ -250,14 +250,14 @@ class ClientWebhook(object):
         for i in range(0, book_count):
             build_log = build_logs[i]
             errors += build_log['errors']
-            warnings+= build_log['warnings']
+            warnings += build_log['warnings']
         build_logs_json['errors'] = errors
-        build_log_json['warnings'] = warnings
+        build_logs_json['warnings'] = warnings
 
         # Upload build_log.json to S3:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
-        # Send lint request to tx-manager
+        # Send lint request
         job = TxJob(last_job_id, db_handler=self.job_db_handler)
         lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
         job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
@@ -265,9 +265,8 @@ class ClientWebhook(object):
             job.warnings += lint_results['warnings']
             job.update('warnings')
             # Upload build_log.json to S3 again:
-            build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
-                                                   pusher_username, repo_name, repo_owner)
-            self.upload_build_log_to_s3(build_log_json, master_s3_commit_key)
+            build_logs_json['warnings'] += lint_results['warnings']
+            self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
         remove_tree(self.base_temp_dir)  # cleanup
 
