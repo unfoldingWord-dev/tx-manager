@@ -90,8 +90,8 @@ class TestMarkdownLinter(unittest.TestCase):
         expected = {
             'success': True,
             'warnings': [
-                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\finding-answers\\01.md" target="_blank">https://git.door43.org/Door43/en_ta/src/master/intro\\finding-answers\\01.md</a> - Line7: Unordered list indentation. ',
-                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md</a> - Line29: Unordered list indentation. '
+                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\finding-answers\\01.md" target="_blank">intro\\finding-answers\\01.md</a> - Line7: Unordered list indentation. ',
+                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">intro\\uw-intro\\01.md</a> - Line29: Unordered list indentation. '
             ]
         }
         self.assertEqual(len(results['warnings']), len(expected['warnings']))
