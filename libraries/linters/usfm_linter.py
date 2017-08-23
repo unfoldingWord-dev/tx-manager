@@ -73,7 +73,7 @@ class UsfmLinter(Linter):
 
             if book_code:
                 if book_code in self.found_books:
-                    self.log.warnings("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
+                    self.log.warning("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
                 self.found_books.append(book_code)
 
             if len(errors):
