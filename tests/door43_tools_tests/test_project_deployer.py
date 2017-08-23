@@ -139,7 +139,7 @@ class ProjectDeployerTests(unittest.TestCase):
         zip_file = os.path.join(converted_proj_dir, test_file_name)
         out_dir = os.path.join(self.temp_dir, test_file_base)
         unzip(zip_file, out_dir)
-        project_dir = os.path.join(out_dir, test_file_base) + '/'
+        project_dir = os.path.join(out_dir, test_file_base) + os.path.sep
         self.project_files = file_utils.get_files(out_dir)
         self.project_key = project_key
         for filename in self.project_files:

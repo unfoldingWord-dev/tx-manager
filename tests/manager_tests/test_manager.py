@@ -417,7 +417,7 @@ class ManagerTest(unittest.TestCase):
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job2(self, mock_request_post, mock_invoke):
+    def test_start_job1(self, mock_request_post, mock_invoke):
         """
         Call start job in job 2 from mock data.
 
@@ -445,7 +445,7 @@ class ManagerTest(unittest.TestCase):
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job3(self, mock_request_post, mock_invoke):
+    def test_start_job2(self, mock_request_post, mock_invoke):
         """
         Call start_job in job 3 from mock data.
 
@@ -471,7 +471,7 @@ class ManagerTest(unittest.TestCase):
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     @mock.patch('requests.post')
-    def test_start_job4(self, mock_request_post, mock_invoke):
+    def test_start_job3(self, mock_request_post, mock_invoke):
         """
         Call start_job on job 4 from mock data.
 

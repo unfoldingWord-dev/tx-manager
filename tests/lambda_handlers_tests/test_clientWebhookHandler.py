@@ -22,6 +22,7 @@ class TestClientWebhookHandler(TestCase):
                 'pre_convert_bucket': 'pre_convert_bucket',
                 'gogs_user_token': 'token1',
                 'manifest_table_name': 'tx-manifest',
+                'job_table_name': 'tx-job',
             }
         }
         handler = ClientWebhookHandler()

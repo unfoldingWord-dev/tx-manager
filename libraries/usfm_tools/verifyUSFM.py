@@ -7,11 +7,7 @@
 
 from __future__ import print_function, unicode_literals
 
-import codecs
-import io
 # import charset # $ pip install chardet
-import json
-import os
 import re
 import sys
 

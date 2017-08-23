@@ -2,7 +2,6 @@ from __future__ import unicode_literals, print_function
 import json
 import boto3
 import logging
-from boto3 import Session
 
 
 class LambdaHandler(object):

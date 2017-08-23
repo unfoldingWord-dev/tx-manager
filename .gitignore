@@ -91,3 +91,7 @@ ENV/
 # IDEs
 .idea/
 *.iml
+
+# Development files
+project.json
+

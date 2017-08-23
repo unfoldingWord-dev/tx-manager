@@ -10,6 +10,7 @@ from libraries.client.client_webhook import ClientWebhook
 from libraries.general_tools.file_utils import read_file
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
+from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2
 
 
@@ -17,13 +18,22 @@ from moto import mock_s3, mock_dynamodb2
 @mock_dynamodb2
 class TestClientWebhook(unittest.TestCase):
     MANIFEST_TABLE_NAME = 'client-webhook-test-manifest'
+    JOB_TABLE_NAME = 'client-webhook-test-job'
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     temp_dir = None
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
-    default_mock_job_return_value = {'job_id': '0', 'status': 'started', 'success': 'success', 'resource_type': 'obs',
-                                     'input_format': 'md', 'output_format': 'html', 'convert_module': 'module1',
-                                     'created_at': '2017-05-22T13:39:15Z', 'errors': []}
+    default_mock_job_return_value = TxJob({
+        'job_id': '0',
+        'status': 'started',
+        'success': 'success',
+        'resource_type': 'obs',
+        'input_format': 'md',
+        'output_format': 'html',
+        'convert_module': 'module1',
+        'created_at': '2017-05-22T13:39:15Z',
+        'errors': []
+    })
     mock_job_return_value = default_mock_job_return_value
     setup_table = False
 
@@ -35,10 +45,11 @@ class TestClientWebhook(unittest.TestCase):
 
         self.temp_dir = tempfile.mkdtemp(dir=TestClientWebhook.base_temp_dir, prefix='webhookTest_')
         self.job_request_count = 0
-        TestClientWebhook.mock_job_return_value = \
-            json.loads(json.dumps(TestClientWebhook.default_mock_job_return_value))  # do deep copy
+        # copy the job object
+        TestClientWebhook.mock_job_return_value = TxJob(TestClientWebhook.default_mock_job_return_value.get_db_data())
         self.uploaded_files = []
-        self.db_handler = DynamoDBHandler(TestClientWebhook.MANIFEST_TABLE_NAME)
+        self.manifest_db_handler = DynamoDBHandler(TestClientWebhook.MANIFEST_TABLE_NAME)
+        self.job_db_handler = DynamoDBHandler(TestClientWebhook.JOB_TABLE_NAME)
         if not TestClientWebhook.setup_table:
             self.init_table()
             TestClientWebhook.setup_table = True
@@ -47,7 +58,7 @@ class TestClientWebhook(unittest.TestCase):
         shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
 
     def init_table(self):
-        self.db_handler.resource.create_table(
+        self.manifest_db_handler.resource.create_table(
             TableName=TestClientWebhook.MANIFEST_TABLE_NAME,
             KeySchema=[
                 {
@@ -76,8 +87,10 @@ class TestClientWebhook(unittest.TestCase):
         )
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_download_repo(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_download_repo(self, mock_send_payload_to_run_linter, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         cwh = ClientWebhook()
         try:
             os.makedirs(cwh.base_temp_dir)
@@ -86,8 +99,10 @@ class TestClientWebhook(unittest.TestCase):
         cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhook(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhook(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
                                                       mock_download_file)
         expected_job_count = 1
@@ -100,7 +115,7 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(results, expected_job_count, expected_error_count)
 
         # Check repo was added to manifest table
-        tx_manifest = TxManifest(db_handler=self.db_handler).load({
+        tx_manifest = TxManifest(db_handler=self.manifest_db_handler).load({
                 'repo_name_lower': client_web_hook.commit_data['repository']['name'].lower(),
                 'user_name_lower': client_web_hook.commit_data['repository']['owner']['username'].lower()
             })
@@ -109,11 +124,13 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(tx_manifest.lang_code, 'kpb')
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhookError(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhookError(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
                                                       mock_download_file)
-        TestClientWebhook.mock_job_return_value['errors'] = ['error 1', 'error 2']
+        TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
         expected_job_count = 1
         expected_error_count = 2
 
@@ -127,8 +144,10 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhookMultipleBooks(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhookMultipleBooks(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'),
                                                       self.resources_dir, mock_download_file)
         expected_job_count = 4
@@ -141,10 +160,12 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(results, expected_job_count, expected_error_count)
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhookMultipleBooksErrors(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhookMultipleBooksErrors(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir, mock_download_file)
-        TestClientWebhook.mock_job_return_value['errors'] = ['error 1', 'error 2']
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
+        TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
         expected_job_count = 4
         expected_error_count = 2 * expected_job_count
 
@@ -226,7 +247,7 @@ class TestClientWebhook(unittest.TestCase):
     def mock_add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         self.job_request_count += 1
         mock_job_return_value = TestClientWebhook.mock_job_return_value
-        mock_job_return_value['job_id'] = identifier
+        mock_job_return_value.job_id = identifier
         return identifier, mock_job_return_value
 
     def mock_cdn_upload_file(self, project_file, s3_key):
@@ -260,6 +281,7 @@ class TestClientWebhook(unittest.TestCase):
         repo = 'en-ulb'
         user = 'tx-manager-test-data'
         manifest_table_name = TestClientWebhook.MANIFEST_TABLE_NAME
+        job_table_name = TestClientWebhook.JOB_TABLE_NAME
 
         if not source_path:
             source_path = base_url + commit_path
@@ -296,6 +318,7 @@ class TestClientWebhook(unittest.TestCase):
             'gogs_url': gogs_url,
             'gogs_user_token': gogs_user_token,
             'commit_data': webhook_data,
-            'manifest_table_name': manifest_table_name
+            'manifest_table_name': manifest_table_name,
+            'job_table_name': job_table_name
         }
         return env_vars
