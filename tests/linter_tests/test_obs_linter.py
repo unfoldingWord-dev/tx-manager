@@ -4,7 +4,7 @@ import unittest
 import tempfile
 import shutil
 import mock
-from libraries.general_tools.file_utils import unzip, add_contents_to_zip
+from libraries.general_tools.file_utils import unzip
 from libraries.linters.obs_linter import ObsLinter
 from libraries.resource_container.ResourceContainer import RC
 
@@ -99,10 +99,7 @@ class TestObsLinter(unittest.TestCase):
         self.verify_results(expected_warnings, linter)
 
     def run_linter(self):
-        zip_file = tempfile.mktemp(prefix='es_obs_', suffix='.zip', dir=self.temp_dir)
-        add_contents_to_zip(zip_file, self.repo_dir, include_root=True)
-        linter = ObsLinter(source='bogus url', rc=self.rc)
-        linter.source_zip_file = zip_file
+        linter = ObsLinter(source_dir=self.repo_dir, rc=self.rc)
         linter.run()
         return linter
 

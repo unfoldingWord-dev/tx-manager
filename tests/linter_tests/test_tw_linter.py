@@ -24,8 +24,8 @@ class TestTwLinter(unittest.TestCase):
     def test_lint(self, mock_invoke_markdown_linter):
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tw linting
         expected_warnings = False
-        linter = TwLinter('bogus_url', rc=RC(repo_name='en_tw'))
-        linter.source_zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
+        zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
+        linter = TwLinter(source_zip_file=zip_file, rc=RC(repo_name='en_tw'))
         linter.run()
         self.verify_results(expected_warnings, linter)
 

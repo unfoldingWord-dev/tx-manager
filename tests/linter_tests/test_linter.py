@@ -17,8 +17,7 @@ class TestLinter(unittest.TestCase):
         self.assertRaises(TypeError, Linter, None)
 
     def test_run(self):
-        linter = MyLinter('some_url')
-        linter.source_zip_file = os.path.join(self.resources_dir, 'linter', 'files.zip')
+        linter = MyLinter(source_zip_file=os.path.join(self.resources_dir, 'linter', 'files.zip'))
         result = linter.run()
         self.assertEqual(len(result['warnings']), 1)
         self.assertEqual(result['warnings'][0], 'warning')

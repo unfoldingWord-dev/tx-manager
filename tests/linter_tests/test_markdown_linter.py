@@ -23,33 +23,26 @@ class TestMarkdownLinter(unittest.TestCase):
     @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
     def test_lint(self, mock_invoke):
         mock_invoke.return_value = {
-            "intro\\open-license\\title.md": [],
-            "intro\\finding-answers\\sub-title.md": [],
             "intro\\gl-strategy\\01.md": [],
             "intro\\finding-answers\\01.md": [
-                {
-                    "lineNumber": 7,
-                    "errorContext": None,
-                    "ruleName": "MD007",
-                    "ruleDescription": "Unordered list indentation",
-                    "errorDetail": "Expected: 2; Actual: 4",
-                    "ruleAlias": "ul-indent",
-                    "errorRange": [
-                        1,
-                        6
-                    ]
-                }
+                {"lineNumber": 1,
+                 "ruleName": "MD041",
+                 "ruleAlias": "first-line-h1",
+                 "ruleDescription": "First line in file should be a top level header",
+                 "errorDetail": None,
+                 "errorContext": "Text on first line",
+                 "errorRange": None
+                 }
             ],
-            "intro\\translate-why\\sub-title.md": [],
-            "intro\\translation-guidelines\\01.md": [],
-            "intro\\gl-strategy\\title.md": [],
-            "intro\\finding-answers\\title.md": [],
-            "intro\\ta-intro\\title.md": [],
-            "intro\\translation-guidelines\\title.md": [],
-            "intro\\translate-why\\01.md": [],
-            "intro\\ta-intro\\sub-title.md": [],
-            "intro\\open-license\\01.md": [],
             "intro\\uw-intro\\01.md": [
+                {"lineNumber": 1,
+                 "ruleName": "MD041",
+                 "ruleAlias": "first-line-h1",
+                 "ruleDescription": "First line in file should be a top level header",
+                 "errorDetail": None,
+                 "errorContext": "Text on first line",
+                 "errorRange": None
+                 },
                 {
                     "lineNumber": 29,
                     "errorContext": None,
@@ -63,16 +56,6 @@ class TestMarkdownLinter(unittest.TestCase):
                     ]
                 }
             ],
-            "intro\\translation-guidelines\\sub-title.md": [],
-            "intro\\statement-of-faith\\sub-title.md": [],
-            "intro\\uw-intro\\title.md": [],
-            "intro\\uw-intro\\sub-title.md": [],
-            "intro\\gl-strategy\\sub-title.md": [],
-            "intro\\ta-intro\\01.md": [],
-            "intro\\statement-of-faith\\title.md": [],
-            "intro\\open-license\\sub-title.md": [],
-            "intro\\translate-why\\title.md": [],
-            "intro\\statement-of-faith\\01.md": []
         }
 
         rc = RC(repo_name='en_ta')
@@ -84,20 +67,21 @@ class TestMarkdownLinter(unittest.TestCase):
                 "name": "en_ta"
             }
         }
-        linter = MarkdownLinter(source='bogus url', rc=rc, commit_data=commit_data)
-        linter.source_zip_file = os.path.join(self.resources_dir, 'ta_linter', 'en_ta.zip')
+        zip_file = os.path.join(self.resources_dir, 'ta_linter', 'en_ta.zip')
+        linter = MarkdownLinter(source_zip_file=zip_file, rc=rc, commit_data=commit_data)
         results = linter.run()
         expected = {
             'success': True,
             'warnings': [
-                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\finding-answers\\01.md" target="_blank">intro\\finding-answers\\01.md</a> - Line7: Unordered list indentation. ',
-                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">intro\\uw-intro\\01.md</a> - Line29: Unordered list indentation. '
+                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\finding-answers\\01.md" target="_blank">intro\\finding-answers\\01.md</a> - Line1: First line in file should be a top level header. See "Text on first line"',
+                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">intro\\uw-intro\\01.md</a> - Line1: First line in file should be a top level header. See "Text on first line"',
+                '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">intro\\uw-intro\\01.md</a> - Line29: Unordered list indentation. ',
             ]
         }
         self.assertEqual(len(results['warnings']), len(expected['warnings']))
         self.assertDictEqual(results, expected)
 
     def test_strip_tags(self):
-        ml = MarkdownLinter(source='bogus url')
+        ml = MarkdownLinter()
         text = ml.strip_tags('<a href="test"><u>remove my tags')
         self.assertEqual(text, 'remove my tags')

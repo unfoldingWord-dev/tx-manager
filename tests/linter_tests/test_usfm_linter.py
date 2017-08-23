@@ -6,7 +6,7 @@ import tempfile
 import shutil
 import time
 from libraries.linters.usfm_linter import UsfmLinter
-from libraries.general_tools.file_utils import write_file, read_file, unzip, add_contents_to_zip
+from libraries.general_tools.file_utils import write_file, read_file, unzip
 from libraries.resource_container.ResourceContainer import RC
 
 
@@ -420,8 +420,7 @@ class TestUsfmLinter(unittest.TestCase):
         sub_path = self.php_file_name
         file_name = "PHP.usfm"
         expected_warnings = 1
-        linter = UsfmLinter(source='bogus url', rc=self.rc)
-        linter.source_dir = out_dir
+        linter = UsfmLinter(source_dir=out_dir, rc=self.rc)
         linter.parse_file(file_path, sub_path, file_name)
         self.verify_results_counts(expected_warnings, linter)
 
@@ -432,7 +431,7 @@ class TestUsfmLinter(unittest.TestCase):
         book_code = "PHP"
         book_text = None
         expected_warnings = 1
-        linter = UsfmLinter(source='bogus url', rc=self.rc)
+        linter = UsfmLinter(rc=self.rc)
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
@@ -443,7 +442,7 @@ class TestUsfmLinter(unittest.TestCase):
         book_code = "PHP"
         book_text = ''
         expected_warnings = 1
-        linter = UsfmLinter(source='bogus url', rc=self.rc)
+        linter = UsfmLinter(rc=self.rc)
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
@@ -453,8 +452,7 @@ class TestUsfmLinter(unittest.TestCase):
     #     expected_warnings = 0
     #     start = time.time()
     #     rc = RC(out_dir)
-    #     linter = UsfmLinter(source='bogus url', rc=rc)
-    #     linter.source_zip_file = os.path.join(self.resources_dir, 'en_ulb.zip')
+    #     linter = UsfmLinter(source_dir=out_dir, rc=rc)
     #     linter.run()
     #     elapsed_seconds = int(time.time() - start)
     #     print("Checking time was " + str(elapsed_seconds) + " seconds")
@@ -465,10 +463,7 @@ class TestUsfmLinter(unittest.TestCase):
     #
 
     def run_linter(self, out_dir):
-        source_zip_file = tempfile.mktemp(prefix='source_zip_file', suffix='.zip', dir=self.temp_dir)
-        add_contents_to_zip(source_zip_file, out_dir)
-        linter = UsfmLinter(source='bogus url', rc=self.rc)
-        linter.source_zip_file = source_zip_file
+        linter = UsfmLinter(source_dir=out_dir, rc=self.rc)
         linter.run()
         return linter
 
