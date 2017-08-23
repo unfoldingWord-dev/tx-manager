@@ -25,7 +25,7 @@ class MarkdownLinter(Linter):
             for item in lint_data[f]:
                 error_context = ''
                 if item['errorContext']:
-                    error_context = 'See ' + self.strip_tags(item['errorContext'])
+                    error_context = 'See "{0}"'.format(self.strip_tags(item['errorContext']))
                 line = '<a href="{0}" target="_blank">{1}</a> - Line{2}: {3}. {4}'. \
                     format(file_url, f, item['lineNumber'], item['ruleDescription'], error_context)
                 self.log.warning(line)
