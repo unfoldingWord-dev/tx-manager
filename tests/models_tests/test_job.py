@@ -10,7 +10,7 @@ class TxJobTests(TestCase):
     JOB_TABLE_NAME = 'tx-job'
 
     def setUp(self):
-        self.db_handler = DynamoDBHandler(TxJobTests.JOB_TABLE_NAME)
+        self.db_handler = DynamoDBHandler(self.JOB_TABLE_NAME)
         self.init_table()
         self.items = {}
         self.init_items()
@@ -22,7 +22,7 @@ class TxJobTests(TestCase):
         except:
             pass
         self.db_handler.resource.create_table(
-            TableName=TxJobTests.JOB_TABLE_NAME,
+            TableName=self.JOB_TABLE_NAME,
             KeySchema=[
                 {
                     'AttributeName': 'job_id',

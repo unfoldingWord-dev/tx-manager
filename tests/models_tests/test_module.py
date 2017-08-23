@@ -10,7 +10,7 @@ class TxModuleTests(TestCase):
     MODULE_TABLE_NAME = 'tx-module'
 
     def setUp(self):
-        self.db_handler = DynamoDBHandler(TxModuleTests.MODULE_TABLE_NAME)
+        self.db_handler = DynamoDBHandler(self.MODULE_TABLE_NAME)
         self.init_table()
         self.items = {}
         self.init_items()
@@ -22,7 +22,7 @@ class TxModuleTests(TestCase):
         except Exception as e:
             pass
         self.db_handler.resource.create_table(
-            TableName=TxModuleTests.MODULE_TABLE_NAME,
+            TableName=self.MODULE_TABLE_NAME,
             KeySchema=[
                 {
                     'AttributeName': 'name',
