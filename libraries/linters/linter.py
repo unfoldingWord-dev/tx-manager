@@ -1,5 +1,4 @@
 from __future__ import print_function, unicode_literals
-
 import os
 import tempfile
 from libraries.general_tools.url_utils import download_file
@@ -67,7 +66,11 @@ class Linter(object):
             # unzip the input archive
             self.logger.debug("Unzipping {0} to {1}".format(self.source_zip_file, self.temp_dir))
             unzip(self.source_zip_file, self.temp_dir)
-            self.source_dir = os.path.join(self.temp_dir, os.listdir(self.temp_dir)[0])
+            dirs = [d for d in os.listdir(self.temp_dir) if os.path.isdir(os.path.join(self.temp_dir, d))]
+            if len(dirs):
+                self.source_dir = os.path.join(self.temp_dir, dirs[0])
+            else:
+                self.source_dir = self.temp_dir
             # convert method called
             self.logger.debug("Linting files...")
             self.lint()

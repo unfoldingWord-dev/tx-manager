@@ -36,9 +36,8 @@ class UsfmLinter(Linter):
                 sub_path = '.' + file_path[len(self.source_dir):]
                 self.parse_file(file_path, sub_path, f)
 
-        found_book_count = len(self.found_books)
-        if found_book_count == 0:
-            self.log.warnings("No translations found")
+        if not len(self.found_books):
+            self.log.warning("No translations found")
 
     def parse_file(self, file_path, sub_path, file_name):
 
@@ -72,7 +71,7 @@ class UsfmLinter(Linter):
 
             if book_code:
                 if book_code in self.found_books:
-                    self.log.error("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
+                    self.log.warnings("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
                 self.found_books.append(book_code)
 
             if len(errors):
