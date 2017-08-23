@@ -19,7 +19,7 @@ class UsfmLinter(Linter):
 
         Use self.log.warning("message") to log any issues.
         self.source_dir is the directory of .usfm files
-        :return:
+        :return bool:
         """
 
         lang_code = self.rc.resource.language.identifier
@@ -38,6 +38,8 @@ class UsfmLinter(Linter):
 
         if not len(self.found_books):
             self.log.warning("No translations found")
+
+        return True
 
     def parse_file(self, file_path, sub_path, file_name):
 

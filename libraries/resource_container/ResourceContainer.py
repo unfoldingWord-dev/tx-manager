@@ -199,7 +199,7 @@ class RC:
         You can exclude the parameter if the RC only has one project.
 
         :param identifier:
-        :return:
+        :return Project:
         """
         if identifier:
             for p in self.projects:

@@ -13,16 +13,14 @@ class ObsLinter(MarkdownLinter):
         Checks for issues with OBS
 
         Use self.log.warning("message") to log any issues.
-        self.preconvert_dir is the directory of pre-converted files
-        self.converted_dir is the directory of converted files
-        :return:
+        self.source_dir is the directory of .md files
+        :return bool:
         """
-        super(ObsLinter, self).lint()  # Runs the markdown linter
-
         # chapter check
+        project_dir = os.path.join(self.source_dir, self.rc.project().path)
         for chapter in range(1, 51):
             chapter_number = str(chapter).zfill(2)
-            filename = os.path.join(self.source_dir, chapter_number + '.md')
+            filename = os.path.join(project_dir, chapter_number + '.md')
 
             if not os.path.isfile(filename):
                 self.log.warning('Chapter {0} does not exist!'.format(chapter_number))
@@ -51,7 +49,9 @@ class ObsLinter(MarkdownLinter):
 
         # Check front and back matter
         for book_end in ['front', 'back']:
-            filename = os.path.join(self.source_dir, book_end + '.md')
+            filename = os.path.join(project_dir, book_end, 'intro.md')
+            if not os.path.isfile(filename):
+                filename = os.path.join(project_dir, '{0}.md'.format(book_end))
 
             lines = {
                 'front': 'The licensor cannot revoke',
@@ -62,6 +62,10 @@ class ObsLinter(MarkdownLinter):
                 self.log.warning('{0}.md does not exist!'.format(book_end))
                 continue
 
-            end_content = read_file(filename)
-            if lines[book_end] not in end_content:
-                self.log.warning('Story {0} matter is not translated!'.format(book_end) )
+            if self.rc.resource.language.identifier != 'en':
+                end_content = read_file(filename)
+                if lines[book_end] in end_content:
+                    self.log.warning('Story {0} matter is not translated!'.format(book_end) )
+
+        return super(ObsLinter, self).lint()  # Runs the markdown linter
+

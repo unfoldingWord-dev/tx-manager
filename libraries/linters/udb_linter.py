@@ -11,6 +11,6 @@ class UdbLinter(UsfmLinter):
         Use self.log.warning("message") to log any issues.
         self.source_dir is the directory of source files (.usfm)
         This calls lint() on the parent class which is the USFM linter
-        :return:
+        :return bool:
         """
-        super(UdbLinter, self).lint()  # Runs checks on any Bible, such as missing chapters
+        return super(UdbLinter, self).lint()  # Runs checks on any Bible, such as missing chapters

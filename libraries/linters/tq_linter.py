@@ -10,6 +10,6 @@ class TqLinter(MarkdownLinter):
 
         Use self.log.warning("message") to log any issues.
         self.source_dir is the directory of source files (.md)
-        :return:
+        :return bool:
         """
-        super(TqLinter, self).lint()  # Runs checks on Markdown, using the markdown linter
+        return super(TqLinter, self).lint()  # Runs checks on Markdown, using the markdown linter

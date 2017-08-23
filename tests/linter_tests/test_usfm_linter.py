@@ -19,7 +19,7 @@ class TestUsfmLinter(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
-        self.temp_dir = tempfile.mkdtemp(prefix='temp_usfm_')
+        self.temp_dir = tempfile.mkdtemp(prefix='tmp_usfm_')
         self.rc = RC(directory=self.php_repo_path)
 
     def tearDown(self):
@@ -467,7 +467,7 @@ class TestUsfmLinter(unittest.TestCase):
 
     def run_linter(self, out_dir):
         source_zip_file = tempfile.mktemp(prefix='source_zip_file', suffix='.zip', dir=self.temp_dir)
-        add_contents_to_zip(source_zip_file, out_dir)
+        add_contents_to_zip(source_zip_file, out_dir, include_root=True)
         linter = UsfmLinter(source='bogus url', rc=self.rc)
         linter.source_zip_file = source_zip_file
         linter.run()

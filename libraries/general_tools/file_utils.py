@@ -29,19 +29,24 @@ def unzip(source_file, destination_dir):
         zf.extractall(destination_dir)
 
 
-def add_contents_to_zip(zip_file, path):
+def add_contents_to_zip(zip_file, path, include_root=False):
     """
     Zip the contents of <path> into <zip_file>.
 
     :param str|unicode zip_file: The file name of the zip file
     :param str|unicode path: Full path of the directory to zip up
+    :param bool include_root: If true, the zip file will start with the directory of the path parameter
     """
     path = path.rstrip(os.path.sep)
+    if include_root:
+        path_start_index = len(os.path.dirname(path))+1
+    else:
+        path_start_index = len(path)+1
     with zipfile.ZipFile(zip_file, 'a') as zf:
         for root, dirs, files in os.walk(path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                zf.write(file_path, file_path[len(path)+1:])
+            for f in files:
+                file_path = os.path.join(root, f)
+                zf.write(file_path, file_path[path_start_index:])
 
 
 def add_file_to_zip(zip_file, file_name, arc_name=None, compress_type=None):
