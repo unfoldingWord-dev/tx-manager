@@ -522,7 +522,20 @@ class TestUsfmChecker(unittest.TestCase):
         print("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_errors, expected_warnings, checker)
 
-   #
+    def test_EnUlbValidSubset(self):
+        check_files = ['19-PSA.usfm','22-SNG.usfm','24-JER.usfm','25-LAM.usfm','35-HAB.usfm']
+        out_dir = self.unzip_resource_only('en_ulb.zip', check_files)
+        expected_warnings = 0
+        expected_errors = 0
+        start = time.time()
+        checker = UsfmChecker(out_dir, self.converted_dir)
+        checker.rc = RC(out_dir)
+        checker.run()
+        elapsed_seconds = int(time.time() - start)
+        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        self.verify_results_counts(expected_errors, expected_warnings, checker)
+
+    #
     # helpers
     #
 
@@ -601,6 +614,15 @@ class TestUsfmChecker(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, zip_name)
         out_dir = os.path.join(self.temp_dir, 'checker_test')
         unzip(zip_file, out_dir)
+        return out_dir
+
+    def unzip_resource_only(self, zip_name, test_only):
+        unpack_folder = self.unzip_resource(zip_name)
+        out_dir = os.path.join(self.temp_dir, 'test_folder')
+        file_utils.make_dir(out_dir)
+        for f in test_only:
+            shutil.copy(os.path.join(unpack_folder, f), out_dir)
+        shutil.rmtree(unpack_folder, ignore_errors=True)
         return out_dir
 
     def verify_results_counts(self, expected_errors, expected_warnings, checker):
