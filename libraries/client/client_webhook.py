@@ -178,7 +178,7 @@ class ClientWebhook(object):
             job = TxJob(job.job_id, db_handler=self.job_db_handler)
             if 'success' in lint_results and lint_results['success']:
                 job.warnings += lint_results['warnings']
-                job.update({'warnings': job.warnings})
+                job.update('warnings')
                 # Upload build_log.json to S3 again:
                 build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                        pusher_username, repo_name, repo_owner)
@@ -263,7 +263,7 @@ class ClientWebhook(object):
         job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
         if lint_results['success']:
             job.warnings += lint_results['warnings']
-            job.update({'warnings': job.warnings})
+            job.update('warnings')
             # Upload build_log.json to S3 again:
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                    pusher_username, repo_name, repo_owner)
@@ -423,7 +423,6 @@ class ClientWebhook(object):
                         error = json_data['errorMessage']
                         if error.startswith('Bad Request: '):
                             error = error[len('Bad Request: '):]
-
                         job.errors.append(error)
                 except:
                     pass

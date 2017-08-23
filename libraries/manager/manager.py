@@ -217,18 +217,13 @@ class TxManager(object):
         success = False
 
         try:
-            job.update({
-                'started_at': job.started_at,
-                'status': job.status,
-                'message': job.message,
-                'log': job.log
-            })
+            job.update(['started_at', 'status', 'message', 'log'])
             tx_module = self.get_converter_module(job)
             if not tx_module:
                 raise Exception('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
             job.convert_module = tx_module.name
-            job.update({'convert_module': job.convert_module})
+            job.update('convert_module')
 
             payload = {
                 'data': {
