@@ -1,19 +1,19 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import mock
+import json
 from libraries.door43_tools.td_language import TdLanguage
 
 
 class TdLanguageTest(unittest.TestCase):
 
-    def test_init(self):
-        language = TdLanguage({'lc': 'test', 'ln': 'Test Language', 'ld': 'rtl'})
-        self.assertEqual(language.ln, 'Test Language')
-        self.assertEqual(language.ld, 'rtl')
+    def setUp(self):
+        """Runs before each test."""
 
-    @mock.patch('libraries.general_tools.url_utils._get_url')
-    def test_get_languages(self, mock_get_url):
-        mock_get_url.return_value = [
+        # Patch _get_url in url_utils for every test case so that it never fetches the actual language json
+        self.patcher = mock.patch('libraries.general_tools.url_utils._get_url')
+        mock_get_url = self.patcher.start()
+        self.languages = [
             {'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa', 'pk': 6},
             {'gw': True, 'ld': 'ltr', 'ang': 'English', 'lc': 'en', 'ln': 'English',
              'lr': 'Europe', 'pk': 1747},
@@ -22,9 +22,21 @@ class TdLanguageTest(unittest.TestCase):
             {'gw': True, 'ld': 'ltr', 'ang': 'French', 'lc': 'fr', 'ln': 'fran\xe7ais, langue fran\xe7aise',
              'lr': 'Europe', 'pk': 1868}
         ]
+        mock_get_url.return_value = json.dumps(self.languages)
+
+    def tearDown(self):
+        """Runs after each test."""
+        self.patcher.stop()
+
+    def test_init(self):
+        language = TdLanguage({'lc': 'test', 'ln': 'Test Language', 'ld': 'rtl'})
+        self.assertEqual(language.ln, 'Test Language')
+        self.assertEqual(language.ld, 'rtl')
+
+    def test_get_languages(self):
         languages = TdLanguage.get_languages()
         self.assertTrue('fr' in languages)
-        self.assertGreater(len(languages), 7000)
+        self.assertEqual(len(languages), len(self.languages))
 
     def test_get_language(self):
         language = TdLanguage.get_language('aa')

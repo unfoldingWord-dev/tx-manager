@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 import mock
-from libraries.resource_container.ResourceContainer import RC, manifest_from_repo_name
+from libraries.resource_container.ResourceContainer import RC, get_manifest_from_repo_name
 from libraries.general_tools.file_utils import remove_tree, unzip, load_yaml_object, load_json_object
 from datetime import datetime
 
@@ -42,7 +42,7 @@ class TestResourceContainer(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(zip_file, self.out_dir)
         repo_dir = os.path.join(self.out_dir, 'en_obs')
-        rc = RC(repo_dir, 'en_obs')
+        rc = RC(directory=repo_dir, repo_name='en_obs')
         rc_dic = rc.as_dict()
         yaml = load_yaml_object(os.path.join(repo_dir, 'manifest.yaml'))
         self.assertDictEqual(yaml, rc_dic)
@@ -58,7 +58,7 @@ class TestResourceContainer(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(zip_file, self.out_dir)
         repo_dir = os.path.join(self.out_dir, 'en-obs')
-        rc = RC(repo_dir)
+        rc = RC(directory=repo_dir)
         rc.as_dict()
         json = load_json_object(os.path.join(repo_dir, 'package.json'))
         self.assertEqual(rc.resource.identifier, json['resource']['slug'])
@@ -79,7 +79,7 @@ class TestResourceContainer(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(zip_file, self.out_dir)
         repo_dir = os.path.join(self.out_dir, 'en_ulb')
-        rc = RC(repo_dir)
+        rc = RC(directory=repo_dir)
         rc.as_dict()
         self.assertEqual(rc.resource.identifier, 'ulb')
         self.assertEqual(rc.resource.type, 'bundle')
@@ -98,7 +98,7 @@ class TestResourceContainer(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(zip_file, self.out_dir)
         repo_dir = os.path.join(self.out_dir, 'en_ta')
-        rc = RC(repo_dir)
+        rc = RC(directory=repo_dir)
         rc.as_dict()
         yaml = load_yaml_object(os.path.join(repo_dir, 'manifest.yaml'))
         self.assertEqual(rc.resource.identifier, yaml['dublin_core']['identifier'])
@@ -124,7 +124,7 @@ class TestResourceContainer(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(zip_file, self.out_dir)
         repo_dir = os.path.join(self.out_dir, 'id_mat_text_ulb-ts')
-        rc = RC(repo_dir)
+        rc = RC(directory=repo_dir)
         rc.as_dict()
         json = load_json_object(os.path.join(repo_dir, 'manifest.json'))
         self.assertEqual(rc.resource.identifier, json['resource']['id'])
@@ -145,7 +145,7 @@ class TestResourceContainer(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='repo_')
         unzip(zip_file, self.out_dir)
         repo_dir = os.path.join(self.out_dir, 'ceb_psa_text_ulb_l3')
-        rc = RC(repo_dir)
+        rc = RC(directory=repo_dir)
         rc.as_dict()
         json = load_json_object(os.path.join(repo_dir, 'manifest.json'))
         self.assertEqual(rc.resource.identifier, json['resource']['id'])
@@ -163,12 +163,11 @@ class TestResourceContainer(unittest.TestCase):
     def test_random_tests(self, mock_get_url):
         mock_get_url.return_value = '[{"ld": "ltr", "gw": false, "lc": "aa", "ln": "Afaraf", "cc": ["DJ", "ER", "ET", "US", "CA"], "pk": 6, "alt": ["Afaraf", "Danakil", "Denkel", "Adal", "Afar Af", "Qafar", "Baadu (Ba\'adu)"], "lr": "Africa", "ang": "Afar"}, {"ld": "ltr", "gw": false, "lc": "aaa", "ln": "Ghotuo", "cc": ["NG"], "pk": 7, "alt": [], "lr": "Africa", "ang": "Ghotuo"}]'
         # Test getting language from tD
-        manifest = manifest_from_repo_name('aa_mat-ts')
+        manifest = get_manifest_from_repo_name('aa_mat-ts')
         self.assertEqual(manifest['dublin_core']['language']['identifier'], 'aa')
         self.assertEqual(manifest['dublin_core']['language']['title'], 'Afaraf')
         self.assertEqual(manifest['dublin_core']['identifier'], 'bible')
         self.assertEqual(manifest['projects'][0]['identifier'], 'mat')
-        self.assertRaises(Exception, RC, '/tmp/dummy_dir')
 
 if __name__ == '__main__':
     unittest.main()

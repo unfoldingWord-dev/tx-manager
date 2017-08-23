@@ -1,14 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import os
-import unittest
 import tempfile
 import shutil
 import mock
+from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.tw_linter import TwLinter
-from libraries.resource_container.ResourceContainer import RC
 
 
-class TestTwLinter(unittest.TestCase):
+class TestTwLinter(LinterTestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -25,7 +24,7 @@ class TestTwLinter(unittest.TestCase):
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tw linting
         expected_warnings = False
         zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
-        linter = TwLinter(source_zip_file=zip_file, rc=RC(repo_name='en_tw'))
+        linter = TwLinter(source_zip_file=zip_file)
         linter.run()
         self.verify_results(expected_warnings, linter)
 

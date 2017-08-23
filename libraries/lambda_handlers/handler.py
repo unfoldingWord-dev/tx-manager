@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 import json
 import logging
+import traceback
 from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
 
@@ -27,7 +28,8 @@ class Handler(object):
         try:
             return self._handle(event, context)
         except Exception as e:
-            self.logger.error(e.message, exc_info=1)
+            self.logger.error(e.message)
+            self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             raise EnvironmentError('Bad Request: {}'.format(e.message))
 
     @abstractmethod

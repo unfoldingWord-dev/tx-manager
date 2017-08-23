@@ -1,14 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import os
-import unittest
 import tempfile
 import shutil
 import mock
+from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.markdown_linter import MarkdownLinter
-from libraries.resource_container.ResourceContainer import RC
 
 
-class TestMarkdownLinter(unittest.TestCase):
+class TestMarkdownLinter(LinterTestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -58,7 +57,6 @@ class TestMarkdownLinter(unittest.TestCase):
             ],
         }
 
-        rc = RC(repo_name='en_ta')
         commit_data = {
             "repository": {
                 "owner": {
@@ -68,7 +66,7 @@ class TestMarkdownLinter(unittest.TestCase):
             }
         }
         zip_file = os.path.join(self.resources_dir, 'ta_linter', 'en_ta.zip')
-        linter = MarkdownLinter(source_zip_file=zip_file, rc=rc, commit_data=commit_data)
+        linter = MarkdownLinter(source_zip_file=zip_file, commit_data=commit_data)
         results = linter.run()
         expected = {
             'success': True,

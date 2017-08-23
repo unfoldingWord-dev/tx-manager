@@ -441,8 +441,8 @@ class ClientWebhook(object):
         payload = {
             'data': {
                 'job_id': job.job_id,
+                'resource_id': rc.resource.identifier,
                 'commit_data': self.commit_data,
-                'rc': rc.as_dict(),
             },
             'vars': {
                 'prefix': self.prefix,

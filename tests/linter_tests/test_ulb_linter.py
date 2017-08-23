@@ -1,13 +1,12 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import os
-import unittest
 import tempfile
 import shutil
+from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.ulb_linter import UlbLinter
-from libraries.resource_container.ResourceContainer import RC
 
 
-class TestUlbLinter(unittest.TestCase):
+class TestUlbLinter(LinterTestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     php_repo_path = os.path.join(resources_dir, 'es_php_text_ulb')
@@ -17,7 +16,6 @@ class TestUlbLinter(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         self.temp_dir = tempfile.mkdtemp(prefix='tmp_ulb_')
-        self.rc = RC(self.resources_dir)
 
     def tearDown(self):
         """Runs after each test."""
@@ -34,7 +32,7 @@ class TestUlbLinter(unittest.TestCase):
     #
 
     def run_linter(self, out_dir):
-        linter = UlbLinter(source_dir=out_dir, rc=self.rc)
+        linter = UlbLinter(source_dir=out_dir)
         linter.run()
         return linter
 

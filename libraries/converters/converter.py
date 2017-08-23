@@ -1,11 +1,12 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+import logging
+import traceback
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
 from shutil import copy
-import logging
 from convert_logger import ConvertLogger
 from abc import ABCMeta, abstractmethod
 
@@ -88,7 +89,8 @@ class Converter(object):
             else:
                 self.log.error('Resource {0} currently not supported.'.format(self.resource))
         except Exception as e:
-                self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
+            self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
+            self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
 
         result = {
             'success': success and len(self.log.logs['error']) == 0,

@@ -1,14 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import os
-import unittest
 import tempfile
 import shutil
 import mock
+from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.tq_linter import TqLinter
-from libraries.resource_container.ResourceContainer import RC
 
 
-class TestTqLinter(unittest.TestCase):
+class TestTqLinter(LinterTestCase):
 
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
@@ -25,7 +24,7 @@ class TestTqLinter(unittest.TestCase):
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tq linting
         expected_warnings = False
         zip_file = os.path.join(self.resources_dir, 'tq_linter', 'en_tq.zip')
-        linter = TqLinter(source_zip_file=zip_file, rc=RC(repo_name='en_tq'))
+        linter = TqLinter(source_zip_file=zip_file)
         linter.run()
         self.verify_results(expected_warnings, linter)
 
