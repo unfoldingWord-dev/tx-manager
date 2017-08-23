@@ -11,7 +11,7 @@ class TdLanguageTest(unittest.TestCase):
         self.assertEqual(language.ln, 'Test Language')
         self.assertEqual(language.ld, 'rtl')
 
-    @mock.patch('libraries.general_utils.url_utils._get_url')
+    @mock.patch('libraries.general_tools.url_utils._get_url')
     def test_get_languages(self, mock_get_url):
         mock_get_url.return_value = [
             {'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa', 'pk': 6},

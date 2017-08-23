@@ -24,7 +24,7 @@ class Usfm2HtmlConverter(Converter):
         self.log.info('Processing the Bible USFM files')
 
         # find the first directory that has usfm files.
-        files = get_files(dir=self.files_dir, exclude=self.EXCLUDED_FILES)
+        files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
 
         exclusive_convert = False
         convert_only = []
