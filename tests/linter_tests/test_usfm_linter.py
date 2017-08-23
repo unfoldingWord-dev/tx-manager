@@ -461,7 +461,8 @@ class TestUsfmLinter(unittest.TestCase):
         self.verify_results_counts(expected_warnings, linter)
 
     def test_EnUlbValidSubset(self):
-        out_dir = self.unzip_resource('short_linter.zip')
+        check_files = ['19-PSA.usfm','22-SNG.usfm','24-JER.usfm','25-LAM.usfm','35-HAB.usfm']
+        out_dir = self.unzip_resource_only('en_ulb.zip', check_files)
         expected_warnings = 0
         start = time.time()
         rc = RC(out_dir)
