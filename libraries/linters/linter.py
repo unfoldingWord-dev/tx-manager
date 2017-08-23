@@ -77,12 +77,10 @@ class Linter(object):
         except Exception as e:
             self.logger.error('Linting process ended abnormally: {0}'.format(e.message))
             success = False
-
         result = {
             'success': success,
             'warnings': self.log.warnings,
         }
-        self.logger.debug(result)
         return result
 
     def download_archive(self):
