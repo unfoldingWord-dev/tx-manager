@@ -161,26 +161,30 @@ class ClientWebhook(object):
             # Send job request to tx-manager
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
 
+            # Compile data for build_log.json
+            build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
+                                                   pusher_username, repo_name, repo_owner)
+
+            # Upload build_log.json to S3:
+            s3_commit_key = 'u/{0}'.format(identifier)
+            self.clear_commit_directory_in_cdn(s3_commit_key)
+            self.upload_build_log_to_s3(build_log_json, s3_commit_key)
+
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            self.update_project_json(commit_id, job, repo_name, repo_owner)
+
             # Send lint request to tx-manager - giving the git.door43.org URL
             lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
             job = TxJob(job.job_id, db_handler=self.job_db_handler)
             if 'success' in lint_results and lint_results['success']:
                 job.warnings += lint_results['warnings']
                 job.update({'warnings': job.warnings})
+                build_log_json['warnings'] = job.warnings
+                # Upload build_log.json to S3 again:
+                self.upload_build_log_to_s3(build_log_json, s3_commit_key)
 
-            s3_commit_key = 'u/{0}'.format(identifier)
-            self.clear_commit_directory_in_cdn(s3_commit_key)
-
-            # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.update_project_json(commit_id, job, repo_name, repo_owner)
-
-            # Compile data for build_log.json
-            build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
-                                                   pusher_username, repo_name, repo_owner)
-
-            # Upload build_log.json to S3:
-            self.upload_build_log_to_s3(build_log_json, s3_commit_key)
             remove_tree(self.base_temp_dir)  # cleanup
+
             if len(job.errors) > 0:
                 raise Exception('; '.join(job.errors))
             else:
