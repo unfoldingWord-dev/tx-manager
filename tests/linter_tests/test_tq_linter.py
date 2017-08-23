@@ -3,7 +3,9 @@ import os
 import unittest
 import tempfile
 import shutil
+import mock
 from libraries.linters.tq_linter import TqLinter
+from libraries.resource_container.ResourceContainer import RC
 
 
 class TestTqLinter(unittest.TestCase):
@@ -12,16 +14,18 @@ class TestTqLinter(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
-        self.source_dir = os.path.join(self.resources_dir, 'some-tq-dir')  # Change when we have something to test
         self.temp_dir = tempfile.mkdtemp(prefix='temp_tq_')
 
     def tearDown(self):
         """Runs after each test."""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_success(self):
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
+    def test_lint(self, mock_invoke_markdown_linter):
+        mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tq linting
         expected_warnings = False
-        linter = TqLinter(self.source_dir, 'tq')
+        linter = TqLinter('bogus_url', rc=RC(repo_name='en_tq'))
+        linter.source_zip_file = os.path.join(self.resources_dir, 'tq_linter', 'en_tq.zip')
         linter.run()
         self.verify_results(expected_warnings, linter)
 

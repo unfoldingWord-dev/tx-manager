@@ -4,7 +4,6 @@ import unittest
 import tempfile
 import shutil
 import mock
-import json
 from libraries.linters.markdown_linter import MarkdownLinter
 from libraries.resource_container.ResourceContainer import RC
 
@@ -21,9 +20,9 @@ class TestMarkdownLinter(unittest.TestCase):
         """Runs after each test."""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
     def test_lint(self, mock_invoke):
-        mock_invoke_return_payload = {
+        mock_invoke.return_value = {
             "intro\\open-license\\title.md": [],
             "intro\\finding-answers\\sub-title.md": [],
             "intro\\gl-strategy\\01.md": [],
@@ -75,7 +74,6 @@ class TestMarkdownLinter(unittest.TestCase):
             "intro\\translate-why\\title.md": [],
             "intro\\statement-of-faith\\01.md": []
         }
-        mock_invoke.return_value = self.create_mock_payload(mock_invoke_return_payload)
 
         rc = RC(repo_name='en_ta')
         commit_data = {
@@ -87,7 +85,7 @@ class TestMarkdownLinter(unittest.TestCase):
             }
         }
         linter = MarkdownLinter('some_url', rc=rc, commit_data=commit_data)
-        linter.source_zip_file = os.path.join(self.resources_dir, 'markdown_linter', 'en_ta_intro.zip')
+        linter.source_zip_file = os.path.join(self.resources_dir, 'ta_linter', 'en_ta.zip')
         results = linter.run()
         expected = {
             'success': True,
@@ -96,20 +94,5 @@ class TestMarkdownLinter(unittest.TestCase):
                 '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md</a> - Line29: Unordered list indentation. '
             ]
         }
-        print(results)
         self.assertEqual(len(results['warnings']), len(expected['warnings']))
         self.assertDictEqual(results, expected)
-
-    # helper methods #
-
-    def create_mock_payload(self, payload):
-        mock_payload = TestMarkdownLinter.PayloadMock()
-        mock_payload.response = json.dumps(payload)
-        mock_payload = {'Payload': mock_payload}
-        return mock_payload
-
-    class PayloadMock(mock.Mock):
-        response = None
-
-        def read(self):
-            return self.response

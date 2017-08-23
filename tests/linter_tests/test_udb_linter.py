@@ -5,26 +5,27 @@ import tempfile
 import shutil
 from libraries.linters.udb_linter import UdbLinter
 from libraries.resource_container.ResourceContainer import RC
+from libraries.general_tools.file_utils import add_contents_to_zip
 
 
 class TestUdbLinter(unittest.TestCase):
 
-    php_file_name = '51-PHP.usfm'
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
-    testRC = RC(resources_dir)
+    php_repo_path = os.path.join(resources_dir, 'es_php_text_ulb')
+    php_file_name = '51-PHP.usfm'
+    php_file_path = os.path.join(php_repo_path, php_file_name)
 
     def setUp(self):
         """Runs before each test."""
-        self.preconvert_dir = os.path.join(self.resources_dir, 'some-udb-dir')  # Change when we have something to test
         self.temp_dir = tempfile.mkdtemp(prefix='temp_udb_')
-        self.converted_dir = os.path.join(self.temp_dir, 'udb')
+        self.rc = RC(self.resources_dir)
 
     def tearDown(self):
         """Runs after each test."""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_PhpValid(self):  # for now use same source as for usfm
-        out_dir = self.copy_resource(TestUdbLinter.php_file_name)
+        out_dir = self.copy_resource(self.php_file_path)
         expected_warnings = False
         linter = self.run_linter(out_dir)
         self.verify_results(expected_warnings, linter)
@@ -34,17 +35,17 @@ class TestUdbLinter(unittest.TestCase):
     #
 
     def run_linter(self, out_dir):
-        linter = UdbLinter(out_dir, self.converted_dir)
-        linter.rc = TestUdbLinter.testRC
+        source_zip_file = tempfile.mktemp(prefix='source_zip_file', suffix='.zip', dir=self.temp_dir)
+        add_contents_to_zip(source_zip_file, out_dir)
+        linter = UdbLinter(source='bogus url', rc=self.rc)
+        linter.source_zip_file = source_zip_file
         linter.run()
         return linter
 
     def verify_results(self, expected_warnings, linter):
         self.assertEqual(len(linter.log.warnings) > 0, expected_warnings)
 
-    def copy_resource(self, file_name):
-        file_path = os.path.join(self.resources_dir, file_name)
-        out_dir = os.path.join(self.temp_dir, 'linter_test')
-        os.mkdir(out_dir)
+    def copy_resource(self, file_path):
+        out_dir = tempfile.mkdtemp(dir=self.temp_dir, prefix='linter_test')
         shutil.copy(file_path, out_dir)
         return out_dir

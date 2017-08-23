@@ -3,7 +3,9 @@ import os
 import unittest
 import tempfile
 import shutil
+import mock
 from libraries.linters.tw_linter import TwLinter
+from libraries.resource_container.ResourceContainer import RC
 
 
 class TestTwLinter(unittest.TestCase):
@@ -12,16 +14,18 @@ class TestTwLinter(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
-        self.source_dir = os.path.join(self.resources_dir, 'some-tw-dir')  # Change when we have something to test
         self.temp_dir = tempfile.mkdtemp(prefix='temp_tw_')
 
     def tearDown(self):
         """Runs after each test."""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_success(self):
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
+    def test_lint(self, mock_invoke_markdown_linter):
+        mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tw linting
         expected_warnings = False
-        linter = TwLinter(self.source_dir, 'tw')
+        linter = TwLinter('bogus_url', rc=RC(repo_name='en_tw'))
+        linter.source_zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
         linter.run()
         self.verify_results(expected_warnings, linter)
 

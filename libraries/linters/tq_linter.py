@@ -4,7 +4,7 @@ from libraries.linters.markdown_linter import MarkdownLinter
 
 class TqLinter(MarkdownLinter):
 
-    def run(self):
+    def lint(self):
         """
         Checks for issues with translationQuestions
 

@@ -15,10 +15,23 @@ class MarkdownLinter(Linter):
 
         Use self.log.warning("message") to log any issues.
         self.source_dir is the directory of source files (.usfm)
-        :return:
+        :return bool:
         """
-        lambda_handler = LambdaHandler()
-        lint_function = '{0}tx_markdown_linter'.format(self.prefix)
+        lint_data = self.invoke_markdown_linter(self.get_invoke_payload(self.get_strings()))
+        if not lint_data:
+            return False
+        for f in lint_data.keys():
+            file_url = 'https://git.door43.org/{0}/{1}/src/master/{2}'.format(self.repo_owner, self.repo_name, f)
+            for item in lint_data[f]:
+                error_context = ''
+                if item['errorContext']:
+                    error_context = 'See ' + item['errorContext']
+                line = '<a href="{0}" target="_blank">{0}</a> - Line{1}: {2}. {3}'. \
+                    format(file_url, item['lineNumber'], item['ruleDescription'], error_context)
+                self.log.warning(line)
+        return True
+
+    def get_strings(self):
         files = sorted(get_files(directory=self.source_dir, relative_paths=True, exclude=self.EXCLUDED_FILES,
                                  extensions=['.md']))
         strings = {}
@@ -26,7 +39,10 @@ class MarkdownLinter(Linter):
             path = os.path.join(self.source_dir, f)
             text = read_file(path)
             strings[f] = text
-        response = lambda_handler.invoke(lint_function, {
+        return strings
+
+    def get_invoke_payload(self, strings):
+        return {
             'options': {
                 'strings': strings,
                 'config': {
@@ -44,17 +60,14 @@ class MarkdownLinter(Linter):
                     'no-bare-urls': False,  # MD034
                 }
             }
-        })
+        }
+
+    def invoke_markdown_linter(self, payload):
+        lambda_handler = LambdaHandler()
+        lint_function = '{0}tx_markdown_linter'.format(self.prefix)
+        response = lambda_handler.invoke(lint_function, payload)
         if 'errorMessage' in response:
-            self.log.error(response['errorMessage'])
+            self.logger.error(response['errorMessage'])
+            return None
         elif 'Payload' in response:
-            lint_data = json.loads(response['Payload'].read())
-            for f in lint_data.keys():
-                file_url = 'https://git.door43.org/{0}/{1}/src/master/{2}'.format(self.repo_owner, self.repo_name, f)
-                for item in lint_data[f]:
-                    error_context = ''
-                    if item['errorContext']:
-                        error_context = 'See '+item['errorContext']
-                    line = '<a href="{0}" target="_blank">{0}</a> - Line{1}: {2}. {3}'. \
-                        format(file_url, item['lineNumber'], item['ruleDescription'], error_context)
-                    self.log.warning(line)
+            return json.loads(response['Payload'].read())
