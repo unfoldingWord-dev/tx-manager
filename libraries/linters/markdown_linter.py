@@ -26,8 +26,8 @@ class MarkdownLinter(Linter):
                 error_context = ''
                 if item['errorContext']:
                     error_context = 'See ' + item['errorContext']
-                line = '<a href="{0}" target="_blank">{0}</a> - Line{1}: {2}. {3}'. \
-                    format(file_url, item['lineNumber'], item['ruleDescription'], error_context)
+                line = '<a href="{0}" target="_blank">{1}</a> - Line{2}: {3}. {4}'. \
+                    format(file_url, f, item['lineNumber'], item['ruleDescription'], error_context)
                 self.log.warning(line)
         return True
 
