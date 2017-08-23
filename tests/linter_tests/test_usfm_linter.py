@@ -420,12 +420,12 @@ class TestUsfmLinter(unittest.TestCase):
         sub_path = self.php_file_name
         file_name = "PHP.usfm"
         expected_warnings = 1
-        linter = UsfmLinter(out_dir, rc=self.rc)
+        linter = UsfmLinter(source='bogus url', rc=self.rc)
+        linter.source_dir = out_dir
         linter.parse_file(file_path, sub_path, file_name)
         self.verify_results_counts(expected_warnings, linter)
 
     def test_parse_usfm_text_none(self):
-        out_dir = os.path.join(self.temp_dir, 'linter_test')
         sub_path = self.php_file_name
         file_name = "51-PHP.usfm"
         book_full_name = "51-PHP"
@@ -433,20 +433,17 @@ class TestUsfmLinter(unittest.TestCase):
         book_text = None
         expected_warnings = 1
         linter = UsfmLinter(source='bogus url', rc=self.rc)
-        linter.source_dir = out_dir
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
     def test_parse_usfm_text_empty(self):
-        out_dir = os.path.join(self.temp_dir, 'linter_test')
         sub_path = self.php_file_name
         file_name = "51-PHP.usfm"
         book_full_name = "51-PHP"
         book_code = "PHP"
-        book_text = None
+        book_text = ''
         expected_warnings = 1
         linter = UsfmLinter(source='bogus url', rc=self.rc)
-        linter.source_dir = out_dir
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
