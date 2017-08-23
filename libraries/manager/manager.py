@@ -217,14 +217,18 @@ class TxManager(object):
         success = False
 
         try:
-            job.update()
+            job.update({
+                'started_at': job.started_at,
+                'status': job.status,
+                'message': job.message,
+                'log': job.log
+            })
             tx_module = self.get_converter_module(job)
             if not tx_module:
                 raise Exception('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
-
-            job.converter_module = tx_module.name
-            job.update()
+            job.convert_module = tx_module.name
+            job.update({'convert_module': job.convert_module})
 
             payload = {
                 'data': {
@@ -241,6 +245,9 @@ class TxManager(object):
             self.logger.debug(json.dumps(payload))
             response = self.lambda_handler.invoke(converter_function, payload)
             self.logger.debug('finished.')
+
+            # Get a new job since the webhook may have updated warnings
+            job = TxJob(job_id, db_handler=self.job_db_handler)
 
             if 'errorMessage' in response:
                 error = response['errorMessage']
