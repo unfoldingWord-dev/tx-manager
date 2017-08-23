@@ -1,10 +1,10 @@
 from __future__ import print_function, unicode_literals
-
 import os
 import json
 from libraries.linters.linter import Linter
 from libraries.aws_tools.lambda_handler import LambdaHandler
 from libraries.general_tools.file_utils import read_file, get_files
+from HTMLParser import HTMLParser
 
 
 class MarkdownLinter(Linter):
@@ -25,7 +25,7 @@ class MarkdownLinter(Linter):
             for item in lint_data[f]:
                 error_context = ''
                 if item['errorContext']:
-                    error_context = 'See ' + item['errorContext']
+                    error_context = 'See ' + self.strip_tags(item['errorContext'])
                 line = '<a href="{0}" target="_blank">{1}</a> - Line{2}: {3}. {4}'. \
                     format(file_url, f, item['lineNumber'], item['ruleDescription'], error_context)
                 self.log.warning(line)
@@ -71,3 +71,21 @@ class MarkdownLinter(Linter):
             return None
         elif 'Payload' in response:
             return json.loads(response['Payload'].read())
+
+    @staticmethod
+    def strip_tags(html):
+        ts = TagStripper()
+        ts.feed(html)
+        return ts.get_data()
+
+
+class TagStripper(HTMLParser):
+    def __init__(self, *args, **kwargs):
+        self.reset()
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        return ''.join(self.fed)

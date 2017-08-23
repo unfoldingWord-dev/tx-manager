@@ -96,3 +96,8 @@ class TestMarkdownLinter(unittest.TestCase):
         }
         self.assertEqual(len(results['warnings']), len(expected['warnings']))
         self.assertDictEqual(results, expected)
+
+    def test_strip_tags(self):
+        ml = MarkdownLinter(source='bogus url')
+        text = ml.strip_tags('<a href="test"><u>remove my tags')
+        self.assertEqual(text, 'remove my tags')
