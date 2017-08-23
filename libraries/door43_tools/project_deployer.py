@@ -112,16 +112,6 @@ class ProjectDeployer(object):
                         </div>
                     """
                     content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
-                elif len(build_log['warnings']) > 0:
-                    content += """
-                        <div style="text-align:center;margin-bottom:20px">
-                            <i class="fa fa-exclamation-circle" style="font-size: 250px;font-weight: 300;color: yellow"></i>
-                            <br/>
-                            <h2>Warning!</h2>
-                            <h3>Here are some problems with this build:</h3>
-                        </div>
-                    """
-                    content += '<ul><li>' + '</li><li>'.join(build_log['warnings']) + '</li></ul>'
                 else:
                     content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
                     content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)

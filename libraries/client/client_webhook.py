@@ -161,25 +161,31 @@ class ClientWebhook(object):
             # Send job request to tx-manager
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
 
-            # Send lint request to tx-manager - giving the git.door43.org URL
-            lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
-            if lint_results['success']:
-                job.warnings += lint_results['warnings']
-                job.update({'warnings': job.warnings})
-
-            s3_commit_key = 'u/{0}'.format(identifier)
-            self.clear_commit_directory_in_cdn(s3_commit_key)
-
-            # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.update_project_json(commit_id, job, repo_name, repo_owner)
-
             # Compile data for build_log.json
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                    pusher_username, repo_name, repo_owner)
 
             # Upload build_log.json to S3:
+            s3_commit_key = 'u/{0}'.format(identifier)
+            self.clear_commit_directory_in_cdn(s3_commit_key)
             self.upload_build_log_to_s3(build_log_json, s3_commit_key)
+
+            # Download the project.json file for this repo (create it if doesn't exist) and update it
+            self.update_project_json(commit_id, job, repo_name, repo_owner)
+
+            # Send lint request
+            lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
+            job = TxJob(job.job_id, db_handler=self.job_db_handler)
+            if 'success' in lint_results and lint_results['success']:
+                job.warnings += lint_results['warnings']
+                job.update('warnings')
+                # Upload build_log.json to S3 again:
+                build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
+                                                       pusher_username, repo_name, repo_owner)
+                self.upload_build_log_to_s3(build_log_json, s3_commit_key)
+
             remove_tree(self.base_temp_dir)  # cleanup
+
             if len(job.errors) > 0:
                 raise Exception('; '.join(job.errors))
             else:
@@ -195,12 +201,12 @@ class ClientWebhook(object):
         build_logs = []
         jobs = []
 
-        master_identifier = self.create_new_job_id(repo_owner, repo_name, commit_id)
+        master_identifier = self.create_new_identifier(repo_owner, repo_name, commit_id)
         master_s3_commit_key = 'u/{0}'.format(master_identifier)
         self.clear_commit_directory_in_cdn(master_s3_commit_key)
 
         book_count = len(books)
-        last_job_id = 0
+        last_job_id = '0'
         for i in range(0, book_count):
             book = books[i]
             part_id = '{0}_of_{1}'.format(i, book_count)
@@ -213,12 +219,6 @@ class ClientWebhook(object):
             source_url = self.build_multipart_source(file_key, book)
             identifier, job = self.send_job_request_to_tx_manager(commit_id, source_url, rc, repo_name, repo_owner,
                                                                   count=book_count, part=i, book=book)
-
-            # Send lint request to tx-manager
-            lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
-            if lint_results['success']:
-                job.warnings += lint_results['warnings']
-                job.update({'warnings': job.warnings})
 
             jobs.append(job)
             last_job_id = job.job_id
@@ -250,13 +250,26 @@ class ClientWebhook(object):
         for i in range(0, book_count):
             build_log = build_logs[i]
             errors += build_log['errors']
-            warnings+= build_log['warnings']
+            warnings += build_log['warnings']
         build_logs_json['errors'] = errors
-        build_log_json['warnings'] = warnings
+        build_logs_json['warnings'] = warnings
 
         # Upload build_log.json to S3:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+
+        # Send lint request
+        job = TxJob(last_job_id, db_handler=self.job_db_handler)
+        lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
+        job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
+        if lint_results['success']:
+            job.warnings += lint_results['warnings']
+            job.update('warnings')
+            # Upload build_log.json to S3 again:
+            build_logs_json['warnings'] += lint_results['warnings']
+            self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+
         remove_tree(self.base_temp_dir)  # cleanup
+
         if len(errors) > 0:
             raise Exception('; '.join(errors))
         else:
@@ -347,7 +360,7 @@ class ClientWebhook(object):
         callback_url = self.api_url + '/client/callback'
         tx_manager_job_url = self.api_url + '/tx/job'
 
-        identifier = self.create_new_job_id(repo_owner, repo_name, commit_id, count, part, book)
+        identifier = self.create_new_identifier(repo_owner, repo_name, commit_id, count, part, book)
 
         payload = {
             "identifier": identifier,
@@ -361,7 +374,7 @@ class ClientWebhook(object):
         }
         return self.add_payload_to_tx_converter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
 
-    def create_new_job_id(self, repo_owner, repo_name, commit_id, count=0, part=0, book=None):
+    def create_new_identifier(self, repo_owner, repo_name, commit_id, count=0, part=0, book=None):
         if not count:
             identifier = "{0}/{1}/{2}".format(repo_owner, repo_name,
                                               commit_id)  # The way to know which repo/commit goes to this job request
@@ -395,7 +408,7 @@ class ClientWebhook(object):
             'log': [],
             'warnings': [],
             'errors': []
-        })
+        }, db_handler=self.job_db_handler)
         if response.status_code != requests.codes.ok:
             job.status = 'failed'
             job.success = False
@@ -409,7 +422,6 @@ class ClientWebhook(object):
                         error = json_data['errorMessage']
                         if error.startswith('Bad Request: '):
                             error = error[len('Bad Request: '):]
-
                         job.errors.append(error)
                 except:
                     pass

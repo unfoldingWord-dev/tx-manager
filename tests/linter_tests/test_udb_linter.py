@@ -5,7 +5,6 @@ import tempfile
 import shutil
 from libraries.linters.udb_linter import UdbLinter
 from libraries.resource_container.ResourceContainer import RC
-from libraries.general_tools.file_utils import add_contents_to_zip
 
 
 class TestUdbLinter(unittest.TestCase):
@@ -35,10 +34,7 @@ class TestUdbLinter(unittest.TestCase):
     #
 
     def run_linter(self, out_dir):
-        source_zip_file = tempfile.mktemp(prefix='source_zip_file', suffix='.zip', dir=self.temp_dir)
-        add_contents_to_zip(source_zip_file, out_dir, include_root=True)
-        linter = UdbLinter(source='bogus url', rc=self.rc)
-        linter.source_zip_file = source_zip_file
+        linter = UdbLinter(source_dir=out_dir, rc=self.rc)
         linter.run()
         return linter
 

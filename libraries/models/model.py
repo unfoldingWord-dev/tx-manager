@@ -67,12 +67,29 @@ class Model(object):
     def update(self, data=None):
         if not data:
             data = self.get_db_data()
-        for field in data.keys():
-            if field not in self.db_fields or field in self.db_keys:
-                data.pop(field)
-            else:
-                setattr(self, field, data[field])
-        self.db_handler.update_item(self.get_keys(), data)
+        elif isinstance(data, string_types) and data:
+            data = {
+                data: getattr(self, data)
+            }
+        elif isinstance(data, list):
+            new_data = {}
+            for field in data:
+                new_data[field] = getattr(self, field)
+            data = new_data
+        elif isinstance(data, dict):
+            # update this object with the new data
+            for field in data.keys():
+                if field in self.db_fields and field not in self.db_keys:
+                    setattr(self, field, data[field])
+
+        if isinstance(data, dict):
+            # Prepare for save
+            for field in data.keys():
+                if field not in self.db_fields or field in self.db_keys:
+                    data.pop(field)
+            # save
+            self.db_handler.update_item(self.get_keys(), data)
+
         return self
 
     def delete(self):

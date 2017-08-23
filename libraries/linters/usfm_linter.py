@@ -73,7 +73,7 @@ class UsfmLinter(Linter):
 
             if book_code:
                 if book_code in self.found_books:
-                    self.log.warnings("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
+                    self.log.warning("File '{0}' has same code '{1}' as previous file".format(sub_path, book_code))
                 self.found_books.append(book_code)
 
             if len(errors):
@@ -83,6 +83,4 @@ class UsfmLinter(Linter):
 
         except Exception as e:
             # for debugging
-            print("Failed to verify book '{0}', exception: {1}\n{2}".format(file_name, str(e),
-                                                                            traceback.format_exc()))
             self.log.warning("Failed to verify book '{0}', exception: {1}".format(file_name, str(e)))

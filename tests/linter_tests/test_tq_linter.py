@@ -24,8 +24,8 @@ class TestTqLinter(unittest.TestCase):
     def test_lint(self, mock_invoke_markdown_linter):
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tq linting
         expected_warnings = False
-        linter = TqLinter('bogus_url', rc=RC(repo_name='en_tq'))
-        linter.source_zip_file = os.path.join(self.resources_dir, 'tq_linter', 'en_tq.zip')
+        zip_file = os.path.join(self.resources_dir, 'tq_linter', 'en_tq.zip')
+        linter = TqLinter(source_zip_file=zip_file, rc=RC(repo_name='en_tq'))
         linter.run()
         self.verify_results(expected_warnings, linter)
 
