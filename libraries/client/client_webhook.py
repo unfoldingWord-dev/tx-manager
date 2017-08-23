@@ -180,6 +180,8 @@ class ClientWebhook(object):
             # Upload build_log.json to S3:
             self.upload_build_log_to_s3(build_log_json, s3_commit_key)
             remove_tree(self.base_temp_dir)  # cleanup
+            self.logger.debug(build_log_json)
+            self.logger.debug(job.get_db_data())
             if len(job.errors) > 0:
                 raise Exception('; '.join(job.errors))
             else:
