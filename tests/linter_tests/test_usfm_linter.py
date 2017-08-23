@@ -19,7 +19,7 @@ class TestUsfmLinter(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
-        self.temp_dir = tempfile.mkdtemp(prefix='tmp_usfm_')
+        self.temp_dir = tempfile.mkdtemp(prefix='temp_usfm_')
         self.rc = RC(directory=self.php_repo_path)
 
     def tearDown(self):
@@ -424,7 +424,7 @@ class TestUsfmLinter(unittest.TestCase):
         linter.parse_file(file_path, sub_path, file_name)
         self.verify_results_counts(expected_warnings, linter)
 
-    def test_parse_usfm_text_None(self):
+    def test_parse_usfm_text_none(self):
         out_dir = os.path.join(self.temp_dir, 'linter_test')
         sub_path = self.php_file_name
         file_name = "51-PHP.usfm"
@@ -432,11 +432,12 @@ class TestUsfmLinter(unittest.TestCase):
         book_code = "PHP"
         book_text = None
         expected_warnings = 1
-        linter = UsfmLinter(out_dir, rc=self.rc)
+        linter = UsfmLinter(source='bogus url', rc=self.rc)
+        linter.source_dir = out_dir
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
-    def test_parse_usfm_text_Empty(self):
+    def test_parse_usfm_text_empty(self):
         out_dir = os.path.join(self.temp_dir, 'linter_test')
         sub_path = self.php_file_name
         file_name = "51-PHP.usfm"
@@ -444,7 +445,8 @@ class TestUsfmLinter(unittest.TestCase):
         book_code = "PHP"
         book_text = None
         expected_warnings = 1
-        linter = UsfmLinter(out_dir, rc=self.rc)
+        linter = UsfmLinter(source='bogus url', rc=self.rc)
+        linter.source_dir = out_dir
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
@@ -467,7 +469,7 @@ class TestUsfmLinter(unittest.TestCase):
 
     def run_linter(self, out_dir):
         source_zip_file = tempfile.mktemp(prefix='source_zip_file', suffix='.zip', dir=self.temp_dir)
-        add_contents_to_zip(source_zip_file, out_dir, include_root=True)
+        add_contents_to_zip(source_zip_file, out_dir)
         linter = UsfmLinter(source='bogus url', rc=self.rc)
         linter.source_zip_file = source_zip_file
         linter.run()
