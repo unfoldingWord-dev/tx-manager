@@ -163,7 +163,7 @@ class ClientWebhook(object):
 
             # Send lint request to tx-manager - giving the git.door43.org URL
             lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
-            if lint_results['success']:
+            if 'success' in lint_results and lint_results['success']:
                 job.warnings += lint_results['warnings']
                 job.update({'warnings': job.warnings})
 
