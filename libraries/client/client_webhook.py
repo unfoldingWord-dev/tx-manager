@@ -438,9 +438,9 @@ class ClientWebhook(object):
         }
         if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
-            payload['source_url'] = job.source
+            payload['data']['source_url'] = job.source
         else:
-            payload['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
+            payload['data']['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
         return self.send_payload_to_run_linter(payload)
 
     def send_payload_to_run_linter(self, payload):
