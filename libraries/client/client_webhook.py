@@ -179,8 +179,9 @@ class ClientWebhook(object):
             if 'success' in lint_results and lint_results['success']:
                 job.warnings += lint_results['warnings']
                 job.update({'warnings': job.warnings})
-                build_log_json['warnings'] = job.warnings
                 # Upload build_log.json to S3 again:
+                build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
+                                                       pusher_username, repo_name, repo_owner)
                 self.upload_build_log_to_s3(build_log_json, s3_commit_key)
 
             remove_tree(self.base_temp_dir)  # cleanup
@@ -263,8 +264,9 @@ class ClientWebhook(object):
         if lint_results['success']:
             job.warnings += lint_results['warnings']
             job.update({'warnings': job.warnings})
-            build_log_json['warnings'] = job.warnings
             # Upload build_log.json to S3 again:
+            build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
+                                                   pusher_username, repo_name, repo_owner)
             self.upload_build_log_to_s3(build_log_json, master_s3_commit_key)
 
         remove_tree(self.base_temp_dir)  # cleanup
