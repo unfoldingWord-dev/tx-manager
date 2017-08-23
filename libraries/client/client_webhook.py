@@ -397,7 +397,7 @@ class ClientWebhook(object):
             'log': [],
             'warnings': [],
             'errors': []
-        })
+        }, db_handler=self.job_db_handler)
         if response.status_code != requests.codes.ok:
             job.status = 'failed'
             job.success = False
