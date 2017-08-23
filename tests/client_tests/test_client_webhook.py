@@ -87,8 +87,10 @@ class TestClientWebhook(unittest.TestCase):
         )
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_download_repo(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_download_repo(self, mock_send_payload_to_run_linter, mock_download_file):
         mock_download_file.side_effect = self.mock_download_repo
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         cwh = ClientWebhook()
         try:
             os.makedirs(cwh.base_temp_dir)
@@ -97,8 +99,10 @@ class TestClientWebhook(unittest.TestCase):
         cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhook(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhook(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
                                                       mock_download_file)
         expected_job_count = 1
@@ -120,8 +124,10 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(tx_manifest.lang_code, 'kpb')
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhookError(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhookError(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
                                                       mock_download_file)
         TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
@@ -138,8 +144,10 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhookMultipleBooks(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhookMultipleBooks(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'),
                                                       self.resources_dir, mock_download_file)
         expected_job_count = 4
@@ -152,9 +160,11 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(results, expected_job_count, expected_error_count)
 
     @patch('libraries.client.client_webhook.download_file')
-    def test_processWebhookMultipleBooksErrors(self, mock_download_file):
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhookMultipleBooksErrors(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir, mock_download_file)
+        mock_send_payload_to_run_linter.return_value = {'success': False, 'warnings': []}
         TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
         expected_job_count = 4
         expected_error_count = 2 * expected_job_count

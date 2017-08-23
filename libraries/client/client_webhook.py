@@ -162,7 +162,7 @@ class ClientWebhook(object):
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
 
             # Send lint request to tx-manager - giving the git.door43.org URL
-            lint_results = self.send_lint_request_to_run_linter(job, commit_url, rc)
+            lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
             if lint_results['success']:
                 job.warnings += lint_results['warnings']
                 job.update({'warnings': job.warnings})
@@ -451,7 +451,7 @@ class ClientWebhook(object):
         if 'Payload' in response:
             return json.loads(response['Payload'].read())
         else:
-            return {}
+            return {'success': False, 'warnings': []}
 
     def download_repo(self, commit_url, repo_dir):
         """
