@@ -168,7 +168,6 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(manifest['dublin_core']['language']['title'], 'Afaraf')
         self.assertEqual(manifest['dublin_core']['identifier'], 'bible')
         self.assertEqual(manifest['projects'][0]['identifier'], 'mat')
-        self.assertRaises(Exception, RC, {})
         self.assertRaises(Exception, RC, '/tmp/dummy_dir')
 
 if __name__ == '__main__':
