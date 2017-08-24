@@ -492,6 +492,9 @@ class ClientWebhook(object):
         response = self.lambda_handler.invoke(function_name=self.run_linter_function, payload=payload, async=async)
         self.logger.debug('finished.')
         if 'Payload' in response:
+            if async:
+                results = {'success': True, 'status': 'queued'}
+                return results
             return json.loads(response['Payload'].read())
         else:
             return {'success': False, 'warnings': []}

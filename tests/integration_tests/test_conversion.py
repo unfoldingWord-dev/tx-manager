@@ -716,7 +716,8 @@ class TestConversions(TestCase):
                 build_log_json = self.poll_for_build_log(commit_sha, repo, user)
 
             elif response.status_code != 200:
-                return build_log_json, False, (build_log_json['job_id'])
+                job_id = None if 'job_id' not in build_log_json else build_log_json['job_id']
+                return build_log_json, False, job_id
 
         else:  # do preconvert locally
             try:
