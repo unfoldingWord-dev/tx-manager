@@ -224,14 +224,13 @@ class ClientWebhook(object):
             self.logger.debug('Adding job for {0} part {1}'.format(book, part_id))
 
             # Send job request to tx-manager
-            source_url = self.build_multipart_source(file_key, book)
-            identifier, job = self.send_job_request_to_tx_manager(commit_id, source_url, rc, repo_name, repo_owner,
+            file_key_multi = self.build_multipart_source(file_key, book)
+            identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key_multi, rc, repo_name, repo_owner,
                                                                   count=book_count, part=i, book=book)
 
             # Send lint request to tx-manager
             linter_payload['single_file'] = book
-            job.source = source_url
-            self.send_lint_request_to_run_linter(job, rc, source_url, extra_data=linter_payload, async=True)
+            self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload, async=True)
 
             jobs.append(job)
             last_job_id = job.job_id
