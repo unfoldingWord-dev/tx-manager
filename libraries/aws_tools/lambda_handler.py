@@ -16,10 +16,11 @@ class LambdaHandler(object):
     def setup_resources(self):
         self.client = boto3.client('lambda')
 
-    def invoke(self, function_name, payload):
+    def invoke(self, function_name, payload, async=False):
+        invocation_type = 'RequestResponse' if not async else 'Event'
         return self.client.invoke(
             FunctionName=function_name,
-            InvocationType='RequestResponse',
+            InvocationType=invocation_type,
             LogType='Tail',
-            Payload = json.dumps(payload)
+            Payload=json.dumps(payload)
         )

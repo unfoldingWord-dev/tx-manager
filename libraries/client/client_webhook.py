@@ -7,6 +7,7 @@ import requests
 import logging
 import json
 from datetime import datetime
+from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import unzip, write_file, add_contents_to_zip, remove_tree
 from libraries.general_tools.url_utils import download_file
 from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TYPES
@@ -23,7 +24,8 @@ class ClientWebhook(object):
     JOB_TABLE_NAME = 'tx-job'
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
-                 gogs_url=None, gogs_user_token=None, manifest_table_name=None, job_table_name=None, prefix=''):
+                 gogs_url=None, gogs_user_token=None, manifest_table_name=None, job_table_name=None, prefix='',
+                 linter_messaging_name=None):
         """
         :param dict commit_data:
         :param string api_url:
@@ -41,6 +43,7 @@ class ClientWebhook(object):
         self.manifest_table_name = manifest_table_name
         self.job_table_name = job_table_name
         self.prefix = prefix
+        self.linter_messaging_name = linter_messaging_name
         self.logger = logging.getLogger()
 
         if self.pre_convert_bucket:
@@ -207,11 +210,16 @@ class ClientWebhook(object):
 
         book_count = len(books)
         last_job_id = '0'
+
+        linter_queue = LinterMessaging(self.linter_messaging_name)
+        source_urls = self.clear_out_any_old_messages(linter_queue, book_count, books, file_key)
+        linter_payload = {
+            'linter_messaging_name': self.linter_messaging_name
+        }
+
         for i in range(0, book_count):
             book = books[i]
             part_id = '{0}_of_{1}'.format(i, book_count)
-
-            # 3) Zip up the massaged files for just the one book
 
             self.logger.debug('Adding job for {0} part {1}'.format(book, part_id))
 
@@ -219,6 +227,10 @@ class ClientWebhook(object):
             source_url = self.build_multipart_source(file_key, book)
             identifier, job = self.send_job_request_to_tx_manager(commit_id, source_url, rc, repo_name, repo_owner,
                                                                   count=book_count, part=i, book=book)
+
+            # Send lint request to tx-manager
+            linter_payload['single_file'] = book
+            self.send_lint_request_to_run_linter(job, rc, source_url, extra_data=linter_payload, async=True)
 
             jobs.append(job)
             last_job_id = job.job_id
@@ -257,16 +269,37 @@ class ClientWebhook(object):
         # Upload build_log.json to S3:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
-        # Send lint request
-        job = TxJob(last_job_id, db_handler=self.job_db_handler)
-        lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
-        job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
-        if lint_results['success']:
-            job.warnings += lint_results['warnings']
-            job.update('warnings')
+        # get linter results
+        success = linter_queue.wait_for_lint_jobs(source_urls, 180)  # wait up to 3 minutes
+        if not success:
+            for source_url in linter_queue.get_unfinished_jobs():
+                build_logs_json['errors'].append("Linter didn't complete for file: " + source_url)
+        finished_lint_jobs = linter_queue.get_finished_jobs()
+        for k in finished_lint_jobs:
+            lint_data = linter_queue.get_job_data(k)
+            if not lint_data:
+                build_logs_json['errors'].append("Cannot read linter data for file: " + source_url)
+            else:
+                if ('success' not in lint_data) or not lint_data['success']:
+                    build_logs_json['errors'].append("Linter failed file: " + source_url)
+
+                if 'warnings' in lint_data:
+                    build_logs_json['warning'] += lint_data['warnings']
+
             # Upload build_log.json to S3 again:
-            build_logs_json['warnings'] += lint_results['warnings']
             self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+
+
+        # # Send lint request
+        # job = TxJob(last_job_id, db_handler=self.job_db_handler)
+        # lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
+        # job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
+        # if lint_results['success']:
+        #     job.warnings += lint_results['warnings']
+        #     job.update('warnings')
+        #     # Upload build_log.json to S3 again:
+        #     build_logs_json['warnings'] += lint_results['warnings']
+        #     self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
         remove_tree(self.base_temp_dir)  # cleanup
 
@@ -274,6 +307,14 @@ class ClientWebhook(object):
             raise Exception('; '.join(errors))
         else:
             return build_logs_json
+
+    def clear_out_any_old_messages(self, linter_queue, book_count, books, file_key):
+        source_urls = []
+        for i in range(0, book_count):
+            book = books[i]
+            source_urls.append(self.build_multipart_source(file_key, book))
+        linter_queue.clear_lint_jobs(source_urls, 2)
+        return source_urls
 
     def build_multipart_source(self, file_key, book):
         params = urllib.urlencode({'convert_only': book})
@@ -437,33 +478,48 @@ class ClientWebhook(object):
                 job.populate(json_data['job'])
         return identifier, job
 
-    def send_lint_request_to_run_linter(self, job, rc, commit_url):
+    def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
+        job_data = {'job_id': job.job_id, 'commit_data': self.commit_data, 'rc': rc.as_dict(), }
+        if extra_data:
+            for k in extra_data:
+                job_data[k] = extra_data[k]
         payload = {
-            'data': {
-                'job_id': job.job_id,
-                'commit_data': self.commit_data,
-                'rc': rc.as_dict(),
-            },
+            'data': job_data,
             'vars': {
                 'prefix': self.prefix,
             }
         }
+
+        tx_manager_lint_url = self.api_url + '/tx/lint'
         if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
-            payload['data']['source_url'] = job.source
+            payload['source_url'] = job.source
         else:
-            payload['data']['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
-        return self.send_payload_to_run_linter(payload)
+            payload['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
+        return self.send_payload_to_run_linter(payload, tx_manager_lint_url, async=async)
 
-    def send_payload_to_run_linter(self, payload):
+    def send_payload_to_run_linter(self, payload, async=False):
         self.logger.debug('Making request linter lambda with payload:')
         self.logger.debug(payload)
-        response = self.lambda_handler.invoke(function_name=self.run_linter_function, payload=payload)
+        response = self.lambda_handler.invoke(function_name=self.run_linter_function, payload=payload, async=async)
         self.logger.debug('finished.')
         if 'Payload' in response:
             return json.loads(response['Payload'].read())
         else:
             return {'success': False, 'warnings': []}
+
+    def send_payload_to_run_linter(self, payload, tx_manager_lint_url, async=False):
+        self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_lint_url))
+        self.logger.debug(payload)
+        headers = {"content-type": "application/json"}
+        if async:
+            headers['InvocationType'] = 'Event'
+        response = requests.post(tx_manager_lint_url, json=payload, headers=headers)
+        self.logger.debug('finished.')
+        if response.status_code == requests.codes.ok:
+            return json.loads(response.text)
+        else:
+            return {'success': False}
 
     def download_repo(self, commit_url, repo_dir):
         """
