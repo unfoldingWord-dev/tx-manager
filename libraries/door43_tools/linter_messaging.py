@@ -29,10 +29,8 @@ class LinterMessaging(MessagingService):
 
     def get_job_data(self, key):
         if self.recvd_payloads:
-            lint_data_str = self.recvd_payloads[key]
-            if lint_data_str:
-                lint_data = json.loads(lint_data_str)
-                return lint_data
+            lint_data = self.recvd_payloads[key]
+            return lint_data
         return None
 
     def notify_lint_job_complete(self, source_url, success, payload=None):

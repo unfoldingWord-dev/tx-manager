@@ -230,6 +230,7 @@ class ClientWebhook(object):
 
             # Send lint request to tx-manager
             linter_payload['single_file'] = book
+            linter_payload['source_url'] = source_url
             self.send_lint_request_to_run_linter(job, rc, source_url, extra_data=linter_payload, async=True)
 
             jobs.append(job)
@@ -281,10 +282,10 @@ class ClientWebhook(object):
                 build_logs_json['errors'].append("Cannot read linter data for file: " + source_url)
             else:
                 if ('success' not in lint_data) or not lint_data['success']:
-                    build_logs_json['errors'].append("Linter failed file: " + source_url)
+                    build_logs_json['warnings'].append("Linter failed file: " + source_url)
 
                 if 'warnings' in lint_data:
-                    build_logs_json['warning'] += lint_data['warnings']
+                    build_logs_json['warnings'] += lint_data['warnings']
 
             # Upload build_log.json to S3 again:
             self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)

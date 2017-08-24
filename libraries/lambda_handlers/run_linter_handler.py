@@ -25,11 +25,11 @@ class RunLinterHandler(Handler):
             'rc': RC(manifest=self.retrieve(data, 'rc', 'payload', required=False)),
             'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
             'messaging_name': self.retrieve(data, 'linter_messaging_name', 'payload', required=False, default=None),
-            'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None)
+            'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None)  # TODO blm
         }
         linter_class = LinterHandler(**args).get_linter_class()
         ret_value = linter_class(**args).run()
         if args['messaging_name']:
             message_queue = LinterMessaging(args['messaging_name'])
-            message_queue.notify_lint_job_complete(args['source'], ret_value['success'], payload=ret_value)
+            message_queue.notify_lint_job_complete(args['source_zip_url'], ret_value['success'], payload=ret_value)
         return ret_value
