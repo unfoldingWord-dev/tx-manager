@@ -230,7 +230,7 @@ class ClientWebhook(object):
 
             # Send lint request to tx-manager
             linter_payload['single_file'] = book
-            linter_payload['source_url'] = source_url
+            job.source = source_url
             self.send_lint_request_to_run_linter(job, rc, source_url, extra_data=linter_payload, async=True)
 
             jobs.append(job)
@@ -289,18 +289,6 @@ class ClientWebhook(object):
 
             # Upload build_log.json to S3 again:
             self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
-
-
-        # # Send lint request
-        # job = TxJob(last_job_id, db_handler=self.job_db_handler)
-        # lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
-        # job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
-        # if lint_results['success']:
-        #     job.warnings += lint_results['warnings']
-        #     job.update('warnings')
-        #     # Upload build_log.json to S3 again:
-        #     build_logs_json['warnings'] += lint_results['warnings']
-        #     self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
         remove_tree(self.base_temp_dir)  # cleanup
 
@@ -493,9 +481,9 @@ class ClientWebhook(object):
 
         if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
-            payload['source_url'] = job.source
+            payload['data']['source_url'] = job.source
         else:
-            payload['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
+            payload['data']['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
         return self.send_payload_to_run_linter(payload, async=async)
 
     def send_payload_to_run_linter(self, payload, async=False):
