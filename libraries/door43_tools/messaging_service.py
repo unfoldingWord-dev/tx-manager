@@ -53,7 +53,7 @@ class MessagingService(object):
                     if 'key' in recvd:
                         item_key = recvd['key']
                         if item_key in items_to_watch_for:  # if this matches what we were looking for, then remove it
-                            # from queue
+                                                            # from queue
                             message.delete()
                             self.recvd_payloads[item_key] = recvd
         success = len(self.recvd_payloads) >= len(items_to_watch_for)
