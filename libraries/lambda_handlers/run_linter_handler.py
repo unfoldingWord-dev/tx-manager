@@ -25,7 +25,7 @@ class RunLinterHandler(Handler):
             'rc': RC(manifest=self.retrieve(data, 'rc', 'payload', required=False)),
             'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
             'messaging_name': self.retrieve(data, 'linter_messaging_name', 'payload', required=False, default=None),
-            'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None)  # TODO blm
+            'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None)
         }
         linter_class = LinterHandler(**args).get_linter_class()
         ret_value = linter_class(**args).run()
