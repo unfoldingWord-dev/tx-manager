@@ -12,6 +12,7 @@ class UsfmLinter(Linter):
     def __init__(self, *args, **kwargs):
         super(UsfmLinter, self).__init__(*args, **kwargs)
         self.found_books = []
+        self.single_file = None if 'single_file' not in kwargs else kwargs['single_file']
 
     def lint(self):
         """
@@ -32,6 +33,10 @@ class UsfmLinter(Linter):
                 if os.path.splitext(f)[1].lower() != '.usfm':  # only usfm files
                     continue
 
+                if self.single_file and (f != self.single_file):
+                    continue
+
+                print("converting: " + f)
                 file_path = os.path.join(root, f)
                 sub_path = '.' + file_path[len(self.source_dir):]
                 self.parse_file(file_path, sub_path, f)

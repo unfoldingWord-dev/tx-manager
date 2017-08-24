@@ -471,6 +471,18 @@ class TestUsfmLinter(unittest.TestCase):
         print("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
+    def test_EnUlbValidConvertSingle(self):
+        out_dir = self.unzip_resource('en_ulb.zip')
+        expected_warnings = 0
+        start = time.time()
+        rc = RC(out_dir)
+        convert_only = '51-PHP.usfm'
+        linter = UsfmLinter(source_dir=out_dir, rc=rc, single_file=convert_only)
+        linter.run()
+        elapsed_seconds = int(time.time() - start)
+        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        self.verify_results_counts(expected_warnings, linter)
+
     #
     # helpers
     #
