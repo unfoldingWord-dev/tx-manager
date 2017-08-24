@@ -490,13 +490,12 @@ class ClientWebhook(object):
             }
         }
 
-        tx_manager_lint_url = self.api_url + '/tx/lint'
         if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
             payload['source_url'] = job.source
         else:
             payload['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
-        return self.send_payload_to_run_linter(payload, tx_manager_lint_url, async=async)
+        return self.send_payload_to_run_linter(payload, async=async)
 
     def send_payload_to_run_linter(self, payload, async=False):
         self.logger.debug('Making request linter lambda with payload:')
@@ -507,19 +506,6 @@ class ClientWebhook(object):
             return json.loads(response['Payload'].read())
         else:
             return {'success': False, 'warnings': []}
-
-    def send_payload_to_run_linter(self, payload, tx_manager_lint_url, async=False):
-        self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_lint_url))
-        self.logger.debug(payload)
-        headers = {"content-type": "application/json"}
-        if async:
-            headers['InvocationType'] = 'Event'
-        response = requests.post(tx_manager_lint_url, json=payload, headers=headers)
-        self.logger.debug('finished.')
-        if response.status_code == requests.codes.ok:
-            return json.loads(response.text)
-        else:
-            return {'success': False}
 
     def download_repo(self, commit_url, repo_dir):
         """
