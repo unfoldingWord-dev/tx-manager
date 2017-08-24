@@ -17,9 +17,9 @@ class ObsLinter(MarkdownLinter):
         :return bool:
         """
         # chapter check
-        print(self.rc.project())
-        print(self.rc.project().path)
         project_dir = os.path.join(self.source_dir, self.rc.project().path)
+        if not os.path.isdir(project_dir):
+            project_dir = self.source_dir
         for chapter in range(1, 51):
             chapter_number = str(chapter).zfill(2)
             filename = os.path.join(project_dir, chapter_number + '.md')
