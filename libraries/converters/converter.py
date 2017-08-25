@@ -97,6 +97,7 @@ class Converter(object):
             'errors': self.log.logs['error']
         }
         self.logger.debug(result)
+        self.close()  # do cleanup after run
         return result
 
     def download_archive(self):

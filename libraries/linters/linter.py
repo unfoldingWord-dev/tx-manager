@@ -75,7 +75,9 @@ class Linter(object):
                 success = self.lint()
                 self.logger.debug("...finished.")
         except Exception as e:
-            self.logger.error('Linting process ended abnormally: {0}'.format(e.message))
+            message = 'Linting process ended abnormally: {0}'.format(e.message)
+            self.logger.error(message)
+            self.log.warnings.append(message)
             success = False
         result = {
             'success': success,
