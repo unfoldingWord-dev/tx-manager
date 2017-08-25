@@ -7,22 +7,35 @@ from libraries.general_tools.file_utils import unzip, write_file, remove_tree, r
 from libraries.general_tools.url_utils import download_file
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.models.job import TxJob
+from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 
 
 class ClientCallback(object):
 
-    def __init__(self, job_data=None, cdn_bucket=None, gogs_url=None):
+    def __init__(self, job_data=None, cdn_bucket=None, gogs_url=None, job_table_name='tx-job', prefix=''):
         """
         :param dict job_data:
         :param string cdn_bucket:
         :param string gogs_url:
         """
         self.logger = logging.getLogger()
-        self.job = TxJob(job_data)
+        self.job_data = job_data
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
         self.cdn_handler = None
+        self.job_table_name = job_table_name
+        self.prefix = prefix
+
+        self.job_db_handler = None
+        self.job = None
+
+        self.setup_resources()
+
+    def setup_resources(self):
+        if self.job_table_name:
+            self.job_db_handler = DynamoDBHandler(self.job_table_name)
+        self.job = TxJob(self.job_data['job_id'], db_handler=self.job_db_handler)
 
     def process_callback(self):
         if not self.cdn_handler:

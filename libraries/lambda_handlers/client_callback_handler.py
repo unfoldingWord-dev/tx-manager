@@ -20,6 +20,8 @@ class ClientCallbackHandler(Handler):
         env_vars = {
             'cdn_bucket': self.retrieve(event['vars'], 'cdn_bucket', 'Environment Vars'),
             'gogs_url': self.retrieve(event['vars'], 'gogs_url', 'Environment Vars'),
-            'job_data': self.retrieve(event, 'data', 'payload')
+            'job_data': self.retrieve(event, 'data', 'payload'),
+            'job_table_name': self.retrieve(event['vars'], 'job_table_name', 'Environment Vars'),
+            'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
         }
         return ClientCallback(**env_vars).process_callback()
