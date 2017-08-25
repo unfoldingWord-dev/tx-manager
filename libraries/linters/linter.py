@@ -82,6 +82,7 @@ class Linter(object):
             'warnings': self.log.warnings,
         }
         self.logger.debug("Linter results: " + str(result))
+        self.close()  # so temp files are cleaned up
         return result
 
     def download_archive(self):
