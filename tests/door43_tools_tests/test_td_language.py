@@ -10,7 +10,7 @@ class TdLanguageTest(unittest.TestCase):
         """Runs before each test."""
 
         # Patch _get_url in url_utils for every test case so that it never fetches the actual language json
-        self.patcher = mock.patch('libraries.general_tools.url_utils._get_url')
+        self.patcher = mock.patch('libraries.general_tools.url_utils.get_url')
         mock_get_url = self.patcher.start()
         self.languages = [
             {'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa', 'pk': 6},
