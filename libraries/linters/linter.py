@@ -42,7 +42,7 @@ class Linter(object):
             self.repo_name = self.commit_data['repository']['name']
             self.repo_owner = self.commit_data['repository']['owner']['username']
 
-    def __del__(self):
+    def close(self):
         """delete temp files"""
         remove_tree(self.temp_dir)
 
@@ -84,6 +84,7 @@ class Linter(object):
             'warnings': self.log.warnings,
         }
         self.logger.debug("Linter results: " + str(result))
+        self.close()  # so temp files are cleaned up
         return result
 
     def download_archive(self):

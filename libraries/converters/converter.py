@@ -42,7 +42,7 @@ class Converter(object):
         self.output_dir = tempfile.mkdtemp(prefix='output_')
         self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource), suffix='.zip')
 
-    def __del__(self):
+    def close(self):
         """delete temp files"""
         remove_tree(self.download_dir)
         remove_tree(self.files_dir)
