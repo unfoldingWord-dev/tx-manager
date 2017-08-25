@@ -42,7 +42,7 @@ class Linter(object):
             self.repo_name = self.commit_data['repository']['name']
             self.repo_owner = self.commit_data['repository']['owner']['username']
 
-    def close(self):
+    def __del__(self):
         """delete temp files"""
         remove_tree(self.temp_dir)
 
