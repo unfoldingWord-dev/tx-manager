@@ -6,6 +6,16 @@ from libraries.door43_tools.td_language import TdLanguage
 
 
 class TdLanguageTest(unittest.TestCase):
+    languages = [
+        {'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa', 'pk': 6},
+        {'gw': True, 'ld': 'ltr', 'ang': 'English', 'lc': 'en', 'ln': 'English',
+         'lr': 'Europe', 'pk': 1747},
+        {'gw': True, 'ld': 'ltr', 'ang': 'Spanish', 'lc': 'es', 'ln': 'espa\xf1ol',
+         'lr': 'Europe', 'pk': 1776},
+        {'gw': True, 'ld': 'ltr', 'ang': 'French', 'lc': 'fr', 'ln': 'fran\xe7ais, langue fran\xe7aise',
+         'lr': 'Europe', 'pk': 1868}
+    ]
+
     def test_init(self):
         language = TdLanguage({'lc': 'test', 'ln': 'Test Language', 'ld': 'rtl'})
         self.assertEqual(language.ln, 'Test Language')
@@ -13,21 +23,14 @@ class TdLanguageTest(unittest.TestCase):
 
     @mock.patch('libraries.general_tools.url_utils._get_url')
     def test_get_languages(self, mock_get_url):
-        expected_languages = [
-            {'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa', 'pk': 6},
-            {'gw': True, 'ld': 'ltr', 'ang': 'English', 'lc': 'en', 'ln': 'English',
-             'lr': 'Europe', 'pk': 1747},
-            {'gw': True, 'ld': 'ltr', 'ang': 'Spanish', 'lc': 'es', 'ln': 'espa\xf1ol',
-             'lr': 'Europe', 'pk': 1776},
-            {'gw': True, 'ld': 'ltr', 'ang': 'French', 'lc': 'fr', 'ln': 'fran\xe7ais, langue fran\xe7aise',
-             'lr': 'Europe', 'pk': 1868}
-        ]
-        mock_get_url.return_value = json.dumps(expected_languages)
+        mock_get_url.return_value = json.dumps(self.languages)
         languages = TdLanguage.get_languages()
         self.assertTrue('fr' in languages)
-        self.assertEqual(len(languages), len(expected_languages))
+        self.assertEqual(len(languages), len(self.languages))
 
-    def test_get_language(self):
+    @mock.patch('libraries.general_tools.url_utils._get_url')
+    def test_get_language(self, mock_get_url):
+        mock_get_url.return_value = json.dumps(self.languages)
         language = TdLanguage.get_language('aa')
         self.assertIsNotNone(language)
         self.assertEqual(language.ln, 'Afaraf')
