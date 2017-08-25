@@ -70,4 +70,3 @@ class ObsLinter(MarkdownLinter):
                     self.log.warning('Story {0} matter is not translated!'.format(book_end) )
 
         return super(ObsLinter, self).lint()  # Runs the markdown linter
-
