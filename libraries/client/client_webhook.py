@@ -282,12 +282,16 @@ class ClientWebhook(object):
             else:
                 if ('success' not in lint_data) or not lint_data['success']:
                     build_logs_json['warnings'].append("Linter failed file: " + source_url)
+                else:
+                    self.logger.debug("Linter {0} results:\n{1}".format(source_url, str(lint_data)))
 
                 if 'warnings' in lint_data:
                     build_logs_json['warnings'] += lint_data['warnings']
 
-            # Upload build_log.json to S3 again:
-            self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+        # Upload build_log.json to S3 again:
+        self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+
+        self.logger.debug("Final json: " + str(build_log_json))
 
         remove_tree(self.base_temp_dir)  # cleanup
 
@@ -300,7 +304,9 @@ class ClientWebhook(object):
         source_urls = []
         for i in range(0, book_count):
             book = books[i]
-            source_urls.append(self.build_multipart_source(file_key, book))
+            file_key_multi = self.build_multipart_source(file_key, book)
+            source_url = self.source_url_base + "/" + file_key_multi
+            source_urls.append(source_url)
         linter_queue.clear_lint_jobs(source_urls, 2)
         return source_urls
 

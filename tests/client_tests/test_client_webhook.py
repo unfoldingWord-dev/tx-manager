@@ -335,6 +335,7 @@ class TestClientWebhook(unittest.TestCase):
         mock_job_return_value = TestClientWebhook.mock_job_return_value
         mock_job_return_value.job_id = hashlib.sha256().hexdigest()
         mock_job_return_value.db_handler = self.job_db_handler
+        mock_job_return_value.source = payload['source']
         mock_job_return_value.insert()
         return identifier, mock_job_return_value
 
@@ -376,7 +377,6 @@ class TestClientWebhook(unittest.TestCase):
             #setup linter messaging
             sqs = boto3.resource('sqs')
             queue = sqs.create_queue(QueueName=TestClientWebhook.LINTER_MESSAGING_NAME, Attributes={'DelaySeconds': '5'})
-            print(queue is not None)
         except Exception as e:
             pass
 

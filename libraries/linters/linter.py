@@ -63,13 +63,15 @@ class Linter(object):
         try:
             # Download file if a source_zip_url was given
             if self.source_zip_url:
+                self.logger.debug("Linting url: " + self.source_zip_url)
                 self.download_archive()
             # unzip the input archive if a source_zip_file exists
             if self.source_zip_file:
+                self.logger.debug("Linting zip: " + self.source_zip_file)
                 self.unzip_archive()
             # lint files
             if self.source_dir:
-                self.logger.debug("Linting files...")
+                self.logger.debug("Linting {0} files...".format(self.source_dir))
                 success = self.lint()
                 self.logger.debug("...finished.")
         except Exception as e:
@@ -79,6 +81,7 @@ class Linter(object):
             'success': success,
             'warnings': self.log.warnings,
         }
+        self.logger.debug("Linter results: " + str(result))
         return result
 
     def download_archive(self):
