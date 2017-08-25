@@ -198,7 +198,6 @@ class TxManager(object):
         }
 
     def start_job(self, job_id):
-        return
         job = TxJob(job_id, db_handler=self.job_db_handler)
 
         if not job.job_id:
