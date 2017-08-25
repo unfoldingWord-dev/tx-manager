@@ -46,6 +46,9 @@ class Linter(object):
         """delete temp files"""
         remove_tree(self.temp_dir)
 
+    def __del__(self):
+        self.close()
+
     @abstractmethod
     def lint(self):
         """
@@ -84,7 +87,6 @@ class Linter(object):
             'warnings': self.log.warnings,
         }
         self.logger.debug("Linter results: " + str(result))
-        self.close()  # so temp files are cleaned up
         return result
 
     def download_archive(self):

@@ -86,7 +86,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         self.expected_warnings = 0
         self.expected_errors = 0
         self.expected_success = True
-        self.expected_info_empty = False;
+        self.expected_info_empty = False
 
         # when
         tx = self.doTransformObs(file_name)
