@@ -266,7 +266,7 @@ class ClientWebhook(object):
         build_logs_json['errors'] = errors
         build_logs_json['warnings'] = warnings
 
-        # Upload build_log.json to S3:
+        # Upload build_log.json to S3 before waiting for linters to complete:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
         # get linter results
@@ -274,24 +274,15 @@ class ClientWebhook(object):
         if not success:
             for source_url in linter_queue.get_unfinished_jobs():
                 build_logs_json['errors'].append("Linter didn't complete for file: " + source_url)
-        finished_lint_jobs = linter_queue.get_finished_jobs()
-        for k in finished_lint_jobs:
-            lint_data = linter_queue.get_job_data(k)
-            if not lint_data:
-                build_logs_json['errors'].append("Cannot read linter data for file: " + source_url)
-            else:
-                if ('success' not in lint_data) or not lint_data['success']:
-                    build_logs_json['warnings'].append("Linter failed file: " + source_url)
-                else:
-                    self.logger.debug("Linter {0} results:\n{1}".format(source_url, str(lint_data)))
 
-                if 'warnings' in lint_data:
-                    build_logs_json['warnings'] += lint_data['warnings']
+        finished_lint_jobs = linter_queue.get_finished_jobs()
+        for source in finished_lint_jobs:
+            self.update_job_with_linter_data(build_logs, build_logs_json, source, linter_queue)
 
         # Upload build_log.json to S3 again:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
-        self.logger.debug("Final json: " + str(build_log_json))
+        self.logger.debug("Final json: " + str(build_logs_json))
 
         remove_tree(self.base_temp_dir)  # cleanup
 
@@ -299,6 +290,44 @@ class ClientWebhook(object):
             raise Exception('; '.join(errors))
         else:
             return build_logs_json
+
+    def update_job_with_linter_data(self, build_logs, build_logs_json, source, linter_queue):
+        lint_data = linter_queue.get_job_data(source)
+
+        # get job_id for source
+        job_id = None
+        for blog in build_logs:
+            if blog['source'] == source:
+                job_id = blog['job_id']
+                break
+
+        if not job_id:
+            self.logger.debug("Cannot find job id for {0}".format(source))
+        else:
+
+            # get job record to update
+            job = TxJob(job_id, db_handler=self.job_db_handler)
+            if not lint_data:
+                msg = "Cannot read linter data for source: " + source
+                build_logs_json['errors'].append(msg)
+                job.errors.append(msg)
+                job.update('errors')
+
+            else:
+                if ('success' not in lint_data) or not lint_data['success']:
+                    msg = "Linter failed for source: " + source
+                    build_logs_json['warnings'].append(msg)
+                    job.warnings.append(msg)
+                else:
+                    self.logger.debug("Linter {0} results:\n{1}".format(source, str(lint_data)))
+
+                if 'warnings' in lint_data:
+                    self.logger.debug("Linter {0} Warnings:\n{1}".format(source, '\n'.join(lint_data['warnings'])))
+                    build_logs_json['warnings'] += lint_data['warnings']
+                    job.warnings += lint_data['warnings']
+
+                if len(job.warnings):
+                    job.update('warnings')
 
     def clear_out_any_old_messages(self, linter_queue, book_count, books, file_key):
         source_urls = []
