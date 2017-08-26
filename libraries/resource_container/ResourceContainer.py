@@ -67,33 +67,37 @@ class RC:
         :param string repo_name:
         :param dict manifest:
         """
-        self.dir = directory
-        self.manifest = manifest
+        self._dir = directory
+        self._manifest = manifest
         self._repo_name = repo_name
         self._resource = None
         self._projects = []
 
-        if not self.manifest:
-            if self.dir:
-                self.get_manifest_from_dir()
-            else:
-                self.manifest = manifest_from_repo_name(self.repo_name)
+    @property
+    def manifest(self):
+        if not self._manifest:
+            self._manifest = self.get_manifest_from_dir()
+        return self._manifest
 
     def get_manifest_from_dir(self):
-        if not os.path.isdir(self.dir):
-            raise Exception('Directory does not exist: {0}'.format(self.dir))
-
-        self.manifest = load_yaml_object(os.path.join(self.dir, 'manifest.yaml'))
-        if not self.manifest:
-            self.manifest = load_json_object(os.path.join(self.dir, 'manifest.json'))
-        if not self.manifest:
-            self.manifest = load_json_object(os.path.join(self.dir, 'package.json'))
-        if not self.manifest:
-            self.manifest = load_json_object(os.path.join(self.dir, 'project.json'))
-        if not self.manifest:
-            self.manifest = load_json_object(os.path.join(self.dir, 'meta.json'))
-        if not self.manifest:
-            self.manifest = manifest_from_repo_name(self.repo_name)
+        if not self.path or not os.path.isdir(self.path):
+            return get_manifest_from_repo_name(self.repo_name)
+        manifest = load_yaml_object(os.path.join(self.path, 'manifest.yaml'))
+        if manifest:
+            return manifest
+        manifest = load_json_object(os.path.join(self.path, 'manifest.json'))
+        if manifest:
+            return manifest
+        manifest = load_json_object(os.path.join(self.path, 'package.json'))
+        if manifest:
+            return manifest
+        manifest = load_json_object(os.path.join(self.path, 'project.json'))
+        if manifest:
+            return manifest
+        manifest = load_json_object(os.path.join(self.path, 'meta.json'))
+        if manifest:
+            return manifest
+        return get_manifest_from_repo_name(self.repo_name)
 
     def as_dict(self):
         """
@@ -133,15 +137,17 @@ class RC:
 
     @property
     def path(self):
-        return self.dir
+        if self._dir:
+            return self._dir.rstrip('/')
+        else:
+            return ''
 
     @property
     def repo_name(self):
         if self._repo_name:
             return self._repo_name
         elif self.path:
-            path = self.path.rstrip('/')
-            return os.path.basename(path)
+            return os.path.basename(self.path)
         else:
             return ''  # Use empty string instead of None
 
@@ -175,12 +181,10 @@ class RC:
             if 'projects' in self.manifest and len(self.manifest['projects']):
                 for p in self.manifest['projects']:
                     project = Project(self, p)
-                    if os.path.join(self.dir, project.path):
-                        self._projects.append(project)
+                    self._projects.append(project)
             elif 'project'in self.manifest:
                 project = Project(self, self.manifest['project'])
-                if os.path.join(self.dir, project.path):
-                    self._projects.append(project)
+                self._projects.append(project)
             if not len(self._projects):
                 self._projects.append(Project(self, {}))  # will rely on info in the resource
         return self._projects
@@ -210,6 +214,8 @@ class RC:
                 return self.projects[0]
             elif len(self.projects) > 1:
                 raise Exception('Multiple projects found. Specify the project identifier.')
+            else:
+                return Project(self)
 
     @property
     def project_count(self):
@@ -234,7 +240,7 @@ class RC:
             return []
         else:
             chapters = []
-            for d in sorted(glob(os.path.join(self.dir, p.path, '*'))):
+            for d in sorted(glob(os.path.join(self.path, p.path, '*'))):
                 chapter = os.path.basename(d)
                 if os.path.isdir(d) and not chapter.startswith('.'):
                     if len(self.chunks(identifier, chapter)):
@@ -249,7 +255,7 @@ class RC:
         if p is None:
             return []
         chunks = []
-        for f in sorted(glob(os.path.join(self.dir, p.path, chapter_identifier, '*'))):
+        for f in sorted(glob(os.path.join(self.path, p.path, chapter_identifier, '*'))):
             chunk = os.path.basename(f)
             ext = os.path.splitext(chunk)[1]
             if os.path.isfile(f) and not chunk.startswith('.') and ext in ['', '.txt', '.text', '.md', '.usfm']:
@@ -268,7 +274,7 @@ class RC:
             return []
         else:
             usfm_files = []
-            for f in glob(os.path.join(self.dir, p.path, '*.usfm')):
+            for f in glob(os.path.join(self.path, p.path, '*.usfm')):
                 usfm_files.append(os.path.basename(f))
             return usfm_files
 
@@ -277,7 +283,7 @@ class RC:
         if p is None:
             return None
         if not p.config_yaml:
-            file_path = os.path.join(self.dir, p.path, 'config.yaml')
+            file_path = os.path.join(self.path, p.path, 'config.yaml')
             p.config_yaml = load_yaml_object(file_path)
         return p.config_yaml
 
@@ -286,7 +292,7 @@ class RC:
         if p is None:
             return None
         if not p.toc_yaml:
-            file_path = os.path.join(self.dir, p.path, 'toc.yaml')
+            file_path = os.path.join(self.path, p.path, 'toc.yaml')
             p.toc_yaml = load_yaml_object(file_path)
         return p.toc_yaml
 
@@ -428,6 +434,7 @@ class Resource:
             elif 'target_language' in self.rc.manifest and self.rc.manifest['target_language']:
                 self._language = Language(self.rc, self.rc.manifest['target_language'])
             else:
+                # Always assume English by default
                 self._language = Language(self.rc, {
                     'identifier': 'en',
                     'title': 'English',
@@ -527,17 +534,18 @@ class Language:
 
 
 class Project:
-    def __init__(self, rc, project):
+    def __init__(self, rc, project=None):
         """
         :param RC rc: 
         :param dict project: 
         """
         self.rc = rc
         self.project = project
+        if not self.project:
+            self.project = {}
+
         if not isinstance(self.rc, RC):
             raise Exception('Missing RC parameter: rc')
-        if not isinstance(self.project, dict):
-            raise Exception('Missing dict parameter: project')
         self.config_yaml = None
         self.toc_yaml = None
 
@@ -558,10 +566,10 @@ class Project:
             return self.project['title']
         elif 'name'in self.project and self.project['name']:
             return self.project['name']
-        elif os.path.isfile(os.path.join(self.rc.path, self.path, 'title.txt')):
+        elif self.rc.path and os.path.isfile(os.path.join(self.rc.path, self.path, 'title.txt')):
             self.project['title'] = read_file(os.path.join(self.rc.path, self.path, 'title.txt'))
             return self.project['title']
-        elif os.path.isfile(os.path.join(self.rc.path, 'title.txt')):
+        elif self.rc.path and os.path.isfile(os.path.join(self.rc.path, 'title.txt')):
             self.project['title'] = read_file(os.path.join(self.rc.path, 'title.txt'))
             return self.project['title']
         else:
@@ -571,7 +579,7 @@ class Project:
     def path(self):
         if 'path' in self.project and self.project['path']:
             return self.project['path']
-        elif os.path.isdir(os.path.join(self.rc.dir, './content')):
+        elif self.rc.path and os.path.isdir(os.path.join(self.rc.path, './content')):
                 return './content'
         else:
             return './'
@@ -614,7 +622,7 @@ class Project:
         }
 
 
-def manifest_from_repo_name(repo_name):
+def get_manifest_from_repo_name(repo_name):
     manifest = {
         'dublin_core': {},
     }

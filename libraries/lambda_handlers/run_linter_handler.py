@@ -22,7 +22,7 @@ class RunLinterHandler(Handler):
         args = {
             'source_zip_url': self.retrieve(data, 'source_url', 'payload'),
             'commit_data': self.retrieve(data, 'commit_data', 'payload', required=False),
-            'rc': RC(manifest=self.retrieve(data, 'rc', 'payload', required=False)),
+            'resource_id': self.retrieve(data, 'resource_id', 'payload', required=False),
             'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
             'messaging_name': self.retrieve(data, 'linter_messaging_name', 'payload', required=False, default=None),
             'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None)

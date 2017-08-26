@@ -44,7 +44,8 @@ class TestConversions(TestCase):
         set TEST_DEPLOYED to "test_deployed"
         set GOGS_USER_TOKEN to tx-manager user token
 
-    Integration test will run on dev unless TRAVIS_BRANCH is set to 'master' (then will run on prod)
+    Integration test will run on dev unless TRAVIS_BRANCH is set to 'master' (then will run on prod),
+    or set to 'test' and will run on the test environment
     """
 
     def setUp(self):
@@ -53,6 +54,8 @@ class TestConversions(TestCase):
         destination = "dev-"  # default
         if branch == "master":
             destination = ""  # no prefix for production
+        if branch == "test":
+            destination = "test-" # For running on test
 
         self.destination = destination
         self.api_url = 'https://{0}api.door43.org'.format(destination)

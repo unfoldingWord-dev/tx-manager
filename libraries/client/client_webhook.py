@@ -473,7 +473,11 @@ class ClientWebhook(object):
         return identifier, job
 
     def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
-        job_data = {'job_id': job.job_id, 'commit_data': self.commit_data, 'rc': rc.as_dict(), }
+        job_data = {
+            'job_id': job.job_id,
+            'resource_id': rc.resource.identifier,
+            'commit_data': self.commit_data,
+        }
         if extra_data:
             for k in extra_data:
                 job_data[k] = extra_data[k]
