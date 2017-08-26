@@ -55,7 +55,7 @@ class TestConversions(TestCase):
         if branch == "master":
             destination = ""  # no prefix for production
         if branch == "test":
-            destination = "test-" # For running on test
+            destination = "test-"  # For running on test
 
         self.destination = destination
         self.api_url = 'https://{0}api.door43.org'.format(destination)
@@ -199,7 +199,7 @@ class TestConversions(TestCase):
         self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
                                  expected_output_names, job)
 
-    @unittest.skip("Skip test for time reasons - leave for standalone testing")
+    # @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_short_bundle_conversion(self):
         # given
         if not self.is_testing_enabled(): return  # skip test if integration test not enabled
