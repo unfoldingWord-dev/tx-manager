@@ -18,6 +18,8 @@ class ObsLinter(MarkdownLinter):
         """
         # chapter check
         project_dir = os.path.join(self.source_dir, self.rc.project().path)
+        if not os.path.isdir(project_dir):
+            project_dir = self.source_dir
         for chapter in range(1, 51):
             chapter_number = str(chapter).zfill(2)
             filename = os.path.join(project_dir, chapter_number + '.md')
@@ -68,4 +70,3 @@ class ObsLinter(MarkdownLinter):
                     self.log.warning('Story {0} matter is not translated!'.format(book_end) )
 
         return super(ObsLinter, self).lint()  # Runs the markdown linter
-
