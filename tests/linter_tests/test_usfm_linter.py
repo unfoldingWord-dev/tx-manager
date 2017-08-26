@@ -4,6 +4,8 @@ import os
 import tempfile
 import shutil
 import time
+import unittest
+
 from libraries.general_tools import file_utils
 from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.usfm_linter import UsfmLinter
