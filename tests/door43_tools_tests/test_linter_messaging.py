@@ -14,6 +14,7 @@ class TestLinterMessaging(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
+        self.callbacks = 0
         try:
             sqs = boto3.resource('sqs')
             queue = sqs.create_queue(QueueName=TestLinterMessaging.queue_name, Attributes={'DelaySeconds': '5'})
@@ -66,6 +67,36 @@ class TestLinterMessaging(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(success2)
 
+    def test_messagingCallbackFIFO(self):
+        # given
+        q = LinterMessaging(TestLinterMessaging.queue_name)
+        files_to_lint = self.generate_file_list("http://door43.org/repos/9967", 10)
+        files_to_lint2 = self.generate_file_list("http://door43.org/repos/1122", 15)
+        q.clear_lint_jobs(files_to_lint + files_to_lint2, 2)
+
+        start = time.time()
+        self.notify_lint_jobs_complete(q, files_to_lint, True)
+        self.notify_lint_jobs_complete(q, files_to_lint2, False)
+        elapsed_seconds = int(time.time() - start)
+        print("Sending time was " + str(elapsed_seconds) + " seconds")
+
+        def process_callback(x, this):
+            this.callbacks += 1
+            source_url = LinterMessaging.get_source_url_from_data(x)
+            print("{0} - Source '{1}'=".format(this.callbacks, source_url))
+            print(x)
+
+        callback = (lambda x: process_callback(x, self))
+
+        # when
+        success = self.process_lint_jobs(callback, q, files_to_lint)
+        success2 = self.process_lint_jobs(callback, q, files_to_lint2)
+
+        # then
+        self.assertTrue(success)
+        self.assertTrue(success2)
+        self.assertEquals(self.callbacks, len(files_to_lint) + len(files_to_lint2))
+
     #
     # helpers
     #
@@ -74,6 +105,14 @@ class TestLinterMessaging(unittest.TestCase):
         for source_url in files_to_lint:
             # simulate job completion
             queue.notify_lint_job_complete(source_url, success)
+
+    def process_lint_jobs(self, callback, queue, files_to_lint, timeout=10):
+        start = time.time()
+        success = queue.process_lint_jobs(callback, files_to_lint, timeout=timeout, visibility_timeout=2)
+        elapsed_seconds = int(time.time() - start)
+        print("Waiting time was " + str(elapsed_seconds) + " seconds")
+        print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
+        return success
 
     def wait_for_lint_jobs(self, queue, files_to_lint, timeout=10):
         start = time.time()
@@ -86,4 +125,3 @@ class TestLinterMessaging(unittest.TestCase):
     def generate_file_list(self, source_url, count):
         files_to_lint = ["{0}?file_{1}.usfm".format(source_url, l) for l in range(1, count+1)]
         return files_to_lint
-

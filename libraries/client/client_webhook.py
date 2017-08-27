@@ -203,6 +203,7 @@ class ClientWebhook(object):
         errors = []
         build_logs = []
         jobs = []
+        job = None
 
         master_identifier = self.create_new_identifier(repo_owner, repo_name, commit_id)
         master_s3_commit_key = 'u/{0}'.format(master_identifier)
@@ -269,15 +270,19 @@ class ClientWebhook(object):
         # Upload build_log.json to S3 before waiting for linters to complete:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
-        # get linter results
-        success = linter_queue.wait_for_lint_jobs(source_urls, 180)  # wait up to 3 minutes
-        if not success:
-            for source_url in linter_queue.get_unfinished_jobs():
-                build_logs_json['errors'].append("Linter didn't complete for file: " + source_url)
+        callback = (lambda x: self.update_job_with_linter_data(build_logs, build_logs_json, x, linter_queue))
 
-        finished_lint_jobs = linter_queue.get_finished_jobs()
-        for source in finished_lint_jobs:
-            self.update_job_with_linter_data(build_logs, build_logs_json, source, linter_queue)
+        # process results of each linter when finished by calling callback
+        success = linter_queue.process_lint_jobs(callback, source_urls, 180)  # wait up to 3 minutes
+        if not success:
+            for source_url in linter_queue.get_unfinished_Lint_jobs():
+                msg = "Linter didn't complete for file: " + source_url
+                build_logs_json['errors'].append(msg)
+                self.logger.error(msg)
+                if job:
+                    job.errors.append(msg)
+            if job:
+                job.update('errors')
 
         # Upload build_log.json to S3 again:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
@@ -291,43 +296,36 @@ class ClientWebhook(object):
         else:
             return build_logs_json
 
-    def update_job_with_linter_data(self, build_logs, build_logs_json, source, linter_queue):
-        lint_data = linter_queue.get_job_data(source)
+    def update_job_with_linter_data(self, build_logs, build_logs_json, lint_data, linter_queue):
+        source = LinterMessaging.get_source_url_from_data(lint_data)
 
         # get job_id for source
         job_id = None
-        for blog in build_logs:
-            if blog['source'] == source:
-                job_id = blog['job_id']
+        for build_log in build_logs:
+            if build_log['source'] == source:
+                job_id = build_log['job_id']
                 break
 
         if not job_id:
-            self.logger.debug("Cannot find job id for {0}".format(source))
+            self.logger.error("Cannot find job id for {0}".format(source))
         else:
-
             # get job record to update
             job = TxJob(job_id, db_handler=self.job_db_handler)
-            if not lint_data:
-                msg = "Cannot read linter data for source: " + source
-                build_logs_json['errors'].append(msg)
-                job.errors.append(msg)
-                job.update('errors')
 
+            if ('success' not in lint_data) or not lint_data['success']:
+                msg = "Linter failed for source: " + source
+                build_logs_json['warnings'].append(msg)
+                job.warnings.append(msg)
             else:
-                if ('success' not in lint_data) or not lint_data['success']:
-                    msg = "Linter failed for source: " + source
-                    build_logs_json['warnings'].append(msg)
-                    job.warnings.append(msg)
-                else:
-                    self.logger.debug("Linter {0} results:\n{1}".format(source, str(lint_data)))
+                self.logger.debug("Linter {0} results:\n{1}".format(source, str(lint_data)))
 
-                if 'warnings' in lint_data:
-                    self.logger.debug("Linter {0} Warnings:\n{1}".format(source, '\n'.join(lint_data['warnings'])))
-                    build_logs_json['warnings'] += lint_data['warnings']
-                    job.warnings += lint_data['warnings']
+            if 'warnings' in lint_data:
+                self.logger.debug("Linter {0} Warnings:\n{1}".format(source, '\n'.join(lint_data['warnings'])))
+                build_logs_json['warnings'] += lint_data['warnings']
+                job.warnings += lint_data['warnings']
 
-                if len(job.warnings):
-                    job.update('warnings')
+            if len(job.warnings):
+                job.update('warnings')
 
     def clear_out_any_old_messages(self, linter_queue, book_count, books, file_key):
         source_urls = []
