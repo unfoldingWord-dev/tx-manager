@@ -4,9 +4,13 @@ import os
 import tempfile
 import shutil
 import time
+import unittest
+
+from libraries.general_tools import file_utils
 from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.usfm_linter import UsfmLinter
 from libraries.general_tools.file_utils import write_file, read_file, unzip
+from libraries.resource_container.ResourceContainer import RC
 
 
 class TestUsfmLinter(LinterTestCase):
@@ -445,16 +449,41 @@ class TestUsfmLinter(LinterTestCase):
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
-    # rhm: commented out because it takes a good deal of time to run such a test, and no coverage benefits
-    # def test_EnUlbValid(self):
-    #     out_dir = self.unzip_resource('en_ulb.zip')
-    #     expected_warnings = 0
-    #     start = time.time()
-    #     linter = UsfmLinter(source_dir=out_dir)
-    #     linter.run()
-    #     elapsed_seconds = int(time.time() - start)
-    #     print("Checking time was " + str(elapsed_seconds) + " seconds")
-    #     self.verify_results_counts(expected_warnings, linter)
+    @unittest.skip("Skip test for time reasons - leave for standalone testing")
+    def test_EnUlbValid(self):
+        out_dir = self.unzip_resource('en_ulb.zip')
+        expected_warnings = 0
+        start = time.time()
+        rc = RC(out_dir)
+        linter = UsfmLinter(source_dir=out_dir, rc=rc)
+        linter.run()
+        elapsed_seconds = int(time.time() - start)
+        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        self.verify_results_counts(expected_warnings, linter)
+
+    def test_EnUlbValidSubset(self):
+        check_files = ['19-PSA.usfm','22-SNG.usfm','24-JER.usfm','25-LAM.usfm','35-HAB.usfm']
+        out_dir = self.unzip_resource_only('en_ulb.zip', check_files)
+        expected_warnings = 0
+        start = time.time()
+        rc = RC(out_dir)
+        linter = UsfmLinter(source_dir=out_dir, rc=rc)
+        linter.run()
+        elapsed_seconds = int(time.time() - start)
+        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        self.verify_results_counts(expected_warnings, linter)
+
+    def test_EnUlbValidConvertSingle(self):
+        out_dir = self.unzip_resource('en_ulb.zip')
+        expected_warnings = 0
+        start = time.time()
+        rc = RC(out_dir)
+        convert_only = '51-PHP.usfm'
+        linter = UsfmLinter(source_dir=out_dir, rc=rc, single_file=convert_only)
+        linter.run()
+        elapsed_seconds = int(time.time() - start)
+        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        self.verify_results_counts(expected_warnings, linter)
 
     #
     # helpers
@@ -464,6 +493,15 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir)
         linter.run()
         return linter
+
+    def unzip_resource_only(self, zip_name, test_only):
+        unpack_folder = self.unzip_resource(zip_name)
+        out_dir = os.path.join(self.temp_dir, 'test_folder')
+        file_utils.make_dir(out_dir)
+        for f in test_only:
+            shutil.copy(os.path.join(unpack_folder, f), out_dir)
+        shutil.rmtree(unpack_folder, ignore_errors=True)
+        return out_dir
 
     def append_text(self, out_dir, file_name, append):
         book_path = os.path.join(out_dir, file_name)

@@ -70,6 +70,18 @@ Run the test suite:
 
     python test-setup.py test
 
+Optionally to do Integration tests on 'test' site, first deploy tx-manager to test:
+
+.. highlight:: bash
+
+    apex deploy -p test -e test
+
+Now you can run the integration test(s) (see run_integration_tests for setup steps and help):
+
+.. highlight:: bash
+
+    ./scripts/run_integration_tests.sh test_ts_mat_conversion
+
 
 tX Pipeline
 ===========

@@ -12,6 +12,7 @@ class UsfmLinter(Linter):
     def __init__(self, *args, **kwargs):
         super(UsfmLinter, self).__init__(*args, **kwargs)
         self.found_books = []
+        self.single_file = None if 'single_file' not in kwargs else kwargs['single_file']
 
     def lint(self):
         """
@@ -32,6 +33,10 @@ class UsfmLinter(Linter):
                 if os.path.splitext(f)[1].lower() != '.usfm':  # only usfm files
                     continue
 
+                if self.single_file and (f != self.single_file):
+                    continue
+
+                self.logger.debug("converting: " + f)
                 file_path = os.path.join(root, f)
                 sub_path = '.' + file_path[len(self.source_dir):]
                 self.parse_file(file_path, sub_path, f)
@@ -46,8 +51,8 @@ class UsfmLinter(Linter):
         book_code, book_full_name = self.get_book_ids(file_name)
 
         try:
-            with codecs.open(file_path, 'r', 'utf-8') as in_file:
-                book_text = in_file.read()
+            f = open(file_path, 'U')  # U handles line endings
+            book_text = f.read().decode('utf-8-sig').lstrip()
 
             self.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
 

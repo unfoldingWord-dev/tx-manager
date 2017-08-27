@@ -23,6 +23,7 @@ class TestClientWebhookHandler(TestCase):
                 'gogs_user_token': 'token1',
                 'manifest_table_name': 'tx-manifest',
                 'job_table_name': 'tx-job',
+                'linter_messaging_name': 'dummy-linter-messaging'
             }
         }
         handler = ClientWebhookHandler()

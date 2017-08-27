@@ -21,3 +21,9 @@ class TestLinter(LinterTestCase):
         result = linter.run()
         self.assertEqual(len(result['warnings']), 1)
         self.assertEqual(result['warnings'][0], 'warning')
+
+    def test_runException(self):
+        linter = MyLinter(source_zip_url='#broken')
+        result = linter.run()
+        self.assertFalse(result['success'])
+        self.assertEqual(len(result['warnings']), 1)

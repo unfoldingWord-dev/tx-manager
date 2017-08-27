@@ -50,6 +50,9 @@ class Converter(object):
         remove_tree(self.output_dir)
         remove(self.output_zip_file)
 
+    def __del__(self):
+        self.close()
+
     @abstractmethod
     def convert(self):
         """

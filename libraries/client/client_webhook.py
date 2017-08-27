@@ -7,6 +7,7 @@ import requests
 import logging
 import json
 from datetime import datetime
+from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import unzip, write_file, add_contents_to_zip, remove_tree
 from libraries.general_tools.url_utils import download_file
 from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TYPES
@@ -23,7 +24,8 @@ class ClientWebhook(object):
     JOB_TABLE_NAME = 'tx-job'
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
-                 gogs_url=None, gogs_user_token=None, manifest_table_name=None, job_table_name=None, prefix=''):
+                 gogs_url=None, gogs_user_token=None, manifest_table_name=None, job_table_name=None, prefix='',
+                 linter_messaging_name=None):
         """
         :param dict commit_data:
         :param string api_url:
@@ -41,6 +43,7 @@ class ClientWebhook(object):
         self.manifest_table_name = manifest_table_name
         self.job_table_name = job_table_name
         self.prefix = prefix
+        self.linter_messaging_name = linter_messaging_name
         self.logger = logging.getLogger()
 
         if self.pre_convert_bucket:
@@ -207,18 +210,27 @@ class ClientWebhook(object):
 
         book_count = len(books)
         last_job_id = '0'
+
+        linter_queue = LinterMessaging(self.linter_messaging_name)
+        source_urls = self.clear_out_any_old_messages(linter_queue, book_count, books, file_key)
+        linter_payload = {
+            'linter_messaging_name': self.linter_messaging_name
+        }
+
         for i in range(0, book_count):
             book = books[i]
             part_id = '{0}_of_{1}'.format(i, book_count)
 
-            # 3) Zip up the massaged files for just the one book
-
             self.logger.debug('Adding job for {0} part {1}'.format(book, part_id))
 
             # Send job request to tx-manager
-            source_url = self.build_multipart_source(file_key, book)
-            identifier, job = self.send_job_request_to_tx_manager(commit_id, source_url, rc, repo_name, repo_owner,
+            file_key_multi = self.build_multipart_source(file_key, book)
+            identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key_multi, rc, repo_name, repo_owner,
                                                                   count=book_count, part=i, book=book)
+
+            # Send lint request to tx-manager
+            linter_payload['single_file'] = book
+            self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload, async=True)
 
             jobs.append(job)
             last_job_id = job.job_id
@@ -254,19 +266,23 @@ class ClientWebhook(object):
         build_logs_json['errors'] = errors
         build_logs_json['warnings'] = warnings
 
-        # Upload build_log.json to S3:
+        # Upload build_log.json to S3 before waiting for linters to complete:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
-        # Send lint request
-        job = TxJob(last_job_id, db_handler=self.job_db_handler)
-        lint_results = self.send_lint_request_to_run_linter(job, rc, source_url)
-        job = TxJob(last_job_id, db_handler=self.job_db_handler)  # Load again in case changed elsewhere
-        if lint_results['success']:
-            job.warnings += lint_results['warnings']
-            job.update('warnings')
-            # Upload build_log.json to S3 again:
-            build_logs_json['warnings'] += lint_results['warnings']
-            self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+        # get linter results
+        success = linter_queue.wait_for_lint_jobs(source_urls, 180)  # wait up to 3 minutes
+        if not success:
+            for source_url in linter_queue.get_unfinished_jobs():
+                build_logs_json['errors'].append("Linter didn't complete for file: " + source_url)
+
+        finished_lint_jobs = linter_queue.get_finished_jobs()
+        for source in finished_lint_jobs:
+            self.update_job_with_linter_data(build_logs, build_logs_json, source, linter_queue)
+
+        # Upload build_log.json to S3 again:
+        self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
+
+        self.logger.debug("Final json: " + str(build_logs_json))
 
         remove_tree(self.base_temp_dir)  # cleanup
 
@@ -274,6 +290,54 @@ class ClientWebhook(object):
             raise Exception('; '.join(errors))
         else:
             return build_logs_json
+
+    def update_job_with_linter_data(self, build_logs, build_logs_json, source, linter_queue):
+        lint_data = linter_queue.get_job_data(source)
+
+        # get job_id for source
+        job_id = None
+        for blog in build_logs:
+            if blog['source'] == source:
+                job_id = blog['job_id']
+                break
+
+        if not job_id:
+            self.logger.debug("Cannot find job id for {0}".format(source))
+        else:
+
+            # get job record to update
+            job = TxJob(job_id, db_handler=self.job_db_handler)
+            if not lint_data:
+                msg = "Cannot read linter data for source: " + source
+                build_logs_json['errors'].append(msg)
+                job.errors.append(msg)
+                job.update('errors')
+
+            else:
+                if ('success' not in lint_data) or not lint_data['success']:
+                    msg = "Linter failed for source: " + source
+                    build_logs_json['warnings'].append(msg)
+                    job.warnings.append(msg)
+                else:
+                    self.logger.debug("Linter {0} results:\n{1}".format(source, str(lint_data)))
+
+                if 'warnings' in lint_data:
+                    self.logger.debug("Linter {0} Warnings:\n{1}".format(source, '\n'.join(lint_data['warnings'])))
+                    build_logs_json['warnings'] += lint_data['warnings']
+                    job.warnings += lint_data['warnings']
+
+                if len(job.warnings):
+                    job.update('warnings')
+
+    def clear_out_any_old_messages(self, linter_queue, book_count, books, file_key):
+        source_urls = []
+        for i in range(0, book_count):
+            book = books[i]
+            file_key_multi = self.build_multipart_source(file_key, book)
+            source_url = self.source_url_base + "/" + file_key_multi
+            source_urls.append(source_url)
+        linter_queue.clear_lint_jobs(source_urls, 2)
+        return source_urls
 
     def build_multipart_source(self, file_key, book):
         params = urllib.urlencode({'convert_only': book})
@@ -437,30 +501,38 @@ class ClientWebhook(object):
                 job.populate(json_data['job'])
         return identifier, job
 
-    def send_lint_request_to_run_linter(self, job, rc, commit_url):
+    def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
+        job_data = {
+            'job_id': job.job_id,
+            'resource_id': rc.resource.identifier,
+            'commit_data': self.commit_data,
+        }
+        if extra_data:
+            for k in extra_data:
+                job_data[k] = extra_data[k]
         payload = {
-            'data': {
-                'job_id': job.job_id,
-                'resource_id': rc.resource.identifier,
-                'commit_data': self.commit_data,
-            },
+            'data': job_data,
             'vars': {
                 'prefix': self.prefix,
             }
         }
+
         if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
             payload['data']['source_url'] = job.source
         else:
             payload['data']['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
-        return self.send_payload_to_run_linter(payload)
+        return self.send_payload_to_run_linter(payload, async=async)
 
-    def send_payload_to_run_linter(self, payload):
+    def send_payload_to_run_linter(self, payload, async=False):
         self.logger.debug('Making request linter lambda with payload:')
         self.logger.debug(payload)
-        response = self.lambda_handler.invoke(function_name=self.run_linter_function, payload=payload)
+        response = self.lambda_handler.invoke(function_name=self.run_linter_function, payload=payload, async=async)
         self.logger.debug('finished.')
         if 'Payload' in response:
+            if async:
+                results = {'success': True, 'status': 'queued'}
+                return results
             return json.loads(response['Payload'].read())
         else:
             return {'success': False, 'warnings': []}

@@ -47,6 +47,9 @@ class Linter(object):
         """delete temp files"""
         remove_tree(self.temp_dir)
 
+    def __del__(self):
+        self.close()
+
     @abstractmethod
     def lint(self):
         """
@@ -64,24 +67,29 @@ class Linter(object):
         try:
             # Download file if a source_zip_url was given
             if self.source_zip_url:
+                self.logger.debug("Linting url: " + self.source_zip_url)
                 self.download_archive()
             # unzip the input archive if a source_zip_file exists
             if self.source_zip_file:
+                self.logger.debug("Linting zip: " + self.source_zip_file)
                 self.unzip_archive()
             # lint files
             if self.source_dir:
                 self.rc = RC(directory=self.source_dir)
-                self.logger.debug("Linting files...")
+                self.logger.debug("Linting '{0}' files...".format(self.source_dir))
                 success = self.lint()
                 self.logger.debug("...finished.")
         except Exception as e:
-            self.logger.error('Linting process ended abnormally: {0}'.format(e.message))
+            message = 'Linting process ended abnormally: {0}'.format(e.message)
+            self.logger.error(message)
+            self.log.warnings.append(message)
             self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             success = False
         result = {
             'success': success,
             'warnings': self.log.warnings,
         }
+        self.logger.debug("Linter results: " + str(result))
         return result
 
     def download_archive(self):
