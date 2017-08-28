@@ -20,7 +20,7 @@ class LinterMessaging(MessagingService):
                                 max_messages_per_call=max_jobs_per_call)
 
     def wait_for_lint_jobs(self, source_urls, callback=None, timeout=120, visibility_timeout=5, checking_interval=1,
-                           max_jobs_per_call=30):
+                           max_jobs_per_call=10):
         """
         waits for up to timeout seconds for all lint jobs to complete.  When this finishes call get_finished_jobs()
             to get the received messages as a dict

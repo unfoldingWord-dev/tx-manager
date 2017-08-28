@@ -38,7 +38,7 @@ class MessagingService(object):
         self.queue.send_message(MessageBody=data_json)
         return True
 
-    def clear_old_messages(self, items_to_look_for, timeout=5, checking_interval=1, max_messages_per_call=30):
+    def clear_old_messages(self, items_to_look_for, timeout=5, checking_interval=1, max_messages_per_call=10):
         """
         for safety's sake make sure there aren't leftover messages with same key
         :param items_to_look_for:  list of items referenced by key
