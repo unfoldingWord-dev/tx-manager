@@ -273,7 +273,8 @@ class ClientWebhook(object):
         callback = (lambda x: self.update_job_with_linter_data(build_logs, build_logs_json, x, linter_queue))
 
         # process results of each linter when finished by calling callback
-        success = linter_queue.process_lint_jobs(callback, source_urls, 180)  # wait up to 3 minutes
+        success = linter_queue.wait_for_lint_jobs(source_urls, callback=callback, checking_interval=1,
+                                                  timeout=180)  # wait up to 3 minutes
         if not success:
             for source_url in linter_queue.get_unfinished_Lint_jobs():
                 msg = "Linter didn't complete for file: " + source_url
@@ -334,7 +335,7 @@ class ClientWebhook(object):
             file_key_multi = self.build_multipart_source(file_key, book)
             source_url = self.source_url_base + "/" + file_key_multi
             source_urls.append(source_url)
-        linter_queue.clear_lint_jobs(source_urls, 2)
+        linter_queue.clear_old_lint_jobs(source_urls, 2)
         return source_urls
 
     def build_multipart_source(self, file_key, book):

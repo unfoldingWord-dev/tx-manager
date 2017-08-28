@@ -7,37 +7,35 @@ class LinterMessaging(MessagingService):
     def __init__(self, queue_name="linter_complete", region="us-west-2"):
         super(LinterMessaging, self).__init__(queue_name, region)
 
-    def clear_lint_jobs(self, source_urls, timeout=2):
+    def clear_old_lint_jobs(self, source_urls, timeout=2, checking_interval=0.5, max_messages_per_call=30):
         """
         for safety's sake make sure there aren't leftover messages from a previous conversion
         :param source_urls: list of lint jobs referenced by the source
         :param timeout: maximum seconds to wait
+        :param checking_interval: seconds to wait between checking for finished jobs (can be fractional).  AWS charges
+                    each time we check, so we don't want to be checking many times a second.
+        :param max_messages_per_call: maximum number of lint jobs to return with each check for messages
         """
-        self.wait_for_lint_jobs(source_urls, timeout)
+        self.clear_old_messages(source_urls, timeout=timeout, checking_interval=checking_interval,
+                                max_messages_per_call=max_messages_per_call)
 
-    def wait_for_lint_jobs(self, source_urls, timeout=120, visibility_timeout=5):
+    def wait_for_lint_jobs(self, source_urls, callback=None, timeout=120, visibility_timeout=5, checking_interval=1,
+                           max_messages_per_call=30):
         """
         waits for up to timeout seconds for all lint jobs to complete.  When this finishes call get_finished_jobs()
             to get the received messages as a dict
         :param source_urls: list of lint jobs referenced by the source
+        :param callback: optional function to call back as each lint job completes
         :param timeout: maximum seconds to wait
         :param visibility_timeout: how long messages are hidden from other listeners
+        :param checking_interval: seconds to wait between checking for finished jobs (can be fractional).  AWS charges
+                    each time we check, so we don't want to be checking many times a second.
+        :param max_messages_per_call: maximum number of lint jobs to return with each check for messages
         :return: success if all messages found
         """
-        return self.wait_for_messages(source_urls, timeout=timeout, visibility_timeout=visibility_timeout)
-
-    def process_lint_jobs(self, callback, source_urls, timeout=120, visibility_timeout=5):
-        """
-        waits for up to timeout seconds for all sources in source_urls.  Each time a lint job finishes, func is
-            called with received data.  When this finishes call get_finished_jobs() to get the received lint data
-            as a dict
-        :param callback: function to call back
-        :param source_urls: list of lint jobs referenced by the source
-        :param timeout: maximum seconds to wait
-        :param visibility_timeout: how long messages are hidden from other listeners
-        :return: success if all messages found
-        """
-        return self.process_messages(callback, source_urls, timeout=timeout, visibility_timeout=visibility_timeout)
+        return self.wait_for_messages(source_urls, callback=callback, timeout=timeout,
+                                      visibility_timeout=visibility_timeout, checking_interval=checking_interval,
+                                      max_messages_per_call=max_messages_per_call)
 
     def get_job_data(self, source):
         """

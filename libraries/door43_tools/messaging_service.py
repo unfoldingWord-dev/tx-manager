@@ -38,16 +38,31 @@ class MessagingService(object):
         self.queue.send_message(MessageBody=data_json)
         return True
 
-    def clear_old_messages(self, items_to_look_for, timeout=5):
-        self.wait_for_messages(items_to_look_for, timeout)
+    def clear_old_messages(self, items_to_look_for, timeout=5, checking_interval=1, max_messages_per_call=30):
+        """
+        for safety's sake make sure there aren't leftover messages with same key
+        :param items_to_look_for:  list of items referenced by key
+        :param timeout: maximum seconds to wait
+        :param checking_interval: seconds to wait between checking for messages (can be fractional).  AWS charges each
+                    time we check, so we don't want to be checking many times a second.
+        :param max_messages_per_call: maximum number of messages to return with each check for messages
+        :return:
+        """
+        self.wait_for_messages(items_to_look_for, timeout=timeout, checking_interval=checking_interval,
+                               max_messages_per_call=max_messages_per_call)
 
-    def wait_for_messages(self, items_to_watch_for, timeout=120, visibility_timeout=5):
+    def wait_for_messages(self, items_to_watch_for, callback=None, timeout=120, visibility_timeout=5,
+                          checking_interval=1, max_messages_per_call=30):
         """
         waits for up to timeout seconds for all keys in items_to_watch_for.  When this finishes call get_finished_jobs()
             to get the received messages as a dict
         :param items_to_watch_for: list of items referenced by key
+        :param callback: optional function to call back as each message is received
         :param timeout: maximum seconds to wait
         :param visibility_timeout: how long messages are hidden from other listeners
+        :param checking_interval: seconds to wait between checking for messages (can be fractional).  AWS charges each
+                    time we check, so we don't want to be checking many times a second.
+        :param max_messages_per_call: maximum number of messages to return with each check for messages
         :return: success if all messages found
         """
         self.last_wait_list = items_to_watch_for
@@ -56,8 +71,11 @@ class MessagingService(object):
 
         start = time.time()
         self.recvd_payloads = {}
-        while (len(self.recvd_payloads) < len(items_to_watch_for)) and (int(time.time() - start) < timeout):
-            for message in self.queue.receive_messages(MaxNumberOfMessages=10, VisibilityTimeout=visibility_timeout):
+        timed_out = False
+        while (len(self.recvd_payloads) < len(items_to_watch_for)) and not timed_out:
+            messages = self.queue.receive_messages(MaxNumberOfMessages=max_messages_per_call,
+                                                   VisibilityTimeout=visibility_timeout)
+            for message in messages:
                 if message.body:
                     recvd = json.loads(message.body, encoding="UTF-8")
                     item_key = MessagingService.get_key_from_data(recvd)
@@ -65,36 +83,13 @@ class MessagingService(object):
                                                         # from queue
                         message.delete()
                         self.recvd_payloads[item_key] = recvd
+                        if callback:
+                            callback(recvd)  # callback with received data
 
-        success = len(self.recvd_payloads) >= len(items_to_watch_for)
-        return success
-
-    def process_messages(self, callback, items_to_watch_for, timeout=120, visibility_timeout=5):
-        """
-        waits for up to timeout seconds for all keys in items_to_watch_for.  Each time an item is received, func is
-            called with received data.  When this finishes call get_finished_jobs() to get the received messages
-            as a dict
-        :param callback: function to call back
-        :param items_to_watch_for: list of items referenced by key
-        :param timeout: maximum seconds to wait
-        :param visibility_timeout: how long messages are hidden from other listeners
-        :return: success if all messages found
-        """
-        if not self.get_connection():
-            return False
-
-        start = time.time()
-        self.recvd_payloads = {}
-        while (len(self.recvd_payloads) < len(items_to_watch_for)) and (int(time.time() - start) < timeout):
-            for message in self.queue.receive_messages(MaxNumberOfMessages=10, VisibilityTimeout=visibility_timeout):
-                if message.body:
-                    recvd = json.loads(message.body, encoding="UTF-8")
-                    item_key = MessagingService.get_key_from_data(recvd)
-                    if item_key in items_to_watch_for:  # if this matches what we were looking for, then remove it
-                        # from queue
-                        message.delete()
-                        self.recvd_payloads[item_key] = recvd
-                        callback(recvd)  # callback with received data
+            elapsed_time = (time.time() - start)
+            timed_out = elapsed_time >= timeout
+            if not timed_out and len(messages) == 0:  # if we got no messages, wait before trying again
+                time.sleep(checking_interval)
 
         success = len(self.recvd_payloads) >= len(items_to_watch_for)
         return success

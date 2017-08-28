@@ -30,7 +30,7 @@ class TestLinterMessaging(unittest.TestCase):
         q = LinterMessaging(TestLinterMessaging.queue_name)
         files_to_lint = self.generate_file_list("http://door43.org/repos/9967", 10)
         files_to_lint2 = self.generate_file_list("http://door43.org/repos/1122", 15)
-        q.clear_lint_jobs(files_to_lint + files_to_lint2, 2)
+        q.clear_old_lint_jobs(files_to_lint + files_to_lint2, 2)
 
         start = time.time()
         self.notify_lint_jobs_complete(q, files_to_lint2, False)
@@ -51,7 +51,7 @@ class TestLinterMessaging(unittest.TestCase):
         q = LinterMessaging(TestLinterMessaging.queue_name)
         files_to_lint = self.generate_file_list("http://door43.org/repos/9967", 10)
         files_to_lint2 = self.generate_file_list("http://door43.org/repos/1122", 15)
-        q.clear_lint_jobs(files_to_lint + files_to_lint2, 2)
+        q.clear_old_lint_jobs(files_to_lint + files_to_lint2, 2)
 
         start = time.time()
         self.notify_lint_jobs_complete(q, files_to_lint, True)
@@ -72,7 +72,7 @@ class TestLinterMessaging(unittest.TestCase):
         q = LinterMessaging(TestLinterMessaging.queue_name)
         files_to_lint = self.generate_file_list("http://door43.org/repos/9967", 10)
         files_to_lint2 = self.generate_file_list("http://door43.org/repos/1122", 15)
-        q.clear_lint_jobs(files_to_lint + files_to_lint2, 2)
+        q.clear_old_lint_jobs(files_to_lint + files_to_lint2, 2)
 
         start = time.time()
         self.notify_lint_jobs_complete(q, files_to_lint, True)
@@ -108,7 +108,8 @@ class TestLinterMessaging(unittest.TestCase):
 
     def process_lint_jobs(self, callback, queue, files_to_lint, timeout=10):
         start = time.time()
-        success = queue.process_lint_jobs(callback, files_to_lint, timeout=timeout, visibility_timeout=2)
+        success = queue.wait_for_lint_jobs(files_to_lint, callback=callback, timeout=timeout, visibility_timeout=2,
+                                           checking_interval=0.5, max_messages_per_call=10)
         elapsed_seconds = int(time.time() - start)
         print("Waiting time was " + str(elapsed_seconds) + " seconds")
         print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
@@ -116,7 +117,8 @@ class TestLinterMessaging(unittest.TestCase):
 
     def wait_for_lint_jobs(self, queue, files_to_lint, timeout=10):
         start = time.time()
-        success = queue.wait_for_lint_jobs(files_to_lint, timeout=timeout, visibility_timeout=2)
+        success = queue.wait_for_lint_jobs(files_to_lint, timeout=timeout, visibility_timeout=2,
+                                           checking_interval=0.5, max_messages_per_call=10)
         elapsed_seconds = int(time.time() - start)
         print("Waiting time was " + str(elapsed_seconds) + " seconds")
         print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
