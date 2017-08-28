@@ -45,14 +45,14 @@ class MessagingService(object):
         :param timeout: maximum seconds to wait
         :param checking_interval: seconds to wait between checking for messages (can be fractional).  AWS charges each
                     time we check, so we don't want to be checking many times a second.
-        :param max_messages_per_call: maximum number of messages to return with each check for messages
+        :param max_messages_per_call: maximum number of messages to return with each check for messages (max 10)
         :return:
         """
         self.wait_for_messages(items_to_look_for, timeout=timeout, checking_interval=checking_interval,
                                max_messages_per_call=max_messages_per_call)
 
     def wait_for_messages(self, items_to_watch_for, callback=None, timeout=120, visibility_timeout=5,
-                          checking_interval=1, max_messages_per_call=30):
+                          checking_interval=1, max_messages_per_call=10):
         """
         waits for up to timeout seconds for all keys in items_to_watch_for.  When this finishes call get_finished_jobs()
             to get the received messages as a dict
@@ -62,7 +62,7 @@ class MessagingService(object):
         :param visibility_timeout: how long messages are hidden from other listeners
         :param checking_interval: seconds to wait between checking for messages (can be fractional).  AWS charges each
                     time we check, so we don't want to be checking many times a second.
-        :param max_messages_per_call: maximum number of messages to return with each check for messages
+        :param max_messages_per_call: maximum number of messages to return with each check for messages (max 10)
         :return: success if all messages found
         """
         self.last_wait_list = items_to_watch_for

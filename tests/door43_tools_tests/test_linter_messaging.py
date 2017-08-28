@@ -109,7 +109,7 @@ class TestLinterMessaging(unittest.TestCase):
     def process_lint_jobs(self, callback, queue, files_to_lint, timeout=10):
         start = time.time()
         success = queue.wait_for_lint_jobs(files_to_lint, callback=callback, timeout=timeout, visibility_timeout=2,
-                                           checking_interval=0.5, max_messages_per_call=10)
+                                           checking_interval=0.5, max_jobs_per_call=10)
         elapsed_seconds = int(time.time() - start)
         print("Waiting time was " + str(elapsed_seconds) + " seconds")
         print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
@@ -118,7 +118,7 @@ class TestLinterMessaging(unittest.TestCase):
     def wait_for_lint_jobs(self, queue, files_to_lint, timeout=10):
         start = time.time()
         success = queue.wait_for_lint_jobs(files_to_lint, timeout=timeout, visibility_timeout=2,
-                                           checking_interval=0.5, max_messages_per_call=10)
+                                           checking_interval=0.5, max_jobs_per_call=10)
         elapsed_seconds = int(time.time() - start)
         print("Waiting time was " + str(elapsed_seconds) + " seconds")
         print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))

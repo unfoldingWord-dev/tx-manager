@@ -270,7 +270,7 @@ class ClientWebhook(object):
         # Upload build_log.json to S3 before waiting for linters to complete:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
 
-        callback = (lambda x: self.update_job_with_linter_data(build_logs, build_logs_json, x, linter_queue))
+        callback = (lambda lint_data: self.update_job_with_linter_data(build_logs, build_logs_json, lint_data, linter_queue))
 
         # process results of each linter when finished by calling callback
         success = linter_queue.wait_for_lint_jobs(source_urls, callback=callback, checking_interval=1,
