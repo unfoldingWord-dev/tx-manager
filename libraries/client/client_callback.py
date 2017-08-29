@@ -169,6 +169,12 @@ class ClientCallback(object):
             if ('message' in build_log_json) and (build_log_json['message'] is not None):
                 self.job.message = build_log_json['message']
 
+        # set overall status
+        if len(self.job.errors):
+            self.job.status = 'errors'
+        elif len(self.job.warnings):
+            self.job.status = 'warnings'
+
         # Now upload the merged build_log.json file, update it and upload it back to S3
         master_build_log_json['build_logs'] = build_logs_json  # add record of all the parts
         build_logs_json0 = build_logs_json[0]
