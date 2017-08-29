@@ -133,11 +133,12 @@ class ClientCallback(object):
 
     def merge_build_logs(self, s3_commit_key, count, prefix=''):
         master_build_log_json = self.get_build_log(s3_commit_key)
+        self.logger.debug('Initial build_log.json: ' + json.dumps(master_build_log_json))
         build_logs_json = []
         self.job.status = 'success'
-        self.job.log = []
-        self.job.warnings = []
-        self.job.errors = []
+        self.job.log = self.get_list_from_dict(master_build_log_json, 'log')
+        self.job.warnings = self.get_list_from_dict(master_build_log_json, 'warnings')
+        self.job.errors = self.get_list_from_dict(master_build_log_json, 'errors')
         for i in range(0, count):
             # self.logger.debug('Merging part {0}'.format(i))
 
@@ -178,6 +179,9 @@ class ClientCallback(object):
         master_build_log_json['resource_type'] = build_logs_json0['resource_type']
         build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key, prefix)
         return build_log_json
+
+    def get_list_from_dict(self, dict, key):
+        return dict[key] if key in dict else []
 
     def prefix_list(self, build_log_json, key, book):
         if key not in build_log_json:
