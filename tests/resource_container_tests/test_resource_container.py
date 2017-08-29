@@ -166,6 +166,12 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.conformsto, 'pre-rc')
         self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
         chapters = rc.projects[0].chapters()
+        idx = 1
+
+        for chapter in chapters:
+            self.assertEqual( chapter, idx )
+            idx += 1
+
         self.assertEqual(len(chapters), 151)
         chunks = rc.projects[0].chunks('01')
         self.assertEqual(len(chunks), 5)
@@ -179,6 +185,8 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(manifest['dublin_core']['language']['title'], 'Afaraf')
         self.assertEqual(manifest['dublin_core']['identifier'], 'bible')
         self.assertEqual(manifest['projects'][0]['identifier'], 'mat')
+
+    def test_en_psalms_chapter_order(self):
 
 if __name__ == '__main__':
     unittest.main()
