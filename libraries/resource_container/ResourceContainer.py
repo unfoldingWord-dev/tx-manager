@@ -240,8 +240,8 @@ class RC:
             return []
         else:
             chapters = []
-            g = glob(os.path.join(self.dir, p.path, '*')
-            for d in sorted(glob(os.path.join(self.dir, p.path, '*')),key=lambda path: '{:0>6}'.format(os.path.basename(path))):
+
+            for d in sorted(glob(os.path.join(self.dir, p.path, '*')),key=lambda path: os.path.basename(path)):
                 chapter = os.path.basename(d)
                 if os.path.isdir(d) and not chapter.startswith('.'):
                     if len(self.chunks(identifier, chapter)):
