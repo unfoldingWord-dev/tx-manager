@@ -109,7 +109,8 @@ class ClientCallback(object):
 
             # all parts are present
 
-            build_log_json = self.merge_build_logs(s3_commit_key, count, 'final_')
+            build_log_json = self.merge_build_logs(s3_commit_key, count, 'final_')  # update and write final_build_log.json
+            self.cdn_upload_contents(build_log_json, self.get_build_log_key(s3_commit_key))  # copy to build_log.json
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it

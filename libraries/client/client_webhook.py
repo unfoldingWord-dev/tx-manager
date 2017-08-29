@@ -308,7 +308,7 @@ class ClientWebhook(object):
             self.logger.debug("Linter {0} results:\n{1}".format(source, str(lint_data)))
 
         has_warnings = False
-        if 'warnings' in lint_data:
+        if 'warnings' in lint_data and len(lint_data['warnings']):
             self.logger.debug("Linter {0} Warnings:\n{1}".format(source, '\n'.join(lint_data['warnings'])))
             build_logs_json['warnings'] += lint_data['warnings']
             has_warnings = True
