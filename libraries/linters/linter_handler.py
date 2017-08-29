@@ -15,31 +15,29 @@ from libraries.resource_container.ResourceContainer import RC
 
 class LinterHandler:
     
-    def __init__(self, rc, **kwargs):
+    def __init__(self, resource_id, **kwargs):
         """
-        :param RC rc:
+        :param string resource_id:
         :param dict **kwargs: so we can pass other arguments and not throw an exception
         """
-        self.rc = rc
+        self.resource_id = resource_id
 
     def get_linter_class(self):
-        if self.rc.resource.identifier == 'obs':
+        if self.resource_id == 'obs':
             return ObsLinter
-        elif self.rc.resource.identifier == 'ta':
+        elif self.resource_id == 'ta':
             return TaLinter
-        elif self.rc.resource.identifier == 'tn':
+        elif self.resource_id == 'tn':
             return TnLinter
-        elif self.rc.resource.identifier == 'tq':
+        elif self.resource_id == 'tq':
             return TqLinter
-        elif self.rc.resource.identifier == 'tw':
+        elif self.resource_id == 'tw':
             return TwLinter
-        elif self.rc.resource.identifier == 'udb':
+        elif self.resource_id == 'udb':
             return UdbLinter
-        elif self.rc.resource.identifier == 'ulb':
+        elif self.resource_id == 'ulb':
             return UlbLinter
-        elif self.rc.resource.identifier in BIBLE_RESOURCE_TYPES or self.rc.resource.file_ext == 'usfm':
+        elif self.resource_id in BIBLE_RESOURCE_TYPES:
             return UsfmLinter
-        elif self.rc.resource.file_ext == 'md':
-            return MarkdownLinter
         else:
             return MarkdownLinter

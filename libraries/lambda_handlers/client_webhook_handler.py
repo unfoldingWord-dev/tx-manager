@@ -27,5 +27,6 @@ class ClientWebhookHandler(Handler):
             'manifest_table_name': self.retrieve(event['vars'], 'manifest_table_name', 'Environment Vars'),
             'job_table_name': self.retrieve(event['vars'], 'job_table_name', 'Environment Vars'),
             'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
+            'linter_messaging_name': self.retrieve(event['vars'], 'linter_messaging_name', 'Environment Vars'),
         }
         return ClientWebhook(**env_vars).process_webhook()
