@@ -43,7 +43,7 @@ class LinterMessaging(MessagingService):
         :param source:
         :return:
         """
-        if self.recvd_payloads:
+        if self.recvd_payloads and (source in self.recvd_payloads):
             lint_data = self.recvd_payloads[source]
             return lint_data
         return None

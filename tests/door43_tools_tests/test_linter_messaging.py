@@ -40,9 +40,24 @@ class TestLinterMessaging(unittest.TestCase):
 
         # when
         success = self.wait_for_lint_jobs(q, files_to_lint)
+        jobs1 = q.get_finished_lint_jobs()
         success2 = self.wait_for_lint_jobs(q, files_to_lint2)
+        jobs2 = q.get_finished_lint_jobs()
 
         # then
+        self.assertEquals(len(jobs1), len(files_to_lint))
+        self.assertEquals(len(jobs2), len(files_to_lint2))
+        unfinished_jobs = q.get_unfinished_Lint_jobs()
+        self.assertEquals(len(unfinished_jobs), 0)
+
+        for job in files_to_lint2:  # these jobs should be in last list
+            job_data = q.get_job_data(job)
+            self.assertIsNotNone(job_data)
+
+        for job in files_to_lint:  # these jobs should not be in last list
+            job_data = q.get_job_data(job)
+            self.assertIsNone(job_data)
+
         self.assertTrue(success)
         self.assertTrue(success2)
 
@@ -61,9 +76,24 @@ class TestLinterMessaging(unittest.TestCase):
 
         # when
         success = self.wait_for_lint_jobs(q, files_to_lint)
+        jobs1 = q.get_finished_lint_jobs()
         success2 = self.wait_for_lint_jobs(q, files_to_lint2)
+        jobs2 = q.get_finished_lint_jobs()
 
         # then
+        self.assertEquals(len(jobs1), len(files_to_lint))
+        self.assertEquals(len(jobs2), len(files_to_lint2))
+        unfinished_jobs = q.get_unfinished_Lint_jobs()
+        self.assertEquals(len(unfinished_jobs), 0)
+
+        for job in files_to_lint2:  # these jobs should be in last list
+            job_data = q.get_job_data(job)
+            self.assertIsNotNone(job_data)
+
+        for job in files_to_lint:  # these jobs should not be in last list
+            job_data = q.get_job_data(job)
+            self.assertIsNone(job_data)
+
         self.assertTrue(success)
         self.assertTrue(success2)
 
@@ -96,6 +126,18 @@ class TestLinterMessaging(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(success2)
         self.assertEquals(self.callbacks, len(files_to_lint) + len(files_to_lint2))
+
+    def test_illegalQueue(self):
+        # given
+        q = LinterMessaging('invalid')
+
+        # when
+        notify_ret = q.notify_lint_job_complete("dummy", True)
+        wait_ret = q.wait_for_lint_jobs([])
+
+        #then
+        self.assertFalse(notify_ret)
+        self.assertFalse(wait_ret)
 
     #
     # helpers

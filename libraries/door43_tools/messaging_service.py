@@ -15,8 +15,11 @@ class MessagingService(object):
 
     def get_connection(self):
         if not self.queue:
-            sqs = boto3.resource('sqs')
-            self.queue = sqs.get_queue_by_name(QueueName=self.queue_name)
+            try:
+                sqs = boto3.resource('sqs')
+                self.queue = sqs.get_queue_by_name(QueueName=self.queue_name)
+            except:
+                self.queue = None
         return self.queue
 
     def send_message(self, item_key, success, payload=None):
