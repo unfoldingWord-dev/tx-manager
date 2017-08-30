@@ -49,7 +49,7 @@ class SqlDbTableHandler(object):
         """
         Creates the model's table
         """
-        self.model_class.__table__.create(bind=self.db_engine)
+        Base.metadata.create_all(self.db_engine, tables=[self.model_class.__table__])
 
     def get_item(self, query):
         """
