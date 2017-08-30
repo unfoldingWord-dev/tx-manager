@@ -109,7 +109,8 @@ class ClientCallback(object):
 
             # all parts are present
 
-            build_log_json = self.merge_build_logs(s3_commit_key, count, 'final_')
+            build_log_json = self.merge_build_logs(s3_commit_key, count, 'final_')  # update and write final_build_log.json
+            self.cdn_upload_contents(build_log_json, self.get_build_log_key(s3_commit_key))  # copy to build_log.json
             self.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
@@ -133,11 +134,12 @@ class ClientCallback(object):
 
     def merge_build_logs(self, s3_commit_key, count, prefix=''):
         master_build_log_json = self.get_build_log(s3_commit_key)
+        self.logger.debug('Initial build_log.json: ' + json.dumps(master_build_log_json))
         build_logs_json = []
         self.job.status = 'success'
-        self.job.log = []
-        self.job.warnings = []
-        self.job.errors = []
+        self.job.log = self.get_list_from_dict(master_build_log_json, 'log')
+        self.job.warnings = self.get_list_from_dict(master_build_log_json, 'warnings')
+        self.job.errors = self.get_list_from_dict(master_build_log_json, 'errors')
         for i in range(0, count):
             # self.logger.debug('Merging part {0}'.format(i))
 
@@ -167,6 +169,12 @@ class ClientCallback(object):
             if ('message' in build_log_json) and (build_log_json['message'] is not None):
                 self.job.message = build_log_json['message']
 
+        # set overall status
+        if len(self.job.errors):
+            self.job.status = 'errors'
+        elif len(self.job.warnings):
+            self.job.status = 'warnings'
+
         # Now upload the merged build_log.json file, update it and upload it back to S3
         master_build_log_json['build_logs'] = build_logs_json  # add record of all the parts
         build_logs_json0 = build_logs_json[0]
@@ -178,6 +186,9 @@ class ClientCallback(object):
         master_build_log_json['resource_type'] = build_logs_json0['resource_type']
         build_log_json = self.upload_build_log(master_build_log_json, s3_commit_key, prefix)
         return build_log_json
+
+    def get_list_from_dict(self, dict, key):
+        return dict[key] if key in dict else []
 
     def prefix_list(self, build_log_json, key, book):
         if key not in build_log_json:
