@@ -169,7 +169,7 @@ class TestResourceContainer(unittest.TestCase):
         idx = 1
 
         for chapter in chapters:
-            self.assertEqual( chapter, idx )
+            self.assertEqual( int( chapter ), idx )
             idx += 1
 
         self.assertEqual(len(chapters), 151)
