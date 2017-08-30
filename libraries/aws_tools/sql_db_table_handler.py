@@ -45,11 +45,11 @@ class SqlDbTableHandler(object):
         self.db_engine = create_engine(self.connection_string, echo=self.echo)
         self.session = sessionmaker(bind=self.db_engine)()
 
-    def create_all(self):
+    def create_table(self):
         """
-        Creates all the model tables that subclass Base
+        Creates the model's table
         """
-        Base.metadata.create_all(self.db_engine)
+        self.model_class.__table__.create(bind=self.db_engine)
 
     def get_item(self, query):
         """

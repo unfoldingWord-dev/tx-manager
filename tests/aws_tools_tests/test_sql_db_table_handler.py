@@ -32,7 +32,7 @@ class TestSqlDbHandler(unittest.TestCase):
         :return:
         """
         self.user_db_handler = SqlDbTableHandler(User, connection_string='sqlite:///:memory:')
-        self.user_db_handler.create_all()
+        self.user_db_handler.create_table()
         self.user1 = User(name='jim', fullname='Jim Smith', password='jimspassword')
         self.user2 = User(name='ed', fullname='Ed Jones', password='edspassword')
         self.user3 = User(name='sarah', fullname='Sarah Lee', password='sarahspassword')
