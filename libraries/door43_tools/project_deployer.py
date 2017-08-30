@@ -8,6 +8,7 @@ import time
 from glob import glob
 from shutil import copyfile
 from libraries.aws_tools.s3_handler import S3Handler
+from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
 from datetime import datetime, timedelta
@@ -189,6 +190,10 @@ class ProjectDeployer(object):
                     self.logger.debug("Moving {0} to common area".format(basename))
                     self.cdn_handler.upload_file(filename, s3_commit_key + '/' + basename, 0)
                     self.cdn_handler.delete_file(download_key + '/' + basename)
+
+        # save master build_log.json
+        file_utils.write_file(os.path.join(output_dir, 'build_log.json'), build_log)
+        self.logger.debug("Final build_log.json:\n" + json.dumps(build_log))
 
         # Upload all files to the door43.org bucket
         for root, dirs, files in os.walk(output_dir):
