@@ -186,7 +186,5 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(manifest['dublin_core']['identifier'], 'bible')
         self.assertEqual(manifest['projects'][0]['identifier'], 'mat')
 
-    def test_en_psalms_chapter_order(self):
-
 if __name__ == '__main__':
     unittest.main()
