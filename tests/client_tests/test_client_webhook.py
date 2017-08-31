@@ -12,7 +12,7 @@ from libraries.client.client_webhook import ClientWebhook
 from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import read_file
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
-from libraries.models.manifest import Manifest
+from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2, mock_sqs
 from libraries.db.db import DB
@@ -121,7 +121,7 @@ class TestClientWebhook(unittest.TestCase):
         # Check repo was added to manifest table
         repo_name = client_web_hook.commit_data['repository']['name']
         user_name = client_web_hook.commit_data['repository']['owner']['username']
-        tx_manifest = DB.db.query(Manifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest = DB.session.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')

@@ -13,7 +13,7 @@ from libraries.general_tools.url_utils import download_file
 from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TYPES
 from libraries.client.preprocessors import do_preprocess
 from libraries.aws_tools.s3_handler import S3Handler
-from libraries.models.manifest import Manifest
+from libraries.models.manifest import TxManifest
 from libraries.db.db import DB
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.job import TxJob
@@ -132,16 +132,16 @@ class ClientWebhook(object):
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is
-        tx_manifest = DB.db.query(Manifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = DB.session.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
         if tx_manifest:
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
             self.logger.debug('Updating manifest in manifest table: {0}'.format(manifest_data))
         else:
-            tx_manifest = Manifest(**manifest_data)
+            tx_manifest = TxManifest(**manifest_data)
             self.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest))
-            DB.db.add(tx_manifest)
-        DB.db.commit()
+            DB.session.add(tx_manifest)
+        DB.session.commit()
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')

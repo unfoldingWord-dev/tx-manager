@@ -3,7 +3,7 @@ import mock
 import unittest
 from libraries.db.db import DB
 from sqlalchemy import Column, Integer, String
-from libraries.models.manifest import Manifest
+from libraries.models.manifest import TxManifest
 from datetime import datetime
 
 
@@ -33,7 +33,7 @@ class TestDb(unittest.TestCase):
 
     def test_manifest(self):
         DB(connection_string='sqlite:///:memory:', default_db=True)
-        manifest = DB.db.query(Manifest).filter_by(repo_name='en_obs', user_name='Door43').first()
+        manifest = DB.session.query(TxManifest).filter_by(repo_name='en_obs', user_name='Door43').first()
         self.assertIsNone(manifest)
         manifest_data = {
             'repo_name': 'en_obs',
@@ -45,10 +45,10 @@ class TestDb(unittest.TestCase):
             'last_updated': datetime.utcnow(),
             'manifest': '{}',
         }
-        manifest = Manifest(**manifest_data)
+        manifest = TxManifest(**manifest_data)
         print(manifest.title)
-        DB.db.add(manifest)
-        DB.db.commit()
-        manifest_from_db = DB.db.query(Manifest).filter_by(repo_name='en_obs', user_name='Door43').first()
+        DB.session.add(manifest)
+        DB.session.commit()
+        manifest_from_db = DB.session.query(TxManifest).filter_by(repo_name='en_obs', user_name='Door43').first()
         self.assertEqual(manifest, manifest_from_db)
         print(manifest_from_db.title)

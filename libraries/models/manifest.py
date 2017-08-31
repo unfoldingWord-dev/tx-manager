@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Integer, LargeBinary, UniqueConstraint, D
 from libraries.db.db import DB
 
 
-class Manifest(DB.Base):
+class TxManifest(DB.Base):
     __tablename__ = 'manifests'
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
