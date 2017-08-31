@@ -534,7 +534,7 @@ class ClientWebhook(object):
         :param str|unicode repo_dir:   The directory where the downloaded file should be unzipped
         :return: None
         """
-        repo_zip_url = commit_url.replace('commit', 'archive') + '.zip'
+        repo_zip_url = commit_url.replace('commit', 'archive').replace(App.dcs_domain_name, App.dcs_ip_address) + '.zip'
         repo_zip_file = os.path.join(self.base_temp_dir, repo_zip_url.rpartition(os.path.sep)[2])
 
         try:
