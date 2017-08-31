@@ -469,7 +469,7 @@ class TestConversions(TestCase):
                 'repo_name_lower': repo.lower(),
                 'user_name_lower': user.lower()
         })
-        # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
+        # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
         # If that row doesn't exist, it will cause repo_name_lower and user_name_lower to be None,
         #   so just need to check them.
         self.assertEqual(tx_manifest.repo_name_lower, repo.lower())

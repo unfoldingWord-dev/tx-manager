@@ -8,7 +8,7 @@ from operator import itemgetter
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.language_stats import LanguageStats
 from libraries.models.manifest import TxManifest
-from libraries.db.db import DB
+from libraries.app.app import App
 
 
 class PageMetrics(object):
@@ -54,12 +54,12 @@ class PageMetrics(object):
 
         self.logger.debug("Valid repo url: " + path)
         # First see record already exists in DB
-        tx_manifest = DB.session.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
         if tx_manifest:
             if increment:
                 tx_manifest.views += 1
                 self.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
-                DB.session.commit()
+                App.db.commit()
             else:
                 self.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
             view_count = tx_manifest.views

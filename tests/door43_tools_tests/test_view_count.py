@@ -4,7 +4,7 @@ from datetime import datetime
 from moto import mock_dynamodb2
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.models.manifest import TxManifest
-from libraries.db.db import DB
+from libraries.app.app import App
 
 
 class ViewCountTest(unittest.TestCase):
@@ -17,7 +17,7 @@ class ViewCountTest(unittest.TestCase):
         self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
 
     def init_table(self, view_count):
-        DB(connection_string='sqlite:///:memory:', default_db=True)
+        App(connection_string='sqlite:///:memory:', default_db=True)
         tx_manifest = TxManifest(
             repo_name=ViewCountTest.REPO_NAME,
             user_name=ViewCountTest.USER_NAME,
@@ -29,8 +29,8 @@ class ViewCountTest(unittest.TestCase):
             manifest='{}',
             views=view_count
         )
-        DB.session.add(tx_manifest)
-        DB.session.commit()
+        App.db.add(tx_manifest)
+        App.db.commit()
 
     def test_valid(self):
         # given

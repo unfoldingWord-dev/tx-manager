@@ -14,7 +14,7 @@ from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TY
 from libraries.client.preprocessors import do_preprocess
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.models.manifest import TxManifest
-from libraries.db.db import DB
+from libraries.app.app import App
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.job import TxJob
 from libraries.aws_tools.lambda_handler import LambdaHandler
@@ -132,7 +132,7 @@ class ClientWebhook(object):
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is
-        tx_manifest = DB.session.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
         if tx_manifest:
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
@@ -140,8 +140,8 @@ class ClientWebhook(object):
         else:
             tx_manifest = TxManifest(**manifest_data)
             self.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest))
-            DB.session.add(tx_manifest)
-        DB.session.commit()
+            App.db.add(tx_manifest)
+        App.db.commit()
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
@@ -509,7 +509,8 @@ class ClientWebhook(object):
             # Need to give the massaged source since it maybe was in chunks originally
             payload['data']['source_url'] = job.source
         else:
-            payload['data']['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
+            payload['data']['source_url'] = commit_url.replace('commit', 'archive').\
+                                                replace(App.dcs_domain_name, App.dcs_ip_address) + '.zip'
         return self.send_payload_to_run_linter(payload, async=async)
 
     def send_payload_to_run_linter(self, payload, async=False):
