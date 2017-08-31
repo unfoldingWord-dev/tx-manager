@@ -29,7 +29,7 @@ class Handler(object):
         self.logger.debug(json.dumps(event))
 
         if 'vars' in event:
-            App(event['vars'])
+            App(**event['vars'])
         if App.db_pass:
             App.setup_db()
 
