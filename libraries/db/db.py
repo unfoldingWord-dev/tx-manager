@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 
 class DB(object):
-    db = None
+    session = None
     Base = declarative_base()
 
     """
@@ -41,4 +41,4 @@ class DB(object):
         self.engine = create_engine(self.connection_string, echo=self.echo)
         self.session = sessionmaker(bind=self.engine)()
         if self.default_db:
-            DB.db = self.session
+            DB.session = self.session
