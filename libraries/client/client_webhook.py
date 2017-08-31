@@ -13,7 +13,8 @@ from libraries.general_tools.url_utils import download_file
 from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TYPES
 from libraries.client.preprocessors import do_preprocess
 from libraries.aws_tools.s3_handler import S3Handler
-from libraries.models.manifest import TxManifest
+from libraries.models.manifest import Manifest
+from libraries.db.db import DB
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.job import TxJob
 from libraries.aws_tools.lambda_handler import LambdaHandler
@@ -121,30 +122,26 @@ class ClientWebhook(object):
 
         # Save manifest to manifest table
         manifest_data = {
-            'repo_name_lower': repo_name.lower(),
-            'user_name_lower': repo_owner.lower(),
             'repo_name': repo_name,
             'user_name': repo_owner,
             'lang_code': rc.resource.language.identifier,
             'resource_id': rc.resource.identifier,
             'resource_type': rc.resource.type,
             'title': rc.resource.title,
-            'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'last_updated': datetime.utcnow(),
             'manifest': json.dumps(rc.as_dict()),
-            'manifest_lower': json.dumps(rc.as_dict()).lower(),
         }
-        # First see if manifest already exists in DB and update it if it is (repo_name will not be None after load)
-        tx_manifest = TxManifest(db_handler=self.manifest_db_handler).load({
-                'repo_name_lower': repo_name.lower(),
-                'user_name_lower': repo_owner.lower(),
-            })
-        if tx_manifest.repo_name_lower:
+        # First see if manifest already exists in DB and update it if it is
+        tx_manifest = DB.db.query(Manifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        if tx_manifest:
+            for key, value in manifest_data.iteritems():
+                setattr(tx_manifest, key, value)
             self.logger.debug('Updating manifest in manifest table: {0}'.format(manifest_data))
-            tx_manifest.update(manifest_data)
         else:
-            tx_manifest.populate(manifest_data)
-            self.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest.get_db_data()))
-            tx_manifest.insert()
+            tx_manifest = Manifest(**manifest_data)
+            self.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest))
+            DB.db.add(tx_manifest)
+        DB.db.commit()
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')

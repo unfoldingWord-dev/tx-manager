@@ -7,7 +7,8 @@ from datetime import datetime
 from operator import itemgetter
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.language_stats import LanguageStats
-from libraries.models.manifest import TxManifest
+from libraries.models.manifest import Manifest
+from libraries.db.db import DB
 
 
 class PageMetrics(object):
@@ -60,22 +61,19 @@ class PageMetrics(object):
         self.logger.debug("Valid repo url: " + path)
         try:
             # First see record already exists in DB
-            tx_manifest = TxManifest({'repo_name_lower': repo_name.lower(), 'user_name_lower': repo_owner.lower()},
-                                     db_handler=self.manifest_db_handler)
-            if tx_manifest.repo_name:
+            tx_manifest = DB.db.query(Manifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+            if tx_manifest:
                 if increment:
                     tx_manifest.views += 1
                     self.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
-                    tx_manifest.update()
+                    DB.db.commit()
                 else:
                     self.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
+                view_count = tx_manifest.views
             else:  # record is not present
-                tx_manifest.views = 0
                 self.logger.debug('No entries for page in manifest table')
+                view_count = 0
 
-            view_count = tx_manifest.views
-            if type(view_count) is Decimal:
-                view_count = int(view_count.to_integral_value())
             response['view_count'] = view_count
 
         except Exception as e:
