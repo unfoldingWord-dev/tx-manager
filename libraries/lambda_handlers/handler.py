@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
 from libraries.db.db import DB
 
+
 class Handler(object):
     __metaclass__ = ABCMeta
 
@@ -29,12 +30,17 @@ class Handler(object):
 
         rds_db_password = self.retrieve(event['vars'], 'rds_db_password', 'Environment Variables', required=False,
                                         default='')
-        DB(db_pass=rds_db_password, default_db=True)
+        connection_string = self.retrieve(event['vars'], 'connection_string', 'Environment Variables', required=False,
+                                          default='')
+        if rds_db_password:
+            DB(db_pass=rds_db_password, default_db=True)
+        elif connection_string:
+            DB(connection_string=connection_string, default_db=True)
 
         try:
             return self._handle(event, context)
         except Exception as e:
-            self.loggzsxaXer.error(e.message)
+            self.logger.error(e.message)
             self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             raise EnvironmentError('Bad Request: {}'.format(e.message))
 
