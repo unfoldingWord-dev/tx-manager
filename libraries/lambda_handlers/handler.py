@@ -4,12 +4,13 @@ import logging
 import traceback
 from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
-
+from libraries.db.db import DB
 
 class Handler(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        global db
         # Make Boto3 not be so noisy
         logging.getLogger('boto3').setLevel(logging.ERROR)
         logging.getLogger('botocore').setLevel(logging.ERROR)
@@ -25,10 +26,15 @@ class Handler(object):
         """
         self.logger.debug("EVENT:")
         self.logger.debug(json.dumps(event))
+
+        rds_db_password = self.retrieve(event['vars'], 'rds_db_password', 'Environment Variables', required=False,
+                                        default='')
+        DB(db_pass=rds_db_password, default_db=True)
+
         try:
             return self._handle(event, context)
         except Exception as e:
-            self.logger.error(e.message)
+            self.loggzsxaXer.error(e.message)
             self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             raise EnvironmentError('Bad Request: {}'.format(e.message))
 

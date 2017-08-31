@@ -17,7 +17,7 @@ from libraries.general_tools.file_utils import unzip
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
-from libraries.models.manifest import TxManifest
+from libraries.models.manifest import Manifest
 from libraries.models.job import TxJob
 
 # replace default print with utf-8 writer, so it can work with pipes and redirects such as used with the latest
@@ -465,11 +465,11 @@ class TestConversions(TestCase):
         self.assertTrue(success)
 
         # Test that repo is in manifest table
-        tx_manifest = TxManifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
+        tx_manifest = Manifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
                 'repo_name_lower': repo.lower(),
                 'user_name_lower': user.lower()
         })
-        # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
+        # Giving Manifest above just the composite keys will cause it to load all the data from the DB.
         # If that row doesn't exist, it will cause repo_name_lower and user_name_lower to be None,
         #   so just need to check them.
         self.assertEqual(tx_manifest.repo_name_lower, repo.lower())
