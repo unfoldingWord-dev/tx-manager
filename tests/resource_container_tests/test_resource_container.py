@@ -169,8 +169,9 @@ class TestResourceContainer(unittest.TestCase):
         idx = 1
 
         for chapter in chapters:
-            self.assertEqual( int( chapter ), idx )
-            idx += 1
+            if idx <= 151:
+                self.assertEqual( int( chapter ), idx )
+                idx += 1
 
         self.assertEqual(len(chapters), 151)
         chunks = rc.projects[0].chunks('01')
