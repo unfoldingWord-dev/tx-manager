@@ -169,7 +169,7 @@ class TestResourceContainer(unittest.TestCase):
         idx = 1
 
         for chapter in chapters:
-            if idx <= 151:
+            if chapter.isnumeric():
                 self.assertEqual( int( chapter ), idx )
                 idx += 1
 
