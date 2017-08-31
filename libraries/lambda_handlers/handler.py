@@ -4,7 +4,7 @@ import logging
 import traceback
 from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
-from libraries.db.db import DB
+from libraries.app.app import App
 
 
 class Handler(object):
@@ -28,14 +28,10 @@ class Handler(object):
         self.logger.debug("EVENT:")
         self.logger.debug(json.dumps(event))
 
-        rds_db_password = self.retrieve(event['vars'], 'rds_db_password', 'Environment Variables', required=False,
-                                        default='')
-        connection_string = self.retrieve(event['vars'], 'connection_string', 'Environment Variables', required=False,
-                                          default='')
-        if rds_db_password:
-            DB(db_pass=rds_db_password, default_db=True)
-        elif connection_string:
-            DB(connection_string=connection_string, default_db=True)
+        if 'vars' in event:
+            App(event['vars'])
+        if App.db_pass:
+            App.setup_db()
 
         try:
             return self._handle(event, context)

@@ -1,10 +1,10 @@
 from __future__ import unicode_literals, print_function
 from sqlalchemy import Column, String, Integer, LargeBinary, UniqueConstraint, DateTime
-from libraries.db.db import DB
+from libraries.app.app import App
 
 
-class TxManifest(DB.Base):
-    __tablename__ = 'manifests'
+class TxManifest(App.ModelBase):
+    __tablename__ = App.manifest_table_name
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     repo_name = Column(String(255), nullable=False)

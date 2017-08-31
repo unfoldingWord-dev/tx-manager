@@ -15,7 +15,7 @@ from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2, mock_sqs
-from libraries.db.db import DB
+from libraries.app.app import App
 
 
 @mock_s3
@@ -90,7 +90,7 @@ class TestClientWebhook(unittest.TestCase):
             },
         )
 
-        DB(connection_string='sqlite:///:memory:', default_db=True)
+        App(connection_string='sqlite:///:memory:', default_db=True)
 
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
@@ -121,7 +121,7 @@ class TestClientWebhook(unittest.TestCase):
         # Check repo was added to manifest table
         repo_name = client_web_hook.commit_data['repository']['name']
         user_name = client_web_hook.commit_data['repository']['owner']['username']
-        tx_manifest = DB.session.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')
