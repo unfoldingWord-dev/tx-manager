@@ -166,6 +166,13 @@ class TestResourceContainer(unittest.TestCase):
         self.assertEqual(rc.resource.conformsto, 'pre-rc')
         self.assertEqual(rc.resource.modified, datetime.utcnow().strftime("%Y-%m-%d"))
         chapters = rc.projects[0].chapters()
+        idx = 1
+
+        for chapter in chapters:
+            if chapter.isnumeric():
+                self.assertEqual( int( chapter ), idx )
+                idx += 1
+
         self.assertEqual(len(chapters), 151)
         chunks = rc.projects[0].chunks('01')
         self.assertEqual(len(chunks), 5)
