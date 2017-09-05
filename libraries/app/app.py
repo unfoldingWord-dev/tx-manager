@@ -24,7 +24,6 @@ class App(object):
     job_table_name = 'tx-job'
     manifest_table_name = 'manifests'
     module_table_name = 'tx-module'
-    linter_messaging_name = ''
 
     db = None
     db_protocol = 'mysql+pymysql'

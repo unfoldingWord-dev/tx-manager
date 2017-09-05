@@ -1,7 +1,5 @@
 from __future__ import print_function, unicode_literals
-import codecs
 import os
-import traceback
 from libraries.linters.linter import Linter
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.usfm_tools import verifyUSFM
@@ -12,7 +10,6 @@ class UsfmLinter(Linter):
     def __init__(self, *args, **kwargs):
         super(UsfmLinter, self).__init__(*args, **kwargs)
         self.found_books = []
-        self.single_file = None if 'single_file' not in kwargs else kwargs['single_file']
 
     def lint(self):
         """

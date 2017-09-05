@@ -10,7 +10,6 @@ from libraries.linters.tq_linter import TqLinter
 from libraries.linters.tw_linter import TwLinter
 from libraries.linters.markdown_linter import MarkdownLinter
 from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
-from libraries.resource_container.ResourceContainer import RC
 
 
 class LinterHandler:
