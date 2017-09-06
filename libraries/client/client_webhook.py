@@ -436,13 +436,13 @@ class ClientWebhook(object):
         return identifier
 
     def add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
-        headers = {"content-type": "application/json"}
-        self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
-        # remove token from printout, so it will not show in integration testing logs on Travis, etc.
-        log_payload = payload.copy()
-        log_payload["gogs_user_token"] = "DUMMY"
-        self.logger.debug(log_payload)
-        ## RHM: Invoking request_job lambda function instead of using a API due to being in a VPC
+        # headers = {"content-type": "application/json"}
+        # self.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
+        # # remove token from printout, so it will not show in integration testing logs on Travis, etc.
+        # log_payload = payload.copy()
+        # log_payload["gogs_user_token"] = "DUMMY"
+        # self.logger.debug(log_payload)
+        # # RHM: Invoking request_job lambda function instead of using a API due to being in a VPC
         # response = requests.post(tx_manager_job_url, json=payload, headers=headers)
 
         request_job_lambda_function = App.prefix+'tx_request_job'
@@ -454,6 +454,10 @@ class ClientWebhook(object):
             'job_table_name': App.job_table_name,
             'module_table_name': App.prefix+App.module_table_name,  # Isn't passed to the client webhook
         }
+        self.logger.debug('Making request to tX-Manager lambda function {0} with payload:'.format(request_job_lambda_function))
+        log_payload = payload.copy()
+        log_payload["gogs_user_token"] = "DUMMY"
+        self.logger.debug(log_payload)
         response = self.lambda_handler.invoke(request_job_lambda_function, payload)
 
         self.logger.debug('finished.')
