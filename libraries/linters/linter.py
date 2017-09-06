@@ -4,31 +4,34 @@ import tempfile
 import logging
 import traceback
 from libraries.general_tools.url_utils import download_file
-from libraries.general_tools.file_utils import unzip, remove_tree, remove
+from libraries.general_tools.file_utils import unzip, remove_tree, write_file
 from lint_logger import LintLogger
 from libraries.resource_container.ResourceContainer import RC
 from abc import ABCMeta, abstractmethod
+from libraries.aws_tools.s3_handler import S3Handler
+from libraries.app.app import App
 
 
 class Linter(object):
     __metaclass__ = ABCMeta
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
-                 prefix='', **kwargs):
+    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None, upload_key=None,
+                 single_file=None, **kwargs):
         """
         :param string source_zip_url: The main way to give Linter the files
         :param string source_zip_file: If set, will just unzip this local file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
-        :param string prefix: For calling the node.js Markdown linter Lambda function in different environments
+        :param string upload_key:
         :param dict **kwawrgs: So other arguments can be passed and be ignored
         """
         self.source_zip_url = source_zip_url
         self.source_zip_file = source_zip_file
         self.source_dir = source_dir
         self.commit_data = commit_data
-        self.prefix = prefix
+        self.upload_key = upload_key
+        self.single_file = single_file
 
         self.logger = logging.getLogger('linter')
         self.logger.addHandler(logging.NullHandler())
@@ -42,6 +45,7 @@ class Linter(object):
             self.repo_name = self.commit_data['repository']['name']
             self.repo_owner = self.commit_data['repository']['owner']['username']
         self.rc = None   # Constructed later when we know we have a source_dir
+        self.cdn_handler = S3Handler(App.cdn_bucket)
 
     def close(self):
         """delete temp files"""
@@ -74,6 +78,7 @@ class Linter(object):
                 self.logger.debug("Linting zip: " + self.source_zip_file)
                 self.unzip_archive()
             # lint files
+            success = False
             if self.source_dir:
                 self.rc = RC(directory=self.source_dir)
                 self.logger.debug("Linting '{0}' files...".format(self.source_dir))
@@ -85,12 +90,13 @@ class Linter(object):
             self.log.warnings.append(message)
             self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             success = False
-        result = {
+        lint_log_json = {
             'success': success,
             'warnings': self.log.warnings,
         }
-        self.logger.debug("Linter results: " + str(result))
-        return result
+        self.upload_lint_log_to_s3(lint_log_json)
+        self.logger.debug("Linter results: " + str(lint_log_json))
+        return lint_log_json
 
     def download_archive(self):
         filename = self.source_zip_url.rpartition('/')[2]
@@ -111,3 +117,12 @@ class Linter(object):
             self.source_dir = os.path.join(self.temp_dir, dirs[0])
         else:
             self.source_dir = self.temp_dir
+
+    def upload_lint_log_to_s3(self, lint_log_json):
+        lint_log_file = os.path.join(self.temp_dir, 'lint_log.json')
+        write_file(lint_log_file, lint_log_json)
+        part = ''
+        if self.single_file:
+            part = '.'+self.single_file
+        self.logger.debug('Saving lint log to {0}'.format(self.upload_key))
+        self.cdn_handler.upload_file(lint_log_file, self.upload_key)

@@ -12,6 +12,7 @@ from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.gogs_tools.gogs_handler import GogsHandler
 from libraries.models.job import TxJob
 from libraries.models.module import TxModule
+from libraries.app.app import App
 
 
 class TxManager(object):
@@ -317,96 +318,21 @@ class TxManager(object):
         return job.get_db_data()
 
     def do_callback(self, url, payload):
-        if url.startswith('http'):
-            headers = {"content-type": "application/json"}
-            self.logger.debug('Making callback to {0} with payload:'.format(url))
-            self.logger.debug(payload)
-            requests.post(url, json=payload, headers=headers)
-            self.logger.debug('finished.')
+        ## RHM: Invoking client_callback lambda function instead of using a API due to being in a VPC
+        # if url.startswith('http'):
+        #     headers = {"content-type": "application/json"}
+        #     self.logger.debug('Making callback to {0} with payload:'.format(url))
+        #     self.logger.debug(payload)
+        #     requests.post(url, json=payload, headers=headers)
+        #     self.logger.debug('finished.')
 
-    def make_api_gateway_for_module(self, module):
-        # lambda_func_name = module['name']
-        # AWS_LAMBDA_API_ID = '7X97xCLPDE16Jep5Zv85N6zy28wcQfJz79E2H3ln'
-        # # of 'tx-manager_api_key'
-        # # or fkcr7r4dz9
-        # # or 7X97xCLPDE16Jep5Zv85N6zy28wcQfJz79E2H3ln
-        # AWS_REGION = 'us-west-2'
-        #
-        # api_client = boto3.client('apigateway')
-        # aws_lambda = boto3.client('lambda')
-        #
-        # ## create resource
-        # resource_resp = api_client.create_resource(
-        #     restApiId=AWS_LAMBDA_API_ID,
-        #     parentId='foo', # resource id for the Base API path
-        #     pathPart=lambda_func_name
-        # )
-        #
-        # ## create POST method
-        # put_method_resp = api_client.put_method(
-        #     restApiId=AWS_LAMBDA_API_ID,
-        #     resourceId=resource_resp['id'],
-        #     httpMethod="POST",
-        #     authorizationType="NONE",
-        #     apiKeyRequired=True,
-        # )
-        #
-        # lambda_version = aws_lambda.meta.service_model.api_version
-        #
-        # uri_data = {
-        #     "aws-region": AWS_REGION,
-        #     "api-version": lambda_version,
-        #     "aws-acct-id": "xyzABC",
-        #     "lambda-function-name": lambda_func_name,
-        # }
-        #
-        # uri = "arn:aws:apigateway:{aws-region}:lambda:path/{api-version}/functions/arn:aws:lambda:{aws-region}:
-        #        {aws-acct-id}:function:{lambda-function-name}/invocations".format(**uri_data)
-        #
-        # ## create integration
-        # integration_resp = api_client.put_integration(
-        #     restApiId=AWS_LAMBDA_API_ID,
-        #     resourceId=resource_resp['id'],
-        #     httpMethod="POST",
-        #     type="AWS",
-        #     integrationHttpMethod="POST",
-        #     uri=uri,
-        # )
-        #
-        # api_client.put_integration_response(
-        #     restApiId=AWS_LAMBDA_API_ID,
-        #     resourceId=resource_resp['id'],
-        #     httpMethod="POST",
-        #     statusCode="200",
-        #     selectionPattern=".*"
-        # )
-        #
-        # ## create POST method response
-        # api_client.put_method_response(
-        #     restApiId=AWS_LAMBDA_API_ID,
-        #     resourceId=resource_resp['id'],
-        #     httpMethod="POST",
-        #     statusCode="200",
-        # )
-        #
-        # uri_data['aws-api-id'] = AWS_LAMBDA_API_ID
-        # source_arn = "arn:aws:execute-api:{aws-region}:{aws-acct-id}:
-        #               {aws-api-id}/*/POST/{lambda-function-name}".format(**uri_data)
-        #
-        # aws_lambda.add_permission(
-        #     FunctionName=lambda_func_name,
-        #     StatementId=uuid.uuid4().hex,
-        #     Action="lambda:InvokeFunction",
-        #     Principal="apigateway.amazonaws.com",
-        #     SourceArn=source_arn
-        # )
-        #
-        # # state 'your stage name' was already created via API Gateway GUI
-        # api_client.create_deployment(
-        #     restApiId=AWS_LAMBDA_API_ID,
-        #     stageName="your stage name",
-        # )
-        return
+        client_callback_lambda_function = App.prefix+'tx_client_callback'
+        payload = {
+            'data': payload,
+            'gogs_url': App.gogs_url,
+            'cdn_bucket': App.cdn_bucket,
+        }
+        self.lambda_handler.invoke(client_callback_lambda_function, payload)
 
     def register_module(self, data):
         tx_module = TxModule(data=data, db_handler=self.module_db_handler)

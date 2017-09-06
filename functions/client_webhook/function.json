@@ -1,3 +1,7 @@
 {
-  "description": "Client webhook, called by https://api.door43.org/client/webhook from a Gogs repo when commit occurs"
+  "description": "Client webhook, called by https://api.door43.org/client/webhook from a Gogs repo when commit occurs",
+  "vpc": {
+    "securityGroups": ["sg-22c62d47", "sg-6a756a13"],
+    "subnets": ["subnet-72a08234", "subnet-7250b017", "subnet-fb16158f"]
+  }
 }

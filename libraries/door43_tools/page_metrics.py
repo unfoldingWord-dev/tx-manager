@@ -8,22 +8,19 @@ from operator import itemgetter
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.language_stats import LanguageStats
 from libraries.models.manifest import TxManifest
+from libraries.app.app import App
 
 
 class PageMetrics(object):
-    MANIFEST_TABLE_NAME = 'tx-manifest'
     LANGUAGE_STATS_TABLE_NAME = 'language-stats'
     INVALID_URL_ERROR = 'repo not found for: '
     INVALID_LANG_URL_ERROR = 'language not found for: '
     DB_ACCESS_ERROR = 'could not access view counts for: '
 
-    def __init__(self, manifest_table_name=None, language_stats_table_name=None):
+    def __init__(self, language_stats_table_name=None):
         """
         :param string language_stats_table_name:
-        :param string manifest_table_name:
         """
-        self.manifest_table_name = manifest_table_name
-        self.manifest_db_handler = None
         self.language_stats_table_name = language_stats_table_name
         self.language_stats_db_handler = None
         self.logger = logging.getLogger()
@@ -54,34 +51,23 @@ class PageMetrics(object):
             return response
 
         del response['ErrorMessage']
-        if not self.manifest_db_handler:
-            self.init_manifest_table(parsed)
 
         self.logger.debug("Valid repo url: " + path)
-        try:
-            # First see record already exists in DB
-            tx_manifest = TxManifest({'repo_name_lower': repo_name.lower(), 'user_name_lower': repo_owner.lower()},
-                                     db_handler=self.manifest_db_handler)
-            if tx_manifest.repo_name:
-                if increment:
-                    tx_manifest.views += 1
-                    self.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
-                    tx_manifest.update()
-                else:
-                    self.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
-            else:  # record is not present
-                tx_manifest.views = 0
-                self.logger.debug('No entries for page in manifest table')
-
+        # First see record already exists in DB
+        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        if tx_manifest:
+            if increment:
+                tx_manifest.views += 1
+                self.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
+                App.db.commit()
+            else:
+                self.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
             view_count = tx_manifest.views
-            if type(view_count) is Decimal:
-                view_count = int(view_count.to_integral_value())
-            response['view_count'] = view_count
+        else:  # record is not present
+            self.logger.debug('No entries for page in manifest table')
+            view_count = 0
 
-        except Exception as e:
-            self.logger.exception('Error accessing manifest', exc_info=e)
-            response['ErrorMessage'] = PageMetrics.DB_ACCESS_ERROR + path
-            return response
+        response['view_count'] = view_count
 
         return response
 
@@ -193,15 +179,6 @@ class PageMetrics(object):
                 site = netloc_parts[0]
             self.language_stats_table_name = site + '-' + PageMetrics.LANGUAGE_STATS_TABLE_NAME
         self.language_stats_db_handler = DynamoDBHandler(self.language_stats_table_name)
-
-    def init_manifest_table(self, parsed):
-        if not self.manifest_table_name:
-            site = ''
-            netloc_parts = parsed.netloc.split('-')
-            if len(netloc_parts) > 1:
-                site = netloc_parts[0]
-            self.manifest_table_name = site + '-' + PageMetrics.MANIFEST_TABLE_NAME
-        self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
 
     def list_language_views(self):
         """

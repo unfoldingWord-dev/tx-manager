@@ -1,8 +1,8 @@
 from __future__ import unicode_literals, print_function
-from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.lambda_handlers.handler import Handler
 from libraries.linters.linter_handler import LinterHandler
-from libraries.resource_container.ResourceContainer import RC
+from libraries.app.app import App
+
 
 class RunLinterHandler(Handler):
 
@@ -21,15 +21,10 @@ class RunLinterHandler(Handler):
         # Set required env_vars
         args = {
             'source_zip_url': self.retrieve(data, 'source_url', 'payload'),
+            'upload_key': self.retrieve(data, 'upload_key', 'payload'),
             'commit_data': self.retrieve(data, 'commit_data', 'payload', required=False),
             'resource_id': self.retrieve(data, 'resource_id', 'payload', required=False),
-            'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
-            'messaging_name': self.retrieve(data, 'linter_messaging_name', 'payload', required=False, default=None),
-            'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None)
+            'single_file': self.retrieve(data, 'single_file', 'payload', required=False, default=None),
         }
         linter_class = LinterHandler(**args).get_linter_class()
-        ret_value = linter_class(**args).run()
-        if args['messaging_name']:
-            message_queue = LinterMessaging(args['messaging_name'])
-            message_queue.notify_lint_job_complete(args['source_zip_url'], ret_value['success'], payload=ret_value)
-        return ret_value
+        return linter_class(**args).run()

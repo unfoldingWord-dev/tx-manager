@@ -15,6 +15,7 @@ from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2, mock_sqs
+from libraries.app.app import App
 
 
 @mock_s3
@@ -56,7 +57,6 @@ class TestClientWebhook(unittest.TestCase):
         # copy the job object
         TestClientWebhook.mock_job_return_value = TxJob(self.default_mock_job_return_value.get_db_data())
         self.uploaded_files = []
-        self.manifest_db_handler = DynamoDBHandler(self.MANIFEST_TABLE_NAME)
         self.job_db_handler = DynamoDBHandler(self.JOB_TABLE_NAME)
         if not TestClientWebhook.setup_table:
             self.init_tables()
@@ -89,37 +89,8 @@ class TestClientWebhook(unittest.TestCase):
                 'WriteCapacityUnits': 5
             },
         )
-        try:
-            self.manifest_db_handler.table.delete()
-        except:
-            pass
-        self.manifest_db_handler.resource.create_table(
-            TableName=self.MANIFEST_TABLE_NAME,
-            KeySchema=[
-                {
-                    'AttributeName': 'repo_name_lower',
-                    'KeyType': 'HASH'
-                },
-                {
-                    'AttributeName': 'user_name_lower',
-                    'KeyType': 'RANGE'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'repo_name_lower',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'user_name_lower',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
+
+        App(connection_string='sqlite:///:memory:', default_db=True)
 
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
@@ -148,10 +119,9 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(results, expected_job_count, expected_error_count)
 
         # Check repo was added to manifest table
-        tx_manifest = TxManifest(db_handler=self.manifest_db_handler).load({
-                'repo_name_lower': client_web_hook.commit_data['repository']['name'].lower(),
-                'user_name_lower': client_web_hook.commit_data['repository']['owner']['username'].lower()
-            })
+        repo_name = client_web_hook.commit_data['repository']['name']
+        user_name = client_web_hook.commit_data['repository']['owner']['username']
+        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')

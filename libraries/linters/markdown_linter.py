@@ -5,6 +5,7 @@ from libraries.linters.linter import Linter
 from libraries.aws_tools.lambda_handler import LambdaHandler
 from libraries.general_tools.file_utils import read_file, get_files
 from HTMLParser import HTMLParser
+from libraries.app.app import App
 
 
 class MarkdownLinter(Linter):
@@ -64,7 +65,7 @@ class MarkdownLinter(Linter):
 
     def invoke_markdown_linter(self, payload):
         lambda_handler = LambdaHandler()
-        lint_function = '{0}tx_markdown_linter'.format(self.prefix)
+        lint_function = '{0}tx_markdown_linter'.format(App.prefix)
         response = lambda_handler.invoke(lint_function, payload)
         if 'errorMessage' in response:
             self.logger.error(response['errorMessage'])

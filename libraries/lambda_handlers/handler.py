@@ -4,12 +4,14 @@ import logging
 import traceback
 from abc import ABCMeta, abstractmethod
 from exceptions import EnvironmentError
+from libraries.app.app import App
 
 
 class Handler(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        global db
         # Make Boto3 not be so noisy
         logging.getLogger('boto3').setLevel(logging.ERROR)
         logging.getLogger('botocore').setLevel(logging.ERROR)
@@ -25,6 +27,12 @@ class Handler(object):
         """
         self.logger.debug("EVENT:")
         self.logger.debug(json.dumps(event))
+
+        if 'vars' in event:
+            App(**event['vars'])
+        if App.db_pass:
+            App.setup_db()
+
         try:
             return self._handle(event, context)
         except Exception as e:
