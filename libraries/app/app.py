@@ -12,6 +12,7 @@ class App(object):
 
     prefix = ''
     api_url = 'https://api.door43.org'
+    gogs_url = 'https://git.door43.org'
     pre_convert_bucket = 'tx-client-webhook'
     cdn_bucket = 'cdn.door43.org'
     door43_bucket = 'door43.org'

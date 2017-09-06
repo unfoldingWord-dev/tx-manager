@@ -442,7 +442,20 @@ class ClientWebhook(object):
         log_payload = payload.copy()
         log_payload["gogs_user_token"] = "DUMMY"
         self.logger.debug(log_payload)
-        response = requests.post(tx_manager_job_url, json=payload, headers=headers)
+        ## RHM: Invoking request_job lambda function instead of using a API due to being in a VPC
+        # response = requests.post(tx_manager_job_url, json=payload, headers=headers)
+
+        request_job_lambda_function = App.prefix+'tx_request_job'
+        payload = {
+            'data': payload,
+            'gogs_url': App.gogs_url,
+            'cdn_bucket': App.cdn_bucket,
+            'cdn_url': 'https://'+App.cdn_bucket,
+            'job_table_name': App.job_table_name,
+            'module_table_name': App.prefix+App.module_table_name,  # Isn't passed to the client webhook
+        }
+        response = self.lambda_handler.invoke(request_job_lambda_function, payload)
+
         self.logger.debug('finished.')
 
         # Fake job in case tx-manager returns an error, can still build the build_log.json
