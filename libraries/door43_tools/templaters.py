@@ -37,7 +37,8 @@ class Templater(object):
         self.files = sorted(glob(os.path.join(self.source_dir, '*.html')))
         self.rc = None
         self.template_html = ''
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.already_converted = []
         self.titles = {}
         self.chapters = {}

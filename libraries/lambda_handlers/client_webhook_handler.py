@@ -25,5 +25,8 @@ class ClientWebhookHandler(Handler):
             'gogs_user_token': self.retrieve(event['vars'], 'gogs_user_token', 'Environment Vars'),
             'commit_data': self.retrieve(event, 'data', 'payload'),
             'manifest_table_name': self.retrieve(event['vars'], 'manifest_table_name', 'Environment Vars'),
+            'job_table_name': self.retrieve(event['vars'], 'job_table_name', 'Environment Vars'),
+            'prefix': self.retrieve(event['vars'], 'prefix', 'Environment Vars', required=False, default=''),
+            'linter_messaging_name': self.retrieve(event['vars'], 'linter_messaging_name', 'Environment Vars'),
         }
         return ClientWebhook(**env_vars).process_webhook()

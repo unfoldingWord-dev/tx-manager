@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='tx-manager',
-    version='0.2.65',
+    version='0.3.0',
     package_dir={
         'client_callback': 'functions/client_callback',
         'client_webhook': 'functions/client_webhook',
@@ -75,8 +75,9 @@ setup(
         'usfm-tools==0.0.12',
         'mock',  # travis reports syntax error in mock setup.cfg if we give version
         'moto==1.0.1',
-        'PyYAML==3.12'
+        'PyYAML==3.12',
+        'pymysql==0.7.11',
+        'sqlalchemy==1.2.0b2',
     ],
     test_suite='tests'
 )
-

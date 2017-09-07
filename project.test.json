@@ -8,6 +8,6 @@
   "environment": {},
   "hooks": {
     "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
-    "clean": "rm -rf libraries"
+    "clean": "rm -rf ./*/"
   }
 }

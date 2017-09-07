@@ -3,6 +3,7 @@ from contextlib import closing
 import json
 import shutil
 import sys
+import ssl
 
 try:
     import urllib.request as urllib2
@@ -44,6 +45,9 @@ def download_file(url, outfile):
 
 def _download_file(url, outfile, urlopen):
     try:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
         with closing(urlopen(url)) as request:
             with open(outfile, 'wb') as fp:
                 shutil.copyfileobj(request, fp)

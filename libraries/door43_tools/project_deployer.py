@@ -8,6 +8,7 @@ import time
 from glob import glob
 from shutil import copyfile
 from libraries.aws_tools.s3_handler import S3Handler
+from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
 from datetime import datetime, timedelta
@@ -31,7 +32,8 @@ class ProjectDeployer(object):
         self.cdn_handler = None
         self.door43_handler = None
         self.lambda_client = None
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.setup_resources()
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="deployer_")
 
@@ -112,16 +114,6 @@ class ProjectDeployer(object):
                         </div>
                     """
                     content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
-                elif len(build_log['warnings']) > 0:
-                    content += """
-                        <div style="text-align:center;margin-bottom:20px">
-                            <i class="fa fa-exclamation-circle" style="font-size: 250px;font-weight: 300;color: yellow"></i>
-                            <br/>
-                            <h2>Warning!</h2>
-                            <h3>Here are some problems with this build:</h3>
-                        </div>
-                    """
-                    content += '<ul><li>' + '</li><li>'.join(build_log['warnings']) + '</li></ul>'
                 else:
                     content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
                     content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
@@ -199,6 +191,10 @@ class ProjectDeployer(object):
                     self.logger.debug("Moving {0} to common area".format(basename))
                     self.cdn_handler.upload_file(filename, s3_commit_key + '/' + basename, 0)
                     self.cdn_handler.delete_file(download_key + '/' + basename)
+
+        # save master build_log.json
+        file_utils.write_file(os.path.join(output_dir, 'build_log.json'), build_log)
+        self.logger.debug("Final build_log.json:\n" + json.dumps(build_log))
 
         # Upload all files to the door43.org bucket
         for root, dirs, files in os.walk(output_dir):

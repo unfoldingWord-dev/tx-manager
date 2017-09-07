@@ -18,11 +18,7 @@ class PageViewCountHandler(Handler):
             data = event['data']
         if 'body-json' in event and isinstance(event['body-json'], dict):
             data.update(event['body-json'])
-        # Set required env_vars
-        env_vars = {
-            'manifest_table_name': self.retrieve(event['vars'], 'manifest_table_name', 'Environment Vars')
-        }
-
+        env_vars = {}
         increment = 0
         path = ''
         callback = ''

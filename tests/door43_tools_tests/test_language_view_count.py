@@ -7,6 +7,7 @@ from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.general_tools import file_utils
 from libraries.models.language_stats import LanguageStats
+from libraries.app.app import App
 
 
 @mock_dynamodb2
@@ -24,6 +25,7 @@ class ViewCountTest(unittest.TestCase):
     def setUp(self):
         self.db_handler = DynamoDBHandler(ViewCountTest.MOCK_LANGUAGE_STATS_TABLE_NAME)
         self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
+        App(db_connect_string='sqlite:///:memory:')
 
     def test_valid(self):
         # given
@@ -126,7 +128,6 @@ class ViewCountTest(unittest.TestCase):
         vc = PageMetrics(**{})
         expected_view_count = 0
         self.lang_url = "https://live.door43.org/en/"
-        self.db_handler = DynamoDBHandler("dev-" + PageMetrics.MANIFEST_TABLE_NAME)
 
         # when
         results = vc.get_language_view_count(self.lang_url, increment=1)

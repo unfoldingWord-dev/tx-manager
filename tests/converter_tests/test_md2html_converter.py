@@ -86,70 +86,13 @@ class TestMd2HtmlConverter(unittest.TestCase):
         self.expected_warnings = 0
         self.expected_errors = 0
         self.expected_success = True
-        self.expected_info_empty = False;
+        self.expected_info_empty = False
 
         # when
         tx = self.doTransformObs(file_name)
 
         #then
         self.verifyTransform(tx)
-
-    def test_BrokenChapter01(self):
-        """
-        Runs the converter and verifies the output
-        """
-
-        # given
-        file_name = 'en-obs-broken_chapter_01.zip'
-        self.expected_warnings = 3
-        self.expected_errors = 0
-        self.expected_success = True
-        self.expected_info_empty = False
-        missing_chapters = [1]
-
-        # when
-        tx = self.doTransformObs(file_name)
-
-        #then
-        self.verifyTransform(tx, missing_chapters)
-
-    def test_MissingFirstChunk(self):
-        """
-        Runs the converter and verifies the output
-        """
-
-        # given
-        file_name = 'en-obs-missing_first_chunk.zip'
-        self.expected_warnings = 1
-        self.expected_errors = 0
-        self.expected_success = True
-        self.expected_info_empty = False;
-        missing_chapters = []
-
-        # when
-        tx = self.doTransformObs(file_name)
-
-        #then
-        self.verifyTransform(tx, missing_chapters)
-
-    def test_MissingChapter01(self):
-        """
-        Runs the converter and verifies the output
-        """
-
-        # given
-        file_name = 'en-obs-missing_chapter_01.zip'
-        self.expected_warnings = 1
-        self.expected_errors = 0
-        self.expected_success = True
-        self.expected_info_empty = False;
-        missing_chapters = [1]
-
-        # when
-        tx = self.doTransformObs(file_name)
-
-        #then
-        self.verifyTransform(tx, missing_chapters)
 
     def test_ta(self):
         """

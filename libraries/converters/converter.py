@@ -1,13 +1,13 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+import logging
+import traceback
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
 from shutil import copy
-import logging
 from convert_logger import ConvertLogger
-from libraries.checkers.checker_handler import get_checker
 from abc import ABCMeta, abstractmethod
 
 
@@ -17,6 +17,13 @@ class Converter(object):
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source, resource, cdn_bucket=None, cdn_file=None, options=None):
+        """
+        :param string source:
+        :param string resource:
+        :param string cdn_bucket:
+        :param string cdn_file:
+        :param dict options:
+        """
         self.log = ConvertLogger()
         self.options = {}
         self.source = source
@@ -24,7 +31,8 @@ class Converter(object):
         self.cdn_bucket = cdn_bucket
         self.cdn_file = cdn_file
         self.options = options
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('converter')
+        self.logger.addHandler(logging.NullHandler())
 
         if not self.options:
             self.options = {}
@@ -41,6 +49,9 @@ class Converter(object):
         remove_tree(self.files_dir)
         remove_tree(self.output_dir)
         remove(self.output_zip_file)
+
+    def __del__(self):
+        self.close()
 
     @abstractmethod
     def convert(self):
@@ -64,24 +75,10 @@ class Converter(object):
             # unzip the input archive
             self.logger.debug("Unzipping {0} to {1}".format(self.input_zip_file, self.files_dir))
             unzip(self.input_zip_file, self.files_dir)
-            remove(self.input_zip_file)
             # convert method called
             self.logger.debug("Converting files...")
             if self.convert():
                 self.logger.debug("Was able to convert {0}".format(self.resource))
-
-                # Run the corrisponding checker on the preconvert and/or converted files to look for issues
-                self.logger.debug("Checking for issues...")
-                checker = get_checker(self.resource)
-                if checker:
-                    try:
-                        checker(self.files_dir, self.output_dir, self.log).run()
-                    except Exception as e:
-                        self.logger.warning('Checker {0}: failed to run checker'.format(checker.__class__.__name__))
-                        self.log.warning('Failed to check for issues'.format(self.resource))
-                else:
-                    self.logger.warning("There is no checker for resource {0}".format(self.resource))
-
                 # zip the output dir to the output archive
                 self.logger.debug("Adding files in {0} to {1}".format(self.output_dir, self.output_zip_file))
                 add_contents_to_zip(self.output_zip_file, self.output_dir)
@@ -95,7 +92,8 @@ class Converter(object):
             else:
                 self.log.error('Resource {0} currently not supported.'.format(self.resource))
         except Exception as e:
-                self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
+            self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
+            self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
 
         result = {
             'success': success and len(self.log.logs['error']) == 0,
@@ -123,12 +121,3 @@ class Converter(object):
             cdn_handler.upload_file(self.output_zip_file, self.cdn_file)
         elif self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
             copy(self.output_zip_file, self.cdn_file)
-
-    def get_files(self):
-        files = []
-        for root, dirs, filenames in os.walk(self.files_dir):
-            for filename in filenames:
-                if filename.lower() not in Converter.EXCLUDED_FILES:
-                    filepath = os.path.join(root, filename)
-                    files.append(filepath)
-        return files
