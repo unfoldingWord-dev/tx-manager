@@ -7,8 +7,8 @@ class TxManifest(App.ModelBase):
     __tablename__ = App.manifest_table_name
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    repo_name = Column(String(255), nullable=False)
-    user_name = Column(String(255), nullable=False)
+    repo_name = Column(String(100), nullable=False)
+    user_name = Column(String(100), nullable=False)
     lang_code = Column(String(32), nullable=False)
     resource_id = Column(String(32), nullable=False)
     resource_type = Column(String(32), nullable=False)
