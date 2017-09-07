@@ -24,6 +24,7 @@ class App(object):
     job_table_name = 'tx-job'
     manifest_table_name = 'manifests'
     module_table_name = 'tx-module'
+    language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
 
     db = None

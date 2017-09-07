@@ -18,7 +18,6 @@ class PageViewCountHandler(Handler):
             data = event['data']
         if 'body-json' in event and isinstance(event['body-json'], dict):
             data.update(event['body-json'])
-        env_vars = {}
         increment = 0
         path = ''
         callback = ''
@@ -32,5 +31,5 @@ class PageViewCountHandler(Handler):
         except:
             pass
 
-        data = PageMetrics(**env_vars).get_view_count(path, increment)
+        data = PageMetrics().get_view_count(path, increment)
         return callback + '(' + json.dumps(data) + ')'
