@@ -446,11 +446,13 @@ class TxManager(object):
             for item in items:
                 module_names.append(item["name"])
 
-            registered_jobs = self.list_jobs({ "convert_module" : { "condition" : "is_in", "value" : module_names}
+            registered_jobs = self.list_jobs({"convert_module": {"condition": "is_in", "value": module_names}
                                     }, False)
             total_job_count = self.get_job_count()
             registered_job_count = len(registered_jobs)
-            if registered_job_count > total_job_count: # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
+
+            # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
+            if registered_job_count > total_job_count:
                 total_job_count = registered_job_count
 
             self.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")

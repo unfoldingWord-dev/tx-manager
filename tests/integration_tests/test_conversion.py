@@ -16,9 +16,9 @@ from libraries.manager.manager import TxManager
 from libraries.general_tools.file_utils import unzip
 from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
+from libraries.app.app import App
 
 # replace default print with utf-8 writer, so it can work with pipes and redirects such as used with the latest
 #   Travis build system.
@@ -64,7 +64,6 @@ class TestConversions(TestCase):
         self.cdn_bucket = '{0}cdn.door43.org'.format(destination)
         self.job_table_name = '{0}tx-job'.format(destination)
         self.module_table_name = '{0}tx-module'.format(destination)
-        self.manifest_table_name = '{0}tx-manifest'.format(destination)
         self.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
         self.door43_bucket = '{0}door43.org'.format(destination)
 
@@ -464,16 +463,14 @@ class TestConversions(TestCase):
 
         self.assertTrue(success)
 
-        # Test that repo is in manifest table
-        tx_manifest = TxManifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
-                'repo_name_lower': repo.lower(),
-                'user_name_lower': user.lower()
-        })
-        # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
-        # If that row doesn't exist, it will cause repo_name_lower and user_name_lower to be None,
-        #   so just need to check them.
-        self.assertEqual(tx_manifest.repo_name_lower, repo.lower())
-        self.assertEqual(tx_manifest.user_name_lower, user.lower())
+        # # RHM: Removed for now. We could add DB connection variables to Travis, but then would also require them for
+        # #      developers to run locally.
+        # # Test that repo is in manifest table
+        # tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
+        # # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
+        # self.assertIsNotNone(tx_manifest)
+        # self.assertEqual(tx_manifest.repo_name, repo)
+        # self.assertEqual(tx_manifest.user_name, user)
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
@@ -701,8 +698,7 @@ class TestConversions(TestCase):
             'cdn_bucket': self.cdn_bucket,
             'gogs_url': self.gogs_url,
             'gogs_user_token': gogs_user_token,
-            'commit_data': webhook_data,
-            'manifest_table_name': self.manifest_table_name,
+            'commit_data': webhook_data
         }
 
         start = time.time()

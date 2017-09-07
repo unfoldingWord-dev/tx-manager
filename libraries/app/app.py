@@ -27,7 +27,6 @@ class App(object):
     language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
 
-    db = None
     db_protocol = 'mysql+pymysql'
     db_user = 'tx'
     db_pass = None
@@ -35,6 +34,8 @@ class App(object):
     db_port = '3306'
     db_name = 'tx'
     db_connection_string = None
+
+    db = None
 
     def __init__(self, **kwargs):
         """
