@@ -30,8 +30,6 @@ class Handler(object):
 
         if 'vars' in event:
             App(**event['vars'])
-        if App.db_pass or App.db_connection_string:
-            App.setup_db()
 
         try:
             return self._handle(event, context)

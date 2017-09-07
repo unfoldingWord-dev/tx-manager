@@ -43,6 +43,8 @@ class App(object):
         """
         for var, value in kwargs.iteritems():
             setattr(App, var, value)
+        if self.db_pass or self.db_connection_string:
+            self.setup_db()
 
     @classmethod
     def setup_db(cls, echo=False):

@@ -22,7 +22,7 @@ class TxManifestTests(TestCase):
         self.populate_table()
 
     def init_table(self):
-        App(connection_string='sqlite:///:memory:', default_db=True)
+        App(db_connection_string='sqlite:///:memory:')
 
     def init_items(self):
         self.items = {

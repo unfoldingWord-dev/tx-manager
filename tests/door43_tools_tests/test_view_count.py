@@ -17,7 +17,7 @@ class ViewCountTest(unittest.TestCase):
         self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
 
     def init_table(self, view_count):
-        App(connection_string='sqlite:///:memory:', default_db=True)
+        App(db_connection_string='sqlite:///:memory:')
         tx_manifest = TxManifest(
             repo_name=ViewCountTest.REPO_NAME,
             user_name=ViewCountTest.USER_NAME,

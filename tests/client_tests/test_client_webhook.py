@@ -90,7 +90,7 @@ class TestClientWebhook(unittest.TestCase):
             },
         )
 
-        App(connection_string='sqlite:///:memory:', default_db=True)
+        App(db_connection_string='sqlite:///:memory:')
 
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
