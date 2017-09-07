@@ -32,7 +32,8 @@ class ProjectDeployer(object):
         self.cdn_handler = None
         self.door43_handler = None
         self.lambda_client = None
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.setup_resources()
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="deployer_")
 

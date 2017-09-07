@@ -23,7 +23,8 @@ class PageMetrics(object):
         """
         self.language_stats_table_name = language_stats_table_name
         self.language_stats_db_handler = None
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.languages = None
 
     def get_view_count(self, path, increment=0):

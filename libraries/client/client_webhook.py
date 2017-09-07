@@ -45,7 +45,8 @@ class ClientWebhook(object):
         self.job_table_name = job_table_name
         self.prefix = prefix
         self.linter_messaging_name = linter_messaging_name
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
 
         if self.pre_convert_bucket:
             # we use us-west-2 for our s3 buckets

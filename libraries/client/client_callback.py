@@ -17,7 +17,8 @@ class ClientCallback(object):
         :param string cdn_bucket:
         :param string gogs_url:
         """
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.job = TxJob(job_data)
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url

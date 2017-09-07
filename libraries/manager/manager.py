@@ -62,7 +62,7 @@ class TxManager(object):
         self.language_views = None
         self.language_dates = None
 
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
 
         self.setup_resources()
 

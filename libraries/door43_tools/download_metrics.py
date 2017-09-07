@@ -10,7 +10,8 @@ class DownloadMetrics(object):
         """
         :param string pre_convert_bucket:
         """
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.pre_convert_bucket = pre_convert_bucket
         self.preconvert_handler = None
 

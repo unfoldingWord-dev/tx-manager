@@ -9,7 +9,8 @@ class ConvertLogger(object):
             "info": [],
             "warning": [],
         }
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
 
     def log(self, type, msg):
         if type in self.logs:

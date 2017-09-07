@@ -10,7 +10,8 @@ class LambdaHandler(object):
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_region_name = aws_region_name
         self.client = None
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('tx-manager')
+        self.logger.addHandler(logging.NullHandler())
         self.setup_resources()
 
     def setup_resources(self):

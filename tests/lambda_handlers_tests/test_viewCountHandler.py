@@ -90,9 +90,7 @@ class ViewCountHandlerTest(TestCase):
         event = {
             'data': {},
             'body-json': {},
-            'vars': {
-                'manifest_table_name': 'test-tx-manifest'
-            },
+            'vars': {},
             'api-gateway': {
                 'params': {
                     'querystring': query_string
