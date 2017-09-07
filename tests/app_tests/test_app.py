@@ -19,16 +19,16 @@ class User(App.ModelBase):
 class TestApp(unittest.TestCase):
 
     def test_init(self):
-        App(dcs_ip_address='198.167.2.2')
-        self.assertEqual(App.dcs_ip_address, '198.167.2.2')
+        App(gogs_ip_address='198.167.2.2')
+        self.assertEqual(App.gogs_ip_address, '198.167.2.2')
 
     def test_construction_connection_string(self):
         """
         Test the construction of the connection string with multiple attributes
         """
-        App(db_protocol='protocol', db_user='user', db_pass='pass', db_end_point='my.endpoint.url', db_port='9999',
+        App(db_protocol='protocol', db_user='user', db_pass='', db_end_point='my.endpoint.url', db_port='9999',
             db_name='db')
-        expected = "protocol://user:pass@my.endpoint.url:9999/db"
+        expected = "protocol://user:@my.endpoint.url:9999/db"
         connection_str = App.construct_connection_string()
         self.assertEqual(connection_str, expected)
 

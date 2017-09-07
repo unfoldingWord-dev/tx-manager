@@ -75,7 +75,7 @@ class TxManifestTests(TestCase):
                              self.items['{0}/{1}'.format(tx_manifest.user_name, tx_manifest.repo_name)]['resource_id'])
 
     def test_load_manifest(self):
-        manifest_dict = self.items['door43/en_obs']
+        manifest_dict = self.items['Door43/en_obs']
         # Test loading by just giving it only the repo_name and user_name in the data array in the constructor
         manifest_from_db = App.db.query(TxManifest).filter_by(repo_name=manifest_dict['repo_name'],
                                                               user_name=manifest_dict['user_name']).first()
@@ -115,8 +115,8 @@ class TxManifestTests(TestCase):
         self.assertEqual(manifest_from_db.views, 5)
 
     def test_delete_manifest(self):
-        repo_name = self.items['door43/en_obs']['repo_name']
-        user_name = self.items['door43/en_obs']['user_name']
+        repo_name = self.items['Door43/en_obs']['repo_name']
+        user_name = self.items['Door43/en_obs']['user_name']
         tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
         self.assertIsNotNone(tx_manifest)
         App.db.delete(tx_manifest)
