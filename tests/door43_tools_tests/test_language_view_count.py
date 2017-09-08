@@ -25,7 +25,7 @@ class ViewCountTest(unittest.TestCase):
     def setUp(self):
         self.db_handler = DynamoDBHandler(ViewCountTest.MOCK_LANGUAGE_STATS_TABLE_NAME)
         self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
-        App(db_connect_string='sqlite:///:memory:')
+        App(db_connection_string='sqlite:///:memory:')
 
     def test_valid(self):
         # given

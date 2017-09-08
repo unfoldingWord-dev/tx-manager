@@ -32,8 +32,7 @@ class ProjectDeployer(object):
         self.cdn_handler = None
         self.door43_handler = None
         self.lambda_client = None
-        self.logger = logging.getLogger('tx-manager')
-        self.logger.addHandler(logging.NullHandler())
+        self.logger = logging.getLogger()
         self.setup_resources()
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="deployer_")
 
@@ -202,7 +201,7 @@ class ProjectDeployer(object):
                 path = os.path.join(root, f)
                 if os.path.isdir(path):
                     continue
-                key = s3_commit_key + path.replace(output_dir, '')
+                key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
                 self.logger.debug("Uploading {0} to {1}".format(path, key))
                 self.door43_handler.upload_file(path, key, 0)
 

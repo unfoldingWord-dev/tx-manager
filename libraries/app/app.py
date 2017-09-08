@@ -35,6 +35,7 @@ class App(object):
     db_name = 'tx'
     db_connection_string = None
 
+    auto_setup_db = True
     db = None
 
     def __init__(self, **kwargs):
@@ -44,8 +45,8 @@ class App(object):
         """
         for var, value in kwargs.iteritems():
             setattr(App, var, value)
-        if self.db_pass or self.db_connection_string:
-            self.setup_db()
+        if App.auto_setup_db:
+            App.setup_db()
 
     @classmethod
     def setup_db(cls, echo=False):
@@ -62,6 +63,17 @@ class App(object):
 
     @classmethod
     def construct_connection_string(cls):
-        db_connection_string = "{0}://{1}:{2}@{3}:{4}/{5}".format(
-            App.db_protocol, App.db_user, App.db_pass, App.db_end_point, App.db_port, App.db_name)
+        db_connection_string = App.db_protocol+'://'
+        if App.db_user:
+            db_connection_string += App.db_user
+            if App.db_pass:
+                db_connection_string += ':'+App.db_pass
+            if App.db_end_point:
+                db_connection_string += '@'
+        if App.db_end_point:
+            db_connection_string += App.db_end_point
+            if App.db_port:
+                db_connection_string += ':'+App.db_port
+        if App.db_name:
+            db_connection_string += '/'+App.db_name
         return db_connection_string

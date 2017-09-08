@@ -34,7 +34,6 @@ class ProjectDeployerTests(unittest.TestCase):
              'lr': 'Europe', 'pk': 1868})
         }
 
-
     def tearDown(self):
         rmtree(self.temp_dir, ignore_errors=True)
 
@@ -154,7 +153,7 @@ class ProjectDeployerTests(unittest.TestCase):
         self.project_files = file_utils.get_files(out_dir)
         self.project_key = project_key
         for filename in self.project_files:
-            sub_path = filename.split(project_dir)[1]
+            sub_path = filename.split(project_dir)[1].replace(os.path.sep, '/')  # Make sure it is a bucket path
             self.deployer.cdn_handler.upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
 
             if multi_part:  # copy files from cdn to door43
