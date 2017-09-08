@@ -39,59 +39,51 @@ class RepoSearch(object):
             tx_manager = App.db.query(TxManifest)
             selection = tx_manager
 
-            if 'full_text' in self.criterion:
-                # replace full text search with individual searches
-                value = self.criterion['full_text']
-                self.criterion['user_name'] = value
-                self.criterion['repo_name'] = value
-                self.criterion['manifest'] = value
-                del self.criterion['full_text']
-
             for k in self.criterion:
                 v = self.criterion[k]
-                success = self.appy_filter(selection, k, v)
-                if not success:
+                selection = self.appy_filter(selection, k, v)
+                if selection is None:
                     return None
         except Exception as e:
             self.log_error('Failed to create a query: ' + str(e))
             return None
 
-
-        selection = tx_manager.filter(TxManifest.views > 0).filter(TxManifest.repo_name.contains("en")).limit(20)
-            # .limit(20)
-        success = selection.all()
-        if success:
+        results = selection.limit(20).all()  # get all matching
+        if results:
             self.logger.debug('Returning stored view count of {0}')
         else:  # record is not present
             self.logger.debug('No entries found in manifest table')
 
-        return success
+        return results
 
     def appy_filter(self, selection, key, value):
         try:
             if key == "minViews":
-                selection.filter(TxManifest.views >= parse_int(value, 1))
+                selection = selection.filter(TxManifest.views >= parse_int(value, 1))
             elif key == "daysForRecent":
                 days = parse_int(value, 1)
                 current = datetime.datetime.now()
                 offset = -days * 24 * 60 * 60
                 recent_in_seconds = current + datetime.timedelta(seconds=offset)
-                selection.filter(TxManifest.last_updated >= recent_in_seconds)
+                selection = selection.filter(TxManifest.last_updated >= recent_in_seconds)
             elif (key == "repo_name") or (key == "user_name") or (key == "user_name") or (key == "manifest"):
-                set_contains_string_filter(selection, key, value)
+                selection = set_contains_string_filter(selection, key, value)
             elif key == "resID":
-                selection.filter(TxManifest.resource_id.contains(value))
+                selection = selection.filter(TxManifest.resource_id.contains(value))
             elif key == "resType":
-                selection.filter(TxManifest.resource_type.contains(value))
+                selection = selection.filter(TxManifest.resource_type.contains(value))
+            elif key == 'full_text':
+                selection = selection.filter( (TxManifest.user_name.contains(value)) | (TxManifest.repo_name.contains(value))
+                                  | (TxManifest.manifest.contains(value)))
             else:
                 self.log_error('Unsupported filter (key,value): ({0},{1})'.format(key, value))
-                return False
+                return None
 
         except Exception as e:
             self.log_error('Failed to apply filter (key,value): ({0},{1}): '.format(key, value) + str(e))
-            return False
+            return None
 
-        return True
+        return selection
 
 
     def log_error(self, msg):
@@ -101,7 +93,8 @@ class RepoSearch(object):
 
 def set_contains_string_filter(selection, key, value):
     db_key = getattr(TxManifest, key, None)
-    selection.filter(db_key.contains(value))
+    selection = selection.filter(db_key.contains(value))
+    return selection
 
 def parse_int(s, default_value=None):
     try:
