@@ -21,11 +21,10 @@ from libraries.aws_tools.lambda_handler import LambdaHandler
 
 
 class ClientWebhook(object):
-    MANIFEST_TABLE_NAME = 'tx-manifest'
     JOB_TABLE_NAME = 'tx-job'
 
     def __init__(self, commit_data=None, api_url=None, pre_convert_bucket=None, cdn_bucket=None,
-                 gogs_url=None, gogs_user_token=None, manifest_table_name=None, job_table_name=None, prefix='',
+                 gogs_url=None, gogs_user_token=None, job_table_name=None, prefix='',
                  linter_messaging_name=None):
         """
         :param dict commit_data:
@@ -34,6 +33,9 @@ class ClientWebhook(object):
         :param string cdn_bucket:
         :param string gogs_url:
         :param string gogs_user_token:
+        :param string job_table_name:
+        :param string prefix:
+        :param string linter_messaging_name:
         """
         self.commit_data = commit_data
         self.api_url = api_url
@@ -41,10 +43,10 @@ class ClientWebhook(object):
         self.cdn_bucket = cdn_bucket
         self.gogs_url = gogs_url
         self.gogs_user_token = gogs_user_token
-        self.manifest_table_name = manifest_table_name
         self.job_table_name = job_table_name
         self.prefix = prefix
         self.linter_messaging_name = linter_messaging_name
+
         self.logger = logging.getLogger('tx-manager')
         self.logger.addHandler(logging.NullHandler())
 
@@ -58,12 +60,9 @@ class ClientWebhook(object):
 
         self.cdn_handler = None
         self.preconvert_handler = None
-        self.manifest_db_handler = None
         self.job_db_handler = None
         self.lambda_handler = None
 
-        if not self.manifest_table_name:
-            self.manifest_table_name = ClientWebhook.MANIFEST_TABLE_NAME
         if not self.job_table_name:
             self.job_table_name = ClientWebhook.JOB_TABLE_NAME
 
@@ -74,8 +73,6 @@ class ClientWebhook(object):
         self.setup_resources()
 
     def setup_resources(self):
-        if self.manifest_table_name:
-            self.manifest_db_handler = DynamoDBHandler(self.manifest_table_name)
         if self.job_table_name:
             self.job_db_handler = DynamoDBHandler(self.job_table_name)
         self.lambda_handler = LambdaHandler()

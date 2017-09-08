@@ -24,9 +24,9 @@ class App(object):
     job_table_name = 'tx-job'
     manifest_table_name = 'manifests'
     module_table_name = 'tx-module'
+    language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
 
-    db = None
     db_protocol = 'mysql+pymysql'
     db_user = 'tx'
     db_pass = None
@@ -34,6 +34,8 @@ class App(object):
     db_port = '3306'
     db_name = 'tx'
     db_connection_string = None
+
+    db = None
 
     def __init__(self, **kwargs):
         """

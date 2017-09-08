@@ -360,7 +360,6 @@ class TestClientWebhook(unittest.TestCase):
         commit_path = '/tx-manager-test-data/en-ulb/commit/22f3d09f7a33d2496db6993648f0cd967a9006f6'
         repo = 'en-ulb'
         user = 'tx-manager-test-data'
-        manifest_table_name = TestClientWebhook.MANIFEST_TABLE_NAME
         job_table_name = TestClientWebhook.JOB_TABLE_NAME
         linter_messaging_name = TestClientWebhook.LINTER_MESSAGING_NAME
 
@@ -399,7 +398,6 @@ class TestClientWebhook(unittest.TestCase):
             'gogs_url': gogs_url,
             'gogs_user_token': gogs_user_token,
             'commit_data': webhook_data,
-            'manifest_table_name': manifest_table_name,
             'linter_messaging_name': linter_messaging_name,
             'job_table_name': job_table_name
         }
