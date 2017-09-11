@@ -1,66 +1,57 @@
 from __future__ import print_function, unicode_literals
-
 import json
 import logging
-import time
-
 import datetime
-
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 
 
-class RepoSearch(object):
-    LANGUAGE_STATS_TABLE_NAME = 'language-stats'
+class ProjectSearch(object):
     INVALID_URL_ERROR = 'repo not found for: '
     INVALID_LANG_URL_ERROR = 'language not found for: '
     DB_ACCESS_ERROR = 'could not access view counts for: '
 
     def __init__(self):
-        """
-        :param string language_stats_table_name:
-        """
         self.logger = logging.getLogger('tx-manager')
         self.logger.addHandler(logging.NullHandler())
         self.error = None
         self.criterion = None
 
-    def search_repos(self, criterion):
+    def search_projects(self, criterion):
         """
         search for repos in manifest that match criterion
         :param criterion:
         :return:
         """
-        self.logger.debug("Start: search_repos: " + json.dumps(criterion))
+        self.logger.debug("Start: search_projects: " + json.dumps(criterion))
 
         self.criterion = json.loads(json.dumps(criterion))  # clone so we can modify
 
         try:
-            tx_manager = App.db.query(TxManifest)
-            selection = tx_manager
+            manifests = App.db.query(TxManifest)
 
             for k in self.criterion:
                 v = self.criterion[k]
-                selection = self.apply_filters(selection, k, v)
-                if selection is None:
+                manifests = self.apply_filters(manifests, k, v)
+                if manifests is None:
                     return None
 
             if 'sort_by' in self.criterion:
                 db_key = getattr(TxManifest, self.criterion['sort_by'], None)
                 if db_key:
-                    selection = selection.order_by(db_key)
+                    manifests = manifests.order_by(db_key)
 
             if 'sort_by_reversed' in self.criterion:
                 db_key = getattr(TxManifest, self.criterion['sort_by_reversed'], None)
                 if db_key:
-                    selection = selection.order_by(db_key.desc())
+                    manifests = manifests.order_by(db_key.desc())
 
         except Exception as e:
             self.log_error('Failed to create a query: ' + str(e))
             return None
 
         limit = 100 if 'matchLimit' not in self.criterion else self.criterion['matchLimit']
-        results = selection.limit(limit).all()  # get all matching
+        results = manifests.limit(limit).all()  # get all matching
         data = []
         if results:
             self.logger.debug('Returning search result count of {0}')
@@ -119,7 +110,6 @@ class RepoSearch(object):
 
         return selection
 
-
     def log_error(self, msg):
         self.error = msg
         self.logger.debug(msg)
@@ -129,6 +119,7 @@ def set_contains_string_filter(selection, key, value):
     db_key = getattr(TxManifest, key, None)
     selection = selection.filter(db_key.contains(value))
     return selection
+
 
 def set_contains_set_filter(selection, key, value):
     db_key = getattr(TxManifest, key, None)
@@ -140,6 +131,7 @@ def set_contains_set_filter(selection, key, value):
         selection = selection.filter(db_key.like(value))
 
     return selection
+
 
 def parse_int(s, default_value=None):
     try:

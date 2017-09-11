@@ -4,7 +4,7 @@ from libraries.lambda_handlers.run_linter_handler import RunLinterHandler
 
 def handle(event, context):
     """
-    Called by the webhook client to request a job
+    Invoked by webhook client to run the linter
     :param dict event:
     :param context:
     :return dict:
