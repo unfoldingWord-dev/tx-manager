@@ -45,7 +45,7 @@ class App(object):
         """
         for var, value in kwargs.iteritems():
             setattr(App, var, value)
-        if App.auto_setup_db:
+        if App.auto_setup_db and (App.db_connection_string or App.db_pass):
             App.setup_db()
 
     @classmethod

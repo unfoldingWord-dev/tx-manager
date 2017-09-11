@@ -1,5 +1,4 @@
 from __future__ import unicode_literals, print_function
-import json
 from libraries.door43_tools.project_search import ProjectSearch
 from libraries.lambda_handlers.handler import Handler
 
