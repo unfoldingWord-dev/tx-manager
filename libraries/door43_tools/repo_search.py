@@ -41,14 +41,26 @@ class RepoSearch(object):
 
             for k in self.criterion:
                 v = self.criterion[k]
-                selection = self.appy_filter(selection, k, v)
+                selection = self.apply_filters(selection, k, v)
                 if selection is None:
                     return None
+
+            if 'sort_by' in self.criterion:
+                db_key = getattr(TxManifest, self.criterion['sort_by'], None)
+                if db_key:
+                    selection = selection.order_by(db_key)
+
+            if 'sort_by_reversed' in self.criterion:
+                db_key = getattr(TxManifest, self.criterion['sort_by_reversed'], None)
+                if db_key:
+                    selection = selection.order_by(db_key.desc())
+
         except Exception as e:
             self.log_error('Failed to create a query: ' + str(e))
             return None
 
-        results = selection.limit(100).all()  # get all matching
+        limit = 100 if 'limit' not in self.criterion else self.criterion['limit']
+        results = selection.limit(limit).all()  # get all matching
         data = []
         if results:
             self.logger.debug('Returning search result count of {0}')
@@ -58,8 +70,8 @@ class RepoSearch(object):
             returned_fields = returned_fields.split(',')
 
             # copy wanted fields from this result item
-            item = {}
             for result in results:
+                item = {}
                 for key in returned_fields:
                     key = key.strip()
                     if hasattr(result, key):
@@ -71,7 +83,7 @@ class RepoSearch(object):
 
         return data
 
-    def appy_filter(self, selection, key, value):
+    def apply_filters(self, selection, key, value):
         try:
             if key == "minViews":
                 selection = selection.filter(TxManifest.views >= parse_int(value, 1))
@@ -90,9 +102,10 @@ class RepoSearch(object):
             elif key == "languages":
                 selection = set_contains_set_filter(selection, "lang_code", value)
             elif key == 'full_text':
-                selection = selection.filter( (TxManifest.user_name.contains(value)) | (TxManifest.repo_name.contains(value))
-                                  | (TxManifest.manifest.contains(value)))
-            elif key == "returnedFields":
+                selection = selection.filter( (TxManifest.user_name.contains(value))
+                                              | (TxManifest.repo_name.contains(value))
+                                              | (TxManifest.manifest.contains(value)))
+            elif key == "returnedFields" or key == "sort_by" or key == "sort_by_reversed" or key == "limit":
                 pass  # skip this item
             else:
                 self.log_error('Unsupported filter (key,value): ({0},{1})'.format(key, value))
