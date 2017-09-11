@@ -59,7 +59,7 @@ class RepoSearch(object):
             self.log_error('Failed to create a query: ' + str(e))
             return None
 
-        limit = 100 if 'matchLimit' not in self.criterion else self.criterion['limit']
+        limit = 100 if 'matchLimit' not in self.criterion else self.criterion['matchLimit']
         results = selection.limit(limit).all()  # get all matching
         data = []
         if results:
