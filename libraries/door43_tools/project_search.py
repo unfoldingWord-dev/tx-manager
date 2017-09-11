@@ -28,30 +28,30 @@ class ProjectSearch(object):
         self.criterion = json.loads(json.dumps(criterion))  # clone so we can modify
 
         try:
-            manifests = App.db.query(TxManifest)
+            selection = App.db.query(TxManifest)
 
             for k in self.criterion:
                 v = self.criterion[k]
-                manifests = self.apply_filters(manifests, k, v)
-                if manifests is None:
+                selection = self.apply_filters(selection, k, v)
+                if selection is None:
                     return None
 
             if 'sort_by' in self.criterion:
                 db_key = getattr(TxManifest, self.criterion['sort_by'], None)
                 if db_key:
-                    manifests = manifests.order_by(db_key)
+                    selection = selection.order_by(db_key)
 
             if 'sort_by_reversed' in self.criterion:
                 db_key = getattr(TxManifest, self.criterion['sort_by_reversed'], None)
                 if db_key:
-                    manifests = manifests.order_by(db_key.desc())
+                    selection = selection.order_by(db_key.desc())
 
         except Exception as e:
             self.log_error('Failed to create a query: ' + str(e))
             return None
 
         limit = 100 if 'matchLimit' not in self.criterion else self.criterion['matchLimit']
-        results = manifests.limit(limit).all()  # get all matching
+        results = selection.limit(limit).all()  # get all matching
         data = []
         if results:
             self.logger.debug('Returning search result count of {0}')
@@ -67,6 +67,8 @@ class ProjectSearch(object):
                     key = key.strip()
                     if hasattr(result, key):
                         item[key] = getattr(result, key)
+                        if isinstance(item[key], datetime.datetime):
+                            item[key] = str(item[key])
                 data.append(item)
 
         else:  # record is not present
