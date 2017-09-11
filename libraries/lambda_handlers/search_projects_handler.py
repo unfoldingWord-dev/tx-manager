@@ -20,6 +20,6 @@ class SearchProjectsHandler(Handler):
         callback = self.retrieve(data, 'callback', required=False)
         results = ProjectSearch().search_projects(data)
         if callback:
-            return '{0}("{1}")'.format(callback, json.dumps(results))
+            return '{0}(\'{1}\')'.format(callback, json.dumps(results))
         else:
             return results
