@@ -1,27 +1,16 @@
 from __future__ import print_function, unicode_literals
-
 import json
-import logging
-import time
-
 import datetime
-
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 
 
-class RepoSearch(object):
-    LANGUAGE_STATS_TABLE_NAME = 'language-stats'
-    INVALID_URL_ERROR = 'repo not found for: '
-    INVALID_LANG_URL_ERROR = 'language not found for: '
-    DB_ACCESS_ERROR = 'could not access view counts for: '
+class ProjectSearch(object):
+    INVALID_URL_ERROR = 'Project not found for: '
+    INVALID_LANG_URL_ERROR = 'Language not found for: '
+    DB_ACCESS_ERROR = 'Could not access view counts for: '
 
     def __init__(self):
-        """
-        :param string language_stats_table_name:
-        """
-        self.logger = logging.getLogger('tx-manager')
-        self.logger.addHandler(logging.NullHandler())
         self.error = None
         self.criterion = None
 
@@ -31,7 +20,7 @@ class RepoSearch(object):
         :param criterion:
         :return:
         """
-        self.logger.debug("Start: search_repos: " + json.dumps(criterion))
+        App.logger.debug("Start: search_repos: " + json.dumps(criterion))
 
         self.criterion = json.loads(json.dumps(criterion))  # clone so we can modify
 
@@ -51,7 +40,7 @@ class RepoSearch(object):
         results = selection.limit(100).all()  # get all matching
         data = []
         if results:
-            self.logger.debug('Returning search result count of {0}')
+            App.logger.debug('Returning search result count of {0}')
 
             returned_fields = "repo_name, user_name, title, lang_code, manifest, last_updated, views" \
                 if "returnedFields" not in self.criterion else self.criterion["returnedFields"]
@@ -67,7 +56,7 @@ class RepoSearch(object):
                 data.append(item)
 
         else:  # record is not present
-            self.logger.debug('No entries found in search')
+            App.logger.debug('No entries found in search')
 
         return data
 
@@ -90,8 +79,9 @@ class RepoSearch(object):
             elif key == "languages":
                 selection = set_contains_set_filter(selection, "lang_code", value)
             elif key == 'full_text':
-                selection = selection.filter( (TxManifest.user_name.contains(value)) | (TxManifest.repo_name.contains(value))
-                                  | (TxManifest.manifest.contains(value)))
+                selection = selection.filter((TxManifest.user_name.contains(value))
+                                             | (TxManifest.repo_name.contains(value))
+                                             | (TxManifest.manifest.contains(value)))
             elif key == "returnedFields":
                 pass  # skip this item
             else:
@@ -104,16 +94,16 @@ class RepoSearch(object):
 
         return selection
 
-
     def log_error(self, msg):
         self.error = msg
-        self.logger.debug(msg)
+        App.logger.debug(msg)
 
 
 def set_contains_string_filter(selection, key, value):
     db_key = getattr(TxManifest, key, None)
     selection = selection.filter(db_key.contains(value))
     return selection
+
 
 def set_contains_set_filter(selection, key, value):
     db_key = getattr(TxManifest, key, None)
@@ -125,6 +115,7 @@ def set_contains_set_filter(selection, key, value):
         selection = selection.filter(db_key.like(value))
 
     return selection
+
 
 def parse_int(s, default_value=None):
     try:

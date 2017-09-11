@@ -3,7 +3,6 @@ import datetime
 import os
 import unittest
 from moto import mock_dynamodb2
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.general_tools import file_utils
 from libraries.models.language_stats import LanguageStats
@@ -12,24 +11,18 @@ from libraries.app.app import App
 
 @mock_dynamodb2
 class ViewCountTest(unittest.TestCase):
-
-    MOCK_LANGUAGE_STATS_TABLE_NAME = 'test_language_stats'
     LANG_CODE = "en"
     INITIAL_VIEW_COUNT = 5
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
-    env_vars = {
-        'language_stats_table_name': MOCK_LANGUAGE_STATS_TABLE_NAME
-    }
-
     def setUp(self):
-        self.db_handler = DynamoDBHandler(ViewCountTest.MOCK_LANGUAGE_STATS_TABLE_NAME)
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
-        App(db_connection_string='sqlite:///:memory:')
 
     def test_valid(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.lang_url = "https://live.door43.org/en/"
 
@@ -41,7 +34,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validIncrement(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
         self.lang_url = "https://live.door43.org/en/"
 
@@ -53,8 +46,9 @@ class ViewCountTest(unittest.TestCase):
 
     def test_invalidManifestTableShouldFail(self):
         # given
-        vc = PageMetrics(**{})
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
+        App.language_stats_db_handler = None
         self.lang_url = "https://live.door43.org/en/"
 
         # when
@@ -65,7 +59,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validLangNotInManifestTable(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 0
         self.lang_url = "https://live.door43.org/zzz/"
 
@@ -77,7 +71,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validLangNotInManifestTableIncrement(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 1
         self.lang_url = "https://live.door43.org/zzz/"
 
@@ -89,7 +83,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_validLangTextIncrement(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 1
         self.lang_url = "https://live.door43.org/zzz/"
 
@@ -101,7 +95,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_missingPathShouldFail(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 0
         self.lang_url = ""
 
@@ -113,7 +107,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_unsupportedPathShouldFail(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 0
         self.lang_url = "https://other_url.com/dummy/stuff2/stuff3/"
 
@@ -122,18 +116,6 @@ class ViewCountTest(unittest.TestCase):
 
         # then
         self.validateResults(expected_view_count, results, error_type=PageMetrics.INVALID_LANG_URL_ERROR)
-
-    def test_missingEnvironmentShouldFail(self):
-        # given
-        vc = PageMetrics(**{})
-        expected_view_count = 0
-        self.lang_url = "https://live.door43.org/en/"
-
-        # when
-        results = vc.get_language_view_count(self.lang_url, increment=1)
-
-        # then
-        self.validateResults(expected_view_count, results, error_type=PageMetrics.DB_ACCESS_ERROR)
 
     def test_shortUrlShouldFail(self):
         # given
@@ -161,7 +143,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_longLanguageShouldFail(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.lang_url = "https://live.door43.org/enxx/"
 
@@ -173,7 +155,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_longLanguageShouldFail2(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.lang_url = "https://live.door43.org/eng-/"
 
@@ -185,7 +167,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_longLanguageShouldFail3(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.lang_url = "https://live.door43.org/eng-a/"
 
@@ -197,7 +179,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_longLanguageShouldFail4(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.lang_url = "https://live.door43.org/eng-x/"
 
@@ -209,7 +191,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_longLanguageShouldFail5(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT
         self.lang_url = "https://live.door43.org/eng-x-/"
 
@@ -221,7 +203,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_extendedLanguage(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 0
         self.lang_url = "https://live.door43.org/eng-x-a/"
 
@@ -233,7 +215,7 @@ class ViewCountTest(unittest.TestCase):
 
     def test_localizedLanguage2(self):
         # given
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         expected_view_count = 0
         self.lang_url = "https://live.door43.org/es-419/"
 
@@ -246,7 +228,7 @@ class ViewCountTest(unittest.TestCase):
     def test_listOfLanguageNames(self):
         lang_names_file = os.path.join(self.resources_dir, "langnames.json")
         lang_names = file_utils.load_json_object(lang_names_file)
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         success = True
         msg = ""
         for lang_name in lang_names:
@@ -273,7 +255,7 @@ class ViewCountTest(unittest.TestCase):
     def test_listOfTempLanguageNames(self):
         lang_names_file = os.path.join(self.resources_dir, "templanguages.json")
         lang_names = file_utils.load_json_object(lang_names_file)
-        vc = PageMetrics(**ViewCountTest.env_vars)
+        vc = PageMetrics()
         success = True
         msg = ""
         for lang_name in lang_names:
@@ -311,12 +293,12 @@ class ViewCountTest(unittest.TestCase):
 
     def init_table(self, view_count):
         try:
-            self.db_handler.table.delete()
+            App.language_stats_db_handler.table.delete()
         except:
             pass
 
-        self.db_handler.resource.create_table(
-            TableName=ViewCountTest.MOCK_LANGUAGE_STATS_TABLE_NAME,
+        App.language_stats_db_handler.resource.create_table(
+            TableName=App.language_stats_table_name,
             KeySchema=[
                 {
                     'AttributeName': 'lang_code',
@@ -342,7 +324,7 @@ class ViewCountTest(unittest.TestCase):
             'views': view_count
         }
 
-        lang_stats = LanguageStats(lang_stats_data, db_handler=self.db_handler).insert()
+        lang_stats = LanguageStats(lang_stats_data).insert()
         print("new language: " + lang_stats.lang_code)
 
 

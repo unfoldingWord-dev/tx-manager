@@ -2,27 +2,24 @@ from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 from mock import patch
 from moto import mock_sqs
-from libraries.linters.linter import Linter
-from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.lambda_handlers.run_linter_handler import RunLinterHandler
 from libraries.linters.linter_handler import LinterHandler
-from libraries.resource_container.ResourceContainer import RC
 
 
 @mock_sqs
 class TestLinterHandler(unittest.TestCase):
 
     def test_get_linter_class(self):
-        self.assertEqual(LinterHandler('obs').get_linter_class().__name__, 'ObsLinter')
-        self.assertEqual(LinterHandler('ta').get_linter_class().__name__, 'TaLinter')
-        self.assertEqual(LinterHandler('tn').get_linter_class().__name__, 'TnLinter')
-        self.assertEqual(LinterHandler('tq').get_linter_class().__name__, 'TqLinter')
-        self.assertEqual(LinterHandler('tw').get_linter_class().__name__, 'TwLinter')
-        self.assertEqual(LinterHandler('udb').get_linter_class().__name__, 'UdbLinter')
-        self.assertEqual(LinterHandler('ulb').get_linter_class().__name__, 'UlbLinter')
-        self.assertEqual(LinterHandler('bible').get_linter_class().__name__, 'UsfmLinter')
-        self.assertEqual(LinterHandler('something').get_linter_class().__name__, 'MarkdownLinter')
-        self.assertEqual(LinterHandler('').get_linter_class().__name__, 'MarkdownLinter')
+        self.assertEqual(LinterHandler().get_linter_class('obs').__name__, 'ObsLinter')
+        self.assertEqual(LinterHandler().get_linter_class('ta').__name__, 'TaLinter')
+        self.assertEqual(LinterHandler().get_linter_class('tn').__name__, 'TnLinter')
+        self.assertEqual(LinterHandler().get_linter_class('tq').__name__, 'TqLinter')
+        self.assertEqual(LinterHandler().get_linter_class('tw').__name__, 'TwLinter')
+        self.assertEqual(LinterHandler().get_linter_class('udb').__name__, 'UdbLinter')
+        self.assertEqual(LinterHandler().get_linter_class('ulb').__name__, 'UlbLinter')
+        self.assertEqual(LinterHandler().get_linter_class('bible').__name__, 'UsfmLinter')
+        self.assertEqual(LinterHandler().get_linter_class('something').__name__, 'MarkdownLinter')
+        self.assertEqual(LinterHandler().get_linter_class('').__name__, 'MarkdownLinter')
 
     @patch('libraries.linters.linter.Linter.run')
     @patch('libraries.door43_tools.linter_messaging.LinterMessaging.notify_lint_job_complete')
@@ -42,7 +39,6 @@ class TestLinterHandler(unittest.TestCase):
                         }
                     }
                 },
-                'linter_messaging_name': 'dummy_linter_messaging_name',
             },
             'body-json': {},
             'vars': {

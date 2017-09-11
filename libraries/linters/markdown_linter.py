@@ -67,7 +67,7 @@ class MarkdownLinter(Linter):
         lint_function = '{0}tx_markdown_linter'.format(self.prefix)
         response = lambda_handler.invoke(lint_function, payload)
         if 'errorMessage' in response:
-            self.logger.error(response['errorMessage'])
+            App.logger.error(response['errorMessage'])
             return None
         elif 'Payload' in response:
             return json.loads(response['Payload'].read())

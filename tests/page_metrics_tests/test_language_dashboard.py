@@ -1,35 +1,28 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
-
 from bs4 import BeautifulSoup
 from moto import mock_dynamodb2
-
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.manager.manager import TxManager
 from libraries.models.language_stats import LanguageStats
+from libraries.app.app import App
 
 
 @mock_dynamodb2
 class LanguageDashboardTest(unittest.TestCase):
-    MOCK_LANGUAGE_TABLE_NAME = 'test-language-stats_dummy'
-
-    tx_manager_env_vars = {
-        'language_stats_table_name': MOCK_LANGUAGE_TABLE_NAME
-    }
 
     def setUp(self):
-        self.tx_manager = TxManager(**self.tx_manager_env_vars)
-        self.lang_stats_table_name = LanguageDashboardTest.MOCK_LANGUAGE_TABLE_NAME
-        self.lang_stats_db_handler = DynamoDBHandler(self.lang_stats_table_name)
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
+        self.tx_manager = TxManager()
 
         try:
-            self.lang_stats_db_handler.table.delete()
+            App.language_stats_db_handler.table.delete()
         except:
             pass
 
-        self.lang_stats_db_handler.resource.create_table(
-            TableName=self.lang_stats_table_name,
+        App.language_stats_db_handler.resource.create_table(
+            TableName=App.language_stats_table_name,
             KeySchema=[
                 {
                     'AttributeName': 'lang_code',
@@ -51,7 +44,7 @@ class LanguageDashboardTest(unittest.TestCase):
     def test_build_language_popularity_tables_empty(self):
         # given
         max_count = 10
-        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager = TxManager()
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
@@ -65,7 +58,7 @@ class LanguageDashboardTest(unittest.TestCase):
         # given
         max_count = 10
         self.initialze_lang_stats_table(max_count)
-        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager = TxManager()
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
@@ -78,22 +71,20 @@ class LanguageDashboardTest(unittest.TestCase):
     def test_build_language_popularity_tables_invalid_table_name(self):
         # given
         max_count = 10
-        tx_manager = TxManager(**self.tx_manager_env_vars)
-        tx_manager.language_stats_table_name = 'dummy'
-        tx_manager.lang_stats_db_handler = None
+        tx_manager = TxManager()
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
         tx_manager.build_language_popularity_tables(body, max_count)
 
         # then
-        self.assertIsNone(tx_manager.language_views)
-        self.assertIsNone(tx_manager.language_dates)
+        self.assertEqual(tx_manager.language_views, [])
+        self.assertEqual(tx_manager.language_dates, [])
 
     def test_build_language_popularity_tables_no_table_name(self):
         # given
         max_count = 10
-        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager = TxManager()
         tx_manager.language_stats_table_name = 'dummy'
         tx_manager.lang_stats_db_handler = None
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
@@ -102,15 +93,15 @@ class LanguageDashboardTest(unittest.TestCase):
         tx_manager.build_language_popularity_tables(body, max_count)
 
         # then
-        self.assertIsNone(tx_manager.language_views)
-        self.assertIsNone(tx_manager.language_dates)
+        self.assertEqual(tx_manager.language_views, [])
+        self.assertEqual(tx_manager.language_dates, [])
 
     def test_generate_most_recent_lang_table(self):
         # given
         max_count = 5
         item_count = 10
         self.get_view_items(item_count)
-        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager = TxManager()
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
@@ -126,7 +117,7 @@ class LanguageDashboardTest(unittest.TestCase):
         max_count = 6
         item_count = 10
         self.get_view_items(item_count)
-        tx_manager = TxManager(**self.tx_manager_env_vars)
+        tx_manager = TxManager()
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
@@ -152,7 +143,7 @@ class LanguageDashboardTest(unittest.TestCase):
     def initialze_lang_stats_table(self, count):
         for i in range(0, count):
             lang_code = 'xyz-' + str(i+100)
-            lang_stat = LanguageStats({}, db_handler=self.lang_stats_db_handler)
+            lang_stat = LanguageStats({}, db_handler=App.language_stats_db_handler)
             lang_stat.lang_code = lang_code
             lang_stat.last_updated = '2017-02-11T15:43:11.{0}Z'.format(i+1)
             lang_stat.views = i + 1100
@@ -160,8 +151,7 @@ class LanguageDashboardTest(unittest.TestCase):
 
     def get_view_items(self, count):
         self.initialze_lang_stats_table(count)
-        vc = PageMetrics(language_stats_table_name=self.lang_stats_table_name)
-        vc.init_language_stats_table(None)
+        vc = PageMetrics()
         self.language_views = vc.get_language_views_sorted_by_count()
         self.language_dates = vc.get_language_views_sorted_by_date()
 

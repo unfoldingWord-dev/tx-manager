@@ -5,7 +5,7 @@ import unittest
 import shutil
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess
-from libraries.general_tools.file_utils import unzip, read_file
+from libraries.general_tools.file_utils import unzip
 
 
 class TestPreprocessor(unittest.TestCase):

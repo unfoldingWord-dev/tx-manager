@@ -1,10 +1,9 @@
 from __future__ import print_function, unicode_literals
-import codecs
 import os
-import traceback
 from libraries.linters.linter import Linter
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.usfm_tools import verifyUSFM
+from libraries.app.app import App
 
 
 class UsfmLinter(Linter):
@@ -36,7 +35,7 @@ class UsfmLinter(Linter):
                 if self.single_file and (f != self.single_file):
                     continue
 
-                self.logger.debug("converting: " + f)
+                App.logger.debug("converting: " + f)
                 file_path = os.path.join(root, f)
                 sub_path = '.' + file_path[len(self.source_dir):]
                 self.parse_file(file_path, sub_path, f)
@@ -59,7 +58,8 @@ class UsfmLinter(Linter):
         except Exception as e:
             self.log.warning("Failed to open book '{0}', exception: {1}".format(file_name, str(e)))
 
-    def get_book_ids(self, file_name):
+    @staticmethod
+    def get_book_ids(file_name):
         file_name_parts = file_name.split('.')
         book_full_name = file_name_parts[0].upper()
         book_code = book_full_name

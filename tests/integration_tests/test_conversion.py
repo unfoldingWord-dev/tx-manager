@@ -58,16 +58,16 @@ class TestConversions(TestCase):
             destination = "test-"  # For running on test
 
         self.destination = destination
-        self.api_url = 'https://{0}api.door43.org'.format(destination)
-        self.pre_convert_bucket = '{0}tx-webhook-client'.format(destination)
-        self.gogs_url = 'https://git.door43.org'.format(destination)
-        self.cdn_bucket = '{0}cdn.door43.org'.format(destination)
-        self.job_table_name = '{0}tx-job'.format(destination)
-        self.module_table_name = '{0}tx-module'.format(destination)
-        self.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
-        self.door43_bucket = '{0}door43.org'.format(destination)
+        App.api_url = 'https://{0}api.door43.org'.format(destination)
+        App.pre_convert_bucket = '{0}tx-webhook-client'.format(destination)
+        App.gogs_url = 'https://git.door43.org'.format(destination)
+        App.cdn_bucket = '{0}cdn.door43.org'.format(destination)
+        App.job_table_name = '{0}tx-job'.format(destination)
+        App.module_table_name = '{0}tx-module'.format(destination)
+        App.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
+        App.door43_bucket = '{0}door43.org'.format(destination)
 
-        print("Testing on '" + branch + "' branch, e.g.: " + self.api_url)
+        print("Testing on '" + branch + "' branch, e.g.: " + App.api_url)
 
         self.warnings = []
 
@@ -452,7 +452,7 @@ class TestConversions(TestCase):
         if len(build_log_json['errors']) > 0:
             self.warn("WARNING: Found build_log errors: " + str(build_log_json['errors']))
 
-        door43_handler = S3Handler(self.door43_bucket)
+        door43_handler = S3Handler(App.door43_bucket)
         deployed_build_log = self.check_deployed_files(door43_handler, expected_output_names, "html",
                                                        destination_key, chapter_count)
 
@@ -479,7 +479,7 @@ class TestConversions(TestCase):
                 "user", "warnings"]
 
         if converted_build_log != deployed_build_log:
-            converted_build_log = self.cdn_handler.get_file_contents(
+            converted_build_log = App.cdn_s3_handler.get_file_contents(
                 os.path.join(destination_key, "build_log.json"))  # make sure we have the latest
         if converted_build_log != deployed_build_log:
             deployed_build_log_ = json.loads(deployed_build_log)
@@ -619,7 +619,7 @@ class TestConversions(TestCase):
         build_log_json = None
         job = None
         success = False
-        self.cdn_handler = S3Handler(self.cdn_bucket)
+        self.cdn_handler = S3Handler(App.cdn_bucket)
         commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)  # TODO: change this to use gogs API when finished
         commit_len = len(commit_id)
         if commit_len == COMMIT_LENGTH:
@@ -633,22 +633,22 @@ class TestConversions(TestCase):
 
     def empty_destination_folder(self, commit_sha, repo, user):
         destination_key = self.get_destination_s3_key(commit_sha, repo, user)
-        for obj in self.cdn_handler.get_objects(prefix=destination_key):
+        for obj in App.cdn_s3_handler.get_objects(prefix=destination_key):
             print("deleting destination file: " + obj.key)
-            self.cdn_handler.delete_file(obj.key)
+            App.cdn_s3_handler.delete_file(obj.key)
 
     def delete_preconvert_zip_file(self, commit_sha):
-        self.preconvert_handler = S3Handler(self.pre_convert_bucket)
+        self.preconvert_handler = S3Handler(App.pre_convert_bucket)
         preconvert_key = self.get_preconvert_s3_key(commit_sha)
-        if self.preconvert_handler.key_exists(preconvert_key):
+        if App.pre_convert_s3_handler.key_exists(preconvert_key):
             print("deleting preconvert file: " + preconvert_key)
-            self.preconvert_handler.delete_file(preconvert_key, catch_exception=True)
+            App.pre_convert_s3_handler.delete_file(preconvert_key, catch_exception=True)
 
     def delete_tx_output_zip_file(self, commit_id):
         tx_output_key = self.get_tx_output_s3_key(commit_id)
-        if self.cdn_handler.key_exists(tx_output_key):
+        if App.cdn_s3_handler.key_exists(tx_output_key):
             print("deleting tx output file: " + tx_output_key)
-            self.cdn_handler.delete_file(tx_output_key, catch_exception=True)
+            App.cdn_s3_handler.delete_file(tx_output_key, catch_exception=True)
 
     def get_tx_output_s3_key(self, commit_id):
         output_key = 'tx/job/{0}.zip'.format(commit_id)
@@ -693,10 +693,10 @@ class TestConversions(TestCase):
             },
         }
         env_vars = {
-            'api_url': self.api_url,
-            'pre_convert_bucket': self.pre_convert_bucket,
-            'cdn_bucket': self.cdn_bucket,
-            'gogs_url': self.gogs_url,
+            'api_url': App.api_url,
+            'pre_convert_bucket': App.pre_convert_bucket,
+            'cdn_bucket': App.cdn_bucket,
+            'gogs_url': App.gogs_url,
             'gogs_user_token': gogs_user_token,
             'commit_data': webhook_data
         }
@@ -704,7 +704,7 @@ class TestConversions(TestCase):
         start = time.time()
         if USE_WEB_HOOK_LAMBDA:
             headers = {"content-type": "application/json"}
-            tx_client_webhook_url = "{0}/client/webhook".format(self.api_url)
+            tx_client_webhook_url = "{0}/client/webhook".format(App.api_url)
             print('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url), end=' ')
             print(webhook_data)
             response = requests.post(tx_client_webhook_url, json=webhook_data, headers=headers)
@@ -759,12 +759,12 @@ class TestConversions(TestCase):
         job_count = len(build_logs)
 
         env_vars = {
-            'api_url': self.api_url,
-            'gogs_url': self.gogs_url,
-            'cdn_url': self.cdn_url,
-            'job_table_name':  self.job_table_name,
-            'module_table_name': self.module_table_name,
-            'cdn_bucket': self.cdn_bucket
+            'api_url': App.api_url,
+            'gogs_url': App.gogs_url,
+            'cdn_url': App.cdn_url,
+            'job_table_name':  App.job_table_name,
+            'module_table_name': App.module_table_name,
+            'cdn_bucket': App.cdn_bucket
         }
         tx_manager = TxManager(**env_vars)
 
@@ -805,12 +805,12 @@ class TestConversions(TestCase):
         job = None
 
         env_vars = {
-            'api_url': self.api_url,
-            'gogs_url': self.gogs_url,
-            'cdn_url': self.cdn_url,
-            'job_table_name':  self.job_table_name,
-            'module_table_name': self.module_table_name,
-            'cdn_bucket': self.cdn_bucket
+            'api_url': App.api_url,
+            'gogs_url': App.gogs_url,
+            'cdn_url': App.cdn_url,
+            'job_table_name':  App.job_table_name,
+            'module_table_name': App.module_table_name,
+            'cdn_bucket': App.cdn_bucket
         }
         tx_manager = TxManager(**env_vars)
 
@@ -836,7 +836,7 @@ class TestConversions(TestCase):
 
     def get_json_file(self, commit_sha, file_name, repo, user):
         key = 'u/{0}/{1}/{2}/{3}'.format(user, repo, commit_sha, file_name)
-        text = self.cdn_handler.get_json(key)
+        text = App.cdn_s3_handler.get_json(key)
         return text
 
     def fetch_commit_data_for_repo(self, base_url, repo, user):

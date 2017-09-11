@@ -8,6 +8,7 @@ from contextlib import closing
 from libraries.converters.md2html_converter import Md2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree, unzip, remove
 from bs4 import BeautifulSoup
+from libraries.app.app import App
 
 
 class TestMd2HtmlConverter(unittest.TestCase):
@@ -17,6 +18,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName))
         self.out_dir = ''
         self.out_zip_file = ''
 
@@ -39,7 +41,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
     def test_close(self):
         """This tests that the temp directories are deleted when the class is closed."""
 
-        with closing(Md2HtmlConverter('', '', '', '', {})) as tx:
+        with closing(Md2HtmlConverter('', '')) as tx:
             download_dir = tx.download_dir
             files_dir = tx.files_dir
             out_dir = tx.output_dir
@@ -60,7 +62,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, 'en-obs.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
-        with closing(Md2HtmlConverter('', 'obs', None, out_zip_file)) as tx:
+        with closing(Md2HtmlConverter('', 'obs', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             tx.run()
 
@@ -80,7 +82,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
         """
         Runs the converter and verifies the output
         """
-
         # given
         file_name = 'en-obs.zip'
         self.expected_warnings = 0
@@ -117,9 +118,9 @@ class TestMd2HtmlConverter(unittest.TestCase):
     def doTransformObs(self, file_name):
         zip_file_path = os.path.join(self.resources_dir, file_name)
         zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
-        self.out_zip_file = tempfile.mktemp(prefix="en-obs", suffix=".zip")
+        self.out_zip_file = tempfile.mktemp(prefix="en-obs-", suffix=".zip")
         self.return_val = None
-        with closing(Md2HtmlConverter('', 'obs', None, self.out_zip_file)) as tx:
+        with closing(Md2HtmlConverter('', 'obs', self.out_zip_file)) as tx:
             tx.input_zip_file = zip_file_path
             self.return_val = tx.run()
         return tx
@@ -129,12 +130,14 @@ class TestMd2HtmlConverter(unittest.TestCase):
         zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
         self.out_zip_file = tempfile.mktemp(prefix="en_ta", suffix=".zip")
         self.return_val = None
-        with closing(Md2HtmlConverter('', 'ta', None, self.out_zip_file)) as tx:
+        with closing(Md2HtmlConverter('', 'ta', self.out_zip_file)) as tx:
             tx.input_zip_file = zip_file_path
             self.return_val = tx.run()
         return tx
 
-    def verifyTransform(self, tx, missing_chapters = []):
+    def verifyTransform(self, tx, missing_chapters=None):
+        if not missing_chapters:
+            missing_chapters = []
         self.assertTrue(os.path.isfile(self.out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(self.return_val, "There was no return value.")
         self.out_dir = tempfile.mkdtemp(prefix='obs_')
