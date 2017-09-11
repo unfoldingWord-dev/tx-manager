@@ -93,9 +93,10 @@ class RepoSearch(object):
                 offset = -days * 24 * 60 * 60  # in seconds
                 recent_in_seconds = current + datetime.timedelta(seconds=offset)
                 selection = selection.filter(TxManifest.last_updated >= recent_in_seconds)
-            elif (key == "repo_name") or (key == "user_name") or (key == "title") or (key == "manifest")\
-                    or (key == "time"):
+            elif (key == "repo_name") or (key == "user_name") or (key == "title") or (key == "manifest"):
                 selection = set_contains_string_filter(selection, key, value)
+            elif key == "time":
+                selection = set_contains_string_filter(selection, "last_updated", value)
             elif key == "resID":
                 selection = selection.filter(TxManifest.resource_id.contains(value))
             elif key == "resType":
