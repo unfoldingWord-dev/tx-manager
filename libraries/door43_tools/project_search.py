@@ -103,8 +103,7 @@ class ProjectSearch(object):
             elif key == "returnedFields" or key == "sort_by" or key == "sort_by_reversed" or key == "matchLimit":
                 pass  # skip this item
             else:
-                self.log_error('Unsupported filter (key,value): ({0},{1})'.format(key, value))
-                return None
+                pass  # Allow unsupported fields to be ignored
 
         except Exception as e:
             self.log_error('Failed to apply filter (key,value): ({0},{1}): '.format(key, value) + str(e))
