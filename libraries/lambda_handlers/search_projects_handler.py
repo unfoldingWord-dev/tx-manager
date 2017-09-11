@@ -17,6 +17,9 @@ class SearchProjectsHandler(Handler):
             data = event['data']
         if 'body-json' in event and isinstance(event['body-json'], dict):
             data.update(event['body-json'])
-        callback = self.retrieve(data, 'callback', required=False, default='')
+        callback = self.retrieve(data, 'callback', required=False)
         results = ProjectSearch().search_projects(data)
-        return callback + '(' + json.dumps(results) + ')'
+        if callback:
+            return callback + '(' + json.dumps(results) + ')'
+        else:
+            return results
