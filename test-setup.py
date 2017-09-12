@@ -77,7 +77,6 @@ setup(
         'moto==1.0.1',
         'PyYAML==3.12',
         'pymysql==0.7.11',
-        'mysql-python==1.2.5',
         'sqlalchemy==1.2.0b2',
     ],
     test_suite='tests'

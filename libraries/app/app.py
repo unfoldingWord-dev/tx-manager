@@ -27,7 +27,7 @@ class App(object):
     language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
 
-    db_protocol = 'mysql+mysqldb'
+    db_protocol = 'mysql+pymysql'
     db_user = 'tx'
     db_pass = None
     db_end_point = 'd43-gogs.ccidwldijq9p.us-west-2.rds.amazonaws.com'
