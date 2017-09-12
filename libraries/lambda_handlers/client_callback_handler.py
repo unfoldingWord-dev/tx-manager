@@ -11,10 +11,8 @@ class ClientCallbackHandler(Handler):
         :param context:
         :return dict:
         """
-        # Gather required arguments
-        args = {
-            'job_data': self.retrieve(event, 'data', 'payload')
-        }
+        # Gather arguments
+        job_data = self.retrieve(event, 'data', 'payload')
 
         # Execute
-        return ClientCallback(**args).process_callback()
+        return ClientCallback(job_data).process_callback()

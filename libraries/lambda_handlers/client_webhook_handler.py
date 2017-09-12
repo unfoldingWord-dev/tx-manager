@@ -11,10 +11,8 @@ class ClientWebhookHandler(Handler):
         :param context:
         :return dict:
         """
-        # Gather required arguments
-        args = {
-            'commit_data': self.retrieve(event, 'data', 'payload'),
-        }
+        # Gather arguments
+        commit_data = self.retrieve(event, 'data', 'payload'),
 
         # Execute
-        return ClientWebhook(**args).process_webhook()
+        return ClientWebhook(commit_data).process_webhook()

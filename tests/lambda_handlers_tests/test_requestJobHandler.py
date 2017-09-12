@@ -6,9 +6,8 @@ from libraries.lambda_handlers.request_job_handler import RequestJobHandler
 
 class TestRequestJobHandler(TestCase):
 
-    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
     @mock.patch('libraries.manager.manager.TxManager.setup_job')
-    def test_handle(self, mock_setup_job, mock_setup_resources):
+    def test_handle(self, mock_setup_job):
         mock_setup_job.return_value = None
         event = {
             'data': {},

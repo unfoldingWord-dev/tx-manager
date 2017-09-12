@@ -6,9 +6,8 @@ from libraries.lambda_handlers.register_module_handler import RegisterModuleHand
 
 class TestRegisterModuleHandler(TestCase):
 
-    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
     @mock.patch('libraries.manager.manager.TxManager.register_module')
-    def test_handle(self, mock_register_module, mock_setup_resources):
+    def test_handle(self, mock_register_module):
         mock_register_module.return_value = None
         event = {
             'data': {},

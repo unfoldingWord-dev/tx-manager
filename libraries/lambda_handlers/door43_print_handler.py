@@ -11,7 +11,7 @@ class Door43PrintHandler(Handler):
         :param context:
         :return dict:
         """
-        # Gather required arguments
+        # Gather arguments
         project_id = self.retrieve(self.data, 'id', 'Parameters')
 
         # Execute

@@ -19,17 +19,13 @@ class CheckDownloadsTest(unittest.TestCase):
         # given
         commit_id = '39a099622d'
         key = 'preconvert/' + commit_id + '.zip'
-        self.handler.put_contents(key, "dummy")
-        exists = self.handler.key_exists(key)
+        App.cdn_s3_handler.put_contents(key, "dummy")
+        exists = App.cdn_s3_handler.key_exists(key)
         self.callback = 'callback'
         event = {
-            "api-gateway": {
-                "params": {
-                    'querystring': {
-                        'commit_id': commit_id,
-                        'callback': self.callback
-                    }
-                }
+            'data': {
+                'commit_id': commit_id,
+                'callback': self.callback
             }
         }
         self.expected_download_exists = True
@@ -47,13 +43,9 @@ class CheckDownloadsTest(unittest.TestCase):
         commit_id = '39a099622d'
         self.callback = 'callback'
         event = {
-            "api-gateway": {
-                "params": {
-                    'querystring': {
-                        'commit_id': commit_id,
-                        'callback': self.callback
-                    }
-                }
+            'data': {
+                 'commit_id': commit_id,
+                 'callback': self.callback
             }
         }
         self.expected_download_exists = False
@@ -71,16 +63,9 @@ class CheckDownloadsTest(unittest.TestCase):
         commit_id = ''
         self.callback = 'callback'
         event = {
-            'vars': {
-                'pre_convert_bucket': self.MOCK_BUCKET_NAME
-            },
-            "api-gateway": {
-                "params": {
-                    'querystring': {
-                        'commit_id': commit_id,
-                        'callback': self.callback
-                    }
-                }
+            'data': {
+                'commit_id': commit_id,
+                'callback': self.callback
             }
         }
         self.expected_download_exists = False
@@ -101,13 +86,9 @@ class CheckDownloadsTest(unittest.TestCase):
             'vars': {
                 'pre_convert_bucket': 'invalid-bucket'
             },
-            "api-gateway": {
-                "params": {
-                    'querystring': {
-                        'commit_id': commit_id,
-                        'callback': self.callback
-                    }
-                }
+            'data': {
+                'commit_id': commit_id,
+                'callback': self.callback
             }
         }
         self.expected_download_exists = False

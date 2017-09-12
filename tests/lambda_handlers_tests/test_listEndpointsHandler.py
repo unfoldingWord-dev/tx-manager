@@ -6,9 +6,8 @@ from libraries.lambda_handlers.list_endpoints_handler import ListEndpointsHandle
 
 class TestListEndpointsHandler(TestCase):
 
-    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
     @mock.patch('libraries.manager.manager.TxManager.list_endpoints')
-    def test_handle(self, mock_list_endpoints, mock_setup_resources):
+    def test_handle(self, mock_list_endpoints):
         mock_list_endpoints.return_value = None
         event = {
             'data': {},

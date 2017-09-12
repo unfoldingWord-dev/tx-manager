@@ -33,5 +33,5 @@ class Door43DeployHandler(Handler):
     @classmethod
     def prefix_app_vars_by_bucket_prefix(cls, bucket_name):
         if '-' in bucket_name:
-            App.prefix = bucket_name.split('-')[0] + '-'
-            App.prefix_vars()
+            prefix = bucket_name.split('-')[0] + '-'
+            App.prefix_vars(prefix)

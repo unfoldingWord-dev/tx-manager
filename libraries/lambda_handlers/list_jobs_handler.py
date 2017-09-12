@@ -11,4 +11,4 @@ class ListJobsHandler(Handler):
         :param context:
         :return dict:
         """
-        return TxManager(**env_vars).list_jobs(self.data)
+        return TxManager().list_jobs(self.data)

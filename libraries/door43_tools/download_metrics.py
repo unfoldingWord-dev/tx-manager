@@ -6,6 +6,9 @@ class DownloadMetrics(object):
     ACCESS_FAILED_ERROR = 'could not access bucket for : '
 
     def check_download(self, commit_id):
+        if not commit_id:
+            commit_id = ''
+
         App.logger.debug("Start: check for download: " + commit_id)
 
         response = {  # default to error

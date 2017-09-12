@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from unittest import TestCase
 from moto import mock_dynamodb2
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.general_tools.file_utils import read_file
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
@@ -16,7 +15,6 @@ class TxManifestTests(TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        self.init_table()
         self.items = {}
         self.init_items()
         self.populate_table()

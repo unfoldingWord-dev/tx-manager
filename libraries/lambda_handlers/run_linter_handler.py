@@ -13,19 +13,17 @@ class RunLinterHandler(Handler):
         :param context:
         :return dict:
         """
-        # Get all params, both POST and GET and JSON from the request event
         # Gather arguments
-        args = {
-            'source_zip_url': self.retrieve(self.data, 'source_url', 'payload'),
-            'commit_data': self.retrieve(self.data, 'commit_data', 'payload', required=False),
-            'resource_id': self.retrieve(self.data, 'resource_id', 'payload', required=False),
-            'single_file': self.retrieve(self.data, 'single_file', 'payload', required=False, default=None)
-        }
+        source_zip_url = self.retrieve(self.data, 'source_url', 'payload'),
+        commit_data = self.retrieve(self.data, 'commit_data', 'payload', required=False),
+        resource_id = self.retrieve(self.data, 'resource_id', 'payload', required=False),
+        single_file = self.retrieve(self.data, 'single_file', 'payload', required=False, default=None)
 
         # Execute
-        linter_class = LinterHandler.get_linter_class(args['resource_id'])
-        ret_value = linter_class(**args).run()
+        linter_class = LinterHandler.get_linter_class(resource_id)
+        ret_value = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
+                                 single_file=single_file).run()
         if App.linter_messaging_name:
             message_queue = LinterMessaging(App.linter_messaging_name)
-            message_queue.notify_lint_job_complete(args['source_zip_url'], ret_value['success'], payload=ret_value)
+            message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'], payload=ret_value)
         return ret_value

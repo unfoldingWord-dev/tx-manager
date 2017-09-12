@@ -10,10 +10,29 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 
+def resetable(cls):
+    cls._resetable_cache_ = cls.__dict__.copy()
+    return cls
+
+
+def reset_class(cls):
+    cache = cls._resetable_cache_ # raises AttributeError on class without decorator
+    for key in [key for key in cls.__dict__ if key not in cache and key != '_resetable_cache_']:
+        delattr(cls, key)
+    for key, value in cache.items():  # reset the items to original values
+        try:
+            if key != '_resetable_cache_':
+                setattr(cls, key, value)
+        except AttributeError:
+            pass
+
+
+@resetable
 class App(object):
     """
     For all things used for by this app, from DB connection to global handlers
     """
+    _resetable_cache_ = {}
     name = 'tx-manager'
 
     # Stage Variables, defaults
@@ -67,16 +86,19 @@ class App(object):
 
     # Logging for the App, and turn off boto logging. Set here so automatically ready for any logging calls
     logger = logging.getLogger(name)
-    logger.addHandler(logging.NullHandler())
+    logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.DEBUG)
     logging.getLogger('boto3').setLevel(logging.ERROR)
     logging.getLogger('botocore').setLevel(logging.ERROR)
 
-    def __init__(self, **kwargs):
+    def __init__(self, reset=True, **kwargs):
         """
         Using init to set the class variables with App(var=value)
         :param kwargs:
         """
+        if reset:
+            reset_class(App)
+
         if 'prefix' in kwargs and kwargs['prefix'] != App.prefix:
             App.prefix_vars(kwargs['prefix'])
 

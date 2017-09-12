@@ -12,13 +12,11 @@ class SearchProjectsHandler(Handler):
         :param context:
         :return dict:
         """
-        data = {}
-        if 'data' in event and isinstance(event['data'], dict):
-            data = event['data']
-        if 'body-json' in event and isinstance(event['body-json'], dict):
-            data.update(event['body-json'])
-        callback = self.retrieve(data, 'callback', required=False)
-        results = ProjectSearch().search_projects(data)
+        # Gather arguments
+        callback = self.retrieve(self.data, 'callback', required=False)
+
+        # Execute
+        results = ProjectSearch().search_projects(self.data)
         if callback:
             return '{0}({1})'.format(callback, json.dumps(results))
         else:

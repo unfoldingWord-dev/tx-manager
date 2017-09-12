@@ -23,7 +23,7 @@ class ConvertHandler(Handler):
         :param context:
         :return dict:
         """
-        # Gather required arguments
+        # Gather arguments
         job = self.retrieve(self.data, 'job', 'payload')
         source = self.retrieve(job, 'source', 'job')
         resource = self.retrieve(job, 'resource_type', 'job')

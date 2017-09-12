@@ -11,10 +11,9 @@ class DashboardHandler(Handler):
         :param context:
         :return dict:
         """
-        try:
-            querystring = event['api-gateway']['params']['querystring']
-            max_failures = int(querystring['failures'])
-        except:
-            max_failures = TxManager.MAX_FAILURES
+        # Gather arguments
+        max_failures = int(self.retrieve(self.data, 'failures', 'Payload', required=False,
+                                         default=TxManager.MAX_FAILURES))
 
+        # Execute
         return TxManager().generate_dashboard(max_failures)

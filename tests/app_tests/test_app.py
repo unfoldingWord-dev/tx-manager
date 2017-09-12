@@ -31,8 +31,8 @@ class TestApp(unittest.TestCase):
         Test the construction of the connection string with multiple attributes
         """
         App(db_protocol='protocol', db_user='user', db_pass='pass', db_end_point='my.endpoint.url', db_port='9999',
-            db_name='db', db_charset='charset', auto_setup_db=False)
-        expected = "protocol://user:pass@my.endpoint.url:9999/db?charset=charset"
+            db_name='db', db_connection_string_params='charset=utf8', auto_setup_db=False)
+        expected = "protocol://user:pass@my.endpoint.url:9999/db?charset=utf8"
         connection_str = App.construct_connection_string()
         self.assertEqual(connection_str, expected)
 
@@ -47,7 +47,7 @@ class TestApp(unittest.TestCase):
 
     def test_setup_db_with_connection_string_parts(self):
         App(db_connection_string=None, db_protocol='sqlite', db_user=None, db_pass=None, db_end_point=None,
-            db_port=None, db_name=':memory:')
+            db_port=None, db_name=':memory:', db_connection_string_params=None)
         App.setup_db()
         user = User(name='ed', fullname='Edward Scissorhands', password='12345')
         App.db.add(user)
@@ -73,3 +73,13 @@ class TestApp(unittest.TestCase):
         App(prefix='')
         self.assertEqual(App.cdn_bucket, 'cdn.door43.org')
         self.assertEqual(App.api_url, 'https://api.door43.org')
+
+    def test_reset_app(self):
+        App()
+        default_name = App.name
+        App.name = 'test-name'
+        App()
+        self.assertEqual(App.name, default_name)
+        App.name = 'test-name-2'
+        App(reset=False)
+        self.assertEqual(App.name, 'test-name-2')
