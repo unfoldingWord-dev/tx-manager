@@ -15,25 +15,20 @@ from libraries.app.app import App
 class ManagerTest(unittest.TestCase):
     MOCK_CALLBACK_URL = 'http://example.com/client/callback'
 
-    patches = []
     requested_urls = []
 
     @classmethod
     def setUpClass(cls):
         cls.mock_gogs = mock.MagicMock(
             return_value=mock_utils.mock_gogs_handler(['token1', 'token2']))
-        ManagerTest.patches = (
-            mock.patch('libraries.app.app.App.gogs_handler', cls.mock_gogs),
-        )
-        for patch in ManagerTest.patches:
-            patch.start()
 
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        self.tx_manager = TxManager()
+        App.gogs_handler = ManagerTest.mock_gogs
         ManagerTest.mock_gogs.reset_mock()
         ManagerTest.requested_urls = []
+        self.tx_manager = TxManager()
         self.init_tables()
         self.job_items = {}
         self.module_items = {}
@@ -270,11 +265,6 @@ class ManagerTest(unittest.TestCase):
             TxJob().insert(self.job_items[idx])
         for idx in self.module_items:
             TxModule(db_handler=App.module_db_handler).insert(self.module_items[idx])
-
-    @classmethod
-    def tearDownClass(cls):
-        for patch in ManagerTest.patches:
-            patch.stop()
 
     def test_setup_job(self):
         """Successful call of setup_job."""

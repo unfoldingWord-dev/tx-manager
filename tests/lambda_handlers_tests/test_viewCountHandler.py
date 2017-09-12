@@ -88,14 +88,7 @@ class ViewCountHandlerTest(TestCase):
         if increment is not None:
             query_string['increment'] = str(increment)
         event = {
-            'data': {},
-            'body-json': {},
-            'vars': {},
-            'api-gateway': {
-                'params': {
-                    'querystring': query_string
-                }
-            }
+            'data': query_string
         }
         self.callback = callback
         self.error_response = error_response

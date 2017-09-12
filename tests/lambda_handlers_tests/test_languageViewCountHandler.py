@@ -108,16 +108,7 @@ class LanguageViewCountHandlerTest(TestCase):
         if increment is not None:
             query_string['increment'] = str(increment)
         event = {
-            'data': {},
-            'body-json': {},
-            'vars': {
-                'language_stats_table_name': 'test-language-stats'
-            },
-            'api-gateway': {
-                'params': {
-                    'querystring': query_string
-                }
-            }
+            'data': query_string
         }
         self.callback = callback
         self.error_response = error_response

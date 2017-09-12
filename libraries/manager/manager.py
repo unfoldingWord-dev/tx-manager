@@ -127,8 +127,10 @@ class TxManager(object):
             user = self.get_user(App.gogs_user_token)
             if not user:
                 raise Exception('Invalid user_token. User not found.')
+            print(user.username)
             data['user'] = user.username
             del data['gogs_user_token']
+        print(data)
         jobs = TxJob().query(data)
         return jobs
 
