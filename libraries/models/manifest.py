@@ -11,10 +11,10 @@ class TxManifest(App.ModelBase):
     lang_code = Column(String(32), nullable=False)
     resource_id = Column(String(32), nullable=False)
     resource_type = Column(String(32), nullable=False)
-    title = Column(UnicodeText, nullable=False)
+    title = Column(String(500), nullable=False)
     views = Column(Integer, default=0, nullable=False)
     last_updated = Column(DateTime, nullable=False)
-    manifest = Column(UnicodeText, default=None, nullable=True)
+    manifest = Column(String(65535), default=None, nullable=True)
     __table_args__ = (
         UniqueConstraint('repo_name', 'user_name'),
     )

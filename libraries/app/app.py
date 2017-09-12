@@ -27,14 +27,14 @@ class App(object):
     language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
 
-    db_protocol = 'mysql+pymysql'
+    db_protocol = 'mysql+mysqldb'
     db_user = 'tx'
     db_pass = None
     db_end_point = 'd43-gogs.ccidwldijq9p.us-west-2.rds.amazonaws.com'
     db_port = '3306'
     db_name = 'tx'
-    db_charset = 'utf8mb4'
     db_connection_string = None
+    db_connection_string_params = 'charset=utf8mb4&use_unicode=0'
 
     auto_setup_db = True
     db = None
@@ -78,6 +78,6 @@ class App(object):
                 db_connection_string += ':'+App.db_port
         if App.db_name:
             db_connection_string += '/'+App.db_name
-        if App.db_charset:
-            db_connection_string += '?charset='+App.db_charset
+        if App.db_connection_string_params:
+            db_connection_string += '?'+App.db_connection_string_params
         return db_connection_string
