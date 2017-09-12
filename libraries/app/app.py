@@ -33,6 +33,7 @@ class App(object):
     db_end_point = 'd43-gogs.ccidwldijq9p.us-west-2.rds.amazonaws.com'
     db_port = '3306'
     db_name = 'tx'
+    db_charset = 'utf8mb4'
     db_connection_string = None
 
     auto_setup_db = True
@@ -77,4 +78,6 @@ class App(object):
                 db_connection_string += ':'+App.db_port
         if App.db_name:
             db_connection_string += '/'+App.db_name
+        if App.db_charset:
+            db_connection_string += '?charset='+App.db_charset
         return db_connection_string

@@ -27,8 +27,8 @@ class TestApp(unittest.TestCase):
         Test the construction of the connection string with multiple attributes
         """
         App(db_protocol='protocol', db_user='user', db_pass='pass', db_end_point='my.endpoint.url', db_port='9999',
-            db_name='db', auto_setup_db=False)
-        expected = "protocol://user:pass@my.endpoint.url:9999/db"
+            db_name='db', db_charset='charset', auto_setup_db=False)
+        expected = "protocol://user:pass@my.endpoint.url:9999/db?charset=charset"
         connection_str = App.construct_connection_string()
         self.assertEqual(connection_str, expected)
 

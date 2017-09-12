@@ -97,9 +97,9 @@ class ProjectSearch(object):
             elif key == "languages":
                 selection = set_contains_set_filter(selection, "lang_code", value)
             elif key == 'full_text':
-                selection = selection.filter( (TxManifest.user_name.contains(value))
-                                              | (TxManifest.repo_name.contains(value))
-                                              | (TxManifest.manifest.contains(value)))
+                selection = selection.filter((TxManifest.user_name.contains(value))
+                                             | (TxManifest.repo_name.contains(value))
+                                             | (TxManifest.manifest.contains(value)))
             elif key == "returnedFields" or key == "sort_by" or key == "sort_by_reversed" or key == "matchLimit":
                 pass  # skip this item
             else:
