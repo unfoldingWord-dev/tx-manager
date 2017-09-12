@@ -13,11 +13,7 @@ class LanguageViewCountHandler(Handler):
         :param context:
         :return jsonp:
         """
-        # Set required env_vars
-        env_vars = {
-            'language_stats_table_name': self.retrieve(event['vars'], 'language_stats_table_name', 'Environment Vars')
-        }
-
+        # Gather required arguments
         increment = 0
         path = ''
         callback = ''
@@ -31,5 +27,6 @@ class LanguageViewCountHandler(Handler):
         except:
             pass
 
-        data = PageMetrics(**env_vars).get_language_view_count(path, increment)
+        # Execute
+        data = PageMetrics().get_language_view_count(path, increment)
         return callback + '(' + json.dumps(data) + ')'

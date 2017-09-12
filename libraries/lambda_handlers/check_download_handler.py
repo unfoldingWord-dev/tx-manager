@@ -12,12 +12,7 @@ class CheckDownloadHandler(Handler):
         :param context:
         :return jsonp:
         """
-
-        # Set required env_vars
-        env_vars = {
-            'pre_convert_bucket': self.retrieve(event['vars'], 'pre_convert_bucket', 'Environment Vars'),
-        }
-
+        # Gather required arguments
         commit_id = ''
         callback = ''
         try:
@@ -25,9 +20,9 @@ class CheckDownloadHandler(Handler):
             commit_id = querystring['commit_id']
             if 'callback' in querystring:
                 callback = querystring['callback']
-
         except:
             pass
 
-        data = DownloadMetrics(**env_vars).check_download(commit_id)
+        # Execute
+        data = DownloadMetrics().check_download(commit_id)
         return callback + '(' + json.dumps(data) + ')'

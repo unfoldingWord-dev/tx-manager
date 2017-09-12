@@ -3,13 +3,13 @@ import json
 import tempfile
 import os
 import shutil
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.general_tools import file_utils
 from mock import patch
 from unittest import TestCase
 from libraries.client.client_callback import ClientCallback
 from moto import mock_s3
 from libraries.models.job import TxJob
+from libraries.app.app import App
 
 
 @mock_s3
@@ -19,17 +19,24 @@ class TestClientCallback(TestCase):
     source_zip = ''
     build_log_json = ''
     project_json = ''
-    transfered_files = []  # for keeping track of file translfers to cdn
+    transferred_files = []  # for keeping track of file transfers to cdn
     raiseDownloadException = False
 
     def setUp(self):
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
+        App.cdn_s3_handler.create_bucket()
+        App.cdn_s3_handler.get_objects = self.mock_cdn_get_objects
+        App.cdn_s3_handler.upload_file = self.mock_cdn_upload_file
+        App.cdn_s3_handler.get_json = self.mock_cdn_get_json
+
         try:
             os.makedirs(self.base_temp_dir)
         except:
             pass
 
         self.temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='callbackTest_')
-        self.transfered_files = []
+        self.transferred_files = []
         self.raiseDownloadException = False
 
     def tearDown(self):
@@ -154,30 +161,21 @@ class TestClientCallback(TestCase):
 
         self.project_json = '{}'
 
-        vars = {
-            'job_data': {
-                'created_at': '2017-05-22T13:39:15Z',
-                'identifier': ('%s' % identifier),
-                'output':     'https://test-cdn.door43.org/tx/job/6864ae1b91195f261ba5cda62d58d5ad9333f3131c787bb68f20c27adcc85cad.zip',
-                'ended_at':   '2017-05-22T13:39:17Z',
-                'started_at': '2017-05-22T13:39:16Z',
-                'status':     'started',
-                'success':    'success'
-            },
-            'gogs_url': 'https://git.example.com',
-            'cdn_bucket': 'cdn_test_bucket'
+        job_data = {
+            'created_at': '2017-05-22T13:39:15Z',
+            'identifier': ('%s' % identifier),
+            'output':     'https://test-cdn.door43.org/tx/job/6864ae1b91195f261ba5cda62d58d5ad9333f3131c787bb68f20c27adcc85cad.zip',
+            'ended_at':   '2017-05-22T13:39:17Z',
+            'started_at': '2017-05-22T13:39:16Z',
+            'status':     'started',
+            'success':    'success'
         }
 
         defaults = TxJob.default_values
         if defaults['links'] or defaults['log'] or defaults['warnings'] or defaults['errors']:
-             self.assertTrue(False, "TxJob.default_values corrupted: " + json.dumps(TxJob.default_values))
+            self.assertTrue(False, "TxJob.default_values corrupted: " + json.dumps(TxJob.default_values))
 
-        ccb = ClientCallback(**vars)
-        ccb.cdn_handler = S3Handler("test_cdn")
-        ccb.cdn_handler.create_bucket()
-        ccb.cdn_handler.get_objects = self.mock_cdn_get_objects
-        ccb.cdn_handler.upload_file = self.mock_cdn_upload_file
-        ccb.cdn_handler.get_json = self.mock_cdn_get_json
+        ccb = ClientCallback(job_data=job_data)
         return ccb
 
     def mock_download_file(self, url, target):
@@ -193,13 +191,12 @@ class TestClientCallback(TestCase):
             file_utils.write_file(target, self.project_json)
 
     def mock_cdn_upload_file(self, project_file, s3_key, cache_time=600):
-        self.transfered_files.append({'type': 'upload', 'file': project_file,
+        self.transferred_files.append({'type': 'upload', 'file': project_file,
                                                     'key': s3_key})
         return
 
     def mock_cdn_get_json(self, s3_key):
-        self.transfered_files.append({'type': 'download', 'file': 'json',
-                                                    'key': s3_key})
+        self.transferred_files.append({'type': 'download', 'file': 'json', 'key': s3_key})
         if 'build_log.json' in s3_key:
             return json.loads(self.build_log_json)
         elif 'project.json' in s3_key:

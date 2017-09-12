@@ -26,7 +26,6 @@ class TestObsPreprocessor(unittest.TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_ObsPreprocessorComplete(self):
-
         #given
         file_name = os.path.join('raw_sources', 'aab_obs_text_obs.zip')
         repo_name = 'aab_obs_text_obs'

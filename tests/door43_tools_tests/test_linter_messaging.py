@@ -1,4 +1,3 @@
-# coding=utf-8
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 import time
@@ -47,7 +46,7 @@ class TestLinterMessaging(unittest.TestCase):
         # then
         self.assertEquals(len(jobs1), len(files_to_lint))
         self.assertEquals(len(jobs2), len(files_to_lint2))
-        unfinished_jobs = q.get_unfinished_Lint_jobs()
+        unfinished_jobs = q.get_unfinished_lint_jobs()
         self.assertEquals(len(unfinished_jobs), 0)
 
         for job in files_to_lint2:  # these jobs should be in last list
@@ -83,7 +82,7 @@ class TestLinterMessaging(unittest.TestCase):
         # then
         self.assertEquals(len(jobs1), len(files_to_lint))
         self.assertEquals(len(jobs2), len(files_to_lint2))
-        unfinished_jobs = q.get_unfinished_Lint_jobs()
+        unfinished_jobs = q.get_unfinished_lint_jobs()
         self.assertEquals(len(unfinished_jobs), 0)
 
         for job in files_to_lint2:  # these jobs should be in last list

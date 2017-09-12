@@ -15,7 +15,7 @@ class ConvertHandler(Handler):
         else:
             args = list(args)
             self.converter_class = args.pop()
-        Handler.__init__(self, *args, **kwargs)
+        super(ConvertHandler, self).__init__()
 
     def _handle(self, event, context):
         """
@@ -23,21 +23,17 @@ class ConvertHandler(Handler):
         :param context:
         :return dict:
         """
-        data = {}
-        if 'data' in event and isinstance(event['data'], dict):
-            data = event['data']
-        if 'body-json' in event and isinstance(event['body-json'], dict):
-            data.update(event['body-json'])
-        job = self.retrieve(data, 'job', 'payload')
+        # Gather required arguments
+        job = self.retrieve(self.data, 'job', 'payload')
         source = self.retrieve(job, 'source', 'job')
         resource = self.retrieve(job, 'resource_type', 'job')
-        cdn_bucket = self.retrieve(job, 'cdn_bucket', 'job')
         cdn_file = self.retrieve(job, 'cdn_file', 'job')
         options = {}
         if 'options' in job:
             options = job['options']
-        converter = self.converter_class(source=source, resource=resource, cdn_bucket=cdn_bucket, cdn_file=cdn_file,
-                                         options=options)
+
+        # Execute
+        converter = self.converter_class(source=source, resource=resource, cdn_file=cdn_file, options=options)
         results = converter.run()
         converter.close()  # do cleanup after run
         return results

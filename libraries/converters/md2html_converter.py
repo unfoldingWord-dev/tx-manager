@@ -44,7 +44,8 @@ class Md2HtmlConverter(Converter):
                 html_filename = base_name + ".html"
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, html)
-                self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename), os.path.basename(html_filename)))
+                self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
+                                                             os.path.basename(html_filename)))
             else:
                 # Directly copy over files that are not markdown files
                 try:
@@ -92,7 +93,8 @@ class Md2HtmlConverter(Converter):
                 html_filename = base_name + ".html"
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, html)
-                self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename), os.path.basename(html_filename)))
+                self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
+                                                             os.path.basename(html_filename)))
             else:
                 # Directly copy over files that are not markdown files
                 try:

@@ -1,9 +1,9 @@
 from __future__ import print_function, unicode_literals
-from contextlib import closing
 import json
 import shutil
 import sys
 import ssl
+from contextlib import closing
 
 try:
     import urllib.request as urllib2

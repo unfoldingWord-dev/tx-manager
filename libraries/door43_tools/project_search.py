@@ -1,19 +1,16 @@
 from __future__ import print_function, unicode_literals
 import json
-import logging
 import datetime
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 
 
 class ProjectSearch(object):
-    INVALID_URL_ERROR = 'repo not found for: '
-    INVALID_LANG_URL_ERROR = 'language not found for: '
-    DB_ACCESS_ERROR = 'could not access view counts for: '
+    INVALID_URL_ERROR = 'Project not found for: '
+    INVALID_LANG_URL_ERROR = 'Language not found for: '
+    DB_ACCESS_ERROR = 'Could not access view counts for: '
 
     def __init__(self):
-        self.logger = logging.getLogger('tx-manager')
-        self.logger.addHandler(logging.NullHandler())
         self.error = None
         self.criterion = None
 
@@ -23,7 +20,7 @@ class ProjectSearch(object):
         :param criterion:
         :return:
         """
-        self.logger.debug("Start: search_projects: " + json.dumps(criterion))
+        App.logger.debug("Start: search_repos: " + json.dumps(criterion))
 
         self.criterion = json.loads(json.dumps(criterion))  # clone so we can modify
 
@@ -54,7 +51,7 @@ class ProjectSearch(object):
         results = selection.limit(limit).all()  # get all matching
         data = []
         if results:
-            self.logger.debug('Returning search result count of {0}')
+            App.logger.debug('Returning search result count of {0}')
 
             returned_fields = "repo_name, user_name, title, lang_code, manifest, last_updated, views" \
                 if "returnedFields" not in self.criterion else self.criterion["returnedFields"]
@@ -72,7 +69,7 @@ class ProjectSearch(object):
                 data.append(item)
 
         else:  # record is not present
-            self.logger.debug('No entries found in search')
+            App.logger.debug('No entries found in search')
 
         return data
 
@@ -113,7 +110,7 @@ class ProjectSearch(object):
 
     def log_error(self, msg):
         self.error = msg
-        self.logger.debug(msg)
+        App.logger.debug(msg)
 
 
 def set_contains_string_filter(selection, key, value):

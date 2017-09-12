@@ -1,5 +1,5 @@
 from __future__ import unicode_literals, print_function
-import logging
+from libraries.app.app import App
 
 
 class ConvertLogger(object):
@@ -9,13 +9,11 @@ class ConvertLogger(object):
             "info": [],
             "warning": [],
         }
-        self.logger = logging.getLogger('tx-manager')
-        self.logger.addHandler(logging.NullHandler())
 
-    def log(self, type, msg):
-        if type in self.logs:
-            self.logs[type].append(msg)
-            self.logger.debug("CONVERSION {0}: {1}".format(type.upper(), msg))
+    def log(self, log_type, msg):
+        if log_type in self.logs:
+            self.logs[log_type].append(msg)
+            App.logger.debug("CONVERSION {0}: {1}".format(log_type.upper(), msg))
 
     def warning(self, msg):
         self.log("warning", msg)

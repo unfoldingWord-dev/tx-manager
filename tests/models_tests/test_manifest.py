@@ -11,18 +11,15 @@ from libraries.app.app import App
 
 @mock_dynamodb2
 class TxManifestTests(TestCase):
-    MANIFEST_TABLE_NAME = 'test-manifest'
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
-        self.db_handler = DynamoDBHandler(self.MANIFEST_TABLE_NAME)
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         self.init_table()
         self.items = {}
         self.init_items()
         self.populate_table()
-
-    def init_table(self):
-        App(db_connection_string='sqlite:///:memory:')
 
     def init_items(self):
         self.items = {

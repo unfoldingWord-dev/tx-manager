@@ -18,6 +18,10 @@ class User(App.ModelBase):
 
 class TestApp(unittest.TestCase):
 
+    def setUp(self):
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName))
+
     def test_init(self):
         App(gogs_ip_address='198.167.2.2')
         self.assertEqual(App.gogs_ip_address, '198.167.2.2')
@@ -51,3 +55,21 @@ class TestApp(unittest.TestCase):
         user_from_db = App.db.query(User).filter_by(name='ed').first()
         self.assertIsNotNone(user_from_db)
         self.assertEqual(user_from_db.password, '12345')
+
+    def test_setup_handlers(self):
+        App.setup_handlers()
+        self.assertIsNotNone(App.cdn_s3_handler)
+
+    def test_prefix_vars(self):
+        App(prefix='')
+        self.assertEqual(App.cdn_bucket, 'cdn.door43.org')
+        self.assertEqual(App.api_url, 'https://api.door43.org')
+        App(prefix='test-')
+        self.assertEqual(App.cdn_bucket, 'test-cdn.door43.org')
+        self.assertEqual(App.api_url, 'https://test-api.door43.org')
+        App(prefix='test2-')
+        self.assertEqual(App.cdn_bucket, 'test2-cdn.door43.org')
+        self.assertEqual(App.api_url, 'https://test2-api.door43.org')
+        App(prefix='')
+        self.assertEqual(App.cdn_bucket, 'cdn.door43.org')
+        self.assertEqual(App.api_url, 'https://api.door43.org')

@@ -1,20 +1,19 @@
 from __future__ import absolute_import, unicode_literals, print_function
-
 import json
 import unittest
-
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.door43_tools.download_metrics import DownloadMetrics
 from libraries.lambda_handlers.check_download_handler import CheckDownloadHandler
 from moto import mock_s3
+from libraries.app.app import App
+
 
 @mock_s3
 class CheckDownloadsTest(unittest.TestCase):
-    MOCK_BUCKET_NAME = "test-bucket"
 
     def setUp(self):
-        self.handler = S3Handler(bucket_name=self.MOCK_BUCKET_NAME)
-        self.handler.create_bucket()
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
+        App.pre_convert_s3_handler.create_bucket()
 
     def test_check_present_download(self):
         # given
@@ -24,9 +23,6 @@ class CheckDownloadsTest(unittest.TestCase):
         exists = self.handler.key_exists(key)
         self.callback = 'callback'
         event = {
-            'vars': {
-                'pre_convert_bucket': self.MOCK_BUCKET_NAME
-            },
             "api-gateway": {
                 "params": {
                     'querystring': {
@@ -51,9 +47,6 @@ class CheckDownloadsTest(unittest.TestCase):
         commit_id = '39a099622d'
         self.callback = 'callback'
         event = {
-            'vars': {
-                'pre_convert_bucket': self.MOCK_BUCKET_NAME
-            },
             "api-gateway": {
                 "params": {
                     'querystring': {
