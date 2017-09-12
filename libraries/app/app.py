@@ -37,6 +37,7 @@ class App(object):
 
     auto_setup_db = True
     db = None
+    echo = False
 
     def __init__(self, **kwargs):
         """
@@ -46,7 +47,7 @@ class App(object):
         for var, value in kwargs.iteritems():
             setattr(App, var, value)
         if App.auto_setup_db and (App.db_connection_string or App.db_pass):
-            App.setup_db()
+            App.setup_db(self.echo)
 
     @classmethod
     def setup_db(cls, echo=False):
