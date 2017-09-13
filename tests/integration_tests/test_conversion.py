@@ -47,7 +47,8 @@ class TestConversions(TestCase):
     or set to 'test' and will run on the test environment
     """
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         """Runs before all tests."""
         branch = os.environ.get("TRAVIS_BRANCH", "develop")  # default is testing develop branch (dev)
 
