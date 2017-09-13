@@ -86,9 +86,9 @@ class App(object):
 
     # Logging for the App, and turn off boto logging. Set here so automatically ready for any logging calls
     logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
     if not len(logger.handlers):
         logger.addHandler(logging.StreamHandler())
-    logger.setLevel(logging.DEBUG)
     logging.getLogger('boto3').setLevel(logging.ERROR)
     logging.getLogger('botocore').setLevel(logging.ERROR)
 
