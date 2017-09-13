@@ -39,7 +39,7 @@ def setup_logger(logger, level):
     for h in logger.handlers:
         logger.removeHandler(h)
     sh = logging.StreamHandler(sys.stdout)
-    head = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    head = '%(asctime)s - %(levelname)s: %(message)s'
     sh.setFormatter(logging.Formatter(head))
     logger.addHandler(sh)
     logger.setLevel(level)
@@ -105,7 +105,7 @@ class App(object):
     aws_access_key_id = None
     aws_secret_access_key = None
 
-    logger = logging.getLogger(name)
+    logger = logging.getLogger()
     setup_logger(logger, logging.DEBUG)
 
     def __init__(self, reset=True, **kwargs):
