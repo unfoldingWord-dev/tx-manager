@@ -21,7 +21,6 @@ class RunLinterHandler(Handler):
 
         # Execute
         linter_class = LinterHandler.get_linter_class(resource_id)
-        print(linter_class)
         ret_value = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
                                  single_file=single_file).run()
         if App.linter_messaging_name:
