@@ -28,6 +28,14 @@ def reset_class(cls):
 
 
 def setup_logger(logger, level):
+    """
+    Logging for the App, and turn off boto logging.
+    Set here so automatically ready for any logging calls
+    :param logger:
+    :param level:
+    :return:
+    """
+    logger.setLevel(level)
     if not len(logger.handlers):
         ch = logging.StreamHandler()
         ch.setLevel(level)
@@ -97,7 +105,6 @@ class App(object):
     aws_access_key_id = None
     aws_secret_access_key = None
 
-    # Logging for the App, and turn off boto logging. Set here so automatically ready for any logging calls
     logger = logging.getLogger(name)
     setup_logger(logger, logging.DEBUG)
 

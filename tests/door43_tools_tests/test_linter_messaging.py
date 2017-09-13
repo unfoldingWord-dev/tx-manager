@@ -25,7 +25,6 @@ class TestLinterMessaging(unittest.TestCase):
         """Runs after each test."""
 
     def test_messagingLIFO(self):
-        App.logger.debug('TEST')
         # given
         q = LinterMessaging(TestLinterMessaging.queue_name)
         files_to_lint = self.generate_file_list("http://door43.org/repos/9967", 10)
