@@ -82,7 +82,8 @@ class App(object):
     # Prefixing vars
     # All variables that we change based on production, development and testing environments.
     prefixable_vars = ['api_url', 'pre_convert_bucket', 'cdn_bucket', 'door43_bucket', 'job_table_name',
-                       'module_table_name', 'language_stats_table_name', 'linter_messaging_name']
+                       'module_table_name', 'language_stats_table_name', 'linter_messaging_name',
+                       'db_name', 'db_user']
 
     # DB related
     ModelBase = declarative_base()  # To be used in all libraries/model classes as the parent class: App.ModelBase
