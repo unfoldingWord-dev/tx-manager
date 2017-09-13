@@ -700,7 +700,7 @@ class TestConversions(TestCase):
         if USE_WEB_HOOK_LAMBDA:
             headers = {"content-type": "application/json"}
             tx_client_webhook_url = "{0}/client/webhook".format(App.api_url)
-            App.logger.debug('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url), end=' ')
+            App.logger.debug('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url))
             App.logger.debug(webhook_data)
             response = requests.post(tx_client_webhook_url, json=webhook_data, headers=headers)
             App.logger.debug('webhook finished with code:' + str(response.status_code))
