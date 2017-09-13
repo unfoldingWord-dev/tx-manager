@@ -16,6 +16,7 @@ class ManagerTest(unittest.TestCase):
     MOCK_CALLBACK_URL = 'http://example.com/client/callback'
 
     requested_urls = []
+    mock_gogs = None
 
     @classmethod
     def setUpClass(cls):
