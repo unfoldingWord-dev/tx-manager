@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function
+import sys
 import logging
 import re
 from libraries.aws_tools.s3_handler import S3Handler
@@ -35,14 +36,13 @@ def setup_logger(logger, level):
     :param level:
     :return:
     """
+    for h in logger.handlers:
+        logger.removeHandler(h)
+    sh = logging.StreamHandler(sys.stdout)
+    head = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    sh.setFormatter(logging.Formatter(head))
+    logger.addHandler(sh)
     logger.setLevel(level)
-    if not len(logger.handlers):
-        ch = logging.StreamHandler()
-        ch.setLevel(level)
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        ch.setFormatter(formatter)
-        logger.addHandler(ch)
     # Change these loggers to only report errors:
     logging.getLogger('boto3').setLevel(logging.ERROR)
     logging.getLogger('botocore').setLevel(logging.ERROR)
@@ -105,7 +105,7 @@ class App(object):
     aws_access_key_id = None
     aws_secret_access_key = None
 
-    logger = logging.getLogger(name)
+    logger = logging.getLogger()
     setup_logger(logger, logging.DEBUG)
 
     def __init__(self, reset=True, **kwargs):
