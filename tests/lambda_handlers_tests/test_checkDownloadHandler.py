@@ -19,8 +19,8 @@ class CheckDownloadsTest(unittest.TestCase):
         # given
         commit_id = '39a099622d'
         key = 'preconvert/' + commit_id + '.zip'
-        App.cdn_s3_handler.put_contents(key, "dummy")
-        exists = App.cdn_s3_handler.key_exists(key)
+        App.pre_convert_s3_handler.put_contents(key, "dummy")
+        exists = App.pre_convert_s3_handler.key_exists(key)
         self.callback = 'callback'
         event = {
             'data': {
