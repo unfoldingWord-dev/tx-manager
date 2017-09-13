@@ -449,7 +449,7 @@ class TestUsfmLinter(LinterTestCase):
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
-    @unittest.skip("Skip test for time reasons - leave for standalone testing")
+    @unittest.skip("Skip test_EnUlbValid test for time reasons - leave for standalone testing")
     def test_EnUlbValid(self):
         out_dir = self.unzip_resource('en_ulb.zip')
         expected_warnings = 0
@@ -458,7 +458,7 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir, rc=rc)
         linter.run()
         elapsed_seconds = int(time.time() - start)
-        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        print("Checking time for test_EnUlbValid was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
     def test_EnUlbValidSubset(self):
@@ -470,7 +470,7 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir, rc=rc)
         linter.run()
         elapsed_seconds = int(time.time() - start)
-        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        print("Checking time for test_EnUlbValidSubset was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
     def test_EnUlbValidConvertSingle(self):
@@ -482,7 +482,7 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir, rc=rc, single_file=convert_only)
         linter.run()
         elapsed_seconds = int(time.time() - start)
-        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        print("Checking time for test_EnUlbValidConvertSingle was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
     #
