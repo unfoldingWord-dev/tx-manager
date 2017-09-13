@@ -77,7 +77,7 @@ class App(object):
     db_port = '3306'
     db_name = 'tx'
     db_connection_string = None
-    db_connection_string_params = 'charset=utf8use_unicode=0'
+    db_connection_string_params = 'charset=utf8mb4&use_unicode=1'
 
     # Prefixing vars
     # All variables that we change based on production, development and testing environments.
