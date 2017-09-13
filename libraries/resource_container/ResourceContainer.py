@@ -357,8 +357,10 @@ class Resource:
     def identifier(self):
         if 'identifier' in self.resource and self.resource['identifier']:
             return self.resource['identifier'].lower()
-        if 'id' in self.resource and self.resource['id']:
+        elif 'id' in self.resource and self.resource['id']:
             return self.resource['id'].lower()
+        elif 'type' in self.resource and 'id' in self.resource['type'] and self.resource['type']['id']:
+            return self.resource['type']['id']
         elif 'slug' in self.resource and self.resource['slug']:
             slug = self.resource['slug'].lower()
             if 'ulb' in slug:
