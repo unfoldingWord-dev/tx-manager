@@ -6,9 +6,8 @@ from libraries.lambda_handlers.start_job_handler import StartJobHandler
 
 class TestStartJobHandler(TestCase):
 
-    @mock.patch('libraries.manager.manager.TxManager.setup_resources')
     @mock.patch('libraries.manager.manager.TxManager.start_job')
-    def test_handle(self, mock_start_job, mock_setup_resources):
+    def test_handle(self, mock_start_job):
         mock_start_job.return_value = None
         event = {
             'Records': [

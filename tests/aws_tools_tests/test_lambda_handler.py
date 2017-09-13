@@ -10,6 +10,7 @@ from moto import mock_lambda
 @mock_lambda
 class LambdaHandlerTests(TestCase):
     def setUp(self):
+        """Runs before each test."""
         self.handler = LambdaHandler()
         self.init_lambda("""
 def lambda_handler(event, context):

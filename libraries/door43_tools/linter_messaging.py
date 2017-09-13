@@ -1,5 +1,4 @@
 from __future__ import print_function, unicode_literals
-import json
 from libraries.door43_tools.messaging_service import MessagingService
 
 
@@ -62,7 +61,7 @@ class LinterMessaging(MessagingService):
         """
         return self.get_received_messages()
 
-    def get_unfinished_Lint_jobs(self):
+    def get_unfinished_lint_jobs(self):
         """
         get list of sources for lint jobs (from last_wait_list) that have finished yet
         :return:

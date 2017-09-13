@@ -2,7 +2,6 @@ import os
 from setuptools import setup
 
 
-
 def read(f_name):
     """
     Utility function to read the README file.

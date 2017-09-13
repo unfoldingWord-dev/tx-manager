@@ -12,22 +12,13 @@ class CheckDownloadHandler(Handler):
         :param context:
         :return jsonp:
         """
+        # Gather arguments
+        commit_id = self.retrieve(self.data, 'commit_id', 'Payload', required=False)
+        callback = self.retrieve(self.data, 'callback', 'Payload', required=False)
 
-        # Set required env_vars
-        env_vars = {
-            'pre_convert_bucket': self.retrieve(event['vars'], 'pre_convert_bucket', 'Environment Vars'),
-        }
-
-        commit_id = ''
-        callback = ''
-        try:
-            querystring = event['api-gateway']['params']['querystring']
-            commit_id = querystring['commit_id']
-            if 'callback' in querystring:
-                callback = querystring['callback']
-
-        except:
-            pass
-
-        data = DownloadMetrics(**env_vars).check_download(commit_id)
-        return callback + '(' + json.dumps(data) + ')'
+        # Execute
+        data = DownloadMetrics().check_download(commit_id)
+        if callback:
+            return callback + '(' + json.dumps(data) + ')'
+        else:
+            return data

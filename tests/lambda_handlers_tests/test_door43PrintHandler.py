@@ -10,13 +10,8 @@ class TestDoor43PrintHandler(TestCase):
     def test_handle(self, mock_print_project):
         mock_print_project.return_value = None
         event = {
-            'data': {},
-            'body-json': {
+            'data': {
                 'id': 'door43/en_obs/12345'
-            },
-            'vars': {
-                'cdn_url': 'https://cdn.example.com',
-                'cdn_bucket': 'cdn_test_bucket',
             }
         }
         handler = Door43PrintHandler()

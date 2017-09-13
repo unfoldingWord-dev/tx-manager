@@ -4,7 +4,7 @@ from libraries.lambda_handlers.language_view_count_handler import LanguageViewCo
 
 def handle(event, context):
     """
-    Called by API Gateway when user wants a list of endpoints
+    Called by API Gateway to get the view count of a language page
     :param dict event:
     :param context:
     :return dict:

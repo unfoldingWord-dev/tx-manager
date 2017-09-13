@@ -6,27 +6,22 @@ import tempfile
 import unittest
 import hashlib
 import boto3
-from libraries.aws_tools.s3_handler import S3Handler
 from mock import patch
 from libraries.client.client_webhook import ClientWebhook
 from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import read_file
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2, mock_sqs
+from libraries.app.app import App
 
 
 @mock_s3
 @mock_dynamodb2
 @mock_sqs
 class TestClientWebhook(unittest.TestCase):
-    MANIFEST_TABLE_NAME = 'client-webhook-test-manifest'
-    JOB_TABLE_NAME = 'client-webhook-test-job'
-    LINTER_MESSAGING_NAME = 'dummy_linter_messaging'
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
-    temp_dir = None
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
     default_mock_job_return_value = TxJob({
         'job_id': '0',
@@ -40,9 +35,16 @@ class TestClientWebhook(unittest.TestCase):
         'errors': []
     })
     mock_job_return_value = default_mock_job_return_value
-    setup_table = False
 
     def setUp(self):
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
+        App.cdn_s3_handler.create_bucket()
+        App.pre_convert_s3_handler.create_bucket()
+        App.cdn_s3_handler.upload_file = self.mock_cdn_upload_file
+        App.cdn_s3_handler.get_json = self.mock_cdn_get_json
+        App.pre_convert_s3_handler.upload_file = self.mock_s3_upload_file
+
         try:
             os.makedirs(TestClientWebhook.base_temp_dir)
         except:
@@ -56,22 +58,19 @@ class TestClientWebhook(unittest.TestCase):
         # copy the job object
         TestClientWebhook.mock_job_return_value = TxJob(self.default_mock_job_return_value.get_db_data())
         self.uploaded_files = []
-        self.manifest_db_handler = DynamoDBHandler(self.MANIFEST_TABLE_NAME)
-        self.job_db_handler = DynamoDBHandler(self.JOB_TABLE_NAME)
-        if not TestClientWebhook.setup_table:
-            self.init_tables()
-            TestClientWebhook.setup_table = True
+        self.init_tables()
 
     def tearDown(self):
         shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
 
     def init_tables(self):
         try:
-            self.job_db_handler.table.delete()
+            App.job_db_handler.table.delete()
         except:
             pass
-        self.job_db_handler.resource.create_table(
-            TableName=self.JOB_TABLE_NAME,
+
+        App.job_db_handler.resource.create_table(
+            TableName=App.job_table_name,
             KeySchema=[
                 {
                     'AttributeName': 'job_id',
@@ -81,37 +80,6 @@ class TestClientWebhook(unittest.TestCase):
             AttributeDefinitions=[
                 {
                     'AttributeName': 'job_id',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
-        try:
-            self.manifest_db_handler.table.delete()
-        except:
-            pass
-        self.manifest_db_handler.resource.create_table(
-            TableName=self.MANIFEST_TABLE_NAME,
-            KeySchema=[
-                {
-                    'AttributeName': 'repo_name_lower',
-                    'KeyType': 'HASH'
-                },
-                {
-                    'AttributeName': 'user_name_lower',
-                    'KeyType': 'RANGE'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'repo_name_lower',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'user_name_lower',
                     'AttributeType': 'S'
                 },
             ],
@@ -136,8 +104,8 @@ class TestClientWebhook(unittest.TestCase):
     def test_processWebhook(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
-        client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
-                                                      mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
+                                                         mock_download_file)
         expected_job_count = 1
         expected_error_count = 0
 
@@ -148,10 +116,9 @@ class TestClientWebhook(unittest.TestCase):
         self.validateResults(results, expected_job_count, expected_error_count)
 
         # Check repo was added to manifest table
-        tx_manifest = TxManifest(db_handler=self.manifest_db_handler).load({
-                'repo_name_lower': client_web_hook.commit_data['repository']['name'].lower(),
-                'user_name_lower': client_web_hook.commit_data['repository']['owner']['username'].lower()
-            })
+        repo_name = client_web_hook.commit_data['repository']['name']
+        user_name = client_web_hook.commit_data['repository']['owner']['username']
+        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')
@@ -161,8 +128,8 @@ class TestClientWebhook(unittest.TestCase):
     def test_processWebhookError(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
-        client_web_hook = self.setupClientWebhookMock('kpb_mat_text_udb_repo', self.parent_resources_dir,
-                                                      mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
+                                                         mock_download_file)
         TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
         expected_job_count = 1
         expected_error_count = 2
@@ -174,7 +141,7 @@ class TestClientWebhook(unittest.TestCase):
             pass
 
         # then
-        self.validateResults(self.getBuildLogJson(), expected_job_count, expected_error_count)
+        self.validateResults(self.get_build_log_json(), expected_job_count, expected_error_count)
 
     @patch('libraries.client.client_webhook.download_file')
     @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
@@ -184,8 +151,8 @@ class TestClientWebhook(unittest.TestCase):
         self.linter_success = True
         self.linter_warnings = []
         mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'),
-                                                      self.resources_dir, mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'),
+                                                         self.resources_dir, mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
         expected_warnings_count = expected_job_count * len(self.linter_warnings)
@@ -204,8 +171,8 @@ class TestClientWebhook(unittest.TestCase):
         self.linter_success = True
         self.linter_warnings = ["warning!!"]
         mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'),
-                                                      self.resources_dir, mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'),
+                                                         self.resources_dir, mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
         expected_warnings_count = expected_job_count * len(self.linter_warnings)
@@ -224,8 +191,8 @@ class TestClientWebhook(unittest.TestCase):
         self.linter_success = False
         self.linter_warnings = []
         mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'),
-                                                      self.resources_dir, mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'),
+                                                         self.resources_dir, mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
         expected_warnings_count = expected_job_count
@@ -240,8 +207,8 @@ class TestClientWebhook(unittest.TestCase):
     @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookMultipleBooksErrors(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
-        client_web_hook = self.setupClientWebhookMock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir,
-                                                      mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir,
+                                                         mock_download_file)
         self.setup_linter()
         self.linter_success = True
         self.linter_warnings = ["warning!!"]
@@ -260,7 +227,7 @@ class TestClientWebhook(unittest.TestCase):
 
         # then
         self.assertTrue(captured_error)
-        self.validateResults2(self.getBuildLogJson(), expected_job_count, expected_error_count, expected_warnings_count)
+        self.validateResults2(self.get_build_log_json(), expected_job_count, expected_error_count, expected_warnings_count)
 
     #
     # helpers
@@ -271,34 +238,34 @@ class TestClientWebhook(unittest.TestCase):
         self. validateResults(results, expected_job_count, expected_error_count)
 
     def validateResults(self, results, expected_job_count, expected_error_count):
-        multipleJob = expected_job_count > 1
+        multiple_job = expected_job_count > 1
         self.assertEqual(self.job_request_count, expected_job_count)
         self.assertTrue(len(results['job_id']) > 16)
         self.assertTrue(len(results['commit_id']) > 8)
         self.assertTrue(len(results['repo_owner']) > 1)
         self.assertTrue(len(results['repo_name']) > 1)
-        if multipleJob:
+        if multiple_job:
             self.assertEqual(len(results['build_logs']), expected_job_count)
             self.assertTrue(len(results['source']) > 1)
         self.assertEqual(len(results['errors']), expected_error_count)
-        self.assertEqual(multipleJob, 'multiple' in results)
-        self.assertDictEqual(results, self.getBuildLogJson())
-        self.assertTrue(len(self.getProjectJson()) >= 4)
+        self.assertEqual(multiple_job, 'multiple' in results)
+        self.assertDictEqual(results, self.get_build_log_json())
+        self.assertTrue(len(self.get_project_json()) >= 4)
 
-    def getBuildLogJson(self):
-        return self.readLastUploadedJsonFile('build_log.json')
+    def get_build_log_json(self):
+        return self.read_last_uploaded_json_file('build_log.json')
 
-    def getProjectJson(self):
-        return self.readLastUploadedJsonFile('project.json')
+    def get_project_json(self):
+        return self.read_last_uploaded_json_file('project.json')
 
-    def readLastUploadedJsonFile(self, match):
-        json_str = self.readLastUploadedFile(match)
+    def read_last_uploaded_json_file(self, match):
+        json_str = self.read_last_uploaded_file(match)
         if json_str:
             json_data = json.loads(json_str)
             return json_data
         return None
 
-    def readLastUploadedFile(self, match):
+    def read_last_uploaded_file(self, match):
         file_path = self.get_last_uploaded_file(match)
         if file_path:
             return read_file(file_path)
@@ -310,18 +277,12 @@ class TestClientWebhook(unittest.TestCase):
                 return upload['file']
         return None
 
-    def setupClientWebhookMock(self, repo_name, base_path, mock_download_file):
+    def setup_client_webhook_mock(self, repo_name, base_path, mock_download_file):
+        App.gogs_url = base_path
         mock_download_file.side_effect = self.mock_download_repo
         source = os.path.join(base_path, repo_name)
-        env_vars = self.get_environment(source, base_path)
-        self.cwh = ClientWebhook(**env_vars)
-        self.cwh.cdn_handler = S3Handler("test_cdn")
-        self.cwh.cdn_handler.create_bucket()
-        self.cwh.cdn_handler.upload_file = self.mock_cdn_upload_file
-        self.cwh.cdn_handler.get_json = self.mock_cdn_get_json
-        self.cwh.preconvert_handler = S3Handler("test_preconvert")
-        self.cwh.preconvert_handler.create_bucket()
-        self.cwh.preconvert_handler.upload_file = self.mock_s3_upload_file
+        commit_data = self.get_commit_data(source)
+        self.cwh = ClientWebhook(commit_data)
         self.cwh.add_payload_to_tx_converter = self.mock_add_payload_to_tx_converter
         self.cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
         return self.cwh
@@ -334,7 +295,7 @@ class TestClientWebhook(unittest.TestCase):
         self.job_request_count += 1
         mock_job_return_value = TestClientWebhook.mock_job_return_value
         mock_job_return_value.job_id = hashlib.sha256().hexdigest()
-        mock_job_return_value.db_handler = self.job_db_handler
+        mock_job_return_value.db_handler = App.job_db_handler
         mock_job_return_value.source = payload['source']
         mock_job_return_value.insert()
         return identifier, mock_job_return_value
@@ -353,11 +314,11 @@ class TestClientWebhook(unittest.TestCase):
         return ret_value
 
     def mock_cdn_upload_file(self, project_file, s3_key):
-        bucket_name = self.cwh.preconvert_handler.bucket.name
+        bucket_name = App.pre_convert_s3_handler.bucket.name
         return self.upload_file(bucket_name, project_file, s3_key)
 
     def mock_s3_upload_file(self, project_file, s3_key):
-        bucket_name = self.cwh.cdn_handler.bucket.name
+        bucket_name = App.cdn_s3_handler.bucket.name
         return self.upload_file(bucket_name, project_file, s3_key)
 
     def upload_file(self, bucket_name, project_file, s3_key):
@@ -376,28 +337,21 @@ class TestClientWebhook(unittest.TestCase):
         try:
             #setup linter messaging
             sqs = boto3.resource('sqs')
-            queue = sqs.create_queue(QueueName=TestClientWebhook.LINTER_MESSAGING_NAME, Attributes={'DelaySeconds': '5'})
+            sqs.create_queue(QueueName=App.linter_messaging_name, Attributes={'DelaySeconds': '5'})
         except Exception as e:
             pass
 
-    def get_environment(self, source_path, gogs_url):
-        gogs_user_token = 'dummy'
-        api_url = 'https://api.door43.org'
-        pre_convert_bucket = 'tx-webhook-client'
-        cdn_bucket = 'cdn.door43.org'
+    def get_commit_data(self, source_path):
         base_url = 'https://git.door43.org'
         commit_id = '22f3d09f7a33d2496db6993648f0cd967a9006f6'
         commit_path = '/tx-manager-test-data/en-ulb/commit/22f3d09f7a33d2496db6993648f0cd967a9006f6'
         repo = 'en-ulb'
         user = 'tx-manager-test-data'
-        manifest_table_name = TestClientWebhook.MANIFEST_TABLE_NAME
-        job_table_name = TestClientWebhook.JOB_TABLE_NAME
-        linter_messaging_name = TestClientWebhook.LINTER_MESSAGING_NAME
 
         if not source_path:
             source_path = base_url + commit_path
 
-        webhook_data = {
+        commit_data = {
             'after': commit_id,
             'commits': [
                 {
@@ -422,15 +376,4 @@ class TestClientWebhook(unittest.TestCase):
                 'email': 'you@example.com'
             },
         }
-        env_vars = {
-            'api_url': api_url,
-            'pre_convert_bucket': pre_convert_bucket,
-            'cdn_bucket': cdn_bucket,
-            'gogs_url': gogs_url,
-            'gogs_user_token': gogs_user_token,
-            'commit_data': webhook_data,
-            'manifest_table_name': manifest_table_name,
-            'linter_messaging_name': linter_messaging_name,
-            'job_table_name': job_table_name
-        }
-        return env_vars
+        return commit_data

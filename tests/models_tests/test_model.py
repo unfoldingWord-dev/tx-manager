@@ -18,6 +18,7 @@ class MyModel(Model):
     def __init__(self, *args, **kwargs):
         self.field1 = None
         self.field2 = None
+        kwargs['db_handler'] = DynamoDBHandler(ModelTests.TABLE_NAME)
         super(MyModel, self).__init__(*args, **kwargs)
 
 
@@ -26,6 +27,7 @@ class ModelTests(unittest.TestCase):
     TABLE_NAME = 'my-module-table'
 
     def setUp(self):
+        """Runs before each test."""
         self.db_handler = DynamoDBHandler(ModelTests.TABLE_NAME)
         self.init_table()
         self.items = {}
@@ -37,6 +39,7 @@ class ModelTests(unittest.TestCase):
             self.db_handler.table.delete()
         except:
             pass
+
         self.db_handler.resource.create_table(
             TableName=ModelTests.TABLE_NAME,
             KeySchema=[
@@ -71,7 +74,7 @@ class ModelTests(unittest.TestCase):
 
     def populate_table(self):
         for idx in self.items:
-            MyModel(db_handler=self.db_handler).insert(self.items[idx])
+            MyModel().insert(self.items[idx])
 
     def test_populate(self):
         """Test populate method."""
@@ -87,44 +90,47 @@ class ModelTests(unittest.TestCase):
         self.assertFalse(hasattr(obj, 'field3'))
         
     def test_query(self):
-        models = MyModel(db_handler=self.db_handler).query()
+        models = MyModel().query()
         self.assertEqual(len(models), len(self.items))
         for model in models:
             self.assertEqual(model.get_db_data(), MyModel(self.items[model.field1]).get_db_data())
 
     def test_load(self):
-        model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel2'})
+        model = MyModel().load({'field1': 'mymodel2'})
         self.assertEqual(model.get_db_data(), MyModel(self.items['mymodel2']).get_db_data())
 
     def test_insert(self):
         # Insert by giving fields in the constructor
-        MyModel({'field1': 'mymodel3', 'field2': 'something good'}, db_handler=self.db_handler).insert()
-        model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel3'})
+        MyModel({'field1': 'mymodel3', 'field2': 'something good'}).insert()
+        model = MyModel().load({'field1': 'mymodel3'})
         self.assertEqual(model.field2, 'something good')
         # Insert by giving data to the insert() method
-        MyModel(db_handler=self.db_handler).insert({'field1': 'mymodel4', 'field2': 'something better'})
-        model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel4'})
+        MyModel().insert({'field1': 'mymodel4', 'field2': 'something better'})
+        model = MyModel().load({'field1': 'mymodel4'})
         self.assertEqual(model.field2, 'something better')
 
     def test_update(self):
-        model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel1'})
+        model = MyModel().load({'field1': 'mymodel1'})
 
         # Update by setting fields and calling update()
         model.field2 = 'change'
         model.update()
-        model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel1'})
+        model = MyModel().load({'field1': 'mymodel1'})
         self.assertEqual(model.field2, 'change')
 
         # Update by giving a dict to update()
         model.update({'field1': 'cannot change', 'field2': 'can change'})
         self.assertEqual(model.field1, 'mymodel1')  # didn't change
-        model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel1'})
+        model = MyModel().load({'field1': 'mymodel1'})
         self.assertEqual(model.field2, 'can change')
 
     def test_delete_model(self):
-        MyModel('model2', db_handler=self.db_handler).delete()
-        model = MyModel('model2', db_handler=self.db_handler)
+        MyModel('model2').delete()
+        model = MyModel('model2')
         self.assertIsNone(model.field1)
+
+    def test_count(self):
+        self.assertEqual(MyModel().count(), len(self.items))
 
 
 if __name__ == "__main__":

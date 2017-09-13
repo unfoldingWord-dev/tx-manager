@@ -12,6 +12,7 @@ class GogsHandlerTests(unittest.TestCase):
         cls.handler.gogs_api = mock.MagicMock()
 
     def setUp(self):
+        """Runs before each test."""
         self.handler.gogs_api.reset_mock()
 
     def test_authenticate_user_token(self):

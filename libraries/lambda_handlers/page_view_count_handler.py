@@ -13,28 +13,14 @@ class PageViewCountHandler(Handler):
         :param context:
         :return dict:
         """
-        data = {}
-        if 'data' in event and isinstance(event['data'], dict):
-            data = event['data']
-        if 'body-json' in event and isinstance(event['body-json'], dict):
-            data.update(event['body-json'])
-        # Set required env_vars
-        env_vars = {
-            'manifest_table_name': self.retrieve(event['vars'], 'manifest_table_name', 'Environment Vars')
-        }
+        # Gather arguments
+        increment = int(self.retrieve(self.data, 'increment', 'Payload', required=False, default=0))
+        path = self.retrieve(self.data, 'path', 'Payload', required=False, default='')
+        callback = self.retrieve(self.data, 'callback', 'Payload', required=False)
 
-        increment = 0
-        path = ''
-        callback = ''
-        try:
-            querystring = event['api-gateway']['params']['querystring']
-            if 'callback' in querystring:
-                callback = querystring['callback']
-            path = urllib.unquote(querystring['path'])
-            if 'increment' in querystring:
-                increment = int(querystring['increment'])
-        except:
-            pass
-
-        data = PageMetrics(**env_vars).get_view_count(path, increment)
-        return callback + '(' + json.dumps(data) + ')'
+        # Execute
+        data = PageMetrics().get_view_count(path, increment)
+        if callback:
+            return callback + '(' + json.dumps(data) + ')'
+        else:
+            return data

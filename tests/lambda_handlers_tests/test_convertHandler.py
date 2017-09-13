@@ -11,8 +11,7 @@ class TestConvertHandler(TestCase):
     def test_handle_for_obs(self, mock_convert_run):
         mock_convert_run.return_value = None
         event = {
-            'data': {},
-            'body-json': {
+            'data': {
                 'job': {
                     'input_format': 'md',
                     'convert_module': 'md2html',
@@ -39,12 +38,6 @@ class TestConvertHandler(TestCase):
                     'resource_type': 'obs',
                     'options': {'pageSize': 'A4'}
                 }
-            },
-            'vars': {
-                'cdn_url': 'https://cdn.example.com',
-                'api_url': 'https://api.example.com',
-                'gogs_url': 'http://git.example.com',
-                'cdn_bucket': 'cdn_test_bucket'
             }
         }
         self.assertIsNone(ConvertHandler(Md2HtmlConverter).handle(event, None))
@@ -53,8 +46,7 @@ class TestConvertHandler(TestCase):
     def test_handle_for_usfm(self, mock_convert_run):
         mock_convert_run.return_value = None
         event = {
-            'data': {},
-            'body-json': {
+            'data': {
                 'job': {
                     "input_format": "usfm",
                     "convert_module": "usfm2html",
@@ -83,12 +75,6 @@ class TestConvertHandler(TestCase):
                     'resource_type': 'obs',
                     'options': {'pageSize': 'A4'}
                 }
-            },
-            'vars': {
-                'cdn_url': 'https://cdn.example.com',
-                'api_url': 'https://api.example.com',
-                'gogs_url': 'http://git.example.com',
-                'cdn_bucket': 'cdn_test_bucket'
             }
         }
         self.assertIsNone(ConvertHandler(converter_class=Usfm2HtmlConverter).handle(event, None))

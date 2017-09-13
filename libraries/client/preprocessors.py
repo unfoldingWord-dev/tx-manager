@@ -1,11 +1,11 @@
 from __future__ import unicode_literals, print_function
 import os
 import re
+from glob import glob
+from shutil import copy
 from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.general_tools.file_utils import write_file, read_file
-from shutil import copy
 from libraries.resource_container.ResourceContainer import RC
-from glob import glob
 from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
@@ -70,17 +70,17 @@ class Preprocessor(object):
                                 text += read_file(os.path.join(project_path, chapter, chunk))+"\n\n"
                         if project.identifier.lower() in BOOK_NUMBERS:
                             filename = '{0}-{1}.{2}'.format(BOOK_NUMBERS[project.identifier.lower()],
-                                                             project.identifier.upper(), self.rc.resource.file_ext)
+                                                            project.identifier.upper(), self.rc.resource.file_ext)
                         else:
                             filename = '{0}-{1}.{2}'.format(str(idx+1).zfill(2), project.identifier,
                                                             self.rc.resource.file_ext)
                         write_file(os.path.join(self.output_dir, filename), text)
         return True
 
-    def isMultipleJobs(self):
+    def is_multiple_jobs(self):
         return False
 
-    def getBookList(self):
+    def get_book_list(self):
         return None
 
 
@@ -183,10 +183,10 @@ class BiblePreprocessor(Preprocessor):
         super(BiblePreprocessor, self).__init__(*args, **kwargs)
         self.books = []
 
-    def isMultipleJobs(self):
+    def is_multiple_jobs(self):
         return len(self.books) > 1
 
-    def getBookList(self):
+    def get_book_list(self):
         self.books.sort()
         return self.books
 
@@ -384,32 +384,34 @@ class TaPreprocessor(Preprocessor):
             # generate the ToC on live.door43.org
             toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
             if os.path.isfile(toc_file):
-                copy(toc_file, os.path.join(self.output_dir, '{0}-{1}-toc.yaml'.format(str(idx+1).zfill(2), project.identifier)))
+                copy(toc_file, os.path.join(self.output_dir, '{0}-{1}-toc.yaml'.format(str(idx+1).zfill(2),
+                                                                                       project.identifier)))
             config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
             if os.path.isfile(config_file):
-                copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(str(idx+1).zfill(2), project.identifier)))
+                copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(str(idx+1).zfill(2),
+                                                                                             project.identifier)))
         return True
 
     def fix_links(self, content):
         # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
-        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p\)\]\n$]+)',
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
                          r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content, flags=re.IGNORECASE)
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
-        content = re.sub(r'\]\(\.\./([^/\)]+)/01.md\)', r'](#\1)', content)
+        content = re.sub(r'\]\(\.\./([^/)]+)/01.md\)', r'](#\1)', content)
         # fix links to other manuals (two ../ and a manual name and a section name)
         # e.g. [how to translate](../../translate/accurate/01.md) => [how to translate](translate.html#accurate)
         for idx, project in enumerate(self.rc.projects):
-            pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/\)]+)/01.md\)'.format(project.identifier))
+            pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project.identifier))
             replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
-        content = re.sub(r'\]\(([^# :/\)]+)\)', r'](#\1)', content)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
         # convert URLs to links if not already
-        content = re.sub(r'([^"\(])((http|https|ftp)://[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](\2)',
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
                          content, flags=re.IGNORECASE)
         # URLS wth just www at the start, no http
-        content = re.sub(r'([^A-Z0-9"\(\/])(www\.[A-Z0-9\/\?&_\.:=#-]+[A-Z0-9\/\?&_:=#-])', r'\1[\2](http://\2)',
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
                          content, flags=re.IGNORECASE)
         return content
