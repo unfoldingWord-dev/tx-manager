@@ -38,17 +38,7 @@ class TestLinterHandler(unittest.TestCase):
                             'username': 'dummy_name'
                         }
                     }
-                },
-            },
-            'body-json': {},
-            'vars': {
-                'gogs_url': 'https://git.example.com',
-                'cdn_url': 'https://cdn.example.com',
-                'api_url': 'https://api.example.com',
-                'cdn_bucket': 'cdn_test_bucket',
-                'job_table_name': 'test-tx-job',
-                'module_table_name': 'test-tx-module',
-                'language_stats_table_name': 'test-language-stats',
+                }
             }
         }
         handler = RunLinterHandler()

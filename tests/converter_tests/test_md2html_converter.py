@@ -166,9 +166,9 @@ class TestMd2HtmlConverter(unittest.TestCase):
         self.assertEqual(self.return_val['success'], self.expected_success, "Mismatch in for success boolean")
         self.assertEqual(len(self.return_val['info']) == 0, self.expected_info_empty, "Mismatch in expected info empty")
         for warning in self.return_val['warnings']:
-            print("Warning: " + warning)
+            App.logger.debug("Warning: " + warning)
         for error in self.return_val['errors']:
-            print("Error: " + error)
+            App.logger.debug("Error: " + error)
         self.assertEqual(len(self.return_val['warnings']), self.expected_warnings, "Mismatch in expected warnings")
         self.assertEqual(len(self.return_val['errors']), self.expected_errors, "Mismatch in expected errors")
 

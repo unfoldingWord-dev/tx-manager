@@ -10,22 +10,13 @@ class TestRequestJobHandler(TestCase):
     def test_handle(self, mock_setup_job):
         mock_setup_job.return_value = None
         event = {
-            'data': {},
-            'body-json': {
+            'data': {
                 "gogs_user_token": "token1",
                 "cdn_bucket": "test_cdn_bucket",
                 "source": "test_source",
                 "resource_type": "obs",
                 "input_format": "md",
                 "output_format": "hstml"
-            },
-            'vars': {
-                'gogs_url': 'https://git.example.com',
-                'cdn_url': 'https://cdn.example.com',
-                'api_url': 'https://api.example.com',
-                'cdn_bucket': 'cdn_test_bucket',
-                'job_table_name': 'test-tx-job',
-                'module_table_name': 'test-tx-module'
             }
         }
         handler = RequestJobHandler()

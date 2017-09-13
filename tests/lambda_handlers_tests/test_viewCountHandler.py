@@ -11,6 +11,7 @@ class ViewCountHandlerTest(TestCase):
     SUPPORTED_PATH = 'https://live.door43.org/u/dummy/repo/96db55378e/'
 
     def setUp(self):
+        """Runs before each test."""
         self.return_view_count = 0
         self.error_response = None
 

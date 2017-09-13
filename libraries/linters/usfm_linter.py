@@ -8,10 +8,10 @@ from libraries.app.app import App
 
 class UsfmLinter(Linter):
 
-    def __init__(self, *args, **kwargs):
-        super(UsfmLinter, self).__init__(*args, **kwargs)
+    def __init__(self, single_file=None, *args, **kwargs):
+        self.single_file = single_file
         self.found_books = []
-        self.single_file = None if 'single_file' not in kwargs else kwargs['single_file']
+        super(UsfmLinter, self).__init__(*args, **kwargs)
 
     def lint(self):
         """

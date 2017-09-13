@@ -49,6 +49,7 @@ class TestConversions(TestCase):
     """
 
     def setUp(self):
+        """Runs before each test."""
         branch = os.environ.get("TRAVIS_BRANCH", "develop")  # default is testing develop branch (dev)
 
         destination = "dev-"  # default
@@ -67,7 +68,7 @@ class TestConversions(TestCase):
         App.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
         App.door43_bucket = '{0}door43.org'.format(destination)
 
-        print("Testing on '" + branch + "' branch, e.g.: " + App.api_url)
+        App.logger.debug("Testing on '" + branch + "' branch, e.g.: " + App.api_url)
 
         self.warnings = []
 
@@ -397,14 +398,14 @@ class TestConversions(TestCase):
         test = os.environ.get('TEST_DEPLOYED', "")
         do_test = (test == "test_deployed")
         if not do_test:
-            print("Skip testing since TEST_DEPLOYED is not set")
+            App.logger.debug("Skip testing since TEST_DEPLOYED is not set")
         else:
             gogs_user_token = os.environ.get('GOGS_USER_TOKEN', "")
             self.assertTrue(len(gogs_user_token) > 0, "GOGS_USER_TOKEN is missing in environment")
         return do_test
 
     def get_parts_of_git_url(self, git_url):
-        print("Testing conversion of: " + git_url)
+        App.logger.debug("Testing conversion of: " + git_url)
         parts = git_url.split("/")
         base_url = "/".join(parts[0:3])
         user = parts[3]
@@ -431,7 +432,7 @@ class TestConversions(TestCase):
                                                            destination_key, chapter_count)
 
         # check required fields
-        print(converted_build_log)
+        App.logger.debug(converted_build_log)
         saved_build_json = json.loads(converted_build_log)
         self.assertTrue('commit_id' in saved_build_json)
         self.assertTrue('repo_owner' in saved_build_json)
@@ -459,7 +460,7 @@ class TestConversions(TestCase):
         self.compare_build_logs(converted_build_log, deployed_build_log, destination_key)
 
         if len(self.warnings):
-            print("\n#######\nHave warnings:\n#######\n" + '\n'.join(self.warnings))
+            App.logger.debug("\n#######\nHave warnings:\n#######\n" + '\n'.join(self.warnings))
 
         self.assertTrue(success)
 
@@ -514,7 +515,7 @@ class TestConversions(TestCase):
         is_first = True
         for file_name in check_list:
             output_file_path = os.path.join(temp_sub_dir, file_name)
-            print("checking preconvert zip for: " + output_file_path)
+            App.logger.debug("checking preconvert zip for: " + output_file_path)
             self.assertTrue(os.path.exists(output_file_path), "missing file: " + file_name)
             if is_first:
                 self.print_file(file_name, output_file_path)
@@ -533,11 +534,11 @@ class TestConversions(TestCase):
 
     def warn(self, message):
         self.warnings.append(message)
-        print(message)
+        App.logger.debug(message)
 
     def print_file(self, file_name, file_path):
         text = file_utils.read_file(file_path)[:200]  # get the start of the file
-        print("\nOutput file (" + file_name + "): " + text + "\n")
+        App.logger.debug("\nOutput file (" + file_name + "): " + text + "\n")
 
     def check_deployed_files(self, handler, expected_output_files, extension, key, chapter_count=-1):
         check_list = []
@@ -560,12 +561,12 @@ class TestConversions(TestCase):
                     continue
 
                 path = os.path.join(key, file_name)
-                print("checking destination folder for: " + path)
+                App.logger.debug("checking destination folder for: " + path)
                 output = handler.get_file_contents(path)
                 if output:
                     found.append(file_name)
                     retries = 0  # reset
-                    print("found: " + path)
+                    App.logger.debug("found: " + path)
 
         if len(found) < len(check_list):
             for file_name in check_list:
@@ -593,7 +594,7 @@ class TestConversions(TestCase):
         max_retries = 7
         for file_name in check_list:
             path = os.path.join(key, file_name)
-            print("checking destination folder for: " + path)
+            App.logger.debug("checking destination folder for: " + path)
             output = handler.get_file_contents(path)
             while output is None:  # try again in a moment since upload files may not be finished
                 time.sleep(5)
@@ -602,7 +603,7 @@ class TestConversions(TestCase):
                     self.warn("timeout getting file: " + path)
                     break
 
-                # print("retry fetch of: " + path)
+                # App.logger.debug("retry fetch of: " + path)
                 output = handler.get_file_contents(path)
 
             self.assertIsNotNone(output, "missing file: " + path)
@@ -634,20 +635,20 @@ class TestConversions(TestCase):
     def empty_destination_folder(self, commit_sha, repo, user):
         destination_key = self.get_destination_s3_key(commit_sha, repo, user)
         for obj in App.cdn_s3_handler.get_objects(prefix=destination_key):
-            print("deleting destination file: " + obj.key)
+            App.logger.debug("deleting destination file: " + obj.key)
             App.cdn_s3_handler.delete_file(obj.key)
 
     def delete_preconvert_zip_file(self, commit_sha):
         self.preconvert_handler = S3Handler(App.pre_convert_bucket)
         preconvert_key = self.get_preconvert_s3_key(commit_sha)
         if App.pre_convert_s3_handler.key_exists(preconvert_key):
-            print("deleting preconvert file: " + preconvert_key)
+            App.logger.debug("deleting preconvert file: " + preconvert_key)
             App.pre_convert_s3_handler.delete_file(preconvert_key, catch_exception=True)
 
     def delete_tx_output_zip_file(self, commit_id):
         tx_output_key = self.get_tx_output_s3_key(commit_id)
         if App.cdn_s3_handler.key_exists(tx_output_key):
-            print("deleting tx output file: " + tx_output_key)
+            App.logger.debug("deleting tx output file: " + tx_output_key)
             App.cdn_s3_handler.delete_file(tx_output_key, catch_exception=True)
 
     def get_tx_output_s3_key(self, commit_id):
@@ -665,7 +666,7 @@ class TestConversions(TestCase):
     def do_conversion_job(self, base_url, commit_id, commit_path, commit_sha, repo, user):
         gogs_user_token = os.environ.get('GOGS_USER_TOKEN', "")
         if len(gogs_user_token) == 0:
-            print("GOGS_USER_TOKEN is missing in environment")
+            App.logger.debug("GOGS_USER_TOKEN is missing in environment")
 
         webhook_data = {
             "after": commit_id,
@@ -705,11 +706,11 @@ class TestConversions(TestCase):
         if USE_WEB_HOOK_LAMBDA:
             headers = {"content-type": "application/json"}
             tx_client_webhook_url = "{0}/client/webhook".format(App.api_url)
-            print('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url), end=' ')
-            print(webhook_data)
+            App.logger.debug('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url), end=' ')
+            App.logger.debug(webhook_data)
             response = requests.post(tx_client_webhook_url, json=webhook_data, headers=headers)
-            print('webhook finished with code:' + str(response.status_code))
-            print('webhook finished with text:' + str(response.text))
+            App.logger.debug('webhook finished with code:' + str(response.status_code))
+            App.logger.debug('webhook finished with text:' + str(response.text))
             build_log_json = json.loads(response.text)
             if response.status_code == 504:  # on timeout, could be multi-part, so try to get build
                 build_log_json = self.poll_for_build_log(commit_sha, repo, user)
@@ -727,7 +728,7 @@ class TestConversions(TestCase):
                 return None, False, None
 
         elapsed_seconds = int(time.time() - start)
-        print("webhook completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("webhook completed in " + str(elapsed_seconds) + " seconds")
 
         if "build_logs" not in build_log_json:  # if not multiple parts
             job_id = build_log_json['job_id']
@@ -741,7 +742,7 @@ class TestConversions(TestCase):
 
         build_log_json = self.get_json_file(commit_sha, 'build_log.json', repo, user)
         if build_log_json is not None:
-            print("Final results:\n" + str(build_log_json))
+            App.logger.debug("Final results:\n" + str(build_log_json))
         return build_log_json, success, job
 
     def poll_for_build_log(self, commit_sha, repo, user):
@@ -780,10 +781,10 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxJob(db_handler=tx_manager.job_db_handler).load({'job_id': job_id})
+                job = TxJob().load({'job_id': job_id})
                 self.assertIsNotNone(job)
                 elapsed_seconds = int(time.time() - start)
-                print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
+                App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
 
                 if job.ended_at is not None:
                     finished.append(job_id)
@@ -820,10 +821,10 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxJob(db_handler=tx_manager.job_db_handler).load({'job_id': job_id})
+            job = TxJob().load({'job_id': job_id})
             self.assertIsNotNone(job)
             elapsed_seconds = int(time.time() - start)
-            print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
+            App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
 
             if job.ended_at is not None:
                 success = True
@@ -880,7 +881,7 @@ class TestConversions(TestCase):
         if ttr_response.status_code == 200:
             return ttr_response.text
 
-        print("Failed to load: " + self.url)
+        App.logger.debug("Failed to load: " + self.url)
         return None
 
     def get_contents(self, item):

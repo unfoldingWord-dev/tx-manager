@@ -14,13 +14,14 @@ class RunLinterHandler(Handler):
         :return dict:
         """
         # Gather arguments
-        source_zip_url = self.retrieve(self.data, 'source_url', 'payload'),
-        commit_data = self.retrieve(self.data, 'commit_data', 'payload', required=False),
-        resource_id = self.retrieve(self.data, 'resource_id', 'payload', required=False),
+        source_zip_url = self.retrieve(self.data, 'source_url', 'payload')
+        commit_data = self.retrieve(self.data, 'commit_data', 'payload', required=False)
+        resource_id = self.retrieve(self.data, 'resource_id', 'payload', required=False)
         single_file = self.retrieve(self.data, 'single_file', 'payload', required=False, default=None)
 
         # Execute
         linter_class = LinterHandler.get_linter_class(resource_id)
+        print(linter_class)
         ret_value = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
                                  single_file=single_file).run()
         if App.linter_messaging_name:

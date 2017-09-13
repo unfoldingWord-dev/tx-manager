@@ -1,16 +1,15 @@
-# coding=utf-8
 from __future__ import absolute_import, unicode_literals, print_function
 import os
 import tempfile
 import shutil
 import time
 import unittest
-
-from libraries.general_tools import file_utils
 from tests.linter_tests.linter_unittest import LinterTestCase
+from libraries.general_tools import file_utils
 from libraries.linters.usfm_linter import UsfmLinter
 from libraries.general_tools.file_utils import write_file, read_file, unzip
 from libraries.resource_container.ResourceContainer import RC
+from libraries.app.app import App
 
 
 class TestUsfmLinter(LinterTestCase):
@@ -458,7 +457,7 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir, rc=rc)
         linter.run()
         elapsed_seconds = int(time.time() - start)
-        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
     def test_EnUlbValidSubset(self):
@@ -470,7 +469,7 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir, rc=rc)
         linter.run()
         elapsed_seconds = int(time.time() - start)
-        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
     def test_EnUlbValidConvertSingle(self):
@@ -482,7 +481,7 @@ class TestUsfmLinter(LinterTestCase):
         linter = UsfmLinter(source_dir=out_dir, rc=rc, single_file=convert_only)
         linter.run()
         elapsed_seconds = int(time.time() - start)
-        print("Checking time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("Checking time was " + str(elapsed_seconds) + " seconds")
         self.verify_results_counts(expected_warnings, linter)
 
     #
@@ -577,9 +576,9 @@ class TestUsfmLinter(LinterTestCase):
         if len(warnings) != expected_warnings:
             have_warnings = len(warnings) > 0
             if have_warnings:
-                print("\nReported Warnings:")
+                App.logger.debug("\nReported Warnings:")
                 for warning in warnings:
-                    print(warning)
+                    App.logger.debug(warning)
         self.assertEqual(len(warnings), expected_warnings)
 
     def verify_results(self, expected_warnings, linter):
@@ -587,7 +586,7 @@ class TestUsfmLinter(LinterTestCase):
         have_warnings = len(warnings) > 0
         if have_warnings != expected_warnings:
             if have_warnings:
-                print("\nReported Warnings:")
+                App.logger.debug("\nReported Warnings:")
                 for warning in warnings:
-                    print(warning)
+                    App.logger.debug(warning)
         self.assertEqual(have_warnings, expected_warnings)

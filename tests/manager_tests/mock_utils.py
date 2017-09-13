@@ -47,7 +47,7 @@ def mock_gogs_handler(tokens):
             return None
 
     handler = MagicMock()
-    handler.get_user = MagicMock(side_effect=get_user)
+    handler.get_user = get_user
     return handler
 
 

@@ -11,6 +11,7 @@ class LanguageViewCountHandlerTest(TestCase):
     SUPPORTED_PATH = 'https://live.door43.org/en/'
 
     def setUp(self):
+        """Runs before each test."""
         self.return_view_count = 0
         self.error_response = None
 

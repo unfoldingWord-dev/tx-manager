@@ -9,6 +9,7 @@ from libraries.models.manifest import TxManifest
 class ProjectSearchTest(unittest.TestCase):
 
     def setUp(self):
+        """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         self.items = {}
         self.init_items()

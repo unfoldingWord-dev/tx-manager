@@ -3,9 +3,9 @@ import unittest
 import time
 import boto3
 from string import join
-from libraries.door43_tools.linter_messaging import LinterMessaging
 from moto import mock_sqs
-
+from libraries.door43_tools.linter_messaging import LinterMessaging
+from libraries.app.app import App
 
 @mock_sqs
 class TestLinterMessaging(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestLinterMessaging(unittest.TestCase):
         try:
             sqs = boto3.resource('sqs')
             queue = sqs.create_queue(QueueName=TestLinterMessaging.queue_name, Attributes={'DelaySeconds': '5'})
-            print(queue is not None)
+            App.logger.debug(queue is not None)
         except Exception as e:
             pass
 
@@ -35,7 +35,7 @@ class TestLinterMessaging(unittest.TestCase):
         self.notify_lint_jobs_complete(q, files_to_lint2, False)
         self.notify_lint_jobs_complete(q, files_to_lint, True)
         elapsed_seconds = int(time.time() - start)
-        print("Sending time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("Sending time was " + str(elapsed_seconds) + " seconds")
 
         # when
         success = self.wait_for_lint_jobs(q, files_to_lint)
@@ -71,7 +71,7 @@ class TestLinterMessaging(unittest.TestCase):
         self.notify_lint_jobs_complete(q, files_to_lint, True)
         self.notify_lint_jobs_complete(q, files_to_lint2, False)
         elapsed_seconds = int(time.time() - start)
-        print("Sending time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("Sending time was " + str(elapsed_seconds) + " seconds")
 
         # when
         success = self.wait_for_lint_jobs(q, files_to_lint)
@@ -107,13 +107,13 @@ class TestLinterMessaging(unittest.TestCase):
         self.notify_lint_jobs_complete(q, files_to_lint, True)
         self.notify_lint_jobs_complete(q, files_to_lint2, False)
         elapsed_seconds = int(time.time() - start)
-        print("Sending time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("Sending time was " + str(elapsed_seconds) + " seconds")
 
         def process_callback(x, this):
             this.callbacks += 1
             source_url = LinterMessaging.get_source_url_from_data(x)
-            print("{0} - Source '{1}'=".format(this.callbacks, source_url))
-            print(x)
+            App.logger.debug("{0} - Source '{1}'=".format(this.callbacks, source_url))
+            App.logger.debug(x)
 
         callback = (lambda x: process_callback(x, self))
 
@@ -152,8 +152,8 @@ class TestLinterMessaging(unittest.TestCase):
         success = queue.wait_for_lint_jobs(files_to_lint, callback=callback, timeout=timeout, visibility_timeout=2,
                                            checking_interval=0.5, max_jobs_per_call=10)
         elapsed_seconds = int(time.time() - start)
-        print("Waiting time was " + str(elapsed_seconds) + " seconds")
-        print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
+        App.logger.debug("Waiting time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
         return success
 
     def wait_for_lint_jobs(self, queue, files_to_lint, timeout=10):
@@ -161,8 +161,8 @@ class TestLinterMessaging(unittest.TestCase):
         success = queue.wait_for_lint_jobs(files_to_lint, timeout=timeout, visibility_timeout=2,
                                            checking_interval=0.5, max_jobs_per_call=10)
         elapsed_seconds = int(time.time() - start)
-        print("Waiting time was " + str(elapsed_seconds) + " seconds")
-        print("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
+        App.logger.debug("Waiting time was " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("done success: {0}, recvd: {1}".format(success, join(queue.recvd_payloads.keys(), "\n")))
         return success
 
     def generate_file_list(self, source_url, count):

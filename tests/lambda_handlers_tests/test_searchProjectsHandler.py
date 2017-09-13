@@ -7,7 +7,7 @@ from libraries.app.app import App
 
 class TestListJobsHandler(TestCase):
 
-    @mock.patch('libraries.manager.manager.TxManager.list_jobs')
+    @mock.patch('libraries.door43_tools.project_search.ProjectSearch.search_projects')
     def test_handle(self, mock_list_jobs):
         mock_list_jobs.return_value = None
         event = {

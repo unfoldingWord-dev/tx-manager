@@ -20,8 +20,17 @@ class ManagerTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.mock_gogs = mock.MagicMock(
-            return_value=mock_utils.mock_gogs_handler(['token1', 'token2']))
+        cls.mock_gogs = mock_utils.mock_gogs_handler(['token1', 'token2'])
+        ManagerTest.patches = (
+            mock.patch('libraries.app.app.GogsHandler', cls.mock_gogs),
+        )
+        for patch in ManagerTest.patches:
+            patch.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        for patch in ManagerTest.patches:
+            patch.stop()
 
     def setUp(self):
         """Runs before each test."""
@@ -265,7 +274,7 @@ class ManagerTest(unittest.TestCase):
         for idx in self.job_items:
             TxJob().insert(self.job_items[idx])
         for idx in self.module_items:
-            TxModule(db_handler=App.module_db_handler).insert(self.module_items[idx])
+            TxModule().insert(self.module_items[idx])
 
     def test_setup_job(self):
         """Successful call of setup_job."""
@@ -286,8 +295,6 @@ class ManagerTest(unittest.TestCase):
 
     def test_setup_job_bad_requests(self):
         """Tests bad calls of setup_job due to missing or bad input."""
-        self.tx_manager.cdn_bucket = None
-
         # Missing gogs_user_token
         data = {
             'cdn_bucket':  'test_cdn_bucket',
@@ -317,6 +324,7 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
+        App.cdn_bucket = None
         self.assertRaises(Exception, self.tx_manager.setup_job, data)
 
         # Missing source
@@ -365,7 +373,6 @@ class ManagerTest(unittest.TestCase):
         tx_manager = TxManager()
         data = {
             'gogs_user_token': 'token1',
-            'cdn_bucket': 'test_cdn_bucket',
             'source': 'test_source',
             'resource_type': 'obs',
             'input_format': 'md',
@@ -583,7 +590,7 @@ class ManagerTest(unittest.TestCase):
             'output_format': 'html'
         }
         self.tx_manager.register_module(data)
-        tx_module = TxModule(db_handler=App.module_db_handler).load({'name': data['name']})
+        tx_module = TxModule().load({'name': data['name']})
         data['public_links'] = ['{0}/tx/convert/{1}'.format(App.api_url, data['name'])]
         self.assertEqual(tx_module.get_db_data(), TxModule(data).get_db_data())
 

@@ -143,7 +143,7 @@ class LanguageDashboardTest(unittest.TestCase):
     def initialze_lang_stats_table(self, count):
         for i in range(0, count):
             lang_code = 'xyz-' + str(i+100)
-            lang_stat = LanguageStats({}, db_handler=App.language_stats_db_handler)
+            lang_stat = LanguageStats({})
             lang_stat.lang_code = lang_code
             lang_stat.last_updated = '2017-02-11T15:43:11.{0}Z'.format(i+1)
             lang_stat.views = i + 1100

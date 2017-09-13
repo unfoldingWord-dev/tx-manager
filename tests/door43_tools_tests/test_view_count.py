@@ -14,6 +14,7 @@ class ViewCountTest(unittest.TestCase):
     INITIAL_VIEW_COUNT = 5
 
     def setUp(self):
+        """Runs before each test."""
         self.init_table(ViewCountTest.INITIAL_VIEW_COUNT)
 
     def init_table(self, view_count):

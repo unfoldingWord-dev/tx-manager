@@ -2,7 +2,6 @@ from __future__ import unicode_literals, print_function
 import json
 import traceback
 from abc import ABCMeta, abstractmethod
-from exceptions import EnvironmentError
 from libraries.app.app import App
 
 

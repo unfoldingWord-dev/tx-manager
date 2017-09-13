@@ -14,21 +14,18 @@ class Linter(object):
     __metaclass__ = ABCMeta
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
-                 prefix='', **kwargs):
+    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None, **kwargs):
         """
         :param string source_zip_url: The main way to give Linter the files
         :param string source_zip_file: If set, will just unzip this local file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
-        :param string prefix: For calling the node.js Markdown linter Lambda function in different environments
-        :param dict **kwawrgs: So other arguments can be passed and be ignored
+        :params dict kwargs:
         """
         self.source_zip_url = source_zip_url
         self.source_zip_file = source_zip_file
         self.source_dir = source_dir
         self.commit_data = commit_data
-        self.prefix = prefix
 
         self.log = LintLogger()
 
@@ -36,7 +33,7 @@ class Linter(object):
 
         self.repo_owner = ''
         self.repo_name = ''
-        if commit_data:
+        if self.commit_data:
             self.repo_name = self.commit_data['repository']['name']
             self.repo_owner = self.commit_data['repository']['owner']['username']
         self.rc = None   # Constructed later when we know we have a source_dir

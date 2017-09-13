@@ -246,7 +246,7 @@ class ViewCountTest(unittest.TestCase):
             if lang_code != expected_language_code:
                 msg = "FAILURE: For language '{0}', expected code '{2}' but got '{1}'".format(language_name, lang_code,
                                                                                               expected_language_code)
-                print(msg)
+                App.logger.debug(msg)
                 success = False
 
         if not success:
@@ -273,7 +273,7 @@ class ViewCountTest(unittest.TestCase):
             if lang_code != expected_language_code:
                 msg = "FAILURE: For language '{0}', expected code '{2}' but got '{1}'".format(language_name, lang_code,
                                                                                               expected_language_code)
-                print(msg)
+                App.logger.debug(msg)
                 success = False
 
         if not success:
@@ -325,7 +325,7 @@ class ViewCountTest(unittest.TestCase):
         }
 
         lang_stats = LanguageStats(lang_stats_data).insert()
-        print("new language: " + lang_stats.lang_code)
+        App.logger.debug("new language: " + lang_stats.lang_code)
 
 
 if __name__ == "__main__":

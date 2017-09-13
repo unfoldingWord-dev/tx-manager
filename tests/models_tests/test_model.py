@@ -26,6 +26,7 @@ class ModelTests(unittest.TestCase):
     TABLE_NAME = 'my-module-table'
 
     def setUp(self):
+        """Runs before each test."""
         self.db_handler = DynamoDBHandler(ModelTests.TABLE_NAME)
         self.init_table()
         self.items = {}
@@ -37,6 +38,7 @@ class ModelTests(unittest.TestCase):
             self.db_handler.table.delete()
         except:
             pass
+
         self.db_handler.resource.create_table(
             TableName=ModelTests.TABLE_NAME,
             KeySchema=[
@@ -75,7 +77,7 @@ class ModelTests(unittest.TestCase):
 
     def test_populate(self):
         """Test populate method."""
-        obj = MyModel()
+        obj = MyModel(db_handler=self.db_handler)
         data = {
             'field1': 'value1',
             'field2': 'value2',
@@ -90,11 +92,11 @@ class ModelTests(unittest.TestCase):
         models = MyModel(db_handler=self.db_handler).query()
         self.assertEqual(len(models), len(self.items))
         for model in models:
-            self.assertEqual(model.get_db_data(), MyModel(self.items[model.field1]).get_db_data())
+            self.assertEqual(model.get_db_data(), MyModel(self.items[model.field1], db_handler=self.db_handler).get_db_data())
 
     def test_load(self):
         model = MyModel(db_handler=self.db_handler).load({'field1': 'mymodel2'})
-        self.assertEqual(model.get_db_data(), MyModel(self.items['mymodel2']).get_db_data())
+        self.assertEqual(model.get_db_data(), MyModel(self.items['mymodel2'], db_handler=self.db_handler).get_db_data())
 
     def test_insert(self):
         # Insert by giving fields in the constructor

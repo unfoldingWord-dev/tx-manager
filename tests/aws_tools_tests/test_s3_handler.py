@@ -15,6 +15,7 @@ class S3HandlerTests(TestCase):
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
+        """Runs before each test."""
         self.temp_dir = tempfile.mkdtemp(prefix='s3HandlerTest_')
         self.handler = S3Handler(bucket_name=self.MOCK_BUCKET_NAME)
         self.handler.create_bucket()

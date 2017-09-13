@@ -78,7 +78,7 @@ class TestObsPreprocessor(unittest.TestCase):
     #     zip_file = self.packageResource(resource, repo_name)
     #
     #     #then
-    #     print(zip_file)
+    #     App.logger.debug(zip_file)
 
     @classmethod
     def createZipFile(self, zip_filename, destination_folder, source_folder):
