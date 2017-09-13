@@ -59,7 +59,7 @@ class App(object):
     # Stage Variables, defaults
     prefix = ''
     api_url = 'https://api.door43.org'
-    pre_convert_bucket = 'tx-client-webhook'
+    pre_convert_bucket = 'tx-webhook-client'
     cdn_bucket = 'cdn.door43.org'
     door43_bucket = 'door43.org'
     gogs_user_token = None
