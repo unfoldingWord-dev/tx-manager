@@ -1,5 +1,4 @@
 from __future__ import unicode_literals, print_function
-
 from libraries.lambda_handlers.check_download_handler import CheckDownloadHandler
 
 
