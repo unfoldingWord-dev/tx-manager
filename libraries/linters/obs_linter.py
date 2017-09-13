@@ -67,6 +67,6 @@ class ObsLinter(MarkdownLinter):
             if self.rc.resource.language.identifier != 'en':
                 end_content = read_file(filename)
                 if lines[book_end] in end_content:
-                    self.log.warning('Story {0} matter is not translated!'.format(book_end) )
+                    self.log.warning('Story {0} matter is not translated!'.format(book_end))
 
         return super(ObsLinter, self).lint()  # Runs the markdown linter

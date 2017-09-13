@@ -241,7 +241,8 @@ class RC:
         else:
             chapters = []
 
-            for d in sorted(glob(os.path.join(self._dir, p.path, '*')),key=lambda path: os.path.basename(path).zfill(3)):
+            for d in sorted(glob(os.path.join(self._dir, p.path, '*')),
+                            key=lambda path: os.path.basename(path).zfill(3)):
                 chapter = os.path.basename(d)
                 if os.path.isdir(d) and not chapter.startswith('.'):
                     if len(self.chunks(identifier, chapter)):
@@ -633,7 +634,7 @@ def get_manifest_from_repo_name(repo_name):
 
     parts = re.findall(r'[A-Za-z0-9]+', repo_name)
 
-    language_set = False;
+    language_set = False
     for i, part in enumerate(parts):
         if not language_set:
             if part == 'en':

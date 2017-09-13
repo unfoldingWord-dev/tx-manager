@@ -1,4 +1,3 @@
-console.log('starting function');
 var markdownlint = require("markdownlint");
 
 exports.handle = function(e, ctx, cb) {

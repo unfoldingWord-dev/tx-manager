@@ -1,7 +1,6 @@
 from __future__ import unicode_literals, print_function
 import json
 import boto3
-import logging
 
 
 class LambdaHandler(object):
@@ -10,7 +9,6 @@ class LambdaHandler(object):
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_region_name = aws_region_name
         self.client = None
-        self.logger = logging.getLogger()
         self.setup_resources()
 
     def setup_resources(self):

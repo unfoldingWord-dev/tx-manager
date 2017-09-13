@@ -9,9 +9,5 @@
   "hooks": {
     "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
     "clean": "rm -rf libraries"
-  },
-  "vpc": {
-    "securityGroups": ["sg-22c62d47", "sg-6a756a13"],
-    "subnets": ["subnet-72a08234", "subnet-7250b017", "subnet-fb16158f"]
   }
 }

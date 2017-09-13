@@ -8,11 +8,13 @@ class DynamoDBHandlerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Runs before all tests"""
         with mock.patch("libraries.aws_tools.dynamodb_handler.boto3", mock.MagicMock()):
             cls.handler = DynamoDBHandler("table_name")
         cls.handler.table = mock.MagicMock()
 
     def setUp(self):
+        """Runs before each test."""
         self.handler.table.reset_mock()
 
     def test_get_item(self):

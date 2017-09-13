@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 from libraries.manager.manager import TxManager
 from libraries.lambda_handlers.handler import Handler
+from libraries.app.app import App
 
 
 class StartJobHandler(Handler):
@@ -18,11 +19,6 @@ class StartJobHandler(Handler):
                 job_table_name = ddbTable
                 # Get the prefix of the job table name and add it to tx-module
                 prefix = job_table_name[:-(len('tx-job'))]
-                module_table_name = '{0}tx-module'.format(prefix)
-                env_vars = {
-                    'job_table_name': job_table_name,
-                    'module_table_name': module_table_name,
-                    'prefix': prefix
-                }
+                App(prefix=prefix)
                 job_id = record['dynamodb']['Keys']['job_id']['S']
-                TxManager(**env_vars).start_job(job_id)
+                TxManager().start_job(job_id)
