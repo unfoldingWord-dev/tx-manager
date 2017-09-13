@@ -90,6 +90,7 @@ class App(object):
     auto_setup_db = True
     manifest_table_name = 'manifests'
     db_echo = False  # Whether or not to echo DB queries to the debug log. Useful for debugging. Set before setup_db()
+    db_engine = None
     db = None
     echo = False
 
@@ -126,24 +127,22 @@ class App(object):
         if App.auto_setup_handlers:
             App.setup_handlers()
 
-        if App.auto_setup_db and (App.db_connection_string or App.db_pass):
+        if App.auto_setup_db and (App.db_connection_string or App.db_pass or App.db_protocol == 'sqlite'):
             App.setup_db(self.echo)
 
     @classmethod
     def prefix_vars(cls, prefix):
         """
-        Prefixes any variables in App.prefixable_variables that don't have the App.prefix
+        Prefixes any variables in App.prefixable_variables. This includes URLs
         :return:
         """
-        # Remove current prefix and replace it with the new one. This works also if the prefix is empty
-        prefix_re = re.compile('^{0}'.format(App.prefix))  # Current prefix not in URLs
-        prefix_url_re = re.compile(r'^(https*://){0}'.format(App.prefix))  # Current prefix in URLs
+        url_re = re.compile(r'^(https*://)')  # Current prefix in URLs
         for var in App.prefixable_vars:
             value = getattr(App, var)
-            if re.match(prefix_url_re, value):
-                value = re.sub(prefix_url_re, r'\1{0}'.format(prefix), value)
+            if re.match(url_re, value):
+                value = re.sub(url_re, r'\1{0}'.format(prefix), value)
             else:
-                value = re.sub(prefix_re, prefix, value)
+                value = prefix + value
             setattr(App, var, value)
         App.prefix = prefix
 
@@ -197,10 +196,12 @@ class App(object):
 
         from libraries.models.manifest import TxManifest
         TxManifest.__table__.name = App.manifest_table_name
-
-        App.ModelBase.metadata.create_all(App.db_engine)
-
+        App.create_tables([TxManifest.__table__])
         return session
+
+    @classmethod
+    def create_tables(cls, tables=None):
+        App.ModelBase.metadata.create_all(App.db_engine, tables=tables)
 
     @classmethod
     def construct_connection_string(cls):
