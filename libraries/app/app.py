@@ -27,6 +27,19 @@ def reset_class(cls):
             pass
 
 
+def setup_logger(logger):
+    if not len(logger.handlers):
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+    # Change these loggers to only report errors:
+    logging.getLogger('boto3').setLevel(logging.ERROR)
+    logging.getLogger('botocore').setLevel(logging.ERROR)
+
+
 @resetable
 class App(object):
     """
@@ -87,10 +100,7 @@ class App(object):
     # Logging for the App, and turn off boto logging. Set here so automatically ready for any logging calls
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    if not len(logger.handlers):
-        logger.addHandler(logging.StreamHandler())
-    logging.getLogger('boto3').setLevel(logging.ERROR)
-    logging.getLogger('botocore').setLevel(logging.ERROR)
+    setup_logger(logger)
 
     def __init__(self, reset=True, **kwargs):
         """
