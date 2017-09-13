@@ -17,7 +17,7 @@ def resetable(cls):
 
 
 def reset_class(cls):
-    cache = cls._resetable_cache_ # raises AttributeError on class without decorator
+    cache = cls._resetable_cache_  # raises AttributeError on class without decorator
     for key in [key for key in cls.__dict__ if key not in cache and key != '_resetable_cache_']:
         delattr(cls, key)
     for key, value in cache.items():  # reset the items to original values

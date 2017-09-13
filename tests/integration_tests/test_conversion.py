@@ -47,28 +47,23 @@ class TestConversions(TestCase):
     or set to 'test' and will run on the test environment
     """
 
-    def setUp(self):
-        """Runs before each test."""
+    @classmethod
+    def setUpClass(cls):
+        """Runs before all tests."""
         branch = os.environ.get("TRAVIS_BRANCH", "develop")  # default is testing develop branch (dev)
 
-        destination = "dev-"  # default
+        prefix = "dev-"  # default
         if branch == "master":
-            destination = ""  # no prefix for production
+            prefix = ""  # no prefix for production
         if branch == "test":
-            destination = "test-"  # For running on test
+            prefix = "test-"  # For running on test
 
-        self.destination = destination
-        App.api_url = 'https://{0}api.door43.org'.format(destination)
-        App.pre_convert_bucket = '{0}tx-webhook-client'.format(destination)
-        App.gogs_url = 'https://git.door43.org'.format(destination)
-        App.cdn_bucket = '{0}cdn.door43.org'.format(destination)
-        App.job_table_name = '{0}tx-job'.format(destination)
-        App.module_table_name = '{0}tx-module'.format(destination)
-        App.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
-        App.door43_bucket = '{0}door43.org'.format(destination)
+        App(prefix=prefix)
 
         App.logger.debug("Testing on '" + branch + "' branch, e.g.: " + App.api_url)
 
+    def setUp(self):
+        """Runs before each test."""
         self.warnings = []
 
     def tearDown(self):
