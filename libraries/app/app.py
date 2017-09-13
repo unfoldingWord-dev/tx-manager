@@ -27,10 +27,10 @@ def reset_class(cls):
             pass
 
 
-def setup_logger(logger):
+def setup_logger(logger, level):
     if not len(logger.handlers):
         ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+        ch.setLevel(level)
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         ch.setFormatter(formatter)
@@ -99,8 +99,7 @@ class App(object):
 
     # Logging for the App, and turn off boto logging. Set here so automatically ready for any logging calls
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-    setup_logger(logger)
+    setup_logger(logger, logging.DEBUG)
 
     def __init__(self, reset=True, **kwargs):
         """
