@@ -117,7 +117,7 @@ class TxManager(object):
         get number of jobs in database - one caveat is that this value may be off since AWS only updates it every 6 hours
         :return: 
         """
-        return App.job_db_handler.get_item_count()
+        return TxJob().count()
 
     def list_jobs(self, data, must_be_authenticated=True):
         if must_be_authenticated:
@@ -308,11 +308,11 @@ class TxManager(object):
             'body': 'No modules found'
         }
 
-        items = sorted(App.module_db_handler.query_items(), key=lambda k: k['name'])
+        items = sorted(TxModule().query(), key=lambda k: k.name)
         if items and len(items):
             module_names = []
             for item in items:
-                module_names.append(item["name"])
+                module_names.append(item.name)
 
             registered_jobs = self.list_jobs({"convert_module": {"condition": "is_in", "value": module_names}
                                     }, False)
@@ -328,7 +328,7 @@ class TxManager(object):
             body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
                                  'html.parser')
             for item in items:
-                module_name = item["name"]
+                module_name = item.name
                 App.logger.debug(module_name)
                 body.table.append(BeautifulSoup(
                     '<tr id="' + module_name + '"><td class="hdr" colspan="2">' + str(module_name) + '</td></tr>',
@@ -344,45 +344,45 @@ class TxManager(object):
 
                 body.table.append(BeautifulSoup(
                     '<tr id="' + module_name + '-type" class="module-type"><td class="lbl">Type:</td><td>' +
-                    str(item["type"]) + '</td></tr>',
+                    str(item.type) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + module_name + '-input" class="module-input"><td class="lbl">Input Format:</td><td>' +
-                    json.dumps(item["input_format"]) + '</td></tr>',
+                    json.dumps(item.input_format) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + module_name + '-output" class="module-output">' +
                     '<td class="lbl">Output Format:</td><td>' +
-                    json.dumps(item["output_format"]) + '</td></tr>',
+                    json.dumps(item.output_format) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + module_name + '-resource" class="module-resource"><td class="lbl">Resource Types:</td>'
-                    '<td>' + json.dumps(item["resource_types"]) + '</td></tr>',
+                    '<td>' + json.dumps(item.resource_types) + '</td></tr>',
                     'html.parser'))
                 body.table.append(BeautifulSoup(
                     '<tr id="' + module_name + '-version" class="module-version"><td class="lbl">Version:</td><td>' +
-                    str(item["version"]) + '</td></tr>',
+                    str(item.version) + '</td></tr>',
                     'html.parser'))
 
-                if len(item["options"]) > 0:
+                if len(item.options) > 0:
                     body.table.append(BeautifulSoup(
                         '<tr id="' + module_name + '-options" class="module-options">' +
                         '<td class="lbl">Options:</td><td>' +
-                        json.dumps(item["options"]) + '</td></tr>',
+                        json.dumps(item.options) + '</td></tr>',
                         'html.parser'))
 
-                if len(item["private_links"]) > 0:
+                if len(item.private_links) > 0:
                     body.table.append(BeautifulSoup(
                         '<tr id="' + module_name + '-private-links" class="module-private-links">' +
                         '<td class="lbl">Private Links:</td><td>' +
-                        json.dumps(item["private_links"]) + '</td></tr>',
+                        json.dumps(item.private_links) + '</td></tr>',
                         'html.parser'))
 
-                if len(item["public_links"]) > 0:
+                if len(item.public_links) > 0:
                     body.table.append(BeautifulSoup(
                         '<tr id="' + module_name + '-public-links" class="module-public-links">' +
                         '<td class="lbl">Public Links:</td><td>' +
-                        json.dumps(item["public_links"]) + '</td></tr>',
+                        json.dumps(item.public_links) + '</td></tr>',
                         'html.parser'))
 
                 body.table.append(BeautifulSoup(

@@ -166,9 +166,6 @@ class PageMetrics(object):
         get list of all the language view records
         :return:
         """
-        if not App.language_stats_db_handler:
-            return None
-
         # First see record already exists in DB
         language_items = LanguageStats().query({"monitor": {"condition": "eq", "value": True}})
         self.languages = []

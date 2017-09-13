@@ -15,9 +15,6 @@ from shutil import rmtree
 
 @mock_s3
 class ProjectDeployerTests(unittest.TestCase):
-    MOCK_CDN_BUCKET = "test_cdn"
-    MOCK_DOOR43_BUCKET = "test_door43"
-
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
