@@ -180,6 +180,9 @@ class TxManager(object):
             payload = {
                 'data': {
                     'job': job.get_db_data(),
+                },
+                'vars': {
+                    'prefix': App.prefix
                 }
             }
 

@@ -240,7 +240,7 @@ class ProjectDeployer(object):
                 InvocationType='Event',
                 LogType='Tail',
                 Payload=json.dumps({
-                    'cdn_bucket': App.cdn_bucket,
+                    'prefix': App.prefix,
                     'build_log_key': obj.key
                 })
             )

@@ -17,21 +17,17 @@ class Door43DeployHandler(Handler):
                 # See if it is a notification from an S3 bucket
                 if 's3' in record:
                     bucket_name = record['s3']['bucket']['name']
-                    self.prefix_app_vars_by_bucket_prefix(bucket_name)
+                    if '-' in bucket_name:
+                        prefix = bucket_name.split('-')[0] + '-'
+                        App(prefix=prefix)
                     key = record['s3']['object']['key']
                     ProjectDeployer().deploy_revision_to_door43(key)
         elif 'build_log_key' in event:
-            if 'cdn_bucket' in event:
-                self.prefix_app_vars_by_bucket_prefix(event['cdn_bucket'])
-                ProjectDeployer().deploy_revision_to_door43(event['build_log_key'])
-        elif 'cdn_bucket' in event:
+            if 'prefix' in event:
+                App(prefix=event['prefix'])
+            ProjectDeployer().deploy_revision_to_door43(event['build_log_key'])
+        elif 'prefix' in event:
+            App(prefix=event['prefix'])
             # this is triggered manually through AWS Lambda console to update all projects
-            self.prefix_app_vars_by_bucket_prefix(event['cdn_bucket'])
             deploy_function = '{0}tx_door43_deploy'.format(App.prefix)
             ProjectDeployer().redeploy_all_projects(deploy_function)
-
-    @classmethod
-    def prefix_app_vars_by_bucket_prefix(cls, bucket_name):
-        if '-' in bucket_name:
-            prefix = bucket_name.split('-')[0] + '-'
-            App.prefix_vars(prefix)
