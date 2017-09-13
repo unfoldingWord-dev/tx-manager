@@ -18,13 +18,10 @@ class User(App.ModelBase):
 
 class TestApp(unittest.TestCase):
 
-    def setUp(self):
-        """Runs before each test."""
-        App(prefix='{0}-'.format(self._testMethodName))
-
     def test_init(self):
-        App(gogs_ip_address='198.167.2.2')
-        self.assertEqual(App.gogs_ip_address, '198.167.2.2')
+        gogs_url = 'https://my.gogs.org'
+        App(gogs_url=gogs_url)
+        self.assertEqual(App.gogs_url, gogs_url)
 
     def test_construction_connection_string(self):
         """
@@ -37,7 +34,8 @@ class TestApp(unittest.TestCase):
         self.assertEqual(connection_str, expected)
 
     def test_setup_db(self):
-        App(db_connection_string='sqlite:///:memory:', auto_setup_db=True)
+        App(db_connection_string='sqlite:///:memory:')
+        App.create_tables([User.__table__])
         user = User(name='ed', fullname='Edward Scissorhands', password='12345')
         App.db.add(user)
         App.db.commit()
@@ -46,9 +44,9 @@ class TestApp(unittest.TestCase):
         self.assertEqual(user_from_db.password, '12345')
 
     def test_setup_db_with_connection_string_parts(self):
-        App(db_connection_string=None, db_protocol='sqlite', db_user=None, db_pass=None, db_end_point=None,
-            db_port=None, db_name=':memory:', db_connection_string_params=None)
-        App.setup_db()
+        App(db_protocol='sqlite', db_user=None, db_pass=None, db_end_point=None, db_port=None, db_name=':memory:',
+            db_connection_string_params=None)
+        App.create_tables([User.__table__])
         user = User(name='ed', fullname='Edward Scissorhands', password='12345')
         App.db.add(user)
         App.db.commit()
