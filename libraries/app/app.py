@@ -155,8 +155,8 @@ class App(object):
     @classmethod
     def setup_handlers(cls):
         App.cdn_s3_handler = S3Handler(App.cdn_bucket)
-        App.door43_s3_handler = S3Handler(App.cdn_bucket)
-        App.pre_convert_s3_handler = S3Handler(App.cdn_bucket)
+        App.door43_s3_handler = S3Handler(App.door43_bucket)
+        App.pre_convert_s3_handler = S3Handler(App.pre_convert_bucket)
         App.job_db_handler = DynamoDBHandler(App.job_table_name)
         App.module_db_handler = DynamoDBHandler(App.module_table_name)
         App.language_stats_db_handler = DynamoDBHandler(App.language_stats_table_name)
