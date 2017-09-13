@@ -10,18 +10,8 @@ class TestClientWebhookHandler(TestCase):
     def test_handle(self, mock_process_webhook):
         mock_process_webhook.return_value = None
         event = {
-            'data': {},
-            'body-json': {
+            'data': {
                 'commit_id': '123456890',
-            },
-            'vars': {
-                'gogs_url': 'https://git.example.com',
-                'cdn_url': 'https://cdn.example.com',
-                'api_url': 'https://api.example.com',
-                'cdn_bucket': 'cdn_test_bucket',
-                'pre_convert_bucket': 'pre_convert_bucket',
-                'gogs_user_token': 'token1',
-                'manifest_table_name': 'tx-manifest',
             }
         }
         handler = ClientWebhookHandler()

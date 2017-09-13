@@ -1,0 +1,3 @@
+{
+  "description": "Runs a linter to check files for problems based on resource type and file type. Called by https://api.door43.org/tx/lint in the tx_client_webhook function"
+}

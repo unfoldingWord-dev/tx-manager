@@ -29,19 +29,24 @@ def unzip(source_file, destination_dir):
         zf.extractall(destination_dir)
 
 
-def add_contents_to_zip(zip_file, path):
+def add_contents_to_zip(zip_file, path, include_root=False):
     """
     Zip the contents of <path> into <zip_file>.
 
     :param str|unicode zip_file: The file name of the zip file
     :param str|unicode path: Full path of the directory to zip up
+    :param bool include_root: If true, the zip file will start with the directory of the path parameter
     """
     path = path.rstrip(os.path.sep)
+    if include_root:
+        path_start_index = len(os.path.dirname(path))+1
+    else:
+        path_start_index = len(path)+1
     with zipfile.ZipFile(zip_file, 'a') as zf:
         for root, dirs, files in os.walk(path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                zf.write(file_path, file_path[len(path)+1:])
+            for f in files:
+                file_path = os.path.join(root, f)
+                zf.write(file_path, file_path[path_start_index:])
 
 
 def add_file_to_zip(zip_file, file_name, arc_name=None, compress_type=None):
@@ -141,18 +146,23 @@ def get_mime_type(path):
     return mime_type
 
 
-def get_files(dir, relative_paths=False, include_directories=False, topdown=False):
+def get_files(directory, relative_paths=False, include_directories=False, topdown=False, extensions=None, exclude=None):
     file_list = []
-    for root, dirs, files in os.walk(dir, topdown=topdown):
+    for root, dirs, files in os.walk(directory, topdown=topdown):
+        if exclude and (os.path.basename(root) in exclude or os.path.basename(root).lower() in exclude):
+            continue
         if relative_paths:
-            path = root[len(dir)+1:]
+            path = root[len(directory)+1:]
         else:
             path = root
         for filename in files:
-            file_list.append(os.path.join(path, filename))
+            if (not exclude or (filename not in exclude and filename.lower() not in exclude)) and \
+                    (not extensions or os.path.splitext(filename)[1] in extensions
+                     or os.path.splitext(filename)[1].lower() in extensions):
+                file_list.append(os.path.join(path, filename))
         if include_directories:
-            for dirname in dirs:
-                file_list.append(os.path.join(path, dirname))
+            for dir_name in dirs:
+                file_list.append(os.path.join(path, dir_name))
     return file_list
 
 

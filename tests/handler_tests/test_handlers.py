@@ -12,6 +12,8 @@ from functions.register_module.main import handle
 from functions.request_job.main import handle
 from functions.start_job.main import handle
 from functions.door43_print.main import handle
+from functions.run_linter.main import handle
+from functions.search_projects.main import handle
 from unittest import TestCase
 
 
@@ -31,3 +33,5 @@ class TestHandlers(TestCase):
         self.assertIsNone(functions.request_job.main.handle({}, {}))
         self.assertIsNone(functions.start_job.main.handle({}, {}))
         self.assertIsNone(functions.door43_print.main.handle({}, {}))
+        self.assertIsNone(functions.run_linter.main.handle({}, {}))
+        self.assertIsNone(functions.search_projects.main.handle({}, {}))

@@ -7,6 +7,7 @@ import shutil
 from contextlib import closing
 from libraries.converters.usfm2html_converter import Usfm2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree, unzip, remove
+from libraries.app.app import App
 
 
 class TestUsfmHtmlConverter(unittest.TestCase):
@@ -15,6 +16,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName))
         self.out_dir = ''
 
     def tearDown(self):
@@ -35,7 +37,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
     def test_close(self):
         """This tests that the temp directories are deleted when the class is closed."""
 
-        with closing(Usfm2HtmlConverter('', '', '', '', {})) as tx:
+        with closing(Usfm2HtmlConverter('', '')) as tx:
             download_dir = tx.download_dir
             files_dir = tx.files_dir
             out_dir = tx.output_dir
@@ -56,7 +58,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp('.zip')
-        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
+        with closing(Usfm2HtmlConverter('', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
@@ -78,8 +80,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp('.zip')
         source_url = 'http://test.com/preconvert/22f3d09f7a.zip?convert_only=60-JAS.usfm'
-        with closing(Usfm2HtmlConverter(source_url, 'udb',
-                                        None, out_zip_file)) as tx:
+        with closing(Usfm2HtmlConverter(source_url, 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
@@ -106,8 +107,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp('.zip')
         source_url = 'http://test.com/preconvert/22f3d09f7a.zip?convert_only=60-JAS.usfm,66-JUD.usfm'
-        with closing(Usfm2HtmlConverter(source_url, 'udb',
-                                        None, out_zip_file)) as tx:
+        with closing(Usfm2HtmlConverter(source_url, 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
@@ -135,7 +135,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp('.zip')
-        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
+        with closing(Usfm2HtmlConverter('', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
@@ -155,7 +155,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp('.zip')
-        with closing(Usfm2HtmlConverter(' ', 'udb', None, out_zip_file)) as tx:
+        with closing(Usfm2HtmlConverter(' ', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
@@ -174,7 +174,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, 'kpb_mat_text_udb.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
         out_zip_file = tempfile.mktemp('.zip')
-        with closing(Usfm2HtmlConverter('', 'udb', None, out_zip_file)) as tx:
+        with closing(Usfm2HtmlConverter('', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
@@ -203,8 +203,9 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.assertFalse(result['success'])
         self.assertEqual(result['errors'], ['Resource bad_resource currently not supported.'])
 
-
-        # helpers
+    #
+    # helpers
+    #
 
     def verifyFiles(self, files_to_verify):
         for file_to_verify in files_to_verify:
@@ -215,7 +216,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
             with codecs.open(file_name, 'r', 'utf-8-sig') as usfm_file:
                 usfm = usfm_file.read()
 
-            self.assertIsNotNone(usfm);
+            self.assertIsNotNone(usfm)
             self.assertTrue(len(usfm) > 10, 'Bible usfm file contents missing: {0}'.format(file_to_verify))
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):

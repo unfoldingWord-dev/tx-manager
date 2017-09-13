@@ -1,13 +1,13 @@
 from __future__ import unicode_literals, print_function
 import os
 import codecs
-import logging
 from glob import glob
 from bs4 import BeautifulSoup
 from libraries.general_tools.file_utils import write_file
 from libraries.resource_container.ResourceContainer import RC
 from libraries.general_tools.file_utils import load_yaml_object
 from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
+from libraries.app.app import App
 
 
 def do_template(resource_type, source_dir, output_dir, template_file):
@@ -37,7 +37,6 @@ class Templater(object):
         self.files = sorted(glob(os.path.join(self.source_dir, '*.html')))
         self.rc = None
         self.template_html = ''
-        self.logger = logging.getLogger()
         self.already_converted = []
         self.titles = {}
         self.chapters = {}
@@ -56,7 +55,8 @@ class Templater(object):
         self.apply_template()
         return True
 
-    def build_left_sidebar(self, filename=None):
+    @staticmethod
+    def build_left_sidebar(filename=None):
         html = """
             <nav class="affix-top hidden-print hidden-xs hidden-sm" id="left-sidebar-nav">
                 <div class="nav nav-stacked" id="revisions-div">
@@ -73,7 +73,7 @@ class Templater(object):
 
     def build_page_nav(self, filename=None):
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+            <nav class="affix-top hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
               <ul id="sidebar-nav" class="nav nav-stacked">
                 <li><h1>Navigation</h1></li>
             """
@@ -141,30 +141,30 @@ class Templater(object):
         # loop through the html files
         for filename in self.files:
             if filename not in self.already_converted:
-                self.logger.debug('Applying template to {0}.'.format(filename))
+                App.logger.debug('Applying template to {0}.'.format(filename))
 
                 # read the downloaded file into a dom abject
                 with codecs.open(filename, 'r', 'utf-8-sig') as f:
-                    fileSoup = BeautifulSoup(f, 'html.parser')
+                    file_soup = BeautifulSoup(f, 'html.parser')
 
                 # get the title from the raw html file
-                if not title and fileSoup.head and fileSoup.head.title:
-                    title = fileSoup.head.title.text
+                if not title and file_soup.head and file_soup.head.title:
+                    title = file_soup.head.title.text
                 else:
                     title = os.path.basename(filename)
 
                 # get the language code, if we haven't yet
                 if not language_code:
-                    if 'lang' in fileSoup.html:
-                        language_code = fileSoup.html['lang']
+                    if 'lang' in file_soup.html:
+                        language_code = file_soup.html['lang']
                     else:
                         language_code = 'en'
 
                 # get the body of the raw html file
-                if not fileSoup.body:
-                    body = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
+                if not file_soup.body:
+                    body = BeautifulSoup('<div>No content</div>', 'html.parser')
                 else:
-                    body = fileSoup.body.extract()
+                    body = BeautifulSoup(''.join(['%s' % x for x in file_soup.body.contents]), 'html.parser')
 
                 # insert new HTML into the template
                 outer_content_div.clear()
@@ -174,10 +174,6 @@ class Templater(object):
 
                 soup.head.title.clear()
                 soup.head.title.append(heading+' - '+title)
-
-                for a_tag in soup.body.find_all('a[rel="dct:source"]'):
-                    a_tag.clear()
-                    a_tag.append(title)
 
                 # set the page heading
                 heading_span = soup.body.find('span', id='h1')
@@ -205,9 +201,13 @@ class Templater(object):
                     '')
                 # update the canonical URL - it is in several different locations
                 html = html.replace(canonical, canonical.replace('/templates/', '/{0}/'.format(language_code)))
+
+                # Replace HEADING with page title in footer
+                html = html.replace('{{ HEADING }}', title)
+
                 # write to output directory
                 out_file = os.path.join(self.output_dir, os.path.basename(filename))
-                self.logger.debug('Writing {0}.'.format(out_file))
+                App.logger.debug('Writing {0}.'.format(out_file))
                 write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
             else:  # if already templated, need to update navigation bar
@@ -227,7 +227,7 @@ class Templater(object):
 
                     # write to output directory
                     out_file = os.path.join(self.output_dir, os.path.basename(filename))
-                    self.logger.debug('Updating nav in {0}.'.format(out_file))
+                    App.logger.debug('Updating nav in {0}.'.format(out_file))
                     write_file(out_file, html.encode('ascii', 'xmlcharrefreplace'))
 
 
@@ -269,7 +269,7 @@ class BibleTemplater(Templater):
 
     def build_page_nav(self, filename=None):
         html = """
-        <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
+        <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
             <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
             """
         for fname in self.files:
@@ -338,9 +338,10 @@ class TaTemplater(Templater):
                 <a href="#{0}">{1}</a>
             """.format(link, section['title'])
         if 'sections' in section:
-            html += """
-                <ul>
-            """
+            html += """ 
+                <a href="#" data-target="#{0}-sub" data-toggle="collapse" class="content-nav-expand collapsed"></a>
+                <ul id="{0}-sub" class="collapse">
+            """.format(link)
             for subsection in section['sections']:
                 html += self.build_section_toc(subsection)
             html += """
@@ -354,8 +355,8 @@ class TaTemplater(Templater):
     def build_page_nav(self, filename=None):
         self.section_container_id = 1
         html = """
-            <nav class="affix-top hidden-print hidden-xs hidden-sm" id="right-sidebar-nav">
-                <ul id="sidebar-nav" class="nav nav-stacked">
+            <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+                <ul class="nav nav-stacked">
         """
         for fname in self.files:
             with codecs.open(fname, 'r', 'utf-8-sig') as f:

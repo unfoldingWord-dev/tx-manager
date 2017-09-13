@@ -2,7 +2,6 @@ import os
 from setuptools import setup
 
 
-
 def read(f_name):
     """
     Utility function to read the README file.
@@ -15,7 +14,7 @@ def read(f_name):
 
 setup(
     name='tx-manager',
-    version='0.2.65',
+    version='0.3.0',
     package_dir={
         'client_callback': 'functions/client_callback',
         'client_webhook': 'functions/client_webhook',
@@ -86,6 +85,8 @@ setup(
         'future==0.16.0',
         'pyparsing==2.1.10',
         'usfm-tools==0.0.12',
-        'PyYAML==3.12'
+        'PyYAML==3.12',
+        'pymysql==0.7.11',
+        'sqlalchemy==1.2.0b2',
     ]
 )
