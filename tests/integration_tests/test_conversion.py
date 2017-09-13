@@ -47,8 +47,8 @@ class TestConversions(TestCase):
     or set to 'test' and will run on the test environment
     """
 
-    def setUp(self):
-        """Runs before each test."""
+    def setUpClass(self):
+        """Runs before all tests."""
         branch = os.environ.get("TRAVIS_BRANCH", "develop")  # default is testing develop branch (dev)
 
         prefix = "dev-"  # default
@@ -61,6 +61,8 @@ class TestConversions(TestCase):
 
         App.logger.debug("Testing on '" + branch + "' branch, e.g.: " + App.api_url)
 
+    def setUp(self):
+        """Runs before each test."""
         self.warnings = []
 
     def tearDown(self):
