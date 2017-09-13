@@ -36,12 +36,14 @@ BIBLE_LIST_OT = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS", "07
       "31-OBA", "32-JON", "33-MIC", "34-NAM", "35-HAB", "36-ZEP", "37-HAG", "38-ZEC", "39-MAL", ]
 FULL_BIBLE_LIST = BIBLE_LIST_OT + BIBLE_LIST_NT
 
+
 class TestConversions(TestCase):
     """
     To test locally, you must set two environment variables:
 
         set TEST_DEPLOYED to "test_deployed"
         set GOGS_USER_TOKEN to tx-manager user token
+        set DB_PASS to the password of this environment's RDS DB (e.g. dev-tx)
 
     Integration test will run on dev unless TRAVIS_BRANCH is set to 'master' (then will run on prod),
     or set to 'test' and will run on the test environment
@@ -50,17 +52,19 @@ class TestConversions(TestCase):
     @classmethod
     def setUpClass(cls):
         """Runs before all tests."""
-        branch = os.environ.get("TRAVIS_BRANCH", "develop")  # default is testing develop branch (dev)
+        branch = os.environ.get('TRAVIS_BRANCH', 'develop')  # default is testing develop branch (dev)
+        gogs_user_token = os.environ.get('GOGS_USER_TOKEN', '')
+        db_pass = os.environ.get('DB_PASS', '')
 
-        prefix = "dev-"  # default
-        if branch == "master":
-            prefix = ""  # no prefix for production
-        if branch == "test":
-            prefix = "test-"  # For running on test
+        prefix = 'dev-'  # default
+        if branch == 'master':
+            prefix = ''  # no prefix for production
+        if branch == 'test':
+            prefix = 'test-'  # For running on test
 
-        App(prefix=prefix)
+        App(prefix=prefix, gogs_user_token=gogs_user_token, db_pass=db_pass)
 
-        App.logger.debug("Testing on '" + branch + "' branch, e.g.: " + App.api_url)
+        App.logger.debug('Testing on \'' + branch + '\' branch, e.g.: ' + App.api_url)
 
     def setUp(self):
         """Runs before each test."""
@@ -75,7 +79,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_en_udb_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = FULL_BIBLE_LIST
@@ -90,7 +95,8 @@ class TestConversions(TestCase):
 
     def test_ts_mat_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/kpb_mat_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "41-MAT"
@@ -105,7 +111,8 @@ class TestConversions(TestCase):
 
     def test_ts_acts0_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/awa_act_text_reg.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -120,7 +127,8 @@ class TestConversions(TestCase):
 
     def test_ts_psa_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/ceb_psa_text_ulb_L3.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "19-PSA"
@@ -135,7 +143,8 @@ class TestConversions(TestCase):
 
     def test_obs_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-obs-rc-0.2.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_chapter_count = 50
@@ -150,7 +159,8 @@ class TestConversions(TestCase):
 
     def test_obs_conversion_ts_upload(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/hu_obs_text_obs.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_chapter_count = 49
@@ -165,7 +175,8 @@ class TestConversions(TestCase):
 
     def test_usfm_en_jud_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-ulb-jud.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = [ "66-JUD" ]
@@ -180,7 +191,8 @@ class TestConversions(TestCase):
 
     def test_usfm_en_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-ulb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS"]
@@ -196,7 +208,8 @@ class TestConversions(TestCase):
     # @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_short_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         # shorter book list, but bigger books
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru_short.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
@@ -213,7 +226,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_nt_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/nt_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = BIBLE_LIST_NT
@@ -229,7 +243,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_ot_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/ot_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = BIBLE_LIST_OT
@@ -245,7 +260,8 @@ class TestConversions(TestCase):
     @unittest.skip("#### TODO: Skipping broken conversion that needs to be fixed - webhook takes too long and times out")
     def test_usfm_ru_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = FULL_BIBLE_LIST
@@ -260,7 +276,8 @@ class TestConversions(TestCase):
 
     def test_ts_acts1_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/kan-x-aruvu_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -275,7 +292,8 @@ class TestConversions(TestCase):
 
     def test_ts_acts2_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/mohanraj/kn-x-bedar_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -291,7 +309,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts3_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/nirmala/te-x-budugaja_act_text_reg.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -307,7 +326,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts4_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/jathapu/kxv_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -323,7 +343,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts5_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/vinaykumar/kan-x-thigularu_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -339,7 +360,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts6_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/Zipson/yeu_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -355,7 +377,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts7_conversion(self):
         # given
-        if not self.is_testing_enabled(): return # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/Zipson/kfc_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -371,7 +394,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts8_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/E01877C8393A/uw-act_udb-aen.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -458,14 +482,13 @@ class TestConversions(TestCase):
 
         self.assertTrue(success)
 
-        # # RHM: Removed for now. We could add DB connection variables to Travis, but then would also require them for
-        # #      developers to run locally.
-        # # Test that repo is in manifest table
-        # tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
-        # # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
-        # self.assertIsNotNone(tx_manifest)
-        # self.assertEqual(tx_manifest.repo_name, repo)
-        # self.assertEqual(tx_manifest.user_name, user)
+        # Test that repo is in manifest table
+        if App.db:
+            tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
+            # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
+            self.assertIsNotNone(tx_manifest)
+            self.assertEqual(tx_manifest.repo_name, repo)
+            self.assertEqual(tx_manifest.user_name, user)
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
@@ -615,7 +638,8 @@ class TestConversions(TestCase):
         job = None
         success = False
         self.cdn_handler = S3Handler(App.cdn_bucket)
-        commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)  # TODO: change this to use gogs API when finished
+        # TODO: change this to use gogs API when finished
+        commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)
         commit_len = len(commit_id)
         if commit_len == COMMIT_LENGTH:
             self.delete_preconvert_zip_file(commit_sha)
@@ -658,11 +682,7 @@ class TestConversions(TestCase):
         return preconvert_key
 
     def do_conversion_job(self, base_url, commit_id, commit_path, commit_sha, repo, user):
-        gogs_user_token = os.environ.get('GOGS_USER_TOKEN', "")
-        if len(gogs_user_token) == 0:
-            App.logger.debug("GOGS_USER_TOKEN is missing in environment")
-
-        webhook_data = {
+        commit_data = {
             "after": commit_id,
             "commits": [
                 {
@@ -687,22 +707,14 @@ class TestConversions(TestCase):
                 "email": "you@example.com"
             },
         }
-        env_vars = {
-            'api_url': App.api_url,
-            'pre_convert_bucket': App.pre_convert_bucket,
-            'cdn_bucket': App.cdn_bucket,
-            'gogs_url': App.gogs_url,
-            'gogs_user_token': gogs_user_token,
-            'commit_data': webhook_data
-        }
 
         start = time.time()
         if USE_WEB_HOOK_LAMBDA:
             headers = {"content-type": "application/json"}
             tx_client_webhook_url = "{0}/client/webhook".format(App.api_url)
             App.logger.debug('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url))
-            App.logger.debug(webhook_data)
-            response = requests.post(tx_client_webhook_url, json=webhook_data, headers=headers)
+            App.logger.debug(commit_data)
+            response = requests.post(tx_client_webhook_url, json=commit_data, headers=headers)
             App.logger.debug('webhook finished with code:' + str(response.status_code))
             App.logger.debug('webhook finished with text:' + str(response.text))
             build_log_json = json.loads(response.text)
@@ -713,9 +725,10 @@ class TestConversions(TestCase):
                 job_id = None if 'job_id' not in build_log_json else build_log_json['job_id']
                 return build_log_json, False, job_id
 
-        else:  # do preconvert locally
+        else:
+            # do preconvert locally
             try:
-                build_log_json = ClientWebhook(**env_vars).process_webhook()
+                build_log_json = ClientWebhook(commit_data=commit_data).process_webhook()
             except Exception as e:
                 message = "Exception: " + str(e)
                 self.warn(message)
@@ -752,17 +765,6 @@ class TestConversions(TestCase):
         job = None
         finished = []
         job_count = len(build_logs)
-
-        env_vars = {
-            'api_url': App.api_url,
-            'gogs_url': App.gogs_url,
-            'cdn_url': App.cdn_url,
-            'job_table_name':  App.job_table_name,
-            'module_table_name': App.module_table_name,
-            'cdn_bucket': App.cdn_bucket
-        }
-        tx_manager = TxManager(**env_vars)
-
         polling_timeout = 5 * 60  # poll for up to 5 minutes for job to complete or error
         sleep_interval = 5  # how often to check for completion
         done = False
@@ -798,17 +800,6 @@ class TestConversions(TestCase):
     def poll_until_job_finished(self, job_id):
         success = False
         job = None
-
-        env_vars = {
-            'api_url': App.api_url,
-            'gogs_url': App.gogs_url,
-            'cdn_url': App.cdn_url,
-            'job_table_name':  App.job_table_name,
-            'module_table_name': App.module_table_name,
-            'cdn_bucket': App.cdn_bucket
-        }
-        tx_manager = TxManager(**env_vars)
-
         polling_timeout = 5 * 60  # poll for up to 5 minutes for job to complete or error
         sleep_interval = 5  # how often to check for completion
         start = time.time()
