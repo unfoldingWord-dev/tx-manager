@@ -31,13 +31,14 @@ class ProjectDeployer(object):
         """
         build_log = None
         try:
-            build_log = App.cdn_s3_handler.get_json(build_log_key)
-        except:
-            App.logger.debug("Deploying error could not access: " + build_log_key)
+            build_log = App.cdn_s3_handler.get_json(build_log_key, catch_exception=False)
+        except Exception as e:
+            App.logger.debug("Deploying error could not access {0}: {1}".format(build_log_key, str(e)))
             pass
 
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
                 or 'repo_name' not in build_log:
+            App.logger.debug("Not valid build log: {0}".format(build_log))
             return False
 
         start = time.time()
