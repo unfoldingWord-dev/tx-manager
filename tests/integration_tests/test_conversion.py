@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
 from libraries.manager.manager import TxManager
 from libraries.general_tools.file_utils import unzip
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
