@@ -36,8 +36,6 @@ class ProjectDeployer(object):
             App.logger.debug("Deploying error could not access: " + build_log_key)
             pass
 
-        App.logger.debug("Deploying got build log: " + build_log_key)
-
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
                 or 'repo_name' not in build_log:
             return False
