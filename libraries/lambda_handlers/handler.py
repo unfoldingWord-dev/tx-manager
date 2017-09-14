@@ -22,7 +22,7 @@ class Handler(object):
             App(**event['vars'])
 
         App.logger.debug("EVENT:")
-        App.logger.debug(json.dumps(self.mask_event(self.event)))
+        App.logger.debug(json.dumps(self.mask_event(event)))
 
         self.data = {}
         if 'data' in event and isinstance(event['data'], dict):
