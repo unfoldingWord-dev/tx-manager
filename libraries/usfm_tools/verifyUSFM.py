@@ -430,7 +430,7 @@ def takeV(v):
     state.addVerses(v)
     if state.lastVerse == 0:  # if first verse in chapter
         if len(state.IDs) == 0 and state.chapter == 0:
-            report_error(state.reference + " " + v + "" - Missing ID before verse" + '\n')
+            report_error(state.reference + " " + v + " - Missing ID before verse" + '\n')
         if state.chapter == 0:
             report_error(state.reference + " - Missing chapter tag" + '\n')
         if (state.nParagraphs == 0) and (state.nQuotes == 0):
