@@ -27,8 +27,14 @@ class S3Handler(object):
             self.resource = session.resource('s3')
             self.client = session.client('s3')
         else:
-            self.resource = boto3.resource('s3')
-            self.client = boto3.client('s3')
+            self.resource = boto3.resource('s3',
+                                           aws_access_key_id=self.aws_access_key_id,
+                                           aws_secret_access_key=self.aws_secret_access_key,
+                                           region_name=self.aws_region_name)
+            self.client = boto3.client('s3',
+                                       aws_access_key_id=self.aws_access_key_id,
+                                       aws_secret_access_key=self.aws_secret_access_key,
+                                       region_name=self.aws_region_name)
 
         self.bucket_name = self.bucket_name
         self.bucket = None

@@ -154,17 +154,34 @@ class App(object):
 
     @classmethod
     def setup_handlers(cls):
-        try:
-            App.cdn_s3_handler = S3Handler(App.cdn_bucket)
-            App.door43_s3_handler = S3Handler(App.door43_bucket)
-            App.pre_convert_s3_handler = S3Handler(App.pre_convert_bucket)
-            App.job_db_handler = DynamoDBHandler(App.job_table_name)
-            App.module_db_handler = DynamoDBHandler(App.module_table_name)
-            App.language_stats_db_handler = DynamoDBHandler(App.language_stats_table_name)
-            App.lambda_handler = LambdaHandler()
-            App.gogs_handler = GogsHandler(App.gogs_url)
-        except:
-            pass
+        App.cdn_s3_handler = S3Handler(bucket_name=App.cdn_bucket,
+                                       aws_access_key_id=App.aws_access_key_id,
+                                       aws_secret_access_key=App.aws_secret_access_key,
+                                       aws_region_name=App.aws_region_name)
+        App.door43_s3_handler = S3Handler(bucket_name=App.door43_bucket,
+                                          aws_access_key_id=App.aws_access_key_id,
+                                          aws_secret_access_key=App.aws_secret_access_key,
+                                          aws_region_name=App.aws_region_name)
+        App.pre_convert_s3_handler = S3Handler(bucket_name=App.pre_convert_bucket,
+                                               aws_access_key_id=App.aws_access_key_id,
+                                               aws_secret_access_key=App.aws_secret_access_key,
+                                               aws_region_name=App.aws_region_name)
+        App.job_db_handler = DynamoDBHandler(table_name=App.job_table_name,
+                                             aws_access_key_id=App.aws_access_key_id,
+                                             aws_secret_access_key=App.aws_secret_access_key,
+                                             aws_region_name=App.aws_region_name)
+        App.module_db_handler = DynamoDBHandler(table_name=App.module_table_name,
+                                                aws_access_key_id=App.aws_access_key_id,
+                                                aws_secret_access_key=App.aws_secret_access_key,
+                                                aws_region_name=App.aws_region_name)
+        App.language_stats_db_handler = DynamoDBHandler(table_name=App.language_stats_table_name,
+                                                        aws_access_key_id=App.aws_access_key_id,
+                                                        aws_secret_access_key=App.aws_secret_access_key,
+                                                        aws_region_name=App.aws_region_name)
+        App.lambda_handler = LambdaHandler(aws_access_key_id=App.aws_access_key_id,
+                                           aws_secret_access_key=App.aws_secret_access_key,
+                                           aws_region_name=App.aws_region_name)
+        App.gogs_handler = GogsHandler(gogs_url=App.gogs_url)
 
     @classmethod
     def setup_db(cls, echo=False):

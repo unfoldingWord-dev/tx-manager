@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
+import moto
 from libraries.app.app import App
 from sqlalchemy import Column, Integer, String
 

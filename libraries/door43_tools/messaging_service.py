@@ -126,4 +126,4 @@ class MessagingService(object):
             for key in self.recvd_payloads:
                 unfinished.remove(key)
             return unfinished
-        return None
+        return []
