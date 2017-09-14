@@ -91,3 +91,5 @@ class TestHandlers(TestCase):
         self.assertEqual(masked['data']['gogs_user_token'], 'go*******')
         # Make sure other values are not masked
         self.assertEqual(masked['data']['key1'], 'value1')
+        self.assertIsNone(Handler.mask_event(None))
+        self.assertTrue(Handler.mask_event(True))

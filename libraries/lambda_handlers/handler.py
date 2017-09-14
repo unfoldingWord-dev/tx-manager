@@ -74,6 +74,8 @@ class Handler(object):
 
     @classmethod
     def mask_event(cls, event):
+        if not event or not isinstance(event, dict):
+            return event
         masked_event = copy.deepcopy(event)
         if 'vars' in masked_event:
             if 'db_pass' in masked_event['vars'] and masked_event['vars']['db_pass']:
