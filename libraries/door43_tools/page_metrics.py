@@ -45,21 +45,20 @@ class PageMetrics(object):
 
         App.logger.debug("Valid repo url: " + path)
         # First see record already exists in DB
-        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
         if tx_manifest:
             if increment:
                 tx_manifest.views += 1
                 App.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
-                App.db.commit()
+                App.db().commit()
             else:
                 App.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
             view_count = tx_manifest.views
         else:  # record is not present
             App.logger.debug('No entries for page in manifest table')
             view_count = 0
-
         response['view_count'] = view_count
-
+        App.db_close()
         return response
 
     def get_language_view_count(self, path, increment=0):

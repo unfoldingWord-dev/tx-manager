@@ -8,7 +8,8 @@ from libraries.general_tools.file_utils import get_mime_type
 
 
 class S3Handler(object):
-    def __init__(self, bucket_name=None, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name='us-west-2'):
+    def __init__(self, bucket_name=None, aws_access_key_id=None, aws_secret_access_key=None,
+                 aws_region_name='us-west-2'):
         self.bucket_name = bucket_name
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
@@ -26,8 +27,14 @@ class S3Handler(object):
             self.resource = session.resource('s3')
             self.client = session.client('s3')
         else:
-            self.resource = boto3.resource('s3')
-            self.client = boto3.client('s3')
+            self.resource = boto3.resource('s3',
+                                           aws_access_key_id=self.aws_access_key_id,
+                                           aws_secret_access_key=self.aws_secret_access_key,
+                                           region_name=self.aws_region_name)
+            self.client = boto3.client('s3',
+                                       aws_access_key_id=self.aws_access_key_id,
+                                       aws_secret_access_key=self.aws_secret_access_key,
+                                       region_name=self.aws_region_name)
 
         self.bucket_name = self.bucket_name
         self.bucket = None

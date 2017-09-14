@@ -31,7 +31,7 @@ class ProjectDeployer(object):
         """
         build_log = None
         try:
-            build_log = App.cdn_s3_handler.get_json(build_log_key)
+            build_log = App.cdn_s3_handler().get_json(build_log_key)
         except:
             pass
 
@@ -62,7 +62,7 @@ class ProjectDeployer(object):
             partial = True
             App.logger.debug("found partial: " + part)
 
-            if not App.cdn_s3_handler.key_exists(download_key + '/finished'):
+            if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
                 App.logger.debug("Not ready to process partial")
                 return False
 
@@ -74,10 +74,10 @@ class ProjectDeployer(object):
         template_key = 'templates/project-page.html'
         template_file = os.path.join(template_dir, 'project-page.html')
         App.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
-        App.door43_s3_handler.download_file(template_key, template_file)
+        App.door43_s3_handler().download_file(template_key, template_file)
 
         if not multi_merge:
-            App.cdn_s3_handler.download_dir(download_key + '/', source_dir)
+            App.cdn_s3_handler().download_dir(download_key + '/', source_dir)
             source_dir = os.path.join(source_dir, download_key)
 
             elapsed_seconds = int(time.time() - start)
@@ -125,11 +125,11 @@ class ProjectDeployer(object):
             App.logger.debug("final 'index.json': " + json.dumps(index_json)[:120])
             out_file = os.path.join(output_dir, index_json_fname)
             write_file(out_file, index_json)
-            App.cdn_s3_handler.upload_file(out_file, s3_commit_key + '/' + index_json_fname)
+            App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + index_json_fname)
 
         else:
             # merge multi-part project
-            App.door43_s3_handler.download_dir(download_key + '/', source_dir)  # get previous templated files
+            App.door43_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
             source_dir = os.path.join(source_dir, download_key)
             files = sorted(glob(os.path.join(source_dir, '*.*')))
             for f in files:
@@ -171,8 +171,8 @@ class ProjectDeployer(object):
                 basename = os.path.basename(filename)
                 if ('finished' not in basename) and ('build_log' not in basename) and ('index.html' not in basename):
                     App.logger.debug("Moving {0} to common area".format(basename))
-                    App.cdn_s3_handler.upload_file(filename, s3_commit_key + '/' + basename, 0)
-                    App.cdn_s3_handler.delete_file(download_key + '/' + basename)
+                    App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, 0)
+                    App.cdn_s3_handler().delete_file(download_key + '/' + basename)
 
         # save master build_log.json
         file_utils.write_file(os.path.join(output_dir, 'build_log.json'), build_log)
@@ -186,23 +186,23 @@ class ProjectDeployer(object):
                     continue
                 key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
                 App.logger.debug("Uploading {0} to {1}".format(path, key))
-                App.door43_s3_handler.upload_file(path, key, 0)
+                App.door43_s3_handler().upload_file(path, key, 0)
 
         if not partial:
             # Now we place json files and make an index.html file for the whole repo
             try:
-                App.door43_s3_handler.copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=App.cdn_bucket)
-                App.door43_s3_handler.copy(from_key='{0}/manifest.json'.format(s3_commit_key),
+                App.door43_s3_handler().copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=App.cdn_bucket)
+                App.door43_s3_handler().copy(from_key='{0}/manifest.json'.format(s3_commit_key),
                                            to_key='{0}/manifest.json'.format(s3_repo_key))
-                App.door43_s3_handler.redirect(s3_repo_key, '/' + s3_commit_key)
-                App.door43_s3_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
+                App.door43_s3_handler().redirect(s3_repo_key, '/' + s3_commit_key)
+                App.door43_s3_handler().redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
             except:
                 pass
 
         else:
-            if App.cdn_s3_handler.key_exists(s3_commit_key + '/final_build_log.json'):
+            if App.cdn_s3_handler().key_exists(s3_commit_key + '/final_build_log.json'):
                 App.logger.debug("conversions all finished, trigger final merge")
-                App.cdn_s3_handler.copy(from_key=s3_commit_key + '/final_build_log.json',
+                App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
                                         to_key=s3_commit_key + '/build_log.json')
 
         elapsed_seconds = int(time.time() - start)
@@ -219,7 +219,7 @@ class ProjectDeployer(object):
 
     @staticmethod
     def get_templater_index(s3_commit_key, index_json_fname):
-        index_json = App.cdn_s3_handler.get_json(s3_commit_key + '/' + index_json_fname)
+        index_json = App.cdn_s3_handler().get_json(s3_commit_key + '/' + index_json_fname)
         if not index_json:
             index_json['titles'] = {}
             index_json['chapters'] = {}
@@ -230,12 +230,12 @@ class ProjectDeployer(object):
     def redeploy_all_projects(deploy_function):
         i = 0
         one_day_ago = datetime.utcnow() - timedelta(hours=24)
-        for obj in App.cdn_s3_handler.get_objects(prefix='u/', suffix='build_log.json'):
+        for obj in App.cdn_s3_handler().get_objects(prefix='u/', suffix='build_log.json'):
             i += 1
             last_modified = obj.last_modified.replace(tzinfo=None)
             if one_day_ago <= last_modified:
                 continue
-            App.lambda_handler.invoke(
+            App.lambda_handler().invoke(
                 FunctionName=deploy_function,
                 InvocationType='Event',
                 LogType='Tail',

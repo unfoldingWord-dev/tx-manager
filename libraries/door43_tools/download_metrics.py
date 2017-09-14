@@ -21,7 +21,7 @@ class DownloadMetrics(object):
 
         key = 'preconvert/{0}.zip'.format(commit_id)
         try:
-            download_exists = App.pre_convert_s3_handler.key_exists(key)
+            download_exists = App.pre_convert_s3_handler().key_exists(key)
         except Exception as e:
             App.logger.error("Access failure for '" + key + "': " + str(e))
             return response

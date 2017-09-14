@@ -4,8 +4,10 @@ from unittest import TestCase
 from libraries.lambda_handlers.dashboard_handler import DashboardHandler
 from libraries.manager.manager import TxManager
 
+
 def new_generate_dashboard( max_failures):
-    return max_failures; # return the parameter for testing
+    return max_failures  # return the parameter for testing
+
 
 class DashboardHandlerTest(TestCase):
 
@@ -23,9 +25,11 @@ class DashboardHandlerTest(TestCase):
     @mock.patch('libraries.manager.manager.TxManager.generate_dashboard')
     def test_dashboard_handler_max_two(self, mock_generate_dashboard):
         mock_generate_dashboard.side_effect = new_generate_dashboard
-        expected_max_failures = 10
+        expected_max_failures = 2
         event = {
-            'data': {},
+            'data': {
+                'failures': str(expected_max_failures)
+            }
         }
         handler = DashboardHandler()
         max_failures = handler.handle(event, expected_max_failures)
