@@ -31,7 +31,7 @@ class RunLinterHandler(Handler):
                                                                  payload=ret_value)
                 if success:
                     break
-                if message_queue.message_oversize == 0:
+                if message_queue.message_oversize == 0:  # if other than oversize error
                     linter.log.error("Message failure: {0}".format(message_queue.error))
                     break
 
