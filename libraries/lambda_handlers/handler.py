@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 import json
 import traceback
+import copy
 from abc import ABCMeta, abstractmethod
 from libraries.app.app import App
 
@@ -21,7 +22,7 @@ class Handler(object):
             App(**event['vars'])
 
         App.logger.debug("EVENT:")
-        App.logger.debug(json.dumps(event))
+        App.logger.debug(json.dumps(self.mask_event(self.event)))
 
         self.data = {}
         if 'data' in event and isinstance(event['data'], dict):
@@ -70,3 +71,20 @@ class Handler(object):
             raise Exception('\'{k}\' not found in {d}'.format(k=key, d=dict_name))
         else:
             return default
+
+    @classmethod
+    def mask_event(cls, event):
+        masked_event = copy.deepcopy(event)
+        if 'vars' in masked_event:
+            if 'db_pass' in masked_event['vars'] and masked_event['vars']['db_pass']:
+                masked_event['vars']['db_pass'] = cls.masked_value(masked_event['vars']['db_pass'])
+            if 'gogs_user_token' in masked_event['vars'] and masked_event['vars']['gogs_user_token']:
+                masked_event['vars']['gogs_user_token'] = cls.masked_value(masked_event['vars']['gogs_user_token'])
+        if 'data' in masked_event:
+            if 'gogs_user_token' in masked_event['data'] and masked_event['data']['gogs_user_token']:
+                masked_event['data']['gogs_user_token'] = cls.masked_value(masked_event['data']['gogs_user_token'])
+        return masked_event
+
+    @classmethod
+    def masked_value(cls, value, show_num_characters=2):
+        return value[0:show_num_characters].ljust(len(value), "*")
