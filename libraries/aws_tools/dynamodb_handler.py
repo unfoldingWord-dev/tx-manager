@@ -23,7 +23,10 @@ class DynamoDBHandler(object):
                               region_name=self.aws_region_name)
             self.resource = session.resource('dynamodb')
         else:
-            self.resource = boto3.resource('dynamodb')
+            self.resource = boto3.resource('dynamodb',
+                                           aws_access_key_id=self.aws_access_key_id,
+                                           aws_secret_access_key=self.aws_secret_access_key,
+                                           region_name=self.aws_region_name)
         self.table = self.resource.Table(self.table_name)
 
     def get_item(self, keys):

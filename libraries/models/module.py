@@ -41,5 +41,5 @@ class TxModule(Model):
         self.type = None
         self.version = 1
         if 'db_handler' not in kwargs or not kwargs['db_handler']:
-            kwargs['db_handler'] = App.module_db_handler
+            kwargs['db_handler'] = App.module_db_handler()
         super(TxModule, self).__init__(*args, **kwargs)
