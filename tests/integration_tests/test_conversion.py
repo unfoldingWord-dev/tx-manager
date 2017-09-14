@@ -472,7 +472,7 @@ class TestConversions(TestCase):
         if len(build_log_json['errors']) > 0:
             self.warn("WARNING: Found build_log errors: " + str(build_log_json['errors']))
 
-        door43_handler = S3Handler(App.door43_bucket)
+        door43_handler = App.door43_s3_handler
         deployed_build_log = self.check_deployed_files(door43_handler, expected_output_names, "html",
                                                        destination_key, chapter_count)
 
@@ -638,7 +638,7 @@ class TestConversions(TestCase):
         build_log_json = None
         job = None
         success = False
-        self.cdn_handler = S3Handler(App.cdn_bucket)
+        self.cdn_handler = App.cdn_s3_handler
         # TODO: change this to use gogs API when finished
         commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)
         commit_len = len(commit_id)
@@ -658,7 +658,7 @@ class TestConversions(TestCase):
             App.cdn_s3_handler.delete_file(obj.key)
 
     def delete_preconvert_zip_file(self, commit_sha):
-        self.preconvert_handler = S3Handler(App.pre_convert_bucket)
+        self.preconvert_handler = App.pre_convert_s3_handler
         preconvert_key = self.get_preconvert_s3_key(commit_sha)
         if App.pre_convert_s3_handler.key_exists(preconvert_key):
             App.logger.debug("deleting preconvert file: " + preconvert_key)
