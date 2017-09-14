@@ -13,14 +13,14 @@ class CheckDownloadsTest(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        App.pre_convert_s3_handler.create_bucket()
+        App.pre_convert_s3_handler().create_bucket()
 
     def test_check_present_download(self):
         # given
         commit_id = '39a099622d'
         key = 'preconvert/' + commit_id + '.zip'
-        App.pre_convert_s3_handler.put_contents(key, "dummy")
-        exists = App.pre_convert_s3_handler.key_exists(key)
+        App.pre_convert_s3_handler().put_contents(key, "dummy")
+        exists = App.pre_convert_s3_handler().key_exists(key)
         self.callback = 'callback'
         event = {
             'data': {

@@ -17,10 +17,10 @@ class TxJobTests(TestCase):
 
     def init_table(self):
         try:
-            App.job_db_handler.table.delete()
+            App.job_db_handler().table.delete()
         except:
             pass
-        App.job_db_handler.resource.create_table(
+        App.job_db_handler().resource.create_table(
             TableName=App.job_table_name,
             KeySchema=[
                 {

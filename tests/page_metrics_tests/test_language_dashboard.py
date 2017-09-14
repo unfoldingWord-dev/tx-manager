@@ -17,11 +17,11 @@ class LanguageDashboardTest(unittest.TestCase):
         self.tx_manager = TxManager()
 
         try:
-            App.language_stats_db_handler.table.delete()
+            App.language_stats_db_handler().table.delete()
         except:
             pass
 
-        App.language_stats_db_handler.resource.create_table(
+        App.language_stats_db_handler().resource.create_table(
             TableName=App.language_stats_table_name,
             KeySchema=[
                 {

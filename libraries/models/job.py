@@ -71,7 +71,7 @@ class TxJob(Model):
         self.warnings = []
         self.errors = []
         if 'db_handler' not in kwargs or not kwargs['db_handler']:
-            kwargs['db_handler'] = App.job_db_handler
+            kwargs['db_handler'] = App.job_db_handler()
         super(TxJob, self).__init__(*args, **kwargs)
 
     def log_message(self, message):

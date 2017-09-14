@@ -113,5 +113,5 @@ class Converter(object):
     def upload_archive(self):
         if self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
             copy(self.output_zip_file, self.cdn_file)
-        elif App.cdn_s3_handler:
-            App.cdn_s3_handler.upload_file(self.output_zip_file, self.cdn_file)
+        elif App.cdn_s3_handler():
+            App.cdn_s3_handler().upload_file(self.output_zip_file, self.cdn_file)

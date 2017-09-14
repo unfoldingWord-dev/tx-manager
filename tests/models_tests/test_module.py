@@ -18,11 +18,11 @@ class TxModuleTests(TestCase):
 
     def init_table(self):
         try:
-            App.module_db_handler.table.delete()
+            App.module_db_handler().table.delete()
         except:
             pass
 
-        App.module_db_handler.resource.create_table(
+        App.module_db_handler().resource.create_table(
             TableName=App.module_table_name,
             KeySchema=[
                 {
@@ -81,7 +81,7 @@ class TxModuleTests(TestCase):
 
     def populate_table(self):
         for idx in self.items:
-            App.module_db_handler.insert_item(self.items[idx])
+            App.module_db_handler().insert_item(self.items[idx])
 
     def test_query_module(self):
         tx_modules = TxModule().query()
