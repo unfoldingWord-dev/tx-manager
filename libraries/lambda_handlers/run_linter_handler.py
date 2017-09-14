@@ -29,14 +29,17 @@ class RunLinterHandler(Handler):
             while True:
                 success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
                                                                  payload=ret_value)
-                if not success and (message_queue.message_oversize > 0):
-                    warnings = ret_value['warnings']
-                    warnings_len = len(warnings)
-                    new_len = warnings_len / 2
-                    ret_value['warnings'] = warnings[:new_len]
-                    linter.log.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
-                                                                                                     new_len))
-                else:
-                    break  # success or not retrying
+                if success:
+                    break
+                if message_queue.message_oversize == 0:
+                    linter.log.error("Message failure: {0}".format(message_queue.error))
+                    break
 
+                # trim warnings list in half and try again
+                warnings = ret_value['warnings']
+                warnings_len = len(warnings)
+                new_len = warnings_len / 2
+                ret_value['warnings'] = warnings[:new_len]
+                linter.log.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
+                                                                                                 new_len))
         return ret_value
