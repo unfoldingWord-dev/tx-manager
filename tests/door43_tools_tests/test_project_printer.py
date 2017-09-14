@@ -17,7 +17,7 @@ class ProjectPrinterTests(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        App.cdn_s3_handler.create_bucket()
+        App.cdn_s3_handler().create_bucket()
         self.temp_dir = tempfile.mkdtemp(prefix="test_project_printer")
         self.printer = ProjectPrinter()
         self.mock_s3_obs_project()
@@ -27,15 +27,15 @@ class ProjectPrinterTests(unittest.TestCase):
 
     def test_print_obs(self):
         self.printer.print_project(self.project_key)
-        self.assertTrue(App.cdn_s3_handler.key_exists('u/{0}/print_all.html'.format(self.project_key)))
-        html = App.cdn_s3_handler.get_file_contents('u/{0}/print_all.html'.format(self.project_key))
+        self.assertTrue(App.cdn_s3_handler().key_exists('u/{0}/print_all.html'.format(self.project_key)))
+        html = App.cdn_s3_handler().get_file_contents('u/{0}/print_all.html'.format(self.project_key))
         soup = BeautifulSoup(html, 'html.parser')
         self.assertEqual(len(soup.div), 69)
         self.assertEqual(soup.html['lang'], 'en')
         self.assertEqual(soup.html['dir'], 'ltr')
         # Run again, shouldn't have to generate
         self.printer.print_project(self.project_key)
-        self.assertTrue(App.cdn_s3_handler.key_exists('u/{0}/print_all.html'.format(self.project_key)))
+        self.assertTrue(App.cdn_s3_handler().key_exists('u/{0}/print_all.html'.format(self.project_key)))
 
     def test_random_tests(self):
         self.assertRaises(Exception, self.printer.print_project, 'bad_key')
@@ -49,5 +49,5 @@ class ProjectPrinterTests(unittest.TestCase):
         self.project_files = [f for f in os.listdir(project_dir) if os.path.isfile(os.path.join(project_dir, f))]
         self.project_key = 'door43/en-obs/12345678'
         for filename in self.project_files:
-            App.cdn_s3_handler.upload_file(os.path.join(project_dir, filename), 'u/{0}/{1}'.format(self.project_key, filename))
-        App.cdn_s3_handler.upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')
+            App.cdn_s3_handler().upload_file(os.path.join(project_dir, filename), 'u/{0}/{1}'.format(self.project_key, filename))
+        App.cdn_s3_handler().upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')

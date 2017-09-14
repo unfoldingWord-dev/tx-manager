@@ -80,7 +80,7 @@ class ClientWebhook(object):
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is
-        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
         if tx_manifest:
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
@@ -88,8 +88,9 @@ class ClientWebhook(object):
         else:
             tx_manifest = TxManifest(**manifest_data)
             App.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest))
-            App.db.add(tx_manifest)
-        App.db.commit()
+            App.db().add(tx_manifest)
+        App.db().commit()
+        App.db_close()
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
@@ -286,16 +287,16 @@ class ClientWebhook(object):
     @staticmethod
     def clear_commit_directory_in_cdn(s3_commit_key):
         # clear out the commit directory in the cdn bucket for this project revision
-        for obj in App.cdn_s3_handler.get_objects(prefix=s3_commit_key):
+        for obj in App.cdn_s3_handler().get_objects(prefix=s3_commit_key):
             App.logger.debug('Removing file: ' + obj.key)
-            App.cdn_s3_handler.delete_file(obj.key)
+            App.cdn_s3_handler().delete_file(obj.key)
 
     def upload_build_log_to_s3(self, build_log_json, s3_commit_key, part=''):
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
         write_file(build_log_file, build_log_json)
         upload_key = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         App.logger.debug('Saving build log to ' + upload_key)
-        App.cdn_s3_handler.upload_file(build_log_file, upload_key)
+        App.cdn_s3_handler().upload_file(build_log_file, upload_key)
         # App.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
     @staticmethod
@@ -313,7 +314,7 @@ class ClientWebhook(object):
 
     def update_project_json(self, commit_id, job, repo_name, repo_owner):
         project_json_key = 'u/{0}/{1}/project.json'.format(repo_owner, repo_name)
-        project_json = App.cdn_s3_handler.get_json(project_json_key)
+        project_json = App.cdn_s3_handler().get_json(project_json_key)
         project_json['user'] = repo_owner
         project_json['repo'] = repo_name
         project_json['repo_url'] = 'https://git.door43.org/{0}/{1}'.format(repo_owner, repo_name)
@@ -335,14 +336,14 @@ class ClientWebhook(object):
         project_json['commits'] = commits
         project_file = os.path.join(self.base_temp_dir, 'project.json')
         write_file(project_file, project_json)
-        App.cdn_s3_handler.upload_file(project_file, project_json_key)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key)
 
     @staticmethod
     def upload_zip_file(commit_id, zip_filepath):
         file_key = 'preconvert/{0}.zip'.format(commit_id)
         App.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, App.pre_convert_bucket, file_key))
         try:
-            App.pre_convert_s3_handler.upload_file(zip_filepath, file_key)
+            App.pre_convert_s3_handler().upload_file(zip_filepath, file_key)
         except Exception as e:
             App.logger.error('Failed to upload zipped repo up to server')
             App.logger.exception(e)
@@ -471,7 +472,7 @@ class ClientWebhook(object):
     def send_payload_to_run_linter(self, payload, async=False):
         App.logger.debug('Making request linter lambda with payload:')
         App.logger.debug(payload)
-        response = App.lambda_handler.invoke(function_name=self.run_linter_function, payload=payload, async=async)
+        response = App.lambda_handler().invoke(function_name=self.run_linter_function, payload=payload, async=async)
         App.logger.debug('finished.')
         if 'Payload' in response:
             if async:

@@ -44,11 +44,12 @@ class ViewCountTest(unittest.TestCase):
         # then
         self.validateResults(expected_view_count, results)
 
-    def test_invalidManifestTableShouldFail(self):
+    def test_invalidLanguageStatsTableShouldFail(self):
         # given
         vc = PageMetrics()
         expected_view_count = ViewCountTest.INITIAL_VIEW_COUNT + 1
-        App.language_stats_db_handler = None
+        App._language_stats_db_handler = None
+        App.language_stats_table_name = None
         self.lang_url = "https://live.door43.org/en/"
 
         # when
@@ -293,11 +294,11 @@ class ViewCountTest(unittest.TestCase):
 
     def init_table(self, view_count):
         try:
-            App.language_stats_db_handler.table.delete()
+            App.language_stats_db_handler().table.delete()
         except:
             pass
 
-        App.language_stats_db_handler.resource.create_table(
+        App.language_stats_db_handler().resource.create_table(
             TableName=App.language_stats_table_name,
             KeySchema=[
                 {
