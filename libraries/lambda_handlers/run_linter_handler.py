@@ -21,9 +21,22 @@ class RunLinterHandler(Handler):
 
         # Execute
         linter_class = LinterHandler.get_linter_class(resource_id)
-        ret_value = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
-                                 single_file=single_file).run()
+        linter = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
+                         single_file=single_file)
+        ret_value = linter.run()
         if App.linter_messaging_name:
             message_queue = LinterMessaging(App.linter_messaging_name)
-            message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'], payload=ret_value)
+            while True:
+                success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
+                                                                 payload=ret_value)
+                if not success and (message_queue.message_oversize > 0):
+                    warnings = ret_value['warnings']
+                    warnings_len = len(warnings)
+                    new_len = warnings_len / 2
+                    ret_value['warnings'] = warnings[:new_len]
+                    linter.log.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
+                                                                                                     new_len))
+                else:
+                    break  # success or not retrying
+
         return ret_value
