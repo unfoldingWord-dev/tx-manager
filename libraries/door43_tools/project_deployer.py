@@ -38,7 +38,7 @@ class ProjectDeployer(object):
 
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
                 or 'repo_name' not in build_log:
-            App.logger.debug("Not valid build log: {0}".format(build_log))
+            App.logger.debug("Invalid build log at {0}: {1}".format(build_log_key, build_log))
             return False
 
         start = time.time()
