@@ -80,11 +80,10 @@ class TestApp(unittest.TestCase):
         self.assertEqual(App.api_url, 'https://api.door43.org')
 
     def test_reset_app(self):
-        App()
         default_name = App.name
-        App.name = 'test-name'
+        App(name='test-name')
         App()
         self.assertEqual(App.name, default_name)
         App.name = 'test-name-2'
-        App(reset=False)
-        self.assertEqual(App.name, 'test-name-2')
+        App(name='test-name-2', reset=False)
+        self.assertNotEqual(App.name, default_name)
