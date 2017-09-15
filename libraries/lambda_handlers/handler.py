@@ -1,21 +1,15 @@
 from __future__ import unicode_literals, print_function
 import json
-import logging
 import traceback
 from abc import ABCMeta, abstractmethod
-from exceptions import EnvironmentError
+from libraries.app.app import App
 
 
 class Handler(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        # Make Boto3 not be so noisy
-        logging.getLogger('boto3').setLevel(logging.ERROR)
-        logging.getLogger('botocore').setLevel(logging.ERROR)
-        # Set up logger
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)
+        self.data = None
 
     def handle(self, event, context):
         """
@@ -23,13 +17,23 @@ class Handler(object):
         :param context:
         :return dict:
         """
-        self.logger.debug("EVENT:")
-        self.logger.debug(json.dumps(event))
+        if 'vars' in event:
+            App(**event['vars'])
+
+        App.logger.debug("EVENT:")
+        App.logger.debug(json.dumps(event))
+
+        self.data = {}
+        if 'data' in event and isinstance(event['data'], dict):
+            self.data = event['data']
+        if 'body-json' in event and isinstance(event['body-json'], dict):
+            self.data.update(event['body-json'])
+
         try:
             return self._handle(event, context)
         except Exception as e:
-            self.logger.error(e.message)
-            self.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
+            App.logger.error(e.message)
+            App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             raise EnvironmentError('Bad Request: {}'.format(e.message))
 
     @abstractmethod

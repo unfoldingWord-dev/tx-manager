@@ -4,9 +4,9 @@ import tempfile
 import codecs
 from bs4 import BeautifulSoup
 from glob import glob
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.general_tools.file_utils import read_file
 from libraries.resource_container.ResourceContainer import RC
+from libraries.app.app import App
 
 
 class ProjectPrinter(object):
@@ -17,19 +17,8 @@ class ProjectPrinter(object):
     if the print_all.html page doesn't already exist. Return the contents of print_all.html
     """
 
-    def __init__(self, cdn_bucket):
-        """
-        :param string cdn_bucket: 
-        :param string cdn_url:
-        """
-        self.cdn_bucket = cdn_bucket
-        self.cdn_handler = None
-        self.setup_resources()
-
-    def setup_resources(self):
-        self.cdn_handler = S3Handler(self.cdn_bucket)
-
-    def print_project(self, project_id):
+    @staticmethod
+    def print_project(project_id):
         """
         :param string project_id: 
         :return string: 
@@ -40,9 +29,9 @@ class ProjectPrinter(object):
         source_path = 'u/{0}'.format(project_id)
         print_all_key = '{0}/print_all.html'.format(source_path)
         print_all_file = tempfile.mktemp(prefix='print_all_')
-        if not self.cdn_handler.key_exists(print_all_key):
+        if not App.cdn_s3_handler().key_exists(print_all_key):
             files_dir = tempfile.mkdtemp(prefix='files_')
-            self.cdn_handler.download_dir(source_path, files_dir)
+            App.cdn_s3_handler().download_dir(source_path, files_dir)
             project_dir = os.path.join(files_dir, source_path.replace('/', os.path.sep))
             if not os.path.isdir(project_dir):
                 raise Exception('Project not found.')
@@ -59,9 +48,10 @@ class ProjectPrinter(object):
             }}
         </style>
     </head>
-    <body onload="window.print()">
+    <body onLoad="window.print()">
         <h1>{2}: {3}</h1>
-""".format(rc.resource.language.identifier, rc.resource.language.direction, rc.resource.language.title, rc.resource.title))
+""".format(rc.resource.language.identifier, rc.resource.language.direction, rc.resource.language.title,
+           rc.resource.title))
                 for fname in sorted(glob(os.path.join(project_dir, '*.html'))):
                     with codecs.open(fname, 'r', 'utf-8-sig') as f:
                         soup = BeautifulSoup(f, 'html.parser')
@@ -75,8 +65,8 @@ class ProjectPrinter(object):
     </body>
 </html>
 """)
-                self.cdn_handler.upload_file(print_all_file, print_all_key)
+                App.cdn_s3_handler().upload_file(print_all_file, print_all_key)
             html = read_file(print_all_file)
         else:
-            html = self.cdn_handler.get_file_contents(print_all_key)
+            html = App.cdn_s3_handler().get_file_contents(print_all_key)
         return html

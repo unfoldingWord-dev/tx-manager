@@ -102,3 +102,6 @@ class Model(object):
             for item in items:
                 models.append(self.__class__(item))
         return models
+
+    def count(self):
+        return self.db_handler.get_item_count()

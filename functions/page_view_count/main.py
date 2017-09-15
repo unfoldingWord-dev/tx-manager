@@ -4,7 +4,7 @@ from libraries.lambda_handlers.page_view_count_handler import PageViewCountHandl
 
 def handle(event, context):
     """
-    Called by API Gateway when user wants a list of endpoints
+    Called by API Gateway to get the page counts of a project
     :param dict event:
     :param context:
     :return dict:

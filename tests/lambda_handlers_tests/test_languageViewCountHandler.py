@@ -11,6 +11,7 @@ class LanguageViewCountHandlerTest(TestCase):
     SUPPORTED_PATH = 'https://live.door43.org/en/'
 
     def setUp(self):
+        """Runs before each test."""
         self.return_view_count = 0
         self.error_response = None
 
@@ -108,16 +109,7 @@ class LanguageViewCountHandlerTest(TestCase):
         if increment is not None:
             query_string['increment'] = str(increment)
         event = {
-            'data': {},
-            'body-json': {},
-            'vars': {
-                'language_stats_table_name': 'test-language-stats'
-            },
-            'api-gateway': {
-                'params': {
-                    'querystring': query_string
-                }
-            }
+            'data': query_string
         }
         self.callback = callback
         self.error_response = error_response

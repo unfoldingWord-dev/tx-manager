@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, print_function
 import boto3
-import logging
 from six import iteritems
 from boto3 import Session
 from boto3.dynamodb.conditions import Attr
@@ -15,7 +14,6 @@ class DynamoDBHandler(object):
         self.aws_region_name = aws_region_name
         self.resource = None
         self.table = None
-        self.logger = logging.getLogger()
         self.setup_resources()
 
     def setup_resources(self):
@@ -25,7 +23,10 @@ class DynamoDBHandler(object):
                               region_name=self.aws_region_name)
             self.resource = session.resource('dynamodb')
         else:
-            self.resource = boto3.resource('dynamodb')
+            self.resource = boto3.resource('dynamodb',
+                                           aws_access_key_id=self.aws_access_key_id,
+                                           aws_secret_access_key=self.aws_secret_access_key,
+                                           region_name=self.aws_region_name)
         self.table = self.resource.Table(self.table_name)
 
     def get_item(self, keys):
@@ -56,13 +57,6 @@ class DynamoDBHandler(object):
                 expressions.append('{0} = :{1}'.format(name, field))
                 values[':{0}'.format(field)] = value
 
-        self.logger.debug('UPDATING WITH:')
-        self.logger.debug('SET {0}'.format(', '.join(expressions)))
-        self.logger.debug("VALUES:")
-        self.logger.debug(values)
-        self.logger.debug("NAMES:")
-        self.logger.debug(names)
-
         if names:
             return self.table.update_item(
                 Key=keys,
@@ -89,12 +83,12 @@ class DynamoDBHandler(object):
         """
         return self.table.item_count
 
-    def query_items(self, query=None, only_fields_with_values=True, queryChunkLimit=-1):
+    def query_items(self, query=None, only_fields_with_values=True, query_chunk_limit=-1):
         """
         gets items from database
         :param query: 
         :param only_fields_with_values: 
-        :param queryChunkLimit: not an absolute count, but a threshold where we stop fetching more chunks
+        :param query_chunk_limit: not an absolute count, but a threshold where we stop fetching more chunks
                         (if negative then no limit, but will read all chunks)
         :return: 
         """
@@ -162,16 +156,16 @@ class DynamoDBHandler(object):
             if filter_expression is not None:
                 response = self.table.scan(
                     FilterExpression=filter_expression,
-                    ExclusiveStartKey = response['LastEvaluatedKey']
+                    ExclusiveStartKey=response['LastEvaluatedKey']
                 )
             else:
-                response = self.table.scan(ExclusiveStartKey = response['LastEvaluatedKey'])
+                response = self.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
 
             if response and ('Items' in response):
                 items += response['Items']
 
-            itemCount = len(items)
-            if (queryChunkLimit >= 0) and (itemCount >= queryChunkLimit):
+            item_count = len(items)
+            if (query_chunk_limit >= 0) and (item_count >= query_chunk_limit):
                 break
 
         return items

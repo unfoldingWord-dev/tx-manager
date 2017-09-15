@@ -1,17 +1,15 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
-import boto3
 import json
-import logging
 import time
 from glob import glob
 from shutil import copyfile
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
 from datetime import datetime, timedelta
+from libraries.app.app import App
 
 
 class ProjectDeployer(object):
@@ -22,24 +20,8 @@ class ProjectDeployer(object):
     by applying the door43.org template to the raw html files
     """
 
-    def __init__(self, cdn_bucket, door43_bucket):
-        """
-        :param string cdn_bucket:
-        :param string door43_bucket:
-        """
-        self.cdn_bucket = cdn_bucket
-        self.door43_bucket = door43_bucket
-        self.cdn_handler = None
-        self.door43_handler = None
-        self.lambda_client = None
-        self.logger = logging.getLogger()
-        self.setup_resources()
+    def __init__(self):
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="deployer_")
-
-    def setup_resources(self):
-        self.cdn_handler = S3Handler(self.cdn_bucket)
-        self.door43_handler = S3Handler(self.door43_bucket)
-        self.lambda_client = boto3.client('lambda', region_name='us-west-2')
 
     def deploy_revision_to_door43(self, build_log_key):
         """
@@ -49,15 +31,16 @@ class ProjectDeployer(object):
         """
         build_log = None
         try:
-            build_log = self.cdn_handler.get_json(build_log_key)
+            build_log = App.cdn_s3_handler().get_json(build_log_key)
         except:
             pass
 
-        if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log or 'repo_name' not in build_log:
+        if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
+                or 'repo_name' not in build_log:
             return False
 
         start = time.time()
-        self.logger.debug("Deploying, build log: " + json.dumps(build_log))
+        App.logger.debug("Deploying, build log: " + json.dumps(build_log))
 
         user = build_log['repo_owner']
         repo_name = build_log['repo_name']
@@ -71,16 +54,16 @@ class ProjectDeployer(object):
         multi_merge = False
         if 'multiple' in build_log:
             multi_merge = build_log['multiple']
-            self.logger.debug("found multi-part merge")
+            App.logger.debug("found multi-part merge")
 
         elif 'part' in build_log:
             part = build_log['part']
             download_key += '/' + part
             partial = True
-            self.logger.debug("found partial: " + part)
+            App.logger.debug("found partial: " + part)
 
-            if not self.cdn_handler.key_exists(download_key + '/finished'):
-                self.logger.debug("Not ready to process partial")
+            if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
+                App.logger.debug("Not ready to process partial")
                 return False
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
@@ -90,15 +73,15 @@ class ProjectDeployer(object):
         resource_type = build_log['resource_type']
         template_key = 'templates/project-page.html'
         template_file = os.path.join(template_dir, 'project-page.html')
-        self.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
-        self.door43_handler.download_file(template_key, template_file)
+        App.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
+        App.door43_s3_handler().download_file(template_key, template_file)
 
         if not multi_merge:
-            self.cdn_handler.download_dir(download_key + '/', source_dir)
+            App.cdn_s3_handler().download_dir(download_key + '/', source_dir)
             source_dir = os.path.join(source_dir, download_key)
 
             elapsed_seconds = int(time.time() - start)
-            self.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
+            App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
 
             html_files = sorted(glob(os.path.join(source_dir, '*.html')))
             if len(html_files) < 1:
@@ -135,29 +118,29 @@ class ProjectDeployer(object):
             # update index of templated files
             index_json_fname = 'index.json'
             index_json = self.get_templater_index(s3_commit_key, index_json_fname)
-            self.logger.debug("initial 'index.json': " + json.dumps(index_json)[:120])
+            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:120])
             self.update_index_key(index_json, templater, 'titles')
             self.update_index_key(index_json, templater, 'chapters')
             self.update_index_key(index_json, templater, 'book_codes')
-            self.logger.debug("final 'index.json': " + json.dumps(index_json)[:120])
+            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:120])
             out_file = os.path.join(output_dir, index_json_fname)
             write_file(out_file, index_json)
-            self.cdn_handler.upload_file(out_file, s3_commit_key + '/' + index_json_fname)
+            App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + index_json_fname)
 
         else:
             # merge multi-part project
-            self.door43_handler.download_dir(download_key + '/', source_dir)  # get previous templated files
+            App.door43_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
             source_dir = os.path.join(source_dir, download_key)
             files = sorted(glob(os.path.join(source_dir, '*.*')))
-            for file in files:
-                self.logger.debug("Downloaded: " + file)
+            for f in files:
+                App.logger.debug("Downloaded: " + f)
 
             fname = os.path.join(source_dir, 'index.html')
             if os.path.isfile(fname):
                 os.remove(fname)  # remove index if already exists
 
             elapsed_seconds = int(time.time() - start)
-            self.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
+            App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
 
             templater = init_template(resource_type, source_dir, output_dir, template_file)
 
@@ -187,13 +170,13 @@ class ProjectDeployer(object):
             if partial:  # move files to common area
                 basename = os.path.basename(filename)
                 if ('finished' not in basename) and ('build_log' not in basename) and ('index.html' not in basename):
-                    self.logger.debug("Moving {0} to common area".format(basename))
-                    self.cdn_handler.upload_file(filename, s3_commit_key + '/' + basename, 0)
-                    self.cdn_handler.delete_file(download_key + '/' + basename)
+                    App.logger.debug("Moving {0} to common area".format(basename))
+                    App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, 0)
+                    App.cdn_s3_handler().delete_file(download_key + '/' + basename)
 
         # save master build_log.json
         file_utils.write_file(os.path.join(output_dir, 'build_log.json'), build_log)
-        self.logger.debug("Final build_log.json:\n" + json.dumps(build_log))
+        App.logger.debug("Final build_log.json:\n" + json.dumps(build_log))
 
         # Upload all files to the door43.org bucket
         for root, dirs, files in os.walk(output_dir):
@@ -201,65 +184,63 @@ class ProjectDeployer(object):
                 path = os.path.join(root, f)
                 if os.path.isdir(path):
                     continue
-                key = s3_commit_key + path.replace(output_dir, '')
-                self.logger.debug("Uploading {0} to {1}".format(path, key))
-                self.door43_handler.upload_file(path, key, 0)
+                key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
+                App.logger.debug("Uploading {0} to {1}".format(path, key))
+                App.door43_s3_handler().upload_file(path, key, 0)
 
         if not partial:
             # Now we place json files and make an index.html file for the whole repo
             try:
-                self.door43_handler.copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=self.cdn_bucket)
-                self.door43_handler.copy(from_key='{0}/manifest.json'.format(s3_commit_key), to_key='{0}/manifest.json'.format(s3_repo_key))
-                self.door43_handler.redirect(s3_repo_key, '/' + s3_commit_key)
-                self.door43_handler.redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
-            except Exception:
+                App.door43_s3_handler().copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=App.cdn_bucket)
+                App.door43_s3_handler().copy(from_key='{0}/manifest.json'.format(s3_commit_key),
+                                           to_key='{0}/manifest.json'.format(s3_repo_key))
+                App.door43_s3_handler().redirect(s3_repo_key, '/' + s3_commit_key)
+                App.door43_s3_handler().redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
+            except:
                 pass
 
         else:
-            if self.cdn_handler.key_exists(s3_commit_key + '/final_build_log.json'):
-                self.logger.debug("conversions all finished, trigger final merge")
-                self.cdn_handler.copy(from_key=s3_commit_key + '/final_build_log.json', to_key=s3_commit_key + '/build_log.json')
+            if App.cdn_s3_handler().key_exists(s3_commit_key + '/final_build_log.json'):
+                App.logger.debug("conversions all finished, trigger final merge")
+                App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
+                                        to_key=s3_commit_key + '/build_log.json')
 
         elapsed_seconds = int(time.time() - start)
-        self.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
 
         remove_tree(self.temp_dir)  # cleanup temp files
         return True
 
-    def update_index_key(self, index_json, templater, key):
+    @staticmethod
+    def update_index_key(index_json, templater, key):
         data = index_json[key]
         data.update(getattr(templater, key))
         index_json[key] = data
 
-    def get_templater_index(self, s3_commit_key, index_json_fname):
-        index_json = self.cdn_handler.get_json(s3_commit_key + '/' + index_json_fname)
+    @staticmethod
+    def get_templater_index(s3_commit_key, index_json_fname):
+        index_json = App.cdn_s3_handler().get_json(s3_commit_key + '/' + index_json_fname)
         if not index_json:
             index_json['titles'] = {}
             index_json['chapters'] = {}
             index_json['book_codes'] = {}
         return index_json
 
-    def get_key_modified_time(self, s3_handler, source_dir, key):
-        try:
-            key_last_modified = s3_handler.key_modified_time(source_dir + '/' + key)
-        except:
-            key_last_modified = None
-        return key_last_modified
-
-    def redeploy_all_projects(self, deploy_function):
+    @staticmethod
+    def redeploy_all_projects(deploy_function):
         i = 0
         one_day_ago = datetime.utcnow() - timedelta(hours=24)
-        for obj in self.cdn_handler.get_objects(prefix='u/', suffix='build_log.json'):
+        for obj in App.cdn_s3_handler().get_objects(prefix='u/', suffix='build_log.json'):
             i += 1
             last_modified = obj.last_modified.replace(tzinfo=None)
             if one_day_ago <= last_modified:
                 continue
-            self.lambda_client.invoke(
+            App.lambda_handler().invoke(
                 FunctionName=deploy_function,
                 InvocationType='Event',
                 LogType='Tail',
                 Payload=json.dumps({
-                    'cdn_bucket': self.cdn_bucket,
+                    'prefix': App.prefix,
                     'build_log_key': obj.key
                 })
             )

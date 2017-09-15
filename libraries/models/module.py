@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 from libraries.models.model import Model
+from libraries.app.app import App
 
 
 class TxModule(Model):
@@ -39,4 +40,6 @@ class TxModule(Model):
         self.resource_types = []
         self.type = None
         self.version = 1
+        if 'db_handler' not in kwargs or not kwargs['db_handler']:
+            kwargs['db_handler'] = App.module_db_handler()
         super(TxModule, self).__init__(*args, **kwargs)

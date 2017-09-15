@@ -11,6 +11,7 @@ class ViewCountHandlerTest(TestCase):
     SUPPORTED_PATH = 'https://live.door43.org/u/dummy/repo/96db55378e/'
 
     def setUp(self):
+        """Runs before each test."""
         self.return_view_count = 0
         self.error_response = None
 
@@ -88,16 +89,7 @@ class ViewCountHandlerTest(TestCase):
         if increment is not None:
             query_string['increment'] = str(increment)
         event = {
-            'data': {},
-            'body-json': {},
-            'vars': {
-                'manifest_table_name': 'test-tx-manifest'
-            },
-            'api-gateway': {
-                'params': {
-                    'querystring': query_string
-                }
-            }
+            'data': query_string
         }
         self.callback = callback
         self.error_response = error_response

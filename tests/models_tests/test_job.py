@@ -1,16 +1,15 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from unittest import TestCase
 from moto import mock_dynamodb2
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.job import TxJob
+from libraries.app.app import App
 
 
 @mock_dynamodb2
 class TxJobTests(TestCase):
-    JOB_TABLE_NAME = 'tx-job'
-
     def setUp(self):
-        self.db_handler = DynamoDBHandler(self.JOB_TABLE_NAME)
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         self.init_table()
         self.items = {}
         self.init_items()
@@ -18,11 +17,11 @@ class TxJobTests(TestCase):
 
     def init_table(self):
         try:
-            self.db_handler.table.delete()
+            App.job_db_handler().table.delete()
         except:
             pass
-        self.db_handler.resource.create_table(
-            TableName=self.JOB_TABLE_NAME,
+        App.job_db_handler().resource.create_table(
+            TableName=App.job_table_name,
             KeySchema=[
                 {
                     'AttributeName': 'job_id',
@@ -80,31 +79,32 @@ class TxJobTests(TestCase):
 
     def populate_table(self):
         for idx in self.items:
-            TxJob(db_handler=self.db_handler).insert(self.items[idx])
+            TxJob().insert(self.items[idx])
 
     def test_query_job(self):
-        jobs = TxJob(db_handler=self.db_handler).query()
+        jobs = TxJob().query()
+        App.logger.debug(jobs)
         self.assertEqual(len(jobs), len(self.items))
         for job in jobs:
             self.assertEqual(job.get_db_data(), TxJob(self.items[job.job_id]).get_db_data())
 
     def test_load_job(self):
         # Test loading by just giving it the job_id in the constructor
-        job = TxJob('job1', db_handler=self.db_handler)
+        job = TxJob('job1')
         self.assertEqual(job.get_db_data(), TxJob(self.items['job1']).get_db_data())
         # Test loading by just giving it only the job_id in the data array in the constructor
-        job = TxJob({'job_id': 'job2'}, db_handler=self.db_handler)
+        job = TxJob({'job_id': 'job2'})
         self.assertEqual(job.get_db_data(), TxJob(self.items['job2']).get_db_data())
 
     def test_update_job(self):
-        job = TxJob(db_handler=self.db_handler).load({'job_id': self.items['job3']['job_id']})
+        job = TxJob().load({'job_id': self.items['job3']['job_id']})
         job.status = 'finished'
         job.update()
         job.load()
         self.assertEqual(job.status, 'finished')
 
     def test_delete_job(self):
-        job = TxJob(db_handler=self.db_handler).load({'job_id': self.items['job1']['job_id']})
+        job = TxJob().load({'job_id': self.items['job1']['job_id']})
         self.assertIsNotNone(job.job_id)
         job.delete()
         job.load()

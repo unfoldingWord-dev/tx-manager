@@ -9,31 +9,31 @@ from libraries.door43_tools.project_deployer import ProjectDeployer
 from libraries.door43_tools.td_language import TdLanguage
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip
+from libraries.app.app import App
 from shutil import rmtree
 
 
 @mock_s3
 class ProjectDeployerTests(unittest.TestCase):
-    MOCK_CDN_BUCKET = "test_cdn"
-    MOCK_DOOR43_BUCKET = "test_door43"
-
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
 
     def setUp(self):
+        """Runs before each test."""
+        App(prefix='{0}-'.format(self._testMethodName))
+        App.cdn_s3_handler().create_bucket()
+        App.door43_s3_handler().create_bucket()
         self.temp_dir = tempfile.mkdtemp(prefix="test_project_deployer")
-        self.deployer = ProjectDeployer(self.MOCK_CDN_BUCKET, self.MOCK_DOOR43_BUCKET)
-        self.deployer.cdn_handler.create_bucket()
-        self.deployer.door43_handler.create_bucket()
+        self.deployer = ProjectDeployer()
         TdLanguage.language_list = {
-            'aa': TdLanguage({'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa', 'pk': 6}),
+            'aa': TdLanguage({'gw': False, 'ld': 'ltr', 'ang': 'Afar', 'lc': 'aa', 'ln': 'Afaraf', 'lr': 'Africa',
+                              'pk': 6}),
             'en': TdLanguage({'gw': True, 'ld': 'ltr', 'ang': 'English', 'lc': 'en', 'ln': 'English',
-             'lr': 'Europe', 'pk': 1747}),
+                              'lr': 'Europe', 'pk': 1747}),
             'es': TdLanguage({'gw': True, 'ld': 'ltr', 'ang': 'Spanish', 'lc': 'es', 'ln': 'espa\xf1ol',
-             'lr': 'Europe', 'pk': 1776}),
-            'fr': TdLanguage({'gw': True, 'ld': 'ltr', 'ang': 'French', 'lc': 'fr', 'ln': 'fran\xe7ais, langue fran\xe7aise',
-             'lr': 'Europe', 'pk': 1868})
+                              'lr': 'Europe', 'pk': 1776}),
+            'fr': TdLanguage({'gw': True, 'ld': 'ltr', 'ang': 'French', 'lc': 'fr',
+                              'ln': 'fran\xe7ais, langue fran\xe7aise', 'lr': 'Europe', 'pk': 1868})
         }
-
 
     def tearDown(self):
         rmtree(self.temp_dir, ignore_errors=True)
@@ -43,8 +43,8 @@ class ProjectDeployerTests(unittest.TestCase):
         build_log_key = '{0}/build_log.json'.format(self.project_key)
         ret = self.deployer.deploy_revision_to_door43(build_log_key)
         self.assertTrue(ret)
-        self.assertTrue(self.deployer.door43_handler.key_exists(build_log_key))
-        self.assertTrue(self.deployer.door43_handler.key_exists('{0}/50.html'.format(self.project_key)))
+        self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
+        self.assertTrue(App.door43_s3_handler().key_exists('{0}/50.html'.format(self.project_key)))
 
     def test_bad_deploy_revision_to_door43(self):
         self.mock_s3_obs_project()
@@ -117,8 +117,8 @@ class ProjectDeployerTests(unittest.TestCase):
 
     def test_redeploy_all_projects(self):
         self.mock_s3_obs_project()
-        self.deployer.cdn_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
-        self.deployer.cdn_handler.put_contents('u/user2/project2/revision2/build_log.json', '{}')
+        App.cdn_s3_handler().put_contents('u/user1/project1/revision1/build_log.json', '{}')
+        App.cdn_s3_handler().put_contents('u/user2/project2/revision2/build_log.json', '{}')
         self.assertTrue(self.deployer.redeploy_all_projects('test-door43_deployer'))
 
     #
@@ -129,7 +129,7 @@ class ProjectDeployerTests(unittest.TestCase):
         self.assertEqual(ret, expect_success)
         if expect_success:
             if output_key:
-                self.assertTrue(self.deployer.door43_handler.key_exists(output_key))
+                self.assertTrue(App.door43_s3_handler().key_exists(output_key))
 
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')
@@ -139,10 +139,12 @@ class ProjectDeployerTests(unittest.TestCase):
         self.project_files = [f for f in os.listdir(project_dir) if os.path.isfile(os.path.join(project_dir, f))]
         self.project_key = 'u/door43/en-obs/12345678'
         for filename in self.project_files:
-            self.deployer.cdn_handler.upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key, filename))
-        self.deployer.cdn_handler.upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')
-        self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
-                                                 'templates/project-page.html')
+            App.cdn_s3_handler().upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key,
+                                                                                                 filename))
+        App.cdn_s3_handler().upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'),
+                                       'u/door43/en-obs/project.json')
+        App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+                                          'templates/project-page.html')
 
     def mock_s3_bible_project(self, test_file_name, project_key, multi_part=False):
         converted_proj_dir = os.path.join(self.resources_dir, 'converted_projects')
@@ -154,8 +156,8 @@ class ProjectDeployerTests(unittest.TestCase):
         self.project_files = file_utils.get_files(out_dir)
         self.project_key = project_key
         for filename in self.project_files:
-            sub_path = filename.split(project_dir)[1]
-            self.deployer.cdn_handler.upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
+            sub_path = filename.split(project_dir)[1].replace(os.path.sep, '/')  # Make sure it is a bucket path
+            App.cdn_s3_handler().upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
 
             if multi_part:  # copy files from cdn to door43
                 base_name = os.path.basename(filename)
@@ -169,9 +171,8 @@ class ProjectDeployerTests(unittest.TestCase):
                     html = unicode(soup)
                     file_utils.write_file(filename, html.encode('ascii', 'xmlcharrefreplace'))
 
-                self.deployer.door43_handler.upload_file(filename, '{0}/{1}'.format(project_key, base_name))
+                App.door43_s3_handler().upload_file(filename, '{0}/{1}'.format(project_key, base_name))
 
         # u, user, repo = project_key
-        # self.deployer.cdn_handler.upload_file(os.path.join(out_dir, user, repo, 'project.json'), 'u/{0}/{1}/project.json'.format(user, repo))
-        self.deployer.door43_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
-                                                 'templates/project-page.html')
+        App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+                                          'templates/project-page.html')

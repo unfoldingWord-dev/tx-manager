@@ -1,4 +1,3 @@
-# coding=utf-8
 from __future__ import print_function, absolute_import, unicode_literals
 import json
 import tempfile
@@ -14,11 +13,10 @@ from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
 from libraries.manager.manager import TxManager
 from libraries.general_tools.file_utils import unzip
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
-from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
+from libraries.app.app import App
 
 # replace default print with utf-8 writer, so it can work with pipes and redirects such as used with the latest
 #   Travis build system.
@@ -37,39 +35,39 @@ BIBLE_LIST_OT = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS", "07
       "31-OBA", "32-JON", "33-MIC", "34-NAM", "35-HAB", "36-ZEP", "37-HAG", "38-ZEC", "39-MAL", ]
 FULL_BIBLE_LIST = BIBLE_LIST_OT + BIBLE_LIST_NT
 
+
 class TestConversions(TestCase):
     """
     To test locally, you must set two environment variables:
 
         set TEST_DEPLOYED to "test_deployed"
         set GOGS_USER_TOKEN to tx-manager user token
+        set DB_PASS to the password of this environment's RDS DB (e.g. dev-tx)
 
     Integration test will run on dev unless TRAVIS_BRANCH is set to 'master' (then will run on prod),
     or set to 'test' and will run on the test environment
     """
 
+    @classmethod
+    def setUpClass(cls):
+        """Runs before all tests."""
+        branch = os.environ.get('TRAVIS_BRANCH', 'develop')  # default is testing develop branch (dev)
+        gogs_user_token = os.environ.get('GOGS_USER_TOKEN', '')
+        db_pass = os.environ.get('DB_PASS', '')
+
+        if branch == 'master':
+            prefix = ''  # no prefix for production
+        elif branch == 'test':
+            prefix = 'test-'  # For running on test
+        else:
+            prefix = 'dev-'  # default
+
+        App(prefix=prefix, gogs_user_token=gogs_user_token, db_pass=db_pass)
+
+        App.logger.debug('Testing on \'' + branch + '\' branch, e.g.: ' + App.api_url)
+
     def setUp(self):
-        branch = os.environ.get("TRAVIS_BRANCH", "develop")  # default is testing develop branch (dev)
-
-        destination = "dev-"  # default
-        if branch == "master":
-            destination = ""  # no prefix for production
-        if branch == "test":
-            destination = "test-"  # For running on test
-
-        self.destination = destination
-        self.api_url = 'https://{0}api.door43.org'.format(destination)
-        self.pre_convert_bucket = '{0}tx-webhook-client'.format(destination)
-        self.gogs_url = 'https://git.door43.org'.format(destination)
-        self.cdn_bucket = '{0}cdn.door43.org'.format(destination)
-        self.job_table_name = '{0}tx-job'.format(destination)
-        self.module_table_name = '{0}tx-module'.format(destination)
-        self.manifest_table_name = '{0}tx-manifest'.format(destination)
-        self.cdn_url = 'https://{0}cdn.door43.org'.format(destination)
-        self.door43_bucket = '{0}door43.org'.format(destination)
-
-        print("Testing on '" + branch + "' branch, e.g.: " + self.api_url)
-
+        """Runs before each test."""
         self.warnings = []
 
     def tearDown(self):
@@ -81,7 +79,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_en_udb_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = FULL_BIBLE_LIST
@@ -96,7 +95,8 @@ class TestConversions(TestCase):
 
     def test_ts_mat_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/kpb_mat_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "41-MAT"
@@ -111,7 +111,8 @@ class TestConversions(TestCase):
 
     def test_ts_acts0_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/awa_act_text_reg.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -126,7 +127,8 @@ class TestConversions(TestCase):
 
     def test_ts_psa_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/ceb_psa_text_ulb_L3.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "19-PSA"
@@ -141,7 +143,8 @@ class TestConversions(TestCase):
 
     def test_obs_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-obs-rc-0.2.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_chapter_count = 50
@@ -156,7 +159,8 @@ class TestConversions(TestCase):
 
     def test_obs_conversion_ts_upload(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/hu_obs_text_obs.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_chapter_count = 49
@@ -171,7 +175,8 @@ class TestConversions(TestCase):
 
     def test_usfm_en_jud_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-ulb-jud.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = [ "66-JUD" ]
@@ -186,7 +191,8 @@ class TestConversions(TestCase):
 
     def test_usfm_en_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en-ulb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = ["01-GEN", "02-EXO", "03-LEV", "04-NUM", "05-DEU", "06-JOS"]
@@ -202,7 +208,8 @@ class TestConversions(TestCase):
     # @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_short_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         # shorter book list, but bigger books
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru_short.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
@@ -219,7 +226,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_nt_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/nt_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = BIBLE_LIST_NT
@@ -235,7 +243,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_ru_ot_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/ot_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = BIBLE_LIST_OT
@@ -251,7 +260,8 @@ class TestConversions(TestCase):
     @unittest.skip("#### TODO: Skipping broken conversion that needs to be fixed - webhook takes too long and times out")
     def test_usfm_ru_bundle_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/bible_ru.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_names = FULL_BIBLE_LIST
@@ -266,7 +276,8 @@ class TestConversions(TestCase):
 
     def test_ts_acts1_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/kan-x-aruvu_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -281,7 +292,8 @@ class TestConversions(TestCase):
 
     def test_ts_acts2_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/mohanraj/kn-x-bedar_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -297,7 +309,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts3_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/nirmala/te-x-budugaja_act_text_reg.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -313,7 +326,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts4_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/jathapu/kxv_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -329,7 +343,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts5_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/vinaykumar/kan-x-thigularu_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -345,7 +360,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts6_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/Zipson/yeu_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -361,7 +377,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts7_conversion(self):
         # given
-        if not self.is_testing_enabled(): return # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/Zipson/kfc_act_text_udb.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -377,7 +394,8 @@ class TestConversions(TestCase):
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_ts_acts8_conversion(self):
         # given
-        if not self.is_testing_enabled(): return  # skip test if integration test not enabled
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/E01877C8393A/uw-act_udb-aen.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
         expected_output_name = "45-ACT"
@@ -398,14 +416,14 @@ class TestConversions(TestCase):
         test = os.environ.get('TEST_DEPLOYED', "")
         do_test = (test == "test_deployed")
         if not do_test:
-            print("Skip testing since TEST_DEPLOYED is not set")
+            App.logger.debug("Skip testing since TEST_DEPLOYED is not set")
         else:
             gogs_user_token = os.environ.get('GOGS_USER_TOKEN', "")
             self.assertTrue(len(gogs_user_token) > 0, "GOGS_USER_TOKEN is missing in environment")
         return do_test
 
     def get_parts_of_git_url(self, git_url):
-        print("Testing conversion of: " + git_url)
+        App.logger.debug("Testing conversion of: " + git_url)
         parts = git_url.split("/")
         base_url = "/".join(parts[0:3])
         user = parts[3]
@@ -432,7 +450,7 @@ class TestConversions(TestCase):
                                                            destination_key, chapter_count)
 
         # check required fields
-        print(converted_build_log)
+        App.logger.debug(converted_build_log)
         saved_build_json = json.loads(converted_build_log)
         self.assertTrue('commit_id' in saved_build_json)
         self.assertTrue('repo_owner' in saved_build_json)
@@ -453,27 +471,25 @@ class TestConversions(TestCase):
         if len(build_log_json['errors']) > 0:
             self.warn("WARNING: Found build_log errors: " + str(build_log_json['errors']))
 
-        door43_handler = S3Handler(self.door43_bucket)
+        door43_handler = App.door43_s3_handler()
         deployed_build_log = self.check_deployed_files(door43_handler, expected_output_names, "html",
                                                        destination_key, chapter_count)
 
         self.compare_build_logs(converted_build_log, deployed_build_log, destination_key)
 
         if len(self.warnings):
-            print("\n#######\nHave warnings:\n#######\n" + '\n'.join(self.warnings))
+            App.logger.debug("\n#######\nHave warnings:\n#######\n" + '\n'.join(self.warnings))
 
         self.assertTrue(success)
 
         # Test that repo is in manifest table
-        tx_manifest = TxManifest(db_handler=DynamoDBHandler(self.manifest_table_name)).load({
-                'repo_name_lower': repo.lower(),
-                'user_name_lower': user.lower()
-        })
-        # Giving TxManifest above just the composite keys will cause it to load all the data from the DB.
-        # If that row doesn't exist, it will cause repo_name_lower and user_name_lower to be None,
-        #   so just need to check them.
-        self.assertEqual(tx_manifest.repo_name_lower, repo.lower())
-        self.assertEqual(tx_manifest.user_name_lower, user.lower())
+        if App.db_pass:
+            tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
+            # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
+            self.assertIsNotNone(tx_manifest)
+            self.assertEqual(tx_manifest.repo_name, repo)
+            self.assertEqual(tx_manifest.user_name, user)
+            App.db_close()
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
@@ -482,7 +498,7 @@ class TestConversions(TestCase):
                 "user", "warnings"]
 
         if converted_build_log != deployed_build_log:
-            converted_build_log = self.cdn_handler.get_file_contents(
+            converted_build_log = App.cdn_s3_handler().get_file_contents(
                 os.path.join(destination_key, "build_log.json"))  # make sure we have the latest
         if converted_build_log != deployed_build_log:
             deployed_build_log_ = json.loads(deployed_build_log)
@@ -517,7 +533,7 @@ class TestConversions(TestCase):
         is_first = True
         for file_name in check_list:
             output_file_path = os.path.join(temp_sub_dir, file_name)
-            print("checking preconvert zip for: " + output_file_path)
+            App.logger.debug("checking preconvert zip for: " + output_file_path)
             self.assertTrue(os.path.exists(output_file_path), "missing file: " + file_name)
             if is_first:
                 self.print_file(file_name, output_file_path)
@@ -536,11 +552,11 @@ class TestConversions(TestCase):
 
     def warn(self, message):
         self.warnings.append(message)
-        print(message)
+        App.logger.debug(message)
 
     def print_file(self, file_name, file_path):
         text = file_utils.read_file(file_path)[:200]  # get the start of the file
-        print("\nOutput file (" + file_name + "): " + text + "\n")
+        App.logger.debug("\nOutput file (" + file_name + "): " + text + "\n")
 
     def check_deployed_files(self, handler, expected_output_files, extension, key, chapter_count=-1):
         check_list = []
@@ -563,12 +579,12 @@ class TestConversions(TestCase):
                     continue
 
                 path = os.path.join(key, file_name)
-                print("checking destination folder for: " + path)
+                App.logger.debug("checking destination folder for: " + path)
                 output = handler.get_file_contents(path)
                 if output:
                     found.append(file_name)
                     retries = 0  # reset
-                    print("found: " + path)
+                    App.logger.debug("found: " + path)
 
         if len(found) < len(check_list):
             for file_name in check_list:
@@ -596,7 +612,7 @@ class TestConversions(TestCase):
         max_retries = 7
         for file_name in check_list:
             path = os.path.join(key, file_name)
-            print("checking destination folder for: " + path)
+            App.logger.debug("checking destination folder for: " + path)
             output = handler.get_file_contents(path)
             while output is None:  # try again in a moment since upload files may not be finished
                 time.sleep(5)
@@ -605,7 +621,7 @@ class TestConversions(TestCase):
                     self.warn("timeout getting file: " + path)
                     break
 
-                # print("retry fetch of: " + path)
+                # App.logger.debug("retry fetch of: " + path)
                 output = handler.get_file_contents(path)
 
             self.assertIsNotNone(output, "missing file: " + path)
@@ -622,8 +638,9 @@ class TestConversions(TestCase):
         build_log_json = None
         job = None
         success = False
-        self.cdn_handler = S3Handler(self.cdn_bucket)
-        commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)  # TODO: change this to use gogs API when finished
+        self.cdn_handler = App.cdn_s3_handler()
+        # TODO: change this to use gogs API when finished
+        commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)
         commit_len = len(commit_id)
         if commit_len == COMMIT_LENGTH:
             self.delete_preconvert_zip_file(commit_sha)
@@ -636,22 +653,22 @@ class TestConversions(TestCase):
 
     def empty_destination_folder(self, commit_sha, repo, user):
         destination_key = self.get_destination_s3_key(commit_sha, repo, user)
-        for obj in self.cdn_handler.get_objects(prefix=destination_key):
-            print("deleting destination file: " + obj.key)
-            self.cdn_handler.delete_file(obj.key)
+        for obj in App.cdn_s3_handler().get_objects(prefix=destination_key):
+            App.logger.debug("deleting destination file: " + obj.key)
+            App.cdn_s3_handler().delete_file(obj.key)
 
     def delete_preconvert_zip_file(self, commit_sha):
-        self.preconvert_handler = S3Handler(self.pre_convert_bucket)
+        self.preconvert_handler = App.pre_convert_s3_handler()
         preconvert_key = self.get_preconvert_s3_key(commit_sha)
-        if self.preconvert_handler.key_exists(preconvert_key):
-            print("deleting preconvert file: " + preconvert_key)
-            self.preconvert_handler.delete_file(preconvert_key, catch_exception=True)
+        if App.pre_convert_s3_handler().key_exists(preconvert_key):
+            App.logger.debug("deleting preconvert file: " + preconvert_key)
+            App.pre_convert_s3_handler().delete_file(preconvert_key, catch_exception=True)
 
     def delete_tx_output_zip_file(self, commit_id):
         tx_output_key = self.get_tx_output_s3_key(commit_id)
-        if self.cdn_handler.key_exists(tx_output_key):
-            print("deleting tx output file: " + tx_output_key)
-            self.cdn_handler.delete_file(tx_output_key, catch_exception=True)
+        if App.cdn_s3_handler().key_exists(tx_output_key):
+            App.logger.debug("deleting tx output file: " + tx_output_key)
+            App.cdn_s3_handler().delete_file(tx_output_key, catch_exception=True)
 
     def get_tx_output_s3_key(self, commit_id):
         output_key = 'tx/job/{0}.zip'.format(commit_id)
@@ -666,11 +683,7 @@ class TestConversions(TestCase):
         return preconvert_key
 
     def do_conversion_job(self, base_url, commit_id, commit_path, commit_sha, repo, user):
-        gogs_user_token = os.environ.get('GOGS_USER_TOKEN', "")
-        if len(gogs_user_token) == 0:
-            print("GOGS_USER_TOKEN is missing in environment")
-
-        webhook_data = {
+        commit_data = {
             "after": commit_id,
             "commits": [
                 {
@@ -695,25 +708,16 @@ class TestConversions(TestCase):
                 "email": "you@example.com"
             },
         }
-        env_vars = {
-            'api_url': self.api_url,
-            'pre_convert_bucket': self.pre_convert_bucket,
-            'cdn_bucket': self.cdn_bucket,
-            'gogs_url': self.gogs_url,
-            'gogs_user_token': gogs_user_token,
-            'commit_data': webhook_data,
-            'manifest_table_name': self.manifest_table_name,
-        }
 
         start = time.time()
         if USE_WEB_HOOK_LAMBDA:
             headers = {"content-type": "application/json"}
-            tx_client_webhook_url = "{0}/client/webhook".format(self.api_url)
-            print('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url), end=' ')
-            print(webhook_data)
-            response = requests.post(tx_client_webhook_url, json=webhook_data, headers=headers)
-            print('webhook finished with code:' + str(response.status_code))
-            print('webhook finished with text:' + str(response.text))
+            tx_client_webhook_url = "{0}/client/webhook".format(App.api_url)
+            App.logger.debug('Making request to client/webhook URL {0} with payload:'.format(tx_client_webhook_url))
+            App.logger.debug(commit_data)
+            response = requests.post(tx_client_webhook_url, json=commit_data, headers=headers)
+            App.logger.debug('webhook finished with code:' + str(response.status_code))
+            App.logger.debug('webhook finished with text:' + str(response.text))
             build_log_json = json.loads(response.text)
             if response.status_code == 504:  # on timeout, could be multi-part, so try to get build
                 build_log_json = self.poll_for_build_log(commit_sha, repo, user)
@@ -722,16 +726,17 @@ class TestConversions(TestCase):
                 job_id = None if 'job_id' not in build_log_json else build_log_json['job_id']
                 return build_log_json, False, job_id
 
-        else:  # do preconvert locally
+        else:
+            # do preconvert locally
             try:
-                build_log_json = ClientWebhook(**env_vars).process_webhook()
+                build_log_json = ClientWebhook(commit_data=commit_data).process_webhook()
             except Exception as e:
                 message = "Exception: " + str(e)
                 self.warn(message)
                 return None, False, None
 
         elapsed_seconds = int(time.time() - start)
-        print("webhook completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("webhook completed in " + str(elapsed_seconds) + " seconds")
 
         if "build_logs" not in build_log_json:  # if not multiple parts
             job_id = build_log_json['job_id']
@@ -745,7 +750,7 @@ class TestConversions(TestCase):
 
         build_log_json = self.get_json_file(commit_sha, 'build_log.json', repo, user)
         if build_log_json is not None:
-            print("Final results:\n" + str(build_log_json))
+            App.logger.debug("Final results:\n" + str(build_log_json))
         return build_log_json, success, job
 
     def poll_for_build_log(self, commit_sha, repo, user):
@@ -761,17 +766,6 @@ class TestConversions(TestCase):
         job = None
         finished = []
         job_count = len(build_logs)
-
-        env_vars = {
-            'api_url': self.api_url,
-            'gogs_url': self.gogs_url,
-            'cdn_url': self.cdn_url,
-            'job_table_name':  self.job_table_name,
-            'module_table_name': self.module_table_name,
-            'cdn_bucket': self.cdn_bucket
-        }
-        tx_manager = TxManager(**env_vars)
-
         polling_timeout = 5 * 60  # poll for up to 5 minutes for job to complete or error
         sleep_interval = 5  # how often to check for completion
         done = False
@@ -784,10 +778,10 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxJob(db_handler=tx_manager.job_db_handler).load({'job_id': job_id})
+                job = TxJob().load({'job_id': job_id})
                 self.assertIsNotNone(job)
                 elapsed_seconds = int(time.time() - start)
-                print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
+                App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
 
                 if job.ended_at is not None:
                     finished.append(job_id)
@@ -807,27 +801,16 @@ class TestConversions(TestCase):
     def poll_until_job_finished(self, job_id):
         success = False
         job = None
-
-        env_vars = {
-            'api_url': self.api_url,
-            'gogs_url': self.gogs_url,
-            'cdn_url': self.cdn_url,
-            'job_table_name':  self.job_table_name,
-            'module_table_name': self.module_table_name,
-            'cdn_bucket': self.cdn_bucket
-        }
-        tx_manager = TxManager(**env_vars)
-
         polling_timeout = 5 * 60  # poll for up to 5 minutes for job to complete or error
         sleep_interval = 5  # how often to check for completion
         start = time.time()
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxJob(db_handler=tx_manager.job_db_handler).load({'job_id': job_id})
+            job = TxJob().load({'job_id': job_id})
             self.assertIsNotNone(job)
             elapsed_seconds = int(time.time() - start)
-            print("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
+            App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
 
             if job.ended_at is not None:
                 success = True
@@ -840,7 +823,7 @@ class TestConversions(TestCase):
 
     def get_json_file(self, commit_sha, file_name, repo, user):
         key = 'u/{0}/{1}/{2}/{3}'.format(user, repo, commit_sha, file_name)
-        text = self.cdn_handler.get_json(key)
+        text = App.cdn_s3_handler().get_json(key)
         return text
 
     def fetch_commit_data_for_repo(self, base_url, repo, user):
@@ -884,7 +867,7 @@ class TestConversions(TestCase):
         if ttr_response.status_code == 200:
             return ttr_response.text
 
-        print("Failed to load: " + self.url)
+        App.logger.debug("Failed to load: " + self.url)
         return None
 
     def get_contents(self, item):

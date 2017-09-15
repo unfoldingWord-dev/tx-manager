@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 from libraries.models.model import Model
+from libraries.app.app import App
 
 
 class TxJob(Model):
@@ -69,6 +70,8 @@ class TxJob(Model):
         self.log = []
         self.warnings = []
         self.errors = []
+        if 'db_handler' not in kwargs or not kwargs['db_handler']:
+            kwargs['db_handler'] = App.job_db_handler()
         super(TxJob, self).__init__(*args, **kwargs)
 
     def log_message(self, message):
