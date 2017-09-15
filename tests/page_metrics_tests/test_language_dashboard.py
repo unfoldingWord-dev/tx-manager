@@ -39,6 +39,24 @@ class LanguageDashboardTest(unittest.TestCase):
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
             },
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'search_type-views-index',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'search_type',
+                            'KeyType': 'HASH'
+                        },
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'ALL'
+                    },
+                    'ProvisionedThroughput': {
+                        'ReadCapacityUnits': 123,
+                        'WriteCapacityUnits': 123
+                    }
+                },
+            ],
         )
 
     def test_build_language_popularity_tables_empty(self):
@@ -52,7 +70,6 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEquals(len(tx_manager.language_views), 0)
-        self.assertEquals(len(tx_manager.language_dates), 0)
 
     def test_build_language_popularity_tables_ten_items(self):
         # given
@@ -66,7 +83,6 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEquals(len(tx_manager.language_views), max_count)
-        self.assertEquals(len(tx_manager.language_dates), max_count)
 
     def test_build_language_popularity_tables_invalid_table_name(self):
         # given
@@ -79,7 +95,6 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEqual(tx_manager.language_views, [])
-        self.assertEqual(tx_manager.language_dates, [])
 
     def test_build_language_popularity_tables_no_table_name(self):
         # given
@@ -94,23 +109,6 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEqual(tx_manager.language_views, [])
-        self.assertEqual(tx_manager.language_dates, [])
-
-    def test_generate_most_recent_lang_table(self):
-        # given
-        max_count = 5
-        item_count = 10
-        self.get_view_items(item_count)
-        tx_manager = TxManager()
-        body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
-
-        # when
-        tx_manager.generate_most_recent_lang_table(body, self.language_dates, max_count)
-
-        # then
-        table_id = 'language-recent'
-        row_id = 'recent-'
-        self.validate_table(body, table_id, row_id, max_count)
 
     def test_generate_highest_views_lang_table(self):
         # given

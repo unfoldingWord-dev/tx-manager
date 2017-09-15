@@ -20,7 +20,6 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
         self.language_views = None
-        self.language_dates = None
 
     @staticmethod
     def get_user(user_token):
@@ -488,37 +487,8 @@ class TxManager(object):
 
     def build_language_popularity_tables(self, body, max_count):
         vc = PageMetrics()
-        self.language_views = vc.get_language_views_sorted_by_count()
-        self.language_dates = vc.get_language_views_sorted_by_date()
+        self.language_views = vc.get_language_views_sorted_by_count(reverse_sort=True, max_count=max_count)
         self.generate_highest_views_lang_table(body, self.language_views, max_count)
-        self.generate_most_recent_lang_table(body, self.language_dates, max_count)
-
-    def generate_most_recent_lang_table(self, body, dates, max_count):
-        body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
-        language_recent_table = BeautifulSoup(
-            '<table id="language-recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
-            'html.parser')
-        language_recent_table.table.append(BeautifulSoup('''
-                <tr id="header">
-                <th class="hdr">Updated</th>
-                <th class="hdr">Language Code</th>''',
-                                                         'html.parser'))
-
-        if dates is not None:
-            for i in range(0, max_count):
-                if i >= len(dates):
-                    break
-                item = dates[i]
-                try:
-                    language_recent_table.table.append(BeautifulSoup(
-                        '<tr id="recent-' + str(i) + '" class="module-job-id">'
-                        + '<td>' + item['last_updated'] + '</td>'
-                        + '<td>' + item['lang_code'] + '</td>'
-                        + '</tr>',
-                        'html.parser'))
-                except:
-                    pass
-        body.append(language_recent_table)
 
     def generate_highest_views_lang_table(self, body, views, max_count):
         body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))

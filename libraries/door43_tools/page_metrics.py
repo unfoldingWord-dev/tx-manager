@@ -161,9 +161,23 @@ class PageMetrics(object):
         lang_stats.last_updated = utcnow.strftime("%Y-%m-%dT%H:%M:%SZ")
         lang_stats.update()
 
-    def list_language_views(self, reverse_sort=True, max_count=0, search_type=False):
+    def list_language_views(self, reverse_sort=True, max_count=0):
         """
         get list of all the language view records
+        :return:
+        """
+        return self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count, search_type=False)
+
+    def list_search_views(self, reverse_sort=True, max_count=0):
+        """
+        get list of all the search records
+        :return:
+        """
+        return self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count, search_type=True)
+
+    def list_language_table_entries(self, reverse_sort=True, max_count=20, search_type=False):
+        """
+        get list of all the language table records filtered by type
         :return:
         """
         search_key = 'N' if search_type is False else 'Y'
@@ -174,16 +188,14 @@ class PageMetrics(object):
         }
         if max_count > 0:
             params['Limit'] = max_count
-
         db_handler = App.language_stats_db_handler()
         items = db_handler.query_raw(**params)
         self.languages = items['Items']
         return self.languages
 
-    def get_language_views_sorted_by_count(self, reverse_sort=True, max_count=0, search_type=False):
+    def get_language_views_sorted_by_count(self, reverse_sort=True, max_count=0):
         """
         Get list of language views records sorted by views.
-        :param search_type:
         :param max_count:
         :param reverse_sort:
         :return:
@@ -191,29 +203,11 @@ class PageMetrics(object):
         newlist = None
         if self.languages is None:
             try:
-                self.list_language_views(reverse_sort=reverse_sort, max_count=max_count, search_type=search_type)
+                self.list_language_views(reverse_sort=reverse_sort, max_count=max_count)
             except:
                 pass
 
         if self.languages is not None:
             newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
-
-        return newlist
-
-    def get_language_views_sorted_by_date(self, reverse_sort=True, max_count=0, search_type=False):
-        """
-        Get list of language views records sorted by time last viewed.
-        :param reverse_sort:
-        :return:
-        """
-        newlist = None
-        if self.languages is None:
-            try:
-                self.list_language_views(reverse_sort=reverse_sort, max_count=max_count, search_type=search_type)
-            except:
-                pass
-
-        if self.languages is not None:
-            newlist = sorted(self.languages, key=itemgetter('last_updated'), reverse=reverse_sort)
 
         return newlist
