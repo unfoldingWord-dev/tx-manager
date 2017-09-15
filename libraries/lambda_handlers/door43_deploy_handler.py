@@ -37,4 +37,5 @@ class Door43DeployHandler(Handler):
                 deployer.redeploy_all_projects(deploy_function)
 
         except Exception as e:
+            App.logger.debug("Project Deployer Error: " + str(e))
             deployer.close()
