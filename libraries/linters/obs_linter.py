@@ -18,6 +18,7 @@ class ObsLinter(MarkdownLinter):
         """
         # chapter check
         project_dir = os.path.join(self.source_dir, self.rc.project().path)
+        reference_re = re.compile(r'^_.*_ *$', re.M | re.U)
         if not os.path.isdir(project_dir):
             project_dir = self.source_dir
         for chapter in range(1, 51):
@@ -46,7 +47,7 @@ class ObsLinter(MarkdownLinter):
                     self.log.warning('Missing frame: {0}-{1}'.format(chapter_number, frame_index))
 
             # look for verse reference
-            if not re.search(r'^_.*_ *$', chapter_md, re.M):
+            if not reference_re.search(chapter_md):
                 self.log.warning('Bible reference not found at end of chapter {0}!'.format(chapter_number))
 
         # Check front and back matter
