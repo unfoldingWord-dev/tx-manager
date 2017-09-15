@@ -6,12 +6,15 @@ import boto3
 
 class MessagingService(object):
 
+    MAX_MESSAGE_SIZE = 256000
     def __init__(self, queue_name, region="us-west-2"):
         self.queue_name = queue_name
         self.region = region
         self.queue = None
         self.recvd_payloads = None
         self.last_wait_list = None
+        self.message_oversize = 0
+        self.error = None
 
     def get_connection(self):
         if not self.queue:
@@ -26,6 +29,8 @@ class MessagingService(object):
         if not self.get_connection():
             return False
 
+        self.message_oversize = 0
+        self.error = None
         data = {
             'key': item_key,
             'success': success
@@ -38,7 +43,18 @@ class MessagingService(object):
                     data[k] = payload[k]
 
         data_json = json.dumps(data, encoding="UTF-8")
-        self.queue.send_message(MessageBody=data_json)
+        message_size = len(data_json)
+        if message_size >= self.MAX_MESSAGE_SIZE:
+            self.message_oversize = message_size
+            self.error = "message oversize: {0}".format(message_size)
+            return False
+
+        try:
+            self.queue.send_message(MessageBody=data_json)
+        except Exception as e:
+            self.error = "message error: {0}".format(str(e))
+            return False
+
         return True
 
     def clear_old_messages(self, items_to_look_for, timeout=5, checking_interval=1, max_messages_per_call=10):
@@ -126,4 +142,4 @@ class MessagingService(object):
             for key in self.recvd_payloads:
                 unfinished.remove(key)
             return unfinished
-        return None
+        return []

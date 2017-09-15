@@ -25,10 +25,10 @@ class TestClientCallback(TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        App.cdn_s3_handler.create_bucket()
-        App.cdn_s3_handler.get_objects = self.mock_cdn_get_objects
-        App.cdn_s3_handler.upload_file = self.mock_cdn_upload_file
-        App.cdn_s3_handler.get_json = self.mock_cdn_get_json
+        App.cdn_s3_handler().create_bucket()
+        App.cdn_s3_handler().get_objects = self.mock_cdn_get_objects
+        App.cdn_s3_handler().upload_file = self.mock_cdn_upload_file
+        App.cdn_s3_handler().get_json = self.mock_cdn_get_json
 
         try:
             os.makedirs(self.base_temp_dir)

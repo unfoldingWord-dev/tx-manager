@@ -24,7 +24,7 @@ class TxManager(object):
 
     @staticmethod
     def get_user(user_token):
-        return App.gogs_handler.get_user(user_token)
+        return App.gogs_handler().get_user(user_token)
 
     @staticmethod
     def get_converter_module(job):
@@ -193,7 +193,7 @@ class TxManager(object):
 
             App.logger.debug("Payload to {0}:".format(converter_function))
             App.logger.debug(json.dumps(payload))
-            response = App.lambda_handler.invoke(converter_function, payload)
+            response = App.lambda_handler().invoke(converter_function, payload)
             App.logger.debug('finished.')
 
             # Get a new job since the webhook may have updated warnings

@@ -35,7 +35,7 @@ class ManagerTest(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        App.gogs_handler = ManagerTest.mock_gogs
+        App._gogs_handler = ManagerTest.mock_gogs
         ManagerTest.mock_gogs.reset_mock()
         ManagerTest.requested_urls = []
         self.tx_manager = TxManager()
@@ -47,11 +47,11 @@ class ManagerTest(unittest.TestCase):
 
     def init_tables(self):
         try:
-            App.job_db_handler.table.delete()
+            App.job_db_handler().table.delete()
         except:
             pass
 
-        App.job_db_handler.resource.create_table(
+        App.job_db_handler().resource.create_table(
             TableName=App.job_table_name,
             KeySchema=[
                 {
@@ -72,11 +72,11 @@ class ManagerTest(unittest.TestCase):
         )
 
         try:
-            App.module_db_handler.table.delete()
+            App.module_db_handler().table.delete()
         except:
             pass
 
-        App.module_db_handler.resource.create_table(
+        App.module_db_handler().resource.create_table(
             TableName=App.module_table_name,
             KeySchema=[
                 {

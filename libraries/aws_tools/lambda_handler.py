@@ -12,7 +12,10 @@ class LambdaHandler(object):
         self.setup_resources()
 
     def setup_resources(self):
-        self.client = boto3.client('lambda')
+        self.client = boto3.client('lambda',
+                                   aws_access_key_id=self.aws_access_key_id,
+                                   aws_secret_access_key=self.aws_secret_access_key,
+                                   region_name=self.aws_region_name)
 
     def invoke(self, function_name, payload, async=False):
         invocation_type = 'RequestResponse' if not async else 'Event'

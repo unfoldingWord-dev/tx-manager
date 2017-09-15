@@ -39,11 +39,11 @@ class TestClientWebhook(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        App.cdn_s3_handler.create_bucket()
-        App.pre_convert_s3_handler.create_bucket()
-        App.cdn_s3_handler.upload_file = self.mock_cdn_upload_file
-        App.cdn_s3_handler.get_json = self.mock_cdn_get_json
-        App.pre_convert_s3_handler.upload_file = self.mock_s3_upload_file
+        App.cdn_s3_handler().create_bucket()
+        App.pre_convert_s3_handler().create_bucket()
+        App.cdn_s3_handler().upload_file = self.mock_cdn_upload_file
+        App.cdn_s3_handler().get_json = self.mock_cdn_get_json
+        App.pre_convert_s3_handler().upload_file = self.mock_s3_upload_file
 
         try:
             os.makedirs(TestClientWebhook.base_temp_dir)
@@ -65,11 +65,11 @@ class TestClientWebhook(unittest.TestCase):
 
     def init_tables(self):
         try:
-            App.job_db_handler.table.delete()
+            App.job_db_handler().table.delete()
         except:
             pass
 
-        App.job_db_handler.resource.create_table(
+        App.job_db_handler().resource.create_table(
             TableName=App.job_table_name,
             KeySchema=[
                 {
@@ -118,10 +118,11 @@ class TestClientWebhook(unittest.TestCase):
         # Check repo was added to manifest table
         repo_name = client_web_hook.commit_data['repository']['name']
         user_name = client_web_hook.commit_data['repository']['owner']['username']
-        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')
+        App.db_close()
 
     @patch('libraries.client.client_webhook.download_file')
     @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
@@ -295,7 +296,7 @@ class TestClientWebhook(unittest.TestCase):
         self.job_request_count += 1
         mock_job_return_value = TestClientWebhook.mock_job_return_value
         mock_job_return_value.job_id = hashlib.sha256().hexdigest()
-        mock_job_return_value.db_handler = App.job_db_handler
+        mock_job_return_value.db_handler = App.job_db_handler()
         mock_job_return_value.source = payload['source']
         mock_job_return_value.insert()
         return identifier, mock_job_return_value
@@ -314,11 +315,11 @@ class TestClientWebhook(unittest.TestCase):
         return ret_value
 
     def mock_cdn_upload_file(self, project_file, s3_key):
-        bucket_name = App.pre_convert_s3_handler.bucket.name
+        bucket_name = App.pre_convert_s3_handler().bucket.name
         return self.upload_file(bucket_name, project_file, s3_key)
 
     def mock_s3_upload_file(self, project_file, s3_key):
-        bucket_name = App.cdn_s3_handler.bucket.name
+        bucket_name = App.cdn_s3_handler().bucket.name
         return self.upload_file(bucket_name, project_file, s3_key)
 
     def upload_file(self, bucket_name, project_file, s3_key):

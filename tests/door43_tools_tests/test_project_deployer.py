@@ -20,8 +20,8 @@ class ProjectDeployerTests(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName))
-        App.cdn_s3_handler.create_bucket()
-        App.door43_s3_handler.create_bucket()
+        App.cdn_s3_handler().create_bucket()
+        App.door43_s3_handler().create_bucket()
         self.temp_dir = tempfile.mkdtemp(prefix="test_project_deployer")
         self.deployer = ProjectDeployer()
         TdLanguage.language_list = {
@@ -43,8 +43,15 @@ class ProjectDeployerTests(unittest.TestCase):
         build_log_key = '{0}/build_log.json'.format(self.project_key)
         ret = self.deployer.deploy_revision_to_door43(build_log_key)
         self.assertTrue(ret)
-        self.assertTrue(App.door43_s3_handler.key_exists(build_log_key))
-        self.assertTrue(App.door43_s3_handler.key_exists('{0}/50.html'.format(self.project_key)))
+        self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
+        self.assertTrue(App.door43_s3_handler().key_exists('{0}/50.html'.format(self.project_key)))
+
+    def test_obs_deploy_revision_to_door43_exception(self):
+        self.mock_s3_obs_project()
+        build_log_key = '{0}/build_log.json'.format(self.project_key)
+        self.deployer.run_templater = self.mock_run_templater_exception
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+        self.assertFalse(ret)
 
     def test_bad_deploy_revision_to_door43(self):
         self.mock_s3_obs_project()
@@ -68,6 +75,21 @@ class ProjectDeployerTests(unittest.TestCase):
 
         # then
         self.validate_bible_results(ret, build_log_key, expect_success, output_key)
+
+    def test_bible_deploy_part_revision_to_door43_exception(self):
+        # given
+        test_repo_name = 'en-ulb-4-books-multipart.zip'
+        project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.mock_s3_bible_project(test_repo_name, project_key)
+        part = 1
+        build_log_key = '{0}/{1}/build_log.json'.format(self.project_key, part)
+        self.deployer.run_templater = self.mock_run_templater_exception
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.assertFalse(ret)
 
     def test_bible_deploy_part_not_ready_revision_to_door43(self):
         # given
@@ -115,10 +137,24 @@ class ProjectDeployerTests(unittest.TestCase):
         # then
         self.validate_bible_results(ret, build_log_key, expect_success, output_key)
 
+    def test_bible_deploy_mutli_part_merg_revision_to_door43_exception(self):
+        # given
+        test_repo_name = 'en-ulb-4-books-multipart.zip'
+        project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.mock_s3_bible_project(test_repo_name, project_key, True)
+        build_log_key = '{0}/build_log.json'.format(self.project_key)
+        self.deployer.run_templater = self.mock_run_templater_exception
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.assertFalse(ret)
+
     def test_redeploy_all_projects(self):
         self.mock_s3_obs_project()
-        App.cdn_s3_handler.put_contents('u/user1/project1/revision1/build_log.json', '{}')
-        App.cdn_s3_handler.put_contents('u/user2/project2/revision2/build_log.json', '{}')
+        App.cdn_s3_handler().put_contents('u/user1/project1/revision1/build_log.json', '{}')
+        App.cdn_s3_handler().put_contents('u/user2/project2/revision2/build_log.json', '{}')
         self.assertTrue(self.deployer.redeploy_all_projects('test-door43_deployer'))
 
     #
@@ -129,7 +165,10 @@ class ProjectDeployerTests(unittest.TestCase):
         self.assertEqual(ret, expect_success)
         if expect_success:
             if output_key:
-                self.assertTrue(App.door43_s3_handler.key_exists(output_key))
+                self.assertTrue(App.door43_s3_handler().key_exists(output_key))
+
+    def mock_run_templater_exception(self):
+        raise NotImplementedError("Test Exception")
 
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')
@@ -139,11 +178,11 @@ class ProjectDeployerTests(unittest.TestCase):
         self.project_files = [f for f in os.listdir(project_dir) if os.path.isfile(os.path.join(project_dir, f))]
         self.project_key = 'u/door43/en-obs/12345678'
         for filename in self.project_files:
-            App.cdn_s3_handler.upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key,
+            App.cdn_s3_handler().upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key,
                                                                                                  filename))
-        App.cdn_s3_handler.upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'),
+        App.cdn_s3_handler().upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'),
                                        'u/door43/en-obs/project.json')
-        App.door43_s3_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+        App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
                                           'templates/project-page.html')
 
     def mock_s3_bible_project(self, test_file_name, project_key, multi_part=False):
@@ -157,7 +196,7 @@ class ProjectDeployerTests(unittest.TestCase):
         self.project_key = project_key
         for filename in self.project_files:
             sub_path = filename.split(project_dir)[1].replace(os.path.sep, '/')  # Make sure it is a bucket path
-            App.cdn_s3_handler.upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
+            App.cdn_s3_handler().upload_file(filename, '{0}/{1}'.format(project_key, sub_path))
 
             if multi_part:  # copy files from cdn to door43
                 base_name = os.path.basename(filename)
@@ -171,8 +210,8 @@ class ProjectDeployerTests(unittest.TestCase):
                     html = unicode(soup)
                     file_utils.write_file(filename, html.encode('ascii', 'xmlcharrefreplace'))
 
-                App.door43_s3_handler.upload_file(filename, '{0}/{1}'.format(project_key, base_name))
+                App.door43_s3_handler().upload_file(filename, '{0}/{1}'.format(project_key, base_name))
 
         # u, user, repo = project_key
-        App.door43_s3_handler.upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+        App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
                                           'templates/project-page.html')
