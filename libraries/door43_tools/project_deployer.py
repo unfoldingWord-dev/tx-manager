@@ -124,7 +124,7 @@ class ProjectDeployer(object):
             templater = init_template(resource_type, source_dir, output_dir, template_file)
 
             try:
-                templater.run()
+                self.run_templater(templater)
             except Exception as e:
                 App.logger.error("Error applying template {0} to resource type {1}".format(template_file,
                                                                                            resource_type))
@@ -169,7 +169,7 @@ class ProjectDeployer(object):
 
             # merge the source files with the template
             try:
-                templater.run()
+                self.run_templater(templater)
             except Exception as e:
                 App.logger.error("Error multi-part applying template {0} to resource type {1}".format(template_file,
                                                                                                       resource_type))
@@ -231,6 +231,9 @@ class ProjectDeployer(object):
         App.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
         self.close()
         return True
+
+    def run_templater(self, templater):  # for test purposes
+        templater.run()
 
     @staticmethod
     def update_index_key(index_json, templater, key):
