@@ -130,6 +130,48 @@ class PageMetrics(object):
 
         return response
 
+    def increment_search_params(self, path):
+        """
+        increment search parameter count
+        :param path:
+        :return:
+        """
+        parts = path.split('?')
+        if (len(parts) > 1) and (len(parts[1]) > 0):
+            search_params = '?' + parts[1]
+        else:
+            App.logger.warning("Invalid language page url: '{0}'".format(path))
+            return -1
+
+        App.logger.debug("Valid search params '" + search_params + "' from url: " + path)
+        try:
+            # First see record already exists in DB
+            lang_stats = LanguageStats({'lang_code': search_params})
+            if lang_stats.lang_code:  # see if data in table
+                lang_stats.views += 1
+                lang_stats.search_type = 'Y'
+                App.logger.debug('Incrementing view count to {0}'.format(lang_stats.views))
+                self.update_lang_stats(lang_stats)
+
+            else:  # record is not present, creat
+                lang_stats.views = 0
+                lang_stats.lang_code = search_params
+                lang_stats.views += 1
+                lang_stats.search_type = 'Y'
+                App.logger.debug('No entries for {0} in {1} table, creating'.format(search_params,
+                                                                                    App.language_stats_table_name))
+                self.update_lang_stats(lang_stats)
+
+            view_count = lang_stats.views
+            if type(view_count) is Decimal:
+                view_count = int(view_count.to_integral_value())
+
+        except Exception as e:
+            App.logger.exception('Error accessing {0} table'.format(App.language_stats_table_name), exc_info=e)
+            return -1
+
+        return view_count
+
     @staticmethod
     def validate_language_code(language_code):
         """

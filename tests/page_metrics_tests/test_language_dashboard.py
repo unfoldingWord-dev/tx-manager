@@ -119,7 +119,7 @@ class LanguageDashboardTest(unittest.TestCase):
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
-        tx_manager.generate_highest_views_lang_table(body, self.language_dates, max_count)
+        tx_manager.generate_highest_views_lang_table(body, self.language_views, max_count)
 
         # then
         table_id = 'language-popularity'
@@ -151,7 +151,6 @@ class LanguageDashboardTest(unittest.TestCase):
         self.initialze_lang_stats_table(count)
         vc = PageMetrics()
         self.language_views = vc.get_language_views_sorted_by_count()
-        self.language_dates = vc.get_language_views_sorted_by_date()
 
 
 if __name__ == "__main__":
