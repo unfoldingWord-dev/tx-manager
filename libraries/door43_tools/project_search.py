@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import json
 import datetime
+from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 
@@ -13,6 +14,7 @@ class ProjectSearch(object):
     def __init__(self):
         self.error = None
         self.criterion = None
+        self.url_params = None
 
     def search_projects(self, criterion):
         """
@@ -27,11 +29,24 @@ class ProjectSearch(object):
         try:
             selection = App.db().query(TxManifest)
 
-            for k in self.criterion:
+            self.url_params = ""
+            k = 'languages'
+            if k in self.criterion:  # apply languages first
                 v = self.criterion[k]
                 selection = self.apply_filters(selection, k, v)
                 if selection is None:
                     return None
+
+            for k in self.criterion:  # apply everything else
+                if k != 'languages':
+                    v = self.criterion[k]
+                    selection = self.apply_filters(selection, k, v)
+                    if selection is None:
+                        return None
+
+            if len(self.url_params) > 0 and (self.url_params[0] == '&'):
+                self.url_params = self.url_params[1:]
+            self.url_params = '?' + self.url_params
 
             if 'sort_by' in self.criterion:
                 db_key = getattr(TxManifest, self.criterion['sort_by'], None)
@@ -72,6 +87,8 @@ class ProjectSearch(object):
             App.logger.debug('No entries found in search')
 
         App.db_close()
+
+        # PageMetrics().increment_search_params(self.url_params)
         return data
 
     def apply_filters(self, selection, key, value):
@@ -86,18 +103,29 @@ class ProjectSearch(object):
                 selection = selection.filter(TxManifest.last_updated >= recent_in_seconds)
             elif (key == "repo_name") or (key == "user_name") or (key == "title") or (key == "manifest"):
                 selection = set_contains_string_filter(selection, key, value)
+                self.url_params += '&' + key + '=' + value
             elif key == "time":
                 selection = set_contains_string_filter(selection, "last_updated", value)
+                self.url_params += '&' + key + '=' + value
             elif key == "resID":
                 selection = selection.filter(TxManifest.resource_id.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == "resType":
                 selection = selection.filter(TxManifest.resource_type.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == "languages":
-                selection = set_contains_set_filter(selection, "lang_code", value)
+                selection, filter_set = set_contains_set_filter(selection, "lang_code", value)
+                if filter_set is None:
+                    self.url_params += '&lc=' + value
+                else:
+                    for filter in filter_set:
+                        self.url_params += '&lc=' + filter
+
             elif key == 'full_text':
                 selection = selection.filter((TxManifest.user_name.contains(value))
                                              | (TxManifest.repo_name.contains(value))
                                              | (TxManifest.manifest.contains(value)))
+                self.url_params += '&' + 'q' + '=' + value
             elif key == "returnedFields" or key == "sort_by" or key == "sort_by_reversed" or key == "matchLimit":
                 pass  # skip this item
             else:
@@ -125,9 +153,9 @@ def set_contains_set_filter(selection, key, value):
     if value[:1] == '[':
         filter_set_str = value[1:].split(']')
         filter_set = filter_set_str[0].split(',')
-        selection = selection.filter(db_key.in_(filter_set))
+        return selection.filter(db_key.in_(filter_set)), filter_set
     else:
-        selection = selection.filter(db_key.like(value))
+        selection = selection.filter(db_key.like(value)), None
 
     return selection
 

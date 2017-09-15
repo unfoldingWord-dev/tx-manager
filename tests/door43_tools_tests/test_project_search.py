@@ -29,9 +29,9 @@ class ProjectSearchTest(unittest.TestCase):
                 'manifest': '',
             },
             'JohnDoe/en_obs': {
-                'repo_name': 'en_obs',
+                'repo_name': 'fr_obs',
                 'user_name': 'JohnDoe',
-                'lang_code': 'en',
+                'lang_code': 'fr',
                 'resource_id': 'obs',
                 'resource_type': 'book',
                 'title': 'Open Bible Stories',
@@ -69,7 +69,8 @@ class ProjectSearchTest(unittest.TestCase):
         }
         results = search.search_projects(criterion)
         self.assertIsNone(search.error)
-        self.assertEqual(len(results), 2)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(search.url_params, '?lc=en')
 
     def test_search_projects_for_en_fr(self):
         search = ProjectSearch()
@@ -82,3 +83,44 @@ class ProjectSearchTest(unittest.TestCase):
         results = search.search_projects(criterion)
         self.assertIsNone(search.error)
         self.assertEqual(len(results), 3)
+        self.assertEqual(search.url_params, '?lc=en&lc=fr')
+
+    def test_search_projects_for_en_fr_obs(self):
+        search = ProjectSearch()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "languages": "[en,fr]",
+            "full_text": "obs",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 2)
+        self.assertEqual(search.url_params, '?lc=en&lc=fr&q=obs')
+
+    def test_search_projects_for_obs(self):
+        search = ProjectSearch()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "manifest": "obs",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 0)
+        self.assertEqual(search.url_params, '?manifest=obs')
+
+    def test_search_projects_for_res_obs(self):
+        search = ProjectSearch()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "full_text": "fr",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 2)
+        self.assertEqual(search.url_params, '?q=fr')
