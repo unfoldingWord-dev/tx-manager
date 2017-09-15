@@ -46,7 +46,7 @@ class ObsLinter(MarkdownLinter):
                     self.log.warning('Missing frame: {0}-{1}'.format(chapter_number, frame_index))
 
             # look for verse reference
-            if not re.search(r'^_.*:.*_[ ]*$', chapter_md, re.M):
+            if not re.search(r'^_.*_ *$', chapter_md, re.M):
                 self.log.warning('Bible reference not found at end of chapter {0}!'.format(chapter_number))
 
         # Check front and back matter
