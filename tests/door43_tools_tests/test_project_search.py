@@ -60,7 +60,7 @@ class ProjectSearchTest(unittest.TestCase):
         App.db_close()
 
     def test_search_projects_for_en(self):
-        search = ProjectSearch()
+        search = self.get_project_search()
         criterion = {
             "minViews": 1,
             "daysForRecent": 365,
@@ -73,7 +73,7 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertEqual(search.url_params, '?lc=en')
 
     def test_search_projects_for_en_fr(self):
-        search = ProjectSearch()
+        search = self.get_project_search()
         criterion = {
             "minViews": 1,
             "daysForRecent": 365,
@@ -86,7 +86,7 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertEqual(search.url_params, '?lc=en&lc=fr')
 
     def test_search_projects_for_en_fr_obs(self):
-        search = ProjectSearch()
+        search = self.get_project_search()
         criterion = {
             "minViews": 1,
             "daysForRecent": 365,
@@ -100,7 +100,7 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertEqual(search.url_params, '?lc=en&lc=fr&q=obs')
 
     def test_search_projects_for_obs(self):
-        search = ProjectSearch()
+        search = self.get_project_search()
         criterion = {
             "minViews": 1,
             "daysForRecent": 365,
@@ -113,7 +113,7 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertEqual(search.url_params, '?manifest=obs')
 
     def test_search_projects_for_res_obs(self):
-        search = ProjectSearch()
+        search = self.get_project_search()
         criterion = {
             "minViews": 1,
             "daysForRecent": 365,
@@ -124,3 +124,15 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertIsNone(search.error)
         self.assertEqual(len(results), 2)
         self.assertEqual(search.url_params, '?q=fr')
+
+    #
+    # helpers
+    #
+
+    def get_project_search(self):
+        search = ProjectSearch()
+        search.save_url_search = self.mock_save_url_search
+        return search
+
+    def mock_save_url_search(self):
+        pass

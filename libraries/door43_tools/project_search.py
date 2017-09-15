@@ -88,7 +88,7 @@ class ProjectSearch(object):
 
         App.db_close()
 
-        # PageMetrics().increment_search_params(self.url_params)
+        self.save_url_search()
         return data
 
     def apply_filters(self, selection, key, value):
@@ -140,6 +140,9 @@ class ProjectSearch(object):
     def log_error(self, msg):
         self.error = msg
         App.logger.debug(msg)
+
+    def save_url_search(self):
+        PageMetrics().increment_search_params(self.url_params)
 
 
 def set_contains_string_filter(selection, key, value):
