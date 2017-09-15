@@ -569,10 +569,15 @@ class TestConversions(TestCase):
 
         check_list.append("index.html")
 
-        retries = 0
-        max_retries = 10
+        start_time = time.time()
+        time_out = 60
         found = []
-        while (retries < max_retries) and (len(found) < len(check_list)):
+        while (len(found) < len(check_list)):
+            elapsed_seconds = elapsed_time(start_time)
+            if elapsed_seconds > time_out:
+                self.warn("timeout ({0} sec) getting deployed files".format(elapsed_seconds))
+                break
+
             time.sleep(5)
             for file_name in check_list:
                 if file_name in found:
@@ -608,21 +613,22 @@ class TestConversions(TestCase):
             check_list = ['{0:0>2}.html'.format(i) for i in range(1, chapter_count + 1)]
             # checkList.append("index.html")
 
-        retries = 0
-        max_retries = 7
+        start_time = time.time()
+        time_out = 60
         for file_name in check_list:
             path = os.path.join(key, file_name)
             App.logger.debug("checking destination folder for: " + path)
             output = handler.get_file_contents(path)
             while output is None:  # try again in a moment since upload files may not be finished
-                time.sleep(5)
-                retries += 1
-                if retries > max_retries:
-                    self.warn("timeout getting file: " + path)
+                elapsed_seconds = elapsed_time(start_time)
+                if elapsed_seconds > time_out:
+                    self.warn("timeout ({0} sec) getting file: {1}".format(elapsed_seconds, path))
                     break
 
                 # App.logger.debug("retry fetch of: " + path)
                 output = handler.get_file_contents(path)
+                if output is None:
+                    time.sleep(5)
 
             self.assertIsNotNone(output, "missing file: " + path)
 
@@ -735,8 +741,7 @@ class TestConversions(TestCase):
                 self.warn(message)
                 return None, False, None
 
-        elapsed_seconds = int(time.time() - start)
-        App.logger.debug("webhook completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("webhook completed in " + str(elapsed_time(start)) + " seconds")
 
         if "build_logs" not in build_log_json:  # if not multiple parts
             job_id = build_log_json['job_id']
@@ -780,8 +785,7 @@ class TestConversions(TestCase):
 
                 job = TxJob().load({'job_id': job_id})
                 self.assertIsNotNone(job)
-                elapsed_seconds = int(time.time() - start)
-                App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
+                App.logger.debug("job " + job_id + " status at " + str(elapsed_time(start)) + ":\n" + str(job.log))
 
                 if job.ended_at is not None:
                     finished.append(job_id)
@@ -809,7 +813,7 @@ class TestConversions(TestCase):
             time.sleep(sleep_interval)
             job = TxJob().load({'job_id': job_id})
             self.assertIsNotNone(job)
-            elapsed_seconds = int(time.time() - start)
+            elapsed_seconds = elapsed_time(start)
             App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
 
             if job.ended_at is not None:
@@ -877,3 +881,8 @@ class TestConversions(TestCase):
                 text = string
                 return text
         return None
+
+
+def elapsed_time(start_time):
+    elapsed_seconds = int(time.time() - start_time)
+    return elapsed_seconds
