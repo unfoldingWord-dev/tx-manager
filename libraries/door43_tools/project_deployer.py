@@ -23,6 +23,13 @@ class ProjectDeployer(object):
     def __init__(self):
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="deployer_")
 
+    def close(self):
+        """delete temp files"""
+        remove_tree(self.temp_dir)
+
+    def __del__(self):
+        self.close()
+
     def deploy_revision_to_door43(self, build_log_key):
         """
         Deploys a single revision of a project to door43.org
@@ -31,12 +38,14 @@ class ProjectDeployer(object):
         """
         build_log = None
         try:
-            build_log = App.cdn_s3_handler().get_json(build_log_key)
-        except:
+            build_log = App.cdn_s3_handler().get_json(build_log_key, catch_exception=False)
+        except Exception as e:
+            App.logger.debug("Deploying error could not access {0}: {1}".format(build_log_key, str(e)))
             pass
 
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
                 or 'repo_name' not in build_log:
+            App.logger.debug("Invalid build log at {0}: {1}".format(build_log_key, build_log))
             return False
 
         start = time.time()
@@ -113,7 +122,14 @@ class ProjectDeployer(object):
 
             # merge the source files with the template
             templater = init_template(resource_type, source_dir, output_dir, template_file)
-            templater.run()
+
+            try:
+                self.run_templater(templater)
+            except Exception as e:
+                App.logger.error("Error applying template {0} to resource type {1}".format(template_file,
+                                                                                           resource_type))
+                self.close()
+                return False
 
             # update index of templated files
             index_json_fname = 'index.json'
@@ -152,7 +168,13 @@ class ProjectDeployer(object):
             templater.already_converted = templater.files  # do not reconvert files
 
             # merge the source files with the template
-            templater.run()
+            try:
+                self.run_templater(templater)
+            except Exception as e:
+                App.logger.error("Error multi-part applying template {0} to resource type {1}".format(template_file,
+                                                                                                      resource_type))
+                self.close()
+                return False
 
         # Copy first HTML file to index.html if index.html doesn't exist
         html_files = sorted(glob(os.path.join(output_dir, '*.html')))
@@ -193,7 +215,7 @@ class ProjectDeployer(object):
             try:
                 App.door43_s3_handler().copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=App.cdn_bucket)
                 App.door43_s3_handler().copy(from_key='{0}/manifest.json'.format(s3_commit_key),
-                                           to_key='{0}/manifest.json'.format(s3_repo_key))
+                                             to_key='{0}/manifest.json'.format(s3_repo_key))
                 App.door43_s3_handler().redirect(s3_repo_key, '/' + s3_commit_key)
                 App.door43_s3_handler().redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
             except:
@@ -203,13 +225,15 @@ class ProjectDeployer(object):
             if App.cdn_s3_handler().key_exists(s3_commit_key + '/final_build_log.json'):
                 App.logger.debug("conversions all finished, trigger final merge")
                 App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
-                                        to_key=s3_commit_key + '/build_log.json')
+                                          to_key=s3_commit_key + '/build_log.json')
 
         elapsed_seconds = int(time.time() - start)
         App.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
-
-        remove_tree(self.temp_dir)  # cleanup temp files
+        self.close()
         return True
+
+    def run_templater(self, templater):  # for test purposes
+        templater.run()
 
     @staticmethod
     def update_index_key(index_json, templater, key):
