@@ -10,35 +10,9 @@ class TxJobTests(TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
-        self.init_table()
         self.items = {}
         self.init_items()
         self.populate_table()
-
-    def init_table(self):
-        try:
-            App.job_db_handler().table.delete()
-        except:
-            pass
-        App.job_db_handler().resource.create_table(
-            TableName=App.job_table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'job_id',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'job_id',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
 
     def init_items(self):
         self.items = {
@@ -79,7 +53,10 @@ class TxJobTests(TestCase):
 
     def populate_table(self):
         for idx in self.items:
-            TxJob().insert(self.items[idx])
+            tx_job = TxJob(**self.items[idx])
+            App.db(True).add(tx_job)
+        App.db().commit()
+        App.db_close()
 
     def test_query_job(self):
         jobs = TxJob().query()
