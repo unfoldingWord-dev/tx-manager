@@ -118,6 +118,7 @@ class ProjectSearch(object):
                 if filter_set is None:
                     self.url_params += '&lc=' + value
                 else:
+                    filter_set.sort()
                     for filter in filter_set:
                         self.url_params += '&lc=' + filter
 
@@ -156,11 +157,11 @@ def set_contains_set_filter(selection, key, value):
     if value[:1] == '[':
         filter_set_str = value[1:].split(']')
         filter_set = filter_set_str[0].split(',')
-        return selection.filter(db_key.in_(filter_set)), filter_set
-    else:
-        selection = selection.filter(db_key.like(value)), None
+        selection = selection.filter(db_key.in_(filter_set))
+        return selection, filter_set
 
-    return selection
+    selection = selection.filter(db_key.like(value))
+    return selection, None
 
 
 def parse_int(s, default_value=None):

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from libraries.app.app import App
 from libraries.door43_tools.project_search import ProjectSearch
 from libraries.models.manifest import TxManifest
@@ -35,8 +35,8 @@ class ProjectSearchTest(unittest.TestCase):
                 'resource_id': 'obs',
                 'resource_type': 'book',
                 'title': 'Open Bible Stories',
-                'views': 2,
-                'last_updated': datetime.strptime('2016-12-21T05:23:01Z', '%Y-%m-%dT%H:%M:%SZ'),
+                'views': 1,
+                'last_updated': self.get_time_n_months_back(11),
                 'manifest': '',
             },
             'francis/fr_ulb': {
@@ -47,7 +47,7 @@ class ProjectSearchTest(unittest.TestCase):
                 'resource_type': 'bundle',
                 'title': 'Unlocked Literal Bible',
                 'views': 12,
-                'last_updated': datetime.strptime('2017-02-11T15:43:11Z', '%Y-%m-%dT%H:%M:%SZ'),
+                'last_updated': self.get_time_n_months_back(6),
                 'manifest': '',
             },
         }
@@ -77,7 +77,7 @@ class ProjectSearchTest(unittest.TestCase):
         criterion = {
             "minViews": 1,
             "daysForRecent": 365,
-            "languages": "[en,fr]",
+            "languages": "[fr,en]",
             "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
         }
         results = search.search_projects(criterion)
@@ -125,6 +125,74 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertEqual(len(results), 2)
         self.assertEqual(search.url_params, '?q=fr')
 
+    def test_search_projects_for_en_fr_sort(self):
+        search = self.get_project_search()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "sort_by": 'views',
+            "languages": "[fr,en]",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 3)
+        self.assertEqual(search.url_params, '?lc=en&lc=fr')
+        last_count = -1
+        for i in range(0, len(results)):
+            item = results[i]
+            count = item['views']
+            self.assertGreaterEqual(count, last_count, msg="item {0} should be greater or equal to item {1}".format(i, i-1))
+            last_count = count
+
+    def test_search_projects_for_en_fr_sort_reverse(self):
+        search = self.get_project_search()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "sort_by_reversed": 'views',
+            "languages": "[fr,en]",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 3)
+        self.assertEqual(search.url_params, '?lc=en&lc=fr')
+        last_count = 9999999
+        for i in range(0, len(results)):
+            item = results[i]
+            count = item['views']
+            self.assertLessEqual(count, last_count, msg="item {0} should be less than or equal to item {1}".format(i, i-1))
+            last_count = count
+
+    def test_search_projects_for_fr(self):
+        search = self.get_project_search()
+        current_year = str(datetime.now().year)
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 40,
+            "resID": "obs",
+            "time": current_year,
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(search.url_params, '?resID=obs&time=' + current_year)
+
+    def test_search_projects_for_book(self):
+        search = self.get_project_search()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "resType": "book",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 2)
+        self.assertEqual(search.url_params, '?resType=book')
+
     #
     # helpers
     #
@@ -136,3 +204,9 @@ class ProjectSearchTest(unittest.TestCase):
 
     def mock_save_url_search(self):
         pass
+
+    def get_time_n_months_back(self, months):
+        current = datetime.now()
+        offset = -months * 30 * 24 * 60 * 60  # in seconds
+        recent_in_seconds = current + timedelta(seconds=offset)
+        return recent_in_seconds

@@ -116,7 +116,26 @@ class SearchCountTest(unittest.TestCase):
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
             },
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'search_type-views-index',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'search_type',
+                            'KeyType': 'HASH'
+                        },
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'ALL'
+                    },
+                    'ProvisionedThroughput': {
+                        'ReadCapacityUnits': 123,
+                        'WriteCapacityUnits': 123
+                    }
+                },
+            ],
         )
+
         lang_stats_data = {
             'lang_code': '?lc=en',
             'last_updated': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
