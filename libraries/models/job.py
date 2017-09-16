@@ -1,77 +1,44 @@
 from __future__ import unicode_literals, print_function
-from libraries.models.model import Model
+from sqlalchemy import Column, String, Integer, UniqueConstraint, DateTime, UnicodeText
+from libraries.models.text_pickle_type import TextPickleType
 from libraries.app.app import App
 
 
-class TxJob(Model):
-    db_keys = [
-        'job_id'
-    ]
-
-    db_fields = [
-        'job_id',
-        'user',
-        'identifier',
-        'convert_module',
-        'created_at',
-        'expires_at',
-        'started_at',
-        'ended_at',
-        'eta',
-        'resource_type',
-        'input_format',
-        'source',
-        'output_format',
-        'output',
-        'cdn_bucket',
-        'cdn_file',
-        'callback',
-        'links',
-        'status',
-        'success',
-        'message',
-        'log',
-        'warnings',
-        'errors',
-    ]
-
-    default_values = {
-        'links': [],
-        'log': [],
-        'warnings': [],
-        'errors': [],
-    }
+class TxJob(App.ModelBase):
+    __tablename__ = App.job_table_name
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    job_id = Column(String(255), nullable=False, unique=True)
+    user = Column(String(255), nullable=False)
+    identifier = Column(String(255), nullable=False)
+    convert_module = Column(String(255), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime)
+    started_at = Column(DateTime)
+    ended_at = Column(DateTime)
+    eta = Column(DateTime)
+    resource_type = Column(String(255), nullable=False)
+    input_format = Column(String(255), nullable=False)
+    source = Column(String(2550), nullable=False)
+    output_format = Column(String(255), nullable=False)
+    output = Column(String(2550), nullable=False)
+    cdn_bucket = Column(String(255), nullable=False)
+    cdn_file = Column(String(2550), nullable=False)
+    callback = Column(String(2550), nullable=False)
+    links = Column(TextPickleType(), nullable=False)
+    status = Column(String(255), nullable=False)
+    success = Column(String(255), nullable=False)
+    message = Column(String(255), nullable=False)
+    log = Column(TextPickleType(), nullable=False)
+    warnings = Column(TextPickleType(), nullable=False)
+    errors = Column(TextPickleType(), nullable=False)
 
     def __init__(self, *args, **kwargs):
         # Init attributes
-        self.job_id = None
-        self.user = None
-        self.identifier = None
-        self.convert_module = None
-        self.created_at = None
-        self.expires_at = None
-        self.started_at = None
-        self.ended_at = None
-        self.eta = None
-        self.resource_type = None
-        self.input_format = None
-        self.source = None
-        self.output_format = None
-        self.output = None
-        self.cdn_bucket = None
-        self.cdn_file = None
-        self.callback = None
         self.links = []
-        self.status = None
-        self.success = None
-        self.message = None
-        self.api_base_url = None
-        self.cdn_base_url = None
         self.log = []
         self.warnings = []
         self.errors = []
-        if 'db_handler' not in kwargs or not kwargs['db_handler']:
-            kwargs['db_handler'] = App.job_db_handler()
         super(TxJob, self).__init__(*args, **kwargs)
 
     def log_message(self, message):
