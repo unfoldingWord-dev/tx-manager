@@ -72,6 +72,19 @@ class ProjectSearchTest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(search.url_params, '?lc=en')
 
+    def test_search_projects_for_en2(self):
+        search = self.get_project_search()
+        criterion = {
+            "minViews": 1,
+            "daysForRecent": 365,
+            "languages": "en",
+            "returnedFields": "repo_name, user_name, title, lang_code, last_updated, views"
+        }
+        results = search.search_projects(criterion)
+        self.assertIsNone(search.error)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(search.url_params, '?lc=en')
+
     def test_search_projects_for_en_fr(self):
         search = self.get_project_search()
         criterion = {
