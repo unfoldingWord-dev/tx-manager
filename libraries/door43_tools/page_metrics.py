@@ -17,6 +17,7 @@ class PageMetrics(object):
 
     def __init__(self):
         self.languages = None
+        self.searches = None
 
     def get_view_count(self, path, increment=0):
         """
@@ -208,14 +209,18 @@ class PageMetrics(object):
         get list of all the language view records
         :return:
         """
-        return self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count, search_type=False)
+        self.languages = self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count,
+                                                          search_type=False)
+        return self.languages
 
     def list_search_views(self, reverse_sort=True, max_count=0):
         """
         get list of all the search records
         :return:
         """
-        return self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count, search_type=True)
+        self.searches = self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count,
+                                                         search_type=True)
+        return self.searches
 
     def list_language_table_entries(self, reverse_sort=True, max_count=20, search_type=False):
         """
@@ -231,9 +236,9 @@ class PageMetrics(object):
         if max_count > 0:
             params['Limit'] = max_count
         db_handler = App.language_stats_db_handler()
-        items = db_handler.query_raw(**params)
-        self.languages = items['Items']
-        return self.languages
+        results = db_handler.query_raw(**params)
+        items = results['Items']
+        return items
 
     def get_language_views_sorted_by_count(self, reverse_sort=True, max_count=0):
         """
@@ -262,13 +267,13 @@ class PageMetrics(object):
         :return:
         """
         newlist = None
-        if self.languages is None:
+        if self.searches is None:
             try:
                 self.list_search_views(reverse_sort=reverse_sort, max_count=max_count)
             except:
                 pass
 
-        if self.languages is not None:
-            newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
+        if self.searches is not None:
+            newlist = sorted(self.searches, key=itemgetter('views'), reverse=reverse_sort)
 
         return newlist

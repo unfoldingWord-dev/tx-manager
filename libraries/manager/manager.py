@@ -20,6 +20,7 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
         self.language_views = None
+        self.searches = None
 
     @staticmethod
     def get_user(user_token):
