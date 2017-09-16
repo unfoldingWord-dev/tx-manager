@@ -253,3 +253,22 @@ class PageMetrics(object):
             newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
 
         return newlist
+
+    def get_searches_sorted_by_count(self, reverse_sort=True, max_count=0):
+        """
+        Get list of language views records sorted by views.
+        :param max_count:
+        :param reverse_sort:
+        :return:
+        """
+        newlist = None
+        if self.languages is None:
+            try:
+                self.list_search_views(reverse_sort=reverse_sort, max_count=max_count)
+            except:
+                pass
+
+        if self.languages is not None:
+            newlist = sorted(self.languages, key=itemgetter('views'), reverse=reverse_sort)
+
+        return newlist

@@ -489,6 +489,8 @@ class TxManager(object):
         vc = PageMetrics()
         self.language_views = vc.get_language_views_sorted_by_count(reverse_sort=True, max_count=max_count)
         self.generate_highest_views_lang_table(body, self.language_views, max_count)
+        self.searches = vc.get_searches_sorted_by_count(reverse_sort=True, max_count=max_count)
+        self.generate_highest_searches_table(body, self.searches, max_count)
 
     def generate_highest_views_lang_table(self, body, views, max_count):
         body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))
@@ -515,6 +517,32 @@ class TxManager(object):
                 except:
                     pass
         body.append(language_popularity_table)
+
+    def generate_highest_searches_table(self, body, views, max_count):
+        body.append(BeautifulSoup('<h2>Popular Searches</h2>', 'html.parser'))
+        search_popularity_table = BeautifulSoup(
+            '<table id="search-popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            'html.parser')
+        search_popularity_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Views</th>
+                <th class="hdr">Search</th>''',
+                                                             'html.parser'))
+        if views is not None:
+            for i in range(0, max_count):
+                if i >= len(views):
+                    break
+                item = views[i]
+                try:
+                    search_popularity_table.table.append(BeautifulSoup(
+                        '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                        + '<td>' + str(item['views']) + '</td>'
+                        + '<td>' + item['lang_code'] + '</td>'
+                        + '</tr>',
+                        'html.parser'))
+                except:
+                    pass
+        body.append(search_popularity_table)
 
     def get_jobs_counts_for_module(self, jobs, module_name):
         self.jobs_warnings = 0
