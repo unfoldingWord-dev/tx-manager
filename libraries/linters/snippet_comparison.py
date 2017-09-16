@@ -86,6 +86,7 @@ class snippet_comparison(object):
 			'en_ulb' : 'https://git.door43.org/Door43/en_ulb/raw/master/',
 			'en_ugl' : 'https://git.door43.org/Door43/en_ugl/raw/master/'
 		}
+		thiscompare = parse_tn_file(self)
 		
 	def getFill(bk):
 		if 'psa' in bk.lower():
@@ -261,5 +262,3 @@ class snippet_comparison(object):
 			compare = True # Since there were none to compare
 		return compare
 
-	thiscompare = parse_tn_file(self)
-	return thiscompare
