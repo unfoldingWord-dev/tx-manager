@@ -111,6 +111,14 @@ class ClientWebhook(object):
             # Send job request to tx-manager
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
 
+            # Send lint request
+            job = TxJob(job.job_id)
+            if job.status != 'failed':
+                lint_results = self.send_request_to_run_linter(job, rc, commit_url)
+                if 'success' in lint_results and lint_results['success']:
+                    job.warnings += lint_results['warnings']
+                    job.update('warnings')
+
             # Compile data for build_log.json
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                    pusher_username, repo_name, repo_owner)
@@ -122,17 +130,6 @@ class ClientWebhook(object):
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
             self.update_project_json(commit_id, job, repo_name, repo_owner)
-
-            # Send lint request
-            lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
-            job = TxJob(job.job_id)
-            if 'success' in lint_results and lint_results['success']:
-                job.warnings += lint_results['warnings']
-                job.update('warnings')
-                # Upload build_log.json to S3 again:
-                build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
-                                                       pusher_username, repo_name, repo_owner)
-                self.upload_build_log_to_s3(build_log_json, s3_commit_key)
 
             remove_tree(self.base_temp_dir)  # cleanup
 
@@ -177,9 +174,14 @@ class ClientWebhook(object):
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key_multi, rc, repo_name, repo_owner,
                                                                   count=book_count, part=i, book=book)
 
-            # Send lint request to tx-manager
-            linter_payload['single_file'] = book
-            self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload, async=True)
+            # Send lint request
+            job = TxJob(job.job_id)
+            if job.status != 'failed':
+                linter_payload['single_file'] = book
+                lint_results = self.send_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload, async=True)
+                if 'success' in lint_results and lint_results['success']:
+                    job.warnings += lint_results['warnings']
+                    job.update('warnings')
 
             jobs.append(job)
             last_job_id = job.job_id
@@ -445,7 +447,7 @@ class ClientWebhook(object):
                 job.populate(json_data['job'])
         return identifier, job
 
-    def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
+    def send_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
         job_data = {
             'job_id': job.job_id,
             'resource_id': rc.resource.identifier,
