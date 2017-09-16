@@ -112,7 +112,6 @@ class ClientWebhook(object):
             identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
 
             # Send lint request
-            job = TxJob(job.job_id)
             if job.status != 'failed':
                 lint_results = self.send_request_to_run_linter(job, rc, commit_url)
                 if 'success' in lint_results and lint_results['success']:
@@ -175,7 +174,6 @@ class ClientWebhook(object):
                                                                   count=book_count, part=i, book=book)
 
             # Send lint request
-            job = TxJob(job.job_id)
             if job.status != 'failed':
                 linter_payload['single_file'] = book
                 lint_results = self.send_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload, async=True)
