@@ -7,6 +7,7 @@ import unittest
 import hashlib
 import boto3
 from mock import patch
+from datetime import datetime
 from libraries.client.client_webhook import ClientWebhook
 from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import read_file
@@ -14,6 +15,7 @@ from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2, mock_sqs
 from libraries.app.app import App
+from libraries.general_tools.file_utils import json_serial
 
 
 @mock_s3
@@ -23,7 +25,7 @@ class TestClientWebhook(unittest.TestCase):
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
-    default_mock_job_return_value = TxJob({
+    job_data = {
         'job_id': '0',
         'status': 'started',
         'success': 'success',
@@ -31,9 +33,10 @@ class TestClientWebhook(unittest.TestCase):
         'input_format': 'md',
         'output_format': 'html',
         'convert_module': 'module1',
-        'created_at': '2017-05-22T13:39:15Z',
+        'created_at': datetime.utcnow(),
         'errors': []
-    })
+    }
+    default_mock_job_return_value = TxJob(**job_data)
     mock_job_return_value = default_mock_job_return_value
 
     def setUp(self):
@@ -56,38 +59,11 @@ class TestClientWebhook(unittest.TestCase):
         self.linter_warnings = []
 
         # copy the job object
-        TestClientWebhook.mock_job_return_value = TxJob(self.default_mock_job_return_value.get_db_data())
+        TestClientWebhook.mock_job_return_value = TxJob(**self.default_mock_job_return_value.get_db_data())
         self.uploaded_files = []
-        self.init_tables()
 
     def tearDown(self):
         shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
-
-    def init_tables(self):
-        try:
-            App.job_db_handler().table.delete()
-        except:
-            pass
-
-        App.job_db_handler().resource.create_table(
-            TableName=App.job_table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'job_id',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'job_id',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
 
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
@@ -250,7 +226,8 @@ class TestClientWebhook(unittest.TestCase):
             self.assertTrue(len(results['source']) > 1)
         self.assertEqual(len(results['errors']), expected_error_count)
         self.assertEqual(multiple_job, 'multiple' in results)
-        self.assertDictEqual(results, self.get_build_log_json())
+        self.maxDiff = None
+        self.assertDictEqual(json.loads(json.dumps(results, default=json_serial)), self.get_build_log_json())
         self.assertTrue(len(self.get_project_json()) >= 4)
 
     def get_build_log_json(self):
@@ -294,11 +271,11 @@ class TestClientWebhook(unittest.TestCase):
 
     def mock_add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         self.job_request_count += 1
-        mock_job_return_value = TestClientWebhook.mock_job_return_value
+        mock_job_return_value = TxJob(**TestClientWebhook.job_data)
         mock_job_return_value.job_id = hashlib.sha256().hexdigest()
-        mock_job_return_value.db_handler = App.job_db_handler()
         mock_job_return_value.source = payload['source']
-        mock_job_return_value.insert()
+        App.db().add(mock_job_return_value)
+        App.db().commit()
         return identifier, mock_job_return_value
 
     def mock_send_payload_to_run_linter(self, payload, async=False):
@@ -339,7 +316,7 @@ class TestClientWebhook(unittest.TestCase):
             #setup linter messaging
             sqs = boto3.resource('sqs')
             sqs.create_queue(QueueName=App.linter_messaging_name, Attributes={'DelaySeconds': '5'})
-        except Exception as e:
+        except:
             pass
 
     def get_commit_data(self, source_path):

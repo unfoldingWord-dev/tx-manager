@@ -36,53 +36,59 @@ class TxManager(object):
                         return tx_module
         return None
 
-    def setup_job(self, data):
-        if 'gogs_user_token' not in data:
+    def setup_job(self, job_data):
+        if 'gogs_user_token' not in job_data:
             raise Exception('"gogs_user_token" not given.')
 
-        App.gogs_user_token = data['gogs_user_token']
+        App.gogs_user_token = job_data['gogs_user_token']
         user = self.get_user(App.gogs_user_token)
 
         if not user or not user.username:
             raise Exception('Invalid user_token. User not found.')
 
-        del data['gogs_user_token']
-        data['user'] = user.username
+        del job_data['gogs_user_token']
+        job_data['user'] = user.username
 
-        job = TxJob(data)
+        job = TxJob(**job_data)
+        App.db().add(job)
 
         if not job.cdn_bucket:
             if not App.cdn_bucket:
-                raise Exception('"cdn_bucket" not given.')
+                job.errors += '"cdn_bucket" not given.'
             else:
                 job.cdn_bucket = App.cdn_bucket
         if not job.source:
-            raise Exception('"source" url not given.')
+            job.errors += '"source" url not given.'
         if not job.resource_type:
-            raise Exception('"resource_type" not given.')
+            job.errors += '"resource_type" not given.'
         if not job.input_format:
-            raise Exception('"input_format" not given.')
+            job.errors += '"input_format" not given.'
         if not job.output_format:
-            raise Exception('"output_format" not given.')
+            job.errors += '"output_format" not given.'
 
         tx_module = self.get_converter_module(job)
 
         if not tx_module:
-            raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
-                                                                                           job.input_format,
-                                                                                           job.output_format))
-        job.convert_module = tx_module.name
-        created_at = datetime.utcnow()
-        expires_at = created_at + timedelta(days=1)
-        eta = created_at + timedelta(seconds=20)
-        job.created_at = created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-        job.expires_at = expires_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-        job.eta = eta.strftime("%Y-%m-%dT%H:%M:%SZ")
+            job.errors += 'No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
+                                                                                         job.input_format,
+                                                                                         job.output_format)
+        else:
+            job.convert_module = tx_module.name
+        job.created_at = datetime.utcnow()
+
+        if len(job.errors):
+            job.status = 'failed'
+            App.db().add(job)
+            App.db_close()
+            raise Exception('; '.join(job.errors))
+
+        job.expires_at = job.created_at + timedelta(days=1)
+        job.eta = job.created_at + timedelta(seconds=20)
         job.status = 'requested'
         job.message = 'Conversion requested...'
         job.job_id = hashlib.sha256('{0}-{1}-{2}'.format(user.username,
                                                          user.email,
-                                                         created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
+                                                         job.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         # All conversions must result in a ZIP of the converted file(s)
         output_file = 'tx/job/{0}.zip'.format(job.job_id)
         job.output = 'https://{0}/{1}'.format(App.cdn_bucket, output_file)
@@ -92,11 +98,14 @@ class TxManager(object):
             "rel": "self",
             "method": "GET"
         }
+        # RHM: WE NOW NEED TO HAVE A REQUEST_JOB TABLEIN THE DYNAMODB TO USE WITH TRIGGERS!!!
         # Saving this to the DynamoDB will start trigger a DB stream which will call
         # tx-manager again with the job info (see run() function)
-        job.insert()
+        App.db().add(job)
+        App.db_close()
+        # To do: Add a save to DynamoDB to trigger the start_job
         return {
-            "job": job.get_db_data(),
+            "job": job.__dict__,
             "links": [
                 {
                     "href": "{0}/tx/job".format(App.api_url),
@@ -117,7 +126,9 @@ class TxManager(object):
         get number of jobs in database - one caveat is that this value may be off since AWS only updates it every 6 hours
         :return: 
         """
-        return TxJob().count()
+        count = App.db().query(TxJob).count()
+        App.db_close()
+        return count
 
     def list_jobs(self, data, must_be_authenticated=True):
         if must_be_authenticated:
@@ -129,7 +140,8 @@ class TxManager(object):
                 raise Exception('Invalid user_token. User not found.')
             data['user'] = user.username
             del data['gogs_user_token']
-        jobs = TxJob().query(data)
+        jobs = App.query(TxJob)
+        App.db_close()
         return jobs
 
     def list_endpoints(self):
@@ -150,36 +162,34 @@ class TxManager(object):
         }
 
     def start_job(self, job_id):
-        job = TxJob(job_id,)
+        job = App.db().query(TxJob).filter_by(job_id=job_id).first()
 
-        if not job.job_id:
-            job.job_id = job_id
-            job.success = False
-            job.message = 'No job with ID {} has been requested'.format(job_id)
-            return job.get_db_data()  # Job doesn't exist, return
+        if not job:
+            TxJob(job_id=job_id,success=False, message='No job with ID {} has been requested'.format(job_id))
+            return job  # Job doesn't exist, return
 
         # Only start the job if the status is 'requested' and a started timestamp hasn't been set
         if job.status != 'requested' or job.started_at:
-            return job.get_db_data()  # Job already started, return
+            return job  # Job already started, return
 
-        job.started_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        job.started_at = datetime.utcnow()
         job.status = 'started'
         job.message = 'Conversion started...'
         job.log_message('Started job {0} at {1}'.format(job_id, job.started_at))
         success = False
+        App.db().commit()
 
         try:
-            job.update(['started_at', 'status', 'message', 'log'])
             tx_module = self.get_converter_module(job)
             if not tx_module:
                 raise Exception('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
             job.convert_module = tx_module.name
-            job.update('convert_module')
+            App.db().commit()
 
             payload = {
                 'data': {
-                    'job': job.get_db_data(),
+                    'job': job.__dict__,
                 },
                 'vars': {
                     'prefix': App.prefix
@@ -197,7 +207,7 @@ class TxManager(object):
             App.logger.debug('finished.')
 
             # Get a new job since the webhook may have updated warnings
-            job = TxJob(job_id)
+            job = App.db().query(TxJob).filter_by(job_id=job_id).first()
 
             if 'errorMessage' in response:
                 error = response['errorMessage']
@@ -240,7 +250,7 @@ class TxManager(object):
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
-        job.ended_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        job.ended_at = datetime.utcnow()
 
         if not success or len(job.errors):
             job.success = False
@@ -260,16 +270,17 @@ class TxManager(object):
         job.log_message(message)
         job.log_message('Finished job {0} at {1}'.format(job.job_id, job.ended_at))
 
-        job.update()
+        App.db().commit()
+        App.db_close()
 
-        callback_payload = job.get_db_data()
+        callback_payload = job.__dict__
 
         callback_payload["message"] = message
 
         if job.callback:
             self.do_callback(job.callback, callback_payload)
 
-        return job.get_db_data()
+        return job
 
     def do_callback(self, url, payload):
         if url.startswith('http'):

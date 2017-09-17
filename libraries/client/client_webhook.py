@@ -116,7 +116,8 @@ class ClientWebhook(object):
                 lint_results = self.send_request_to_run_linter(job, rc, commit_url)
                 if 'success' in lint_results and lint_results['success']:
                     job.warnings += lint_results['warnings']
-                    job.update('warnings')
+                    App.db().commit()
+                    App.db_close()
 
             # Compile data for build_log.json
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
@@ -176,10 +177,11 @@ class ClientWebhook(object):
             # Send lint request
             if job.status != 'failed':
                 linter_payload['single_file'] = book
-                lint_results = self.send_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload, async=True)
+                lint_results = self.send_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload,
+                                                               async=True)
                 if 'success' in lint_results and lint_results['success']:
                     job.warnings += lint_results['warnings']
-                    job.update('warnings')
+                    App.db().commit()
 
             jobs.append(job)
             last_job_id = job.job_id
@@ -231,7 +233,7 @@ class ClientWebhook(object):
                 if job:
                     job.errors.append(msg)
             if job:
-                job.update('errors')
+                App.db().commit()
 
         # Upload build_log.json to S3 again:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
@@ -412,7 +414,7 @@ class ClientWebhook(object):
             'message': 'Conversion started...',
             'status': 'requested',
             'success': None,
-            'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'created_at': datetime.utcnow(),
             'log': [],
             'warnings': [],
             'errors': []
@@ -442,7 +444,10 @@ class ClientWebhook(object):
                 job.message = 'Failed to convert'
                 job.errors.append('tX Manager did not return any info about the job request.')
             else:
-                job.populate(json_data['job'])
+                job = TxJob(**json_data['job'])
+                App.db().add(job)
+        App.db().commit()
+        App.db_close()
         return identifier, job
 
     def send_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):

@@ -171,10 +171,6 @@ class TestClientCallback(TestCase):
             'success':    'success'
         }
 
-        defaults = TxJob.default_values
-        if defaults['links'] or defaults['log'] or defaults['warnings'] or defaults['errors']:
-            self.assertTrue(False, "TxJob.default_values corrupted: " + json.dumps(TxJob.default_values))
-
         ccb = ClientCallback(job_data=job_data)
         return ccb
 

@@ -7,6 +7,7 @@ import sys
 import shutil
 import yaml
 from mimetypes import MimeTypes
+from datetime import datetime, date
 
 # we need this to check for string versus object
 PY3 = sys.version_info[0] == 3
@@ -131,10 +132,17 @@ def write_file(file_name, file_contents, indent=None):
         if os.path.splitext(file_name)[1] == '.yaml':
             text_to_write = yaml.safe_dump(file_contents)
         else:
-            text_to_write = json.dumps(file_contents, sort_keys=True, indent=indent)
+            text_to_write = json.dumps(file_contents, sort_keys=True, indent=indent, default=json_serial)
 
     with codecs.open(file_name, 'w', encoding='utf-8') as out_file:
         out_file.write(text_to_write)
+
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError("Type %s not serializable" % type(obj))
 
 
 def get_mime_type(path):

@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, print_function
 from sqlalchemy import Column, String, Integer, UniqueConstraint, DateTime, UnicodeText
+from datetime import datetime
 from libraries.app.app import App
+from libraries.models.text_pickle_type import TextPickleType
 
 
 class TxManifest(App.ModelBase):
@@ -13,8 +15,8 @@ class TxManifest(App.ModelBase):
     resource_type = Column(String(32), nullable=False)
     title = Column(String(500), nullable=False)
     views = Column(Integer, default=0, nullable=False)
-    last_updated = Column(DateTime, nullable=False)
-    manifest = Column(String(65535), default=None, nullable=True)
+    last_updated = Column(DateTime, default=datetime.utcnow)
+    manifest = Column(TextPickleType, default={}, nullable=True)
     __table_args__ = (
         UniqueConstraint('repo_name', 'user_name'),
     )

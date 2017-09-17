@@ -14,7 +14,9 @@ class ClientCallback(object):
         """
         :param dict job_data:
         """
-        self.job = TxJob(job_data)
+        self.job = TxJob(**job_data)
+        App.db().add(self.job)
+        App.db_close()
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
 
     def process_callback(self):
