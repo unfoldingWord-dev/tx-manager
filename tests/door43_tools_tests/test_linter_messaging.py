@@ -134,9 +134,45 @@ class TestLinterMessaging(unittest.TestCase):
         notify_ret = q.notify_lint_job_complete("dummy", True)
         wait_ret = q.wait_for_lint_jobs([])
 
-        #then
+        # then
         self.assertFalse(notify_ret)
         self.assertFalse(wait_ret)
+
+    def test_overSizeMessage(self):
+        # given
+        q = LinterMessaging(TestLinterMessaging.queue_name)
+        sent_message = '#' * LinterMessaging.MAX_MESSAGE_SIZE
+
+        # when
+        notify_ret = q.notify_lint_job_complete("dummy", True, payload=sent_message)
+
+        # then
+        self.assertFalse(notify_ret)
+        self.assertIsNotNone(q.error)
+        self.assertGreaterEqual(q.message_oversize, LinterMessaging.MAX_MESSAGE_SIZE)
+
+    def test_largeMessage(self):
+        # given
+        q = LinterMessaging(TestLinterMessaging.queue_name)
+        sent_message = '#' * (LinterMessaging.MAX_MESSAGE_SIZE - 100)
+        message_key = "dummy"
+        q.clear_old_lint_jobs([message_key], timeout=0.1)
+
+        # when
+        notify_ret = q.notify_lint_job_complete(message_key, True, payload=sent_message)
+        results_error = q.error
+        results_message_oversize = q.message_oversize
+        wait_ret = q.wait_for_lint_jobs([message_key])
+
+        # then
+        self.assertTrue(notify_ret)
+        self.assertTrue(wait_ret)
+        self.assertIsNone(results_error)
+        self.assertEqual(results_message_oversize, 0)
+        finished_jobs = q.get_finished_lint_jobs()
+        self.assertEquals(len(finished_jobs), 1)
+        response_message = finished_jobs[message_key]['payload']
+        self.assertEquals(response_message, sent_message)
 
     #
     # helpers

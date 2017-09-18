@@ -55,7 +55,8 @@ class TestObsLinter(LinterTestCase):
     def test_errorMissingFrame(self, mock_invoke):
         mock_invoke.return_value = {}
         expected_warnings = True
-        shutil.copy(os.path.join(self.changed_files_dir, '01-no-frame.md'), os.path.join(self.repo_dir, 'content', '01.md'))
+        shutil.copy(os.path.join(self.changed_files_dir, '01-no-frame.md'),
+                    os.path.join(self.repo_dir, 'content', '01.md'))
         linter = self.run_linter()
         self.verify_results(expected_warnings, linter)
 
@@ -63,7 +64,17 @@ class TestObsLinter(LinterTestCase):
     def test_errorMissingReference(self, mock_invoke):
         mock_invoke.return_value = {}
         expected_warnings = True
-        shutil.copy(os.path.join(self.changed_files_dir, '01-no-reference.md'), os.path.join(self.repo_dir, 'content', '01.md'))
+        shutil.copy(os.path.join(self.changed_files_dir, '01-no-reference.md'),
+                    os.path.join(self.repo_dir, 'content', '01.md'))
+        linter = self.run_linter()
+        self.verify_results(expected_warnings, linter)
+
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
+    def test_referenceWithNoColon(self, mock_invoke):
+        mock_invoke.return_value = {}
+        expected_warnings = False
+        shutil.copy(os.path.join(self.changed_files_dir, '01-no-colon-in-reference.md'),
+                    os.path.join(self.repo_dir, 'content', '01.md'))
         linter = self.run_linter()
         self.verify_results(expected_warnings, linter)
 
@@ -71,7 +82,8 @@ class TestObsLinter(LinterTestCase):
     def test_errorMissingTitle(self, mock_invoke):
         mock_invoke.return_value = {}
         expected_warnings = True
-        shutil.copy(os.path.join(self.changed_files_dir, '01-no-title.md'), os.path.join(self.repo_dir, 'content', '01.md'))
+        shutil.copy(os.path.join(self.changed_files_dir, '01-no-title.md'),
+                    os.path.join(self.repo_dir, 'content', '01.md'))
         linter = self.run_linter()
         self.verify_results(expected_warnings, linter)
 
@@ -95,7 +107,8 @@ class TestObsLinter(LinterTestCase):
     def test_errorEnglishFront(self, mock_invoke):
         mock_invoke.return_value = {}
         expected_warnings = True
-        shutil.copy(os.path.join(self.changed_files_dir, 'en-front.md'), os.path.join(self.repo_dir, 'content', 'front', 'intro.md'))
+        shutil.copy(os.path.join(self.changed_files_dir, 'en-front.md'),
+                    os.path.join(self.repo_dir, 'content', 'front', 'intro.md'))
         linter = self.run_linter()
         self.verify_results(expected_warnings, linter)
 
@@ -103,7 +116,8 @@ class TestObsLinter(LinterTestCase):
     def test_errorEnglishBack(self, mock_invoke):
         mock_invoke.return_value = {}
         expected_warnings = True
-        shutil.copy(os.path.join(self.changed_files_dir, 'en-back.md'), os.path.join(self.repo_dir, 'content', 'back', 'intro.md'))
+        shutil.copy(os.path.join(self.changed_files_dir, 'en-back.md'),
+                    os.path.join(self.repo_dir, 'content', 'back', 'intro.md'))
         linter = self.run_linter()
         self.verify_results(expected_warnings, linter)
 

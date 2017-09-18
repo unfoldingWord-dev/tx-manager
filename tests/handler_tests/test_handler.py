@@ -50,7 +50,8 @@ class TestHandlers(TestCase):
                 'key2': 'value2'
             },
             'vars': {
-                'cdn_bucket': 'test-cdn-bucket'
+                'cdn_bucket': 'test-cdn-bucket',
+                'db_pass': 'mypassword'
             }
         }
         context = {
@@ -66,3 +67,29 @@ class TestHandlers(TestCase):
             handler.handle(event, None)
         except Exception as e:
             self.assertEqual(e.message, 'Bad Request: integer division or modulo by zero')
+
+    def test_mask_event(self):
+        event = {
+            'data': {
+                'key1': 'value1',
+                'gogs_user_token': 'gogstoken'
+            },
+            'vars': {
+                'cdn_bucket': 'test-cdn-bucket',
+                'db_pass': 'mypassword',
+                'gogs_user_token': 'gogstoken'
+            }
+        }
+        masked = Handler.mask_event(event)
+        # Make sure event wasn't touched
+        self.assertNotEqual(masked['vars']['db_pass'], event['vars']['db_pass'])
+        self.assertNotEqual(masked['vars']['gogs_user_token'], event['vars']['gogs_user_token'])
+        self.assertNotEqual(masked['data']['gogs_user_token'], event['data']['gogs_user_token'])
+        # Make sure masked_event has been masked
+        self.assertEqual(masked['vars']['db_pass'], 'my********')
+        self.assertEqual(masked['vars']['gogs_user_token'], 'go*******')
+        self.assertEqual(masked['data']['gogs_user_token'], 'go*******')
+        # Make sure other values are not masked
+        self.assertEqual(masked['data']['key1'], 'value1')
+        self.assertIsNone(Handler.mask_event(None))
+        self.assertTrue(Handler.mask_event(True))
