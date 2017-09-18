@@ -66,10 +66,12 @@ class ProjectSearch(object):
         results = selection.limit(limit).all()  # get all matching
         data = []
         if results:
-            App.logger.debug('Returning search result count of {0}')
+            App.logger.debug('Returning search result count of {0}'.format(len(results)))
 
             returned_fields = "repo_name, user_name, title, lang_code, manifest, last_updated, views" \
                 if "returnedFields" not in self.criterion else self.criterion["returnedFields"]
+            returned_fields = returned_fields.replace('resID', 'resource_id')
+            returned_fields = returned_fields.replace('resType', 'resource_type')
             returned_fields = returned_fields.split(',')
 
             # copy wanted fields from this result item
@@ -78,9 +80,15 @@ class ProjectSearch(object):
                 for key in returned_fields:
                     key = key.strip()
                     if hasattr(result, key):
-                        item[key] = getattr(result, key)
-                        if isinstance(item[key], datetime.datetime):
-                            item[key] = str(item[key])
+                        value = getattr(result, key)
+                        destination_key = key
+                        if key == 'resource_id':
+                            destination_key = 'resID'
+                        elif key == 'resource_type':
+                            destination_key = 'resType'
+                        item[destination_key] = value
+                        if isinstance(value, datetime.datetime):
+                            item[destination_key] = str(value)
                 data.append(item)
 
         else:  # record is not present
