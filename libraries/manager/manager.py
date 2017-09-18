@@ -1,11 +1,14 @@
 from __future__ import unicode_literals, print_function
 import json
 import hashlib
+import tempfile
+import os
 import requests
 from datetime import datetime
 from datetime import timedelta
 from bs4 import BeautifulSoup
 from libraries.door43_tools.page_metrics import PageMetrics
+from libraries.general_tools import file_utils
 from libraries.models.job import TxJob
 from libraries.models.module import TxModule
 from libraries.app.app import App
@@ -317,18 +320,22 @@ class TxManager(object):
             for item in items:
                 module_names.append(item.name)
 
+            App.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
+            App.logger.debug("Reading from Jobs table")
+
             registered_jobs = self.list_jobs({"convert_module": {"condition": "is_in", "value": module_names}
                                     }, False)
             total_job_count = self.get_job_count()
             registered_job_count = len(registered_jobs)
 
+            App.logger.debug("Finished reading from Jobs table")
+
             # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
             if registered_job_count > total_job_count:
                 total_job_count = registered_job_count
 
-            App.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
-
-            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
+            body = BeautifulSoup('<h1>TX-Manager Dashboard - {0}</h1>'
+                                 '<h2>Module Attributes</h2><br><table id="status"></table>'.format(datetime.now()),
                                  'html.parser')
             for item in items:
                 module_name = item.name
@@ -480,7 +487,18 @@ class TxManager(object):
 
             body.append(failure_table)
             self.build_language_popularity_tables(body, max_failures)
-            dashboard['body'] = body.prettify('UTF-8')
+            body_html = body.prettify('UTF-8')
+            dashboard['body'] = body_html
+
+            # save to cdn in case HTTP connection times out
+            try:
+                self.temp_dir = tempfile.mkdtemp(suffix="", prefix="dashboard_")
+                temp_file = os.path.join(self.temp_dir, "index.html")
+                file_utils.write_file(temp_file, body_html)
+                cdn_handler = App.cdn_s3_handler()
+                cdn_handler.upload_file(temp_file, 'dashboard/index.html')
+            except Exception as e:
+                App.logger.debug("Could not save dashboard: " + str(e))
         else:
             App.logger.debug("No modules found.")
 
