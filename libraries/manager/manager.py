@@ -76,9 +76,11 @@ class TxManager(object):
             job.convert_module = tx_module.name
         job.created_at = datetime.utcnow()
 
+        job.insert()
+
         if len(job.errors):
             job.status = 'failed'
-            job.insert()
+            job.update()
             raise Exception('; '.join(job.errors))
 
         job.expires_at = job.created_at + timedelta(days=1)
