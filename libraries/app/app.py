@@ -9,6 +9,7 @@ from libraries.gogs_tools.gogs_handler import GogsHandler
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 def resetable(cls):
@@ -229,7 +230,7 @@ class App(object):
         if not cls._db_engine:
             if not cls.db_connection_string:
                 cls.db_connection_string = cls.construct_connection_string()
-            cls._db_engine = create_engine(cls.db_connection_string, echo=echo)
+            cls._db_engine = create_engine(cls.db_connection_string, echo=echo, poolclass=NullPool)
         return cls._db_engine
 
     @classmethod
