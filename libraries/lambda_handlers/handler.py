@@ -3,11 +3,13 @@ import json
 import traceback
 import copy
 from abc import ABCMeta, abstractmethod
+from libraries.general_tools.data_utils import mask_fields
 from libraries.app.app import App
 
 
 class Handler(object):
     __metaclass__ = ABCMeta
+    fields_to_mask = ['db_pass', 'gogs_user_token']
 
     def __init__(self):
         self.data = None
@@ -74,19 +76,4 @@ class Handler(object):
 
     @classmethod
     def mask_event(cls, event):
-        if not event or not isinstance(event, dict):
-            return event
-        masked_event = copy.deepcopy(event)
-        if 'vars' in masked_event:
-            if 'db_pass' in masked_event['vars'] and masked_event['vars']['db_pass']:
-                masked_event['vars']['db_pass'] = cls.masked_value(masked_event['vars']['db_pass'])
-            if 'gogs_user_token' in masked_event['vars'] and masked_event['vars']['gogs_user_token']:
-                masked_event['vars']['gogs_user_token'] = cls.masked_value(masked_event['vars']['gogs_user_token'])
-        if 'data' in masked_event:
-            if 'gogs_user_token' in masked_event['data'] and masked_event['data']['gogs_user_token']:
-                masked_event['data']['gogs_user_token'] = cls.masked_value(masked_event['data']['gogs_user_token'])
-        return masked_event
-
-    @classmethod
-    def masked_value(cls, value, show_num_characters=2):
-        return value[0:show_num_characters].ljust(len(value), "*")
+        return mask_fields(copy.deepcopy(event), cls.fields_to_mask)

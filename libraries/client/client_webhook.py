@@ -14,6 +14,7 @@ from libraries.client.preprocessors import do_preprocess
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 from libraries.models.job import TxJob
+from libraries.general_tools.data_utils import mask_fields
 
 
 class ClientWebhook(object):
@@ -396,9 +397,7 @@ class ClientWebhook(object):
         headers = {"content-type": "application/json"}
         App.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
         # remove token from printout, so it will not show in integration testing logs on Travis, etc.
-        log_payload = payload.copy()
-        log_payload["gogs_user_token"] = "DUMMY"
-        App.logger.debug(log_payload)
+        App.logger.debug(mask_fields(payload.copy(), ['gogs_user_token']))
         response = requests.post(tx_manager_job_url, json=payload, headers=headers)
         App.logger.debug('finished.')
 
