@@ -78,11 +78,6 @@ class TxManager(object):
 
         job.insert()
 
-        if len(job.errors):
-            job.status = 'failed'
-            job.update()
-            raise Exception('; '.join(job.errors))
-
         job.expires_at = job.created_at + timedelta(days=1)
         job.eta = job.created_at + timedelta(seconds=20)
         job.status = 'requested'
@@ -99,7 +94,14 @@ class TxManager(object):
             "rel": "self",
             "method": "GET"
         }
+
         job.insert()
+
+        if len(job.errors):
+            job.status = 'failed'
+            job.message = 'Failed due to missing data'
+            job.update()
+            raise Exception('; '.join(job.errors))
 
         self.trigger_start_job(job.job_id)
 
