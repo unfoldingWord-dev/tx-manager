@@ -14,9 +14,12 @@ class ClientCallback(object):
         """
         :param dict job_data:
         """
-        self.job = TxJob(**job_data)
-        App.db().add(self.job)
-        App.db_close()
+        self.job_data = job_data
+        self.job = None
+        if self.job_data and 'job_id' in job_data:
+            self.job = TxJob.get(job_data['job_id'])
+        if not self.job:
+            self.job = TxJob(**job_data)
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
 
     def process_callback(self):
@@ -152,9 +155,12 @@ class ClientCallback(object):
                 book = 'part_' + str(i)  # generate dummy name
 
             # merge build_log data
-            self.job.log += self.prefix_list(build_log_json, 'log', book)
-            self.job.errors += self.prefix_list(build_log_json, 'errors', book)
-            self.job.warnings += self.prefix_list(build_log_json, 'warnings', book)
+            for message in self.prefix_list(build_log_json, 'log', book):
+                self.job.log_message(message)
+            for message in self.prefix_list(build_log_json, 'errors', book):
+                self.job.error_message(message)
+            for message in self.prefix_list(build_log_json, 'warnings', book):
+                self.job.warning_message(message)
             if ('status' in build_log_json) and (build_log_json['status'] != 'success'):
                 self.job.status = build_log_json['status']
             if ('success' in build_log_json) and (build_log_json['success'] is not None):

@@ -55,9 +55,7 @@ class ProjectSearchTest(unittest.TestCase):
     def populate_table(self):
         for idx in self.items:
             tx_manifest = TxManifest(**self.items[idx])
-            App.db().add(tx_manifest)
-        App.db().commit()
-        App.db_close()
+            tx_manifest.insert()
 
     def test_search_projects_for_en(self):
         search = ProjectSearch()

@@ -1,11 +1,13 @@
 from __future__ import unicode_literals, print_function
-from sqlalchemy import Column, String, DateTime, Boolean, inspect
+from sqlalchemy import Column, String, DateTime, Boolean
+from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
+from libraries.models.tx_model import TxModel
 from libraries.models.text_pickle_type import TextPickleType
 from libraries.app.app import App
 
 
-class TxJob(App.ModelBase):
+class TxJob(App.Base, TxModel):
     __tablename__ = App.job_table_name
     job_id = Column(String(100), primary_key=True)
     identifier = Column(String(255), nullable=True)
@@ -27,29 +29,33 @@ class TxJob(App.ModelBase):
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
     eta = Column(DateTime, nullable=True)
-    links = Column(TextPickleType(), nullable=True, default=[])
     message = Column(String(255), nullable=True)
+    links = Column(TextPickleType(), nullable=True, default=[])
     log = Column(TextPickleType(), nullable=True, default=[])
     warnings = Column(TextPickleType(), nullable=True, default=[])
     errors = Column(TextPickleType(), nullable=True, default=[])
 
     def __init__(self, *args, **kwargs):
         # Init attributes
+        self.success = False
         self.links = []
         self.log = []
         self.warnings = []
         self.errors = []
-        super(TxJob, self).__init__(*args, **kwargs)
+        super(TxJob, self).__init__(**kwargs)
+
+    def link(self, link):
+        self.links.append(link)
+        flag_modified(self, 'links')
 
     def log_message(self, message):
         self.log.append(message)
+        flag_modified(self, 'log')
 
     def error_message(self, message):
         self.errors.append(message)
+        flag_modified(self, 'errors')
 
     def warning_message(self, message):
         self.warnings.append(message)
-
-    def get_db_data(self):
-        return {c.key: getattr(self, c.key)
-                for c in inspect(self).mapper.column_attrs}
+        flag_modified(self, 'warnings')

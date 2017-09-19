@@ -12,4 +12,4 @@ class RequestJobHandler(Handler):
         :return dict:
         """
         # Execute
-        return TxManager().setup_job(self.data)
+        return TxManager().request_job(self.data)

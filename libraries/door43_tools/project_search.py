@@ -25,7 +25,7 @@ class ProjectSearch(object):
         self.criterion = json.loads(json.dumps(criterion))  # clone so we can modify
 
         try:
-            selection = App.db().query(TxManifest)
+            selection = TxManifest.query()
 
             for k in self.criterion:
                 v = self.criterion[k]
@@ -71,7 +71,6 @@ class ProjectSearch(object):
         else:  # record is not present
             App.logger.debug('No entries found in search')
 
-        App.db_close()
         return data
 
     def apply_filters(self, selection, key, value):

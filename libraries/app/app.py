@@ -87,7 +87,7 @@ class App(object):
                        'db_name', 'db_user']
 
     # DB related
-    ModelBase = declarative_base()  # To be used in all libraries/model classes as the parent class: App.ModelBase
+    Base = declarative_base()  # To be used in all libraries/model classes as the parent class: App.ModelBase
     auto_setup_db = True
     manifest_table_name = 'manifests'
     job_table_name = 'jobs'
@@ -130,6 +130,7 @@ class App(object):
         :param kwargs:
         """
         if cls.dirty and reset:
+            App.db_close()
             reset_class(App)
         if 'prefix' in kwargs and kwargs['prefix'] != cls.prefix:
             cls.prefix_vars(kwargs['prefix'])
@@ -250,10 +251,11 @@ class App(object):
         if cls._db:
             cls._db.close_all()
             cls._db = None
+            cls._db_engine = None
 
     @classmethod
     def db_create_tables(cls, tables=None):
-        cls.ModelBase.metadata.create_all(cls.db_engine(), tables=tables)
+        cls.Base.metadata.create_all(cls.db_engine(), tables=tables)
 
     @classmethod
     def construct_connection_string(cls):

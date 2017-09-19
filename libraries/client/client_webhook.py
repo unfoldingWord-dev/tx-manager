@@ -29,7 +29,6 @@ class ClientWebhook(object):
             self.source_url_base = 'https://s3-us-west-2.amazonaws.com/{0}'.format(App.pre_convert_bucket)
         else:
             self.source_url_base = None
-        self.run_linter_function = '{0}tx_run_linter'.format(App.prefix)
         # move everything down one directory level for simple delete
         self.intermediate_dir = 'tx-manager'
         self.base_temp_dir = os.path.join(tempfile.gettempdir(), self.intermediate_dir)
@@ -81,7 +80,7 @@ class ClientWebhook(object):
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is
-        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=repo_owner)
         if tx_manifest:
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
@@ -89,9 +88,7 @@ class ClientWebhook(object):
         else:
             tx_manifest = TxManifest(**manifest_data)
             App.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest))
-            App.db().add(tx_manifest)
-        App.db().commit()
-        App.db_close()
+            tx_manifest.insert()
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
@@ -109,15 +106,14 @@ class ClientWebhook(object):
 
         if not preprocessor.is_multiple_jobs():
             # Send job request to tx-manager
-            identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key, rc, repo_name, repo_owner)
+            identifier, job = self.send_job_request_to_request_job(commit_id, file_key, rc, repo_name, repo_owner)
 
             # Send lint request
             if job.status != 'failed':
-                lint_results = self.send_request_to_run_linter(job, rc, commit_url)
+                lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
                 if 'success' in lint_results and lint_results['success']:
                     job.warnings += lint_results['warnings']
-                    App.db().commit()
-                    App.db_close()
+                    job.update()
 
             # Compile data for build_log.json
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
@@ -171,17 +167,17 @@ class ClientWebhook(object):
 
             # Send job request to tx-manager
             file_key_multi = self.build_multipart_source(file_key, book)
-            identifier, job = self.send_job_request_to_tx_manager(commit_id, file_key_multi, rc, repo_name, repo_owner,
-                                                                  count=book_count, part=i, book=book)
+            identifier, job = self.send_job_request_to_request_job(commit_id, file_key_multi, rc, repo_name, repo_owner,
+                                                                   count=book_count, part=i, book=book)
 
             # Send lint request
             if job.status != 'failed':
                 linter_payload['single_file'] = book
-                lint_results = self.send_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload,
-                                                               async=True)
+                lint_results = self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload,
+                                                                    async=True)
                 if 'success' in lint_results and lint_results['success']:
                     job.warnings += lint_results['warnings']
-                    App.db().commit()
+                    job.update()
 
             jobs.append(job)
             last_job_id = job.job_id
@@ -232,8 +228,7 @@ class ClientWebhook(object):
                 App.logger.error(msg)
                 if job:
                     job.errors.append(msg)
-            if job:
-                App.db().commit()
+                    job.update()
 
         # Upload build_log.json to S3 again:
         self.upload_build_log_to_s3(build_logs_json, master_s3_commit_key)
@@ -305,7 +300,7 @@ class ClientWebhook(object):
     @staticmethod
     def create_build_log(commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                          repo_owner):
-        build_log_json = job.get_db_data()
+        build_log_json = dict(job)
         build_log_json['repo_name'] = repo_name
         build_log_json['repo_owner'] = repo_owner
         build_log_json['commit_id'] = commit_id
@@ -364,8 +359,8 @@ class ClientWebhook(object):
 
         return repo_dir
 
-    def send_job_request_to_tx_manager(self, commit_id, file_key, rc, repo_name, repo_owner,
-                                       count=0, part=0, book=None, warnings=None):
+    def send_job_request_to_request_job(self, commit_id, file_key, rc, repo_name, repo_owner,
+                                        count=0, part=0, book=None, warnings=None):
         source_url = self.source_url_base + "/" + file_key
         callback_url = App.api_url + '/client/callback'
         tx_manager_job_url = App.api_url + '/tx/job'
@@ -373,16 +368,22 @@ class ClientWebhook(object):
         identifier = self.create_new_identifier(repo_owner, repo_name, commit_id, count, part, book)
 
         payload = {
-            "identifier": identifier,
-            "gogs_user_token": App.gogs_user_token,
-            "resource_type": rc.resource.identifier,
-            "input_format": rc.resource.file_ext,
-            "output_format": "html",
-            "source": source_url,
-            "callback": callback_url,
-            "warning": warnings
+            'data': {
+                'identifier': identifier,
+                'gogs_user_token': App.gogs_user_token,
+                'resource_type': rc.resource.identifier,
+                'input_format': rc.resource.file_ext,
+                'output_format': 'html',
+                'source': source_url,
+                'callback': callback_url,
+                'warning': warnings
+            },
+            'vars': {
+                'prefix': App.prefix,
+                'db_pass': App.db_pass
+            }
         }
-        return self.add_payload_to_tx_converter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
+        return self.send_payload_to_request_job(callback_url, identifier, payload, rc, source_url, tx_manager_job_url)
 
     @staticmethod
     def create_new_identifier(repo_owner, repo_name, commit_id, count=0, part=0, book=None):
@@ -394,13 +395,11 @@ class ClientWebhook(object):
             identifier = "{0}/{1}/{2}/{3}/{4}/{5}".format(repo_owner, repo_name, commit_id, count, part, book)
         return identifier
 
-    @staticmethod
-    def add_payload_to_tx_converter(callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
-        headers = {"content-type": "application/json"}
-        App.logger.debug('Making request to tX-Manager URL {0} with payload:'.format(tx_manager_job_url))
-        # remove token from printout, so it will not show in integration testing logs on Travis, etc.
-        App.logger.debug(mask_fields(payload.copy(), ['gogs_user_token']))
-        response = requests.post(tx_manager_job_url, json=payload, headers=headers)
+    def send_payload_to_request_job(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
+        App.logger.debug('Invoking the request_job lambda function with payload:')
+        App.logger.debug(payload)
+        request_job_function = '{0}tx_request_job'.format(App.prefix)
+        response = App.lambda_handler().invoke(function_name=request_job_function, payload=payload)
         App.logger.debug('finished.')
 
         # Fake job in case tx-manager returns an error, can still build the build_log.json
@@ -419,38 +418,22 @@ class ClientWebhook(object):
             'warnings': [],
             'errors': []
         })
-        if response.status_code != requests.codes.ok:
+
+        if 'Payload' in response:
+            json_data = json.loads(response['Payload'].read())
+        else:
+            json_data = {}
+
+        if 'job' not in json_data or 'job_id' not in json_data['job']:
             job.status = 'failed'
             job.success = False
             job.message = 'Failed to convert'
-
-            if response.text:
-                # noinspection PyBroadException
-                try:
-                    json_data = json.loads(response.text)
-                    if 'errorMessage' in json_data:
-                        error = json_data['errorMessage']
-                        if error.startswith('Bad Request: '):
-                            error = error[len('Bad Request: '):]
-                        job.errors.append(error)
-                except:
-                    pass
+            job.errors.append('tX Manager did not return any info about the job request.')
         else:
-            json_data = json.loads(response.text)
-
-            if 'job' not in json_data:
-                job.status = 'failed'
-                job.success = False
-                job.message = 'Failed to convert'
-                job.errors.append('tX Manager did not return any info about the job request.')
-            else:
-                job = TxJob(**json_data['job'])
-                App.db().add(job)
-        App.db().commit()
-        App.db_close()
+            job = TxJob.get(json_data['job']['job_id'])
         return identifier, job
 
-    def send_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
+    def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
         job_data = {
             'job_id': job.job_id,
             'resource_id': rc.resource.identifier,
@@ -474,9 +457,10 @@ class ClientWebhook(object):
         return self.send_payload_to_run_linter(payload, async=async)
 
     def send_payload_to_run_linter(self, payload, async=False):
-        App.logger.debug('Making request linter lambda with payload:')
+        App.logger.debug('Invoking the run_linter lambda function with payload:')
         App.logger.debug(payload)
-        response = App.lambda_handler().invoke(function_name=self.run_linter_function, payload=payload, async=async)
+        run_linter_function = '{0}tx_run_linter'.format(App.prefix)
+        response = App.lambda_handler().invoke(function_name=run_linter_function, payload=payload, async=async)
         App.logger.debug('finished.')
         if 'Payload' in response:
             if async:

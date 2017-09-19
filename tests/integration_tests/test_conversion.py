@@ -484,12 +484,11 @@ class TestConversions(TestCase):
 
         # Test that repo is in manifest table
         if App.db_pass:
-            tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
+            tx_manifest = TxManifest.get(repo_name=repo, user_name=user)
             # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
             self.assertIsNotNone(tx_manifest)
             self.assertEqual(tx_manifest.repo_name, repo)
             self.assertEqual(tx_manifest.user_name, user)
-            App.db_close()
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",

@@ -26,6 +26,8 @@ class TxJobTests(TestCase):
                 'input_format': 'md',
                 'output_format': 'html',
                 'convert_module': 'convert_md2html',
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow(),
                 'expires_at': datetime.utcnow() + timedelta(days=1),
                 'started_at': None,
                 'ended_at': None,
@@ -54,6 +56,8 @@ class TxJobTests(TestCase):
                 'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip',
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip',
                 'user': 'user1',
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow(),
                 'expires_at': datetime.utcnow() + timedelta(days=1),
                 'started_at': None,
                 'ended_at': None,
@@ -77,6 +81,8 @@ class TxJobTests(TestCase):
                 'convert_module': 'module1',
                 'user': 'user1',
                 'identifier': 'user1/repo1/commit1',
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow(),
                 'expires_at': datetime.utcnow() + timedelta(days=1),
                 'started_at': None,
                 'ended_at': None,
@@ -97,36 +103,31 @@ class TxJobTests(TestCase):
     def populate_table(self):
         for idx in self.items:
             tx_job = TxJob(**self.items[idx])
-            App.db(True).add(tx_job)
-        App.db().commit()
-        App.db_close()
+            tx_job.insert()
 
     def test_query_job(self):
-        jobs = App.db().query(TxJob)
+        jobs = TxJob.query()
         App.logger.debug(jobs)
         self.assertEqual(jobs.count(), len(self.items))
         for job in jobs:
             print(job)
             self.assertEqual(job.identifier, self.items[job.job_id]['identifier'])
-        App.db_close()
 
     def test_load_job(self):
         # Test loading by just giving it the job_id in the constructor
-        job = App.db().query(TxJob).filter_by(job_id='job1').first()
+        job = TxJob.get('job1')
         self.assertEqual(job.identifier, self.items['job1']['identifier'])
-        App.db_close()
 
     def test_update_job(self):
-        job = App.db().query(TxJob).filter_by(job_id=self.items['job3']['job_id']).first()
+        job = TxJob.get(self.items['job3']['job_id'])
         job.status = 'finished'
-        App.db().commit()
-        job = App.db().query(TxJob).filter_by(job_id=self.items['job3']['job_id']).first()
+        job.update()
+        job = TxJob.get(self.items['job3']['job_id'])
         self.assertEqual(job.status, 'finished')
-        App.db_close()
 
     def test_delete_job(self):
-        job = App.db().query(TxJob).filter_by(job_id=self.items['job1']['job_id']).first()
+        job = TxJob.get(self.items['job1']['job_id'])
         self.assertIsNotNone(job)
-        App.db().delete(job)
-        job = App.db().query(TxJob).filter_by(job_id=self.items['job1']['job_id']).first()
+        job.delete()
+        job = TxJob.get(self.items['job1']['job_id'])
         self.assertIsNone(job)

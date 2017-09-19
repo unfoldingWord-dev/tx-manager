@@ -11,14 +11,5 @@ class StartJobHandler(Handler):
         :param dict event:
         :param context:
         """
-        for record in event['Records']:
-            if record['eventName'] == 'INSERT' and 'job_id' in record['dynamodb']['Keys']:
-                # Get the job table name
-                ddbARN = record['eventSourceARN']
-                ddbTable = ddbARN.split(':')[5].split('/')[1]
-                job_table_name = ddbTable
-                # Get the prefix of the job table name and add it to tx-module
-                prefix = job_table_name[:-(len('tx-job'))]
-                App(prefix=prefix)
-                job_id = record['dynamodb']['Keys']['job_id']['S']
-                TxManager().start_job(job_id)
+        job_id = self.retrieve(self.data, 'job_id', 'Payload')
+        return TxManager().start_job(job_id)

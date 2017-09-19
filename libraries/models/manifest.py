@@ -1,11 +1,12 @@
 from __future__ import unicode_literals, print_function
 from sqlalchemy import Column, String, Integer, UniqueConstraint, DateTime, UnicodeText
 from datetime import datetime
+from libraries.models.tx_model import TxModel
 from libraries.app.app import App
 from libraries.models.text_pickle_type import TextPickleType
 
 
-class TxManifest(App.ModelBase):
+class TxManifest(App.Base, TxModel):
     __tablename__ = App.manifest_table_name
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     repo_name = Column(String(100), nullable=False)
