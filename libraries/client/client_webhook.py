@@ -412,7 +412,7 @@ class ClientWebhook(object):
             'callback': callback_url,
             'message': 'Conversion started...',
             'status': 'requested',
-            'success': None,
+            'success': False,
             'created_at': datetime.utcnow(),
             'log': [],
             'warnings': [],
@@ -430,7 +430,10 @@ class ClientWebhook(object):
             job.message = 'Failed to convert'
             job.errors.append('tX Manager did not return any info about the job request.')
         else:
+            App.logger.debug("LOADING "+json_data['job']['job_id'])
+            App.logger.debug(json_data['job'])
             job = TxJob.get(json_data['job']['job_id'])
+            App.logger.debug(job)
 
         return identifier, job
 
