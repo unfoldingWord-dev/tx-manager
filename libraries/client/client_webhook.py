@@ -424,17 +424,17 @@ class ClientWebhook(object):
         else:
             json_data = {}
 
-        App.logger.debug(json_data)
-        App.logger.debug(json_data['job'])
-        App.logger.debug(json_data['job']['job_id'])
-
         if 'job' not in json_data or 'job_id' not in json_data['job']:
             job.status = 'failed'
             job.success = False
             job.message = 'Failed to convert'
             job.errors.append('tX Manager did not return any info about the job request.')
+            print("NOT IN")
+            print(job)
         else:
+            print("IN "+json_data['job']['job_id'])
             job = TxJob.get(json_data['job']['job_id'])
+            print(job)
         return identifier, job
 
     def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
