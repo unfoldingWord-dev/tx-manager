@@ -54,24 +54,24 @@ class TxManager(object):
 
         if not job.cdn_bucket:
             if not App.cdn_bucket:
-                job.errors += '"cdn_bucket" not given.'
+                job.error_message('"cdn_bucket" not given.')
             else:
                 job.cdn_bucket = App.cdn_bucket
         if not job.source:
-            job.errors += '"source" url not given.'
+            job.error_message('"source" url not given.')
         if not job.resource_type:
-            job.errors += '"resource_type" not given.'
+            job.error_message('"resource_type" not given.')
         if not job.input_format:
-            job.errors += '"input_format" not given.'
+            job.error_message('"input_format" not given.')
         if not job.output_format:
-            job.errors += '"output_format" not given.'
+            job.error_message('"output_format" not given.')
 
         tx_module = self.get_converter_module(job)
 
         if not tx_module:
-            job.errors += 'No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
-                                                                                         job.input_format,
-                                                                                         job.output_format)
+            job.error_message('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
+                                                                                             job.input_format,
+                                                                                             job.output_format))
         else:
             job.convert_module = tx_module.name
         job.created_at = datetime.utcnow()
