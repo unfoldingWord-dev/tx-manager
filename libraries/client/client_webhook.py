@@ -420,7 +420,7 @@ class ClientWebhook(object):
         })
 
         if 'Payload' in response:
-            json_data = json.loads(response['Payload'].read())
+            json_data = json.loads(json.loads(response['Payload'].read()))
         else:
             json_data = {}
 
