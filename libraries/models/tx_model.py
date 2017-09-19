@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 from sqlalchemy import inspect
+from datetime import datetime, date
 from libraries.app.app import App
 
 
@@ -30,4 +31,7 @@ class TxModel(object):
 
     def __iter__(self):
         for c in inspect(self).mapper.column_attrs:
-            yield (c.key, getattr(self, c.key))
+            value = getattr(self, c.key)
+            if isinstance(value, (datetime, date)):
+                value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
+            yield (c.key, value)
