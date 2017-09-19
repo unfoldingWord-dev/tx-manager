@@ -420,7 +420,7 @@ class ClientWebhook(object):
         })
 
         if 'Payload' in response:
-            json_data = json.loads(json.loads(response['Payload'].read()))
+            json_data = json.loads(response['Payload'].read())
         else:
             json_data = {}
 
@@ -429,12 +429,9 @@ class ClientWebhook(object):
             job.success = False
             job.message = 'Failed to convert'
             job.errors.append('tX Manager did not return any info about the job request.')
-            print("NOT IN")
-            print(job)
         else:
-            print("IN "+json_data['job']['job_id'])
             job = TxJob.get(json_data['job']['job_id'])
-            print(job)
+
         return identifier, job
 
     def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
