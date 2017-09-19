@@ -19,8 +19,8 @@ class TxJob(App.ModelBase):
     source = Column(String(2550), nullable=True)
     output = Column(String(2550), nullable=True)
     cdn_bucket = Column(String(255), nullable=True)
-    cdn_file = Column(String(2550), nullable=True)
-    callback = Column(String(2550), nullable=True)
+    cdn_file = Column(String(255), nullable=True)
+    callback = Column(String(255), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=True)
@@ -34,6 +34,7 @@ class TxJob(App.ModelBase):
     errors = Column(TextPickleType(), nullable=True, default=[])
 
     def __init__(self, *args, **kwargs):
+        # Init attributes
         self.links = []
         self.log = []
         self.warnings = []
