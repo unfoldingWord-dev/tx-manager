@@ -376,7 +376,7 @@ class ClientWebhook(object):
                 'output_format': 'html',
                 'source': source_url,
                 'callback': callback_url,
-                'warning': warnings
+                'warnings': warnings
             },
             'vars': {
                 'prefix': App.prefix,
