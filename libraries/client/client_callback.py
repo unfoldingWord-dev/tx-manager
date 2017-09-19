@@ -246,9 +246,9 @@ class ClientCallback(object):
             'ended_at': None
         }
         if self.job.started_at:
-            commit['started_at'] = self.job.started_at
+            commit['started_at'] = self.job.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         if self.job.ended_at:
-            commit['ended_at'] = self.job.ended_at
+            commit['ended_at'] = self.job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         if 'commits' not in project_json:
             project_json['commits'] = []
         commits = []
@@ -268,8 +268,8 @@ class ClientCallback(object):
         return build_log_json
 
     def upload_build_log(self, build_log_json, s3_base_key, part=''):
-        build_log_json['started_at'] = self.job.started_at
-        build_log_json['ended_at'] = self.job.ended_at
+        build_log_json['started_at'] = self.job.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        build_log_json['ended_at'] = self.job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         build_log_json['success'] = self.job.success
         build_log_json['status'] = self.job.status
         build_log_json['message'] = self.job.message
