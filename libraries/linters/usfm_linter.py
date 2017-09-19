@@ -85,7 +85,7 @@ class UsfmLinter(Linter):
                 for error in errors:
                     parts = error.split( ":" )
 
-                    if( parts.length < 2 ):
+                    if( len( parts ) < 2 ):
                         parts.push( "")
 
                     self.log.warning( "{0} {1} - {2}".format(book_code, " ".join( parts[1:] ), parts[0] ))
