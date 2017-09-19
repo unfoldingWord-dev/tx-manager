@@ -1,4 +1,6 @@
 from __future__ import unicode_literals, print_function
+import json
+from libraries.general_tools.data_utils import json_serial
 from libraries.lambda_handlers.handler import Handler
 from libraries.client.client_callback import ClientCallback
 
@@ -15,4 +17,4 @@ class ClientCallbackHandler(Handler):
         job_data = self.retrieve(event, 'data', 'payload')
 
         # Execute
-        return ClientCallback(job_data).process_callback()
+        return json.dumps(ClientCallback(job_data).process_callback(), default=json_serial)
