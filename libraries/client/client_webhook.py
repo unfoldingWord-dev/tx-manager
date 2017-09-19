@@ -424,6 +424,8 @@ class ClientWebhook(object):
         else:
             json_data = {}
 
+        App.logger.debug(response)
+
         if 'job' not in json_data or 'job_id' not in json_data['job']:
             job.status = 'failed'
             job.success = False
