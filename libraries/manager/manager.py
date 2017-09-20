@@ -494,6 +494,7 @@ class TxManager(object):
         else:
             App.logger.debug("No modules found.")
 
+        App.db().close()
         return dashboard
 
     def build_language_popularity_tables(self, body, max_count):
