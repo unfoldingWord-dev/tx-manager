@@ -162,6 +162,7 @@ class TestClientCallback(TestCase):
         self.project_json = '{}'
 
         job_data = {
+            'job_id': '123',
             'created_at': '2017-05-22T13:39:15Z',
             'identifier': ('%s' % identifier),
             'output':     'https://test-cdn.door43.org/tx/job/6864ae1b91195f261ba5cda62d58d5ad9333f3131c787bb68f20c27adcc85cad.zip',
@@ -170,10 +171,6 @@ class TestClientCallback(TestCase):
             'status':     'started',
             'success':    'success'
         }
-
-        defaults = TxJob.default_values
-        if defaults['links'] or defaults['log'] or defaults['warnings'] or defaults['errors']:
-            self.assertTrue(False, "TxJob.default_values corrupted: " + json.dumps(TxJob.default_values))
 
         ccb = ClientCallback(job_data=job_data)
         return ccb

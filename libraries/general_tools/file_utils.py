@@ -7,6 +7,7 @@ import sys
 import shutil
 import yaml
 from mimetypes import MimeTypes
+from libraries.general_tools.data_utils import json_serial
 
 # we need this to check for string versus object
 PY3 = sys.version_info[0] == 3
@@ -131,7 +132,7 @@ def write_file(file_name, file_contents, indent=None):
         if os.path.splitext(file_name)[1] == '.yaml':
             text_to_write = yaml.safe_dump(file_contents)
         else:
-            text_to_write = json.dumps(file_contents, sort_keys=True, indent=indent)
+            text_to_write = json.dumps(file_contents, sort_keys=True, indent=indent, default=json_serial)
 
     with codecs.open(file_name, 'w', encoding='utf-8') as out_file:
         out_file.write(text_to_write)
