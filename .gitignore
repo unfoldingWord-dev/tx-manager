@@ -94,5 +94,5 @@ ENV/
 
 # Development files
 project.json
-db_setup.json
+db_setup*.json
 

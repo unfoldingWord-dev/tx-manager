@@ -30,9 +30,7 @@ class ViewCountTest(unittest.TestCase):
             manifest='{}',
             views=view_count
         )
-        App.db().add(tx_manifest)
-        App.db().commit()
-        App.db_close()
+        tx_manifest.insert()
 
     def test_valid(self):
         # given

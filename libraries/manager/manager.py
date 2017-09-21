@@ -1,11 +1,15 @@
 from __future__ import unicode_literals, print_function
 import json
 import hashlib
+import tempfile
+import os
 import requests
 from datetime import datetime
 from datetime import timedelta
 from bs4 import BeautifulSoup
+from libraries.general_tools.data_utils import json_serial
 from libraries.door43_tools.page_metrics import PageMetrics
+from libraries.general_tools import file_utils
 from libraries.models.job import TxJob
 from libraries.models.module import TxModule
 from libraries.app.app import App
@@ -20,7 +24,7 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
         self.language_views = None
-        self.language_dates = None
+        self.searches = None
 
     @staticmethod
     def get_user(user_token):
@@ -36,53 +40,51 @@ class TxManager(object):
                         return tx_module
         return None
 
-    def setup_job(self, data):
-        if 'gogs_user_token' not in data:
+    def request_job(self, job_data):
+        if 'gogs_user_token' not in job_data:
             raise Exception('"gogs_user_token" not given.')
 
-        App.gogs_user_token = data['gogs_user_token']
+        App.gogs_user_token = job_data['gogs_user_token']
         user = self.get_user(App.gogs_user_token)
 
         if not user or not user.username:
             raise Exception('Invalid user_token. User not found.')
 
-        del data['gogs_user_token']
-        data['user'] = user.username
+        del job_data['gogs_user_token']
+        job_data['user'] = user.username
 
-        job = TxJob(data)
+        job = TxJob(**job_data)
 
         if not job.cdn_bucket:
             if not App.cdn_bucket:
-                raise Exception('"cdn_bucket" not given.')
+                job.error_message('"cdn_bucket" not given.')
             else:
                 job.cdn_bucket = App.cdn_bucket
         if not job.source:
-            raise Exception('"source" url not given.')
+            job.error_message('"source" url not given.')
         if not job.resource_type:
-            raise Exception('"resource_type" not given.')
+            job.error_message('"resource_type" not given.')
         if not job.input_format:
-            raise Exception('"input_format" not given.')
+            job.error_message('"input_format" not given.')
         if not job.output_format:
-            raise Exception('"output_format" not given.')
+            job.error_message('"output_format" not given.')
 
         tx_module = self.get_converter_module(job)
 
         if not tx_module:
-            raise Exception('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
-                                                                                           job.input_format,
-                                                                                           job.output_format))
-        job.convert_module = tx_module.name
-        created_at = datetime.utcnow()
-        expires_at = created_at + timedelta(days=1)
-        eta = created_at + timedelta(seconds=20)
-        job.created_at = created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-        job.expires_at = expires_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-        job.eta = eta.strftime("%Y-%m-%dT%H:%M:%SZ")
+            job.error_message('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
+                                                                                             job.input_format,
+                                                                                             job.output_format))
+        else:
+            job.convert_module = tx_module.name
+        job.created_at = datetime.utcnow()
+        job.expires_at = job.created_at + timedelta(days=1)
+        job.eta = job.created_at + timedelta(seconds=20)
         job.status = 'requested'
         job.message = 'Conversion requested...'
         job.job_id = hashlib.sha256('{0}-{1}-{2}'.format(user.username,
                                                          user.email,
-                                                         created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
+                                                         job.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))).hexdigest()
         # All conversions must result in a ZIP of the converted file(s)
         output_file = 'tx/job/{0}.zip'.format(job.job_id)
         job.output = 'https://{0}/{1}'.format(App.cdn_bucket, output_file)
@@ -92,11 +94,16 @@ class TxManager(object):
             "rel": "self",
             "method": "GET"
         }
-        # Saving this to the DynamoDB will start trigger a DB stream which will call
-        # tx-manager again with the job info (see run() function)
         job.insert()
+        if len(job.errors):
+            job.status = 'failed'
+            job.message = 'Failed due to missing data'
+            job.update()
+            raise Exception('; '.join(job.errors))
+        self.trigger_start_job(job.job_id)
+
         return {
-            "job": job.get_db_data(),
+            "job": dict(job),
             "links": [
                 {
                     "href": "{0}/tx/job".format(App.api_url),
@@ -111,13 +118,24 @@ class TxManager(object):
             ],
         }
 
-    @staticmethod
-    def get_job_count():
-        """
-        get number of jobs in database - one caveat is that this value may be off since AWS only updates it every 6 hours
-        :return: 
-        """
-        return TxJob().count()
+    def trigger_start_job(self, job_id):
+        payload = {
+            'data': {
+                'job_id': job_id
+            },
+            'vars': {
+                'prefix': App.prefix,
+                'db_pass': App.db_pass
+            }
+        }
+        return self.send_payload_to_start_job(payload)
+
+    def send_payload_to_start_job(self, payload):
+        App.logger.debug('Invoking the start_job lambda function with payload:')
+        App.logger.debug(payload)
+        start_job_function = '{0}tx_start_job'.format(App.prefix)
+        App.lambda_handler().invoke(function_name=start_job_function, payload=payload, async=True)
+        App.logger.debug('finished.')
 
     def list_jobs(self, data, must_be_authenticated=True):
         if must_be_authenticated:
@@ -129,8 +147,7 @@ class TxManager(object):
                 raise Exception('Invalid user_token. User not found.')
             data['user'] = user.username
             del data['gogs_user_token']
-        jobs = TxJob().query(data)
-        return jobs
+        return TxJob.query()
 
     def list_endpoints(self):
         return {
@@ -150,36 +167,34 @@ class TxManager(object):
         }
 
     def start_job(self, job_id):
-        job = TxJob(job_id,)
+        job = TxJob.get(job_id)
 
-        if not job.job_id:
-            job.job_id = job_id
-            job.success = False
-            job.message = 'No job with ID {} has been requested'.format(job_id)
-            return job.get_db_data()  # Job doesn't exist, return
+        if not job:
+            job = TxJob(job_id=job_id, success=False, message='No job with ID {} has been requested'.format(job_id))
+            return job  # Job doesn't exist, return
 
         # Only start the job if the status is 'requested' and a started timestamp hasn't been set
         if job.status != 'requested' or job.started_at:
-            return job.get_db_data()  # Job already started, return
+            return job  # Job already started, return
 
-        job.started_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        job.started_at = datetime.utcnow()
         job.status = 'started'
         job.message = 'Conversion started...'
-        job.log_message('Started job {0} at {1}'.format(job_id, job.started_at))
+        job.log_message('Started job {0} at {1}'.format(job_id, job.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")))
         success = False
+        job.update()
 
         try:
-            job.update(['started_at', 'status', 'message', 'log'])
             tx_module = self.get_converter_module(job)
             if not tx_module:
                 raise Exception('No converter was found to convert {0} from {1} to {2}'
                                 .format(job.resource_type, job.input_format, job.output_format))
             job.convert_module = tx_module.name
-            job.update('convert_module')
+            job.update()
 
             payload = {
                 'data': {
-                    'job': job.get_db_data(),
+                    'job': dict(job),
                 },
                 'vars': {
                     'prefix': App.prefix
@@ -192,12 +207,12 @@ class TxManager(object):
                                                                                       job.output))
 
             App.logger.debug("Payload to {0}:".format(converter_function))
-            App.logger.debug(json.dumps(payload))
+            App.logger.debug(json.dumps(payload, default=json_serial))
             response = App.lambda_handler().invoke(converter_function, payload)
             App.logger.debug('finished.')
 
             # Get a new job since the webhook may have updated warnings
-            job = TxJob(job_id)
+            job = TxJob.get(job_id)
 
             if 'errorMessage' in response:
                 error = response['errorMessage']
@@ -240,7 +255,7 @@ class TxManager(object):
         except Exception as e:
             job.error_message('Failed with message: {0}'.format(e.message))
 
-        job.ended_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        job.ended_at = datetime.utcnow()
 
         if not success or len(job.errors):
             job.success = False
@@ -258,18 +273,17 @@ class TxManager(object):
 
         job.message = message
         job.log_message(message)
-        job.log_message('Finished job {0} at {1}'.format(job.job_id, job.ended_at))
-
+        job.log_message('Finished job {0} at {1}'.format(job.job_id, job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")))
         job.update()
 
-        callback_payload = job.get_db_data()
+        callback_payload = dict(job)
 
         callback_payload["message"] = message
 
         if job.callback:
             self.do_callback(job.callback, callback_payload)
 
-        return job.get_db_data()
+        return job
 
     def do_callback(self, url, payload):
         if url.startswith('http'):
@@ -317,18 +331,21 @@ class TxManager(object):
             for item in items:
                 module_names.append(item.name)
 
-            registered_jobs = self.list_jobs({"convert_module": {"condition": "is_in", "value": module_names}
-                                    }, False)
-            total_job_count = self.get_job_count()
-            registered_job_count = len(registered_jobs)
+            App.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
+            App.logger.debug("Reading from Jobs table")
+
+            registered_jobs = self.list_jobs({"convert_module": {"condition": "is_in", "value": module_names}}, False)
+            total_job_count = TxJob.query().count()
+            registered_job_count = registered_jobs.count()
+
+            App.logger.debug("Finished reading from Jobs table")
 
             # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
             if registered_job_count > total_job_count:
                 total_job_count = registered_job_count
 
-            App.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
-
-            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
+            body = BeautifulSoup('<h1>TX-Manager Dashboard - {0}</h1>'
+                                 '<h2>Module Attributes</h2><br><table id="status"></table>'.format(datetime.now()),
                                  'html.parser')
             for item in items:
                 module_name = item.name
@@ -467,7 +484,7 @@ class TxManager(object):
                     converted_url = item.output
                     failure_table.table.append(BeautifulSoup(
                         '<tr id="failure-' + str(i) + '" class="module-job-id">'
-                        + '<td>' + item.created_at + '</td>'
+                        + '<td>' + item.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") + '</td>'
                         + '<td>' + ','.join(item.errors) + '</td>'
                         + '<td><a href="' + repo_url + '">' + source_sub_path + '</a></td>'
                         + '<td><a href="' + preconverted_url + '">' + preconverted_url.rsplit('/', 1)[1] + '</a></td>'
@@ -475,50 +492,35 @@ class TxManager(object):
                         + '<td><a href="' + destination_url + '">Build Log</a></td>'
                         + '</tr>',
                         'html.parser'))
-                except:
+                except Exception as e:
                     pass
 
             body.append(failure_table)
             self.build_language_popularity_tables(body, max_failures)
-            dashboard['body'] = body.prettify('UTF-8')
+            body_html = body.prettify('UTF-8')
+            dashboard['body'] = body_html
+
+            # save to cdn in case HTTP connection times out
+            try:
+                self.temp_dir = tempfile.mkdtemp(suffix="", prefix="dashboard_")
+                temp_file = os.path.join(self.temp_dir, "index.html")
+                file_utils.write_file(temp_file, body_html)
+                cdn_handler = App.cdn_s3_handler()
+                cdn_handler.upload_file(temp_file, 'dashboard/index.html')
+            except Exception as e:
+                App.logger.debug("Could not save dashboard: " + str(e))
         else:
             App.logger.debug("No modules found.")
 
+        App.db().close()
         return dashboard
 
     def build_language_popularity_tables(self, body, max_count):
         vc = PageMetrics()
-        self.language_views = vc.get_language_views_sorted_by_count()
-        self.language_dates = vc.get_language_views_sorted_by_date()
+        self.language_views = vc.get_language_views_sorted_by_count(reverse_sort=True, max_count=max_count)
         self.generate_highest_views_lang_table(body, self.language_views, max_count)
-        self.generate_most_recent_lang_table(body, self.language_dates, max_count)
-
-    def generate_most_recent_lang_table(self, body, dates, max_count):
-        body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
-        language_recent_table = BeautifulSoup(
-            '<table id="language-recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
-            'html.parser')
-        language_recent_table.table.append(BeautifulSoup('''
-                <tr id="header">
-                <th class="hdr">Updated</th>
-                <th class="hdr">Language Code</th>''',
-                                                         'html.parser'))
-
-        if dates is not None:
-            for i in range(0, max_count):
-                if i >= len(dates):
-                    break
-                item = dates[i]
-                try:
-                    language_recent_table.table.append(BeautifulSoup(
-                        '<tr id="recent-' + str(i) + '" class="module-job-id">'
-                        + '<td>' + item['last_updated'] + '</td>'
-                        + '<td>' + item['lang_code'] + '</td>'
-                        + '</tr>',
-                        'html.parser'))
-                except:
-                    pass
-        body.append(language_recent_table)
+        self.searches = vc.get_searches_sorted_by_count(reverse_sort=True, max_count=max_count)
+        self.generate_highest_searches_table(body, self.searches, max_count)
 
     def generate_highest_views_lang_table(self, body, views, max_count):
         body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))
@@ -546,6 +548,32 @@ class TxManager(object):
                     pass
         body.append(language_popularity_table)
 
+    def generate_highest_searches_table(self, body, views, max_count):
+        body.append(BeautifulSoup('<h2>Popular Searches</h2>', 'html.parser'))
+        search_popularity_table = BeautifulSoup(
+            '<table id="search-popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            'html.parser')
+        search_popularity_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Views</th>
+                <th class="hdr">Search</th>''',
+                                                             'html.parser'))
+        if views is not None:
+            for i in range(0, max_count):
+                if i >= len(views):
+                    break
+                item = views[i]
+                try:
+                    search_popularity_table.table.append(BeautifulSoup(
+                        '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                        + '<td>' + str(item['views']) + '</td>'
+                        + '<td>' + item['lang_code'] + '</td>'
+                        + '</tr>',
+                        'html.parser'))
+                except:
+                    pass
+        body.append(search_popularity_table)
+
     def get_jobs_counts_for_module(self, jobs, module_name):
         self.jobs_warnings = 0
         self.jobs_failures = 0
@@ -558,7 +586,7 @@ class TxManager(object):
                 self.update_job_status(job)
 
     def get_jobs_counts(self, jobs):
-        self.jobs_total = len(jobs)
+        self.jobs_total = jobs.count()
         self.jobs_warnings = 0
         self.jobs_failures = 0
         self.jobs_success = 0

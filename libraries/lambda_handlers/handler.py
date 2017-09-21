@@ -38,6 +38,8 @@ class Handler(object):
             App.logger.error(e.message)
             App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             raise EnvironmentError('Bad Request: {}'.format(e.message))
+        finally:
+            App.db_close()
 
     @abstractmethod
     def _handle(self, event, context):

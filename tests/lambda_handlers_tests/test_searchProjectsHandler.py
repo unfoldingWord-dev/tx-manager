@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
 from libraries.lambda_handlers.search_projects_handler import SearchProjectsHandler
-from libraries.app.app import App
 
 
 class TestListJobsHandler(TestCase):

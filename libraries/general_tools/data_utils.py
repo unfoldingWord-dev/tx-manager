@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function
+from datetime import datetime, date
 
 
 def mask_fields(dictionary, fields_to_mask, show_num_chars=2):
@@ -29,3 +30,10 @@ def mask_string(text, show_num_chars=2):
     if not isinstance(text, basestring):
         return text
     return text[0:show_num_chars].ljust(len(text), "*")
+
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError("Type %s not serializable" % type(obj))

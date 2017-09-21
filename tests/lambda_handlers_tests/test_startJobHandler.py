@@ -10,15 +10,12 @@ class TestStartJobHandler(TestCase):
     def test_handle(self, mock_start_job):
         mock_start_job.return_value = None
         event = {
-            'Records': [
-                {
-                    'eventName': 'INSERT',
-                    'eventSourceARN': 'arn:aws:dynamodb:us-west-2:111111111111:table/tx-job/stream/2020-10-10T08:18:22.385',
-                    'dynamodb': {
-                        'Keys': {'job_id':{'S': '1234'}}
-                    }
-                }
-            ]
+            'data': {
+                'job_id': '1234'
+            },
+            'vars': {
+                'prefix': 'test-'
+            }
         }
         handler = StartJobHandler()
         self.assertIsNone(handler.handle(event, None))
