@@ -102,7 +102,7 @@ class App(object):
 
     # Handlers
     _db_engine = None
-    _db = None
+    _db_session = None
     _cdn_s3_handler = None
     _door43_s3_handler = None
     _pre_convert_s3_handler = None
@@ -241,21 +241,23 @@ class App(object):
         """
         :param mixed echo:
         """
-        if not cls._db:
-            cls._db = sessionmaker(bind=cls.db_engine(echo), expire_on_commit=False)()
+        if not cls._db_session:
+            cls._db_session = sessionmaker(bind=cls.db_engine(echo), expire_on_commit=False)()
             from libraries.models.manifest import TxManifest
             TxManifest.__table__.name = cls.manifest_table_name
             from libraries.models.job import TxJob
             TxJob.__table__.name = cls.job_table_name
             cls.db_create_tables([TxManifest.__table__, TxJob.__table__])
-        return cls._db
+        return cls._db_session
 
     @classmethod
     def db_close(cls):
-        if cls._db:
-            cls._db.close_all()
-            cls._db.dispose()
-            cls._db = None
+        if cls._db_session:
+            cls._db_session.close_all()
+            cls._db_session = None
+        if cls._db_engine:
+            cls._db_engine.close()
+            cls._db_engine.dispose()
             cls._db_engine = None
 
     @classmethod
