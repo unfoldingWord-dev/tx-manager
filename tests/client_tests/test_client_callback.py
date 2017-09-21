@@ -8,7 +8,6 @@ from mock import patch
 from unittest import TestCase
 from libraries.client.client_callback import ClientCallback
 from moto import mock_s3
-from libraries.models.job import TxJob
 from libraries.app.app import App
 
 
@@ -40,6 +39,8 @@ class TestClientCallback(TestCase):
         self.raiseDownloadException = False
 
     def tearDown(self):
+        """Runs after each test."""
+        App.db_close()
         shutil.rmtree(self.base_temp_dir, ignore_errors=True)
 
     @patch('libraries.client.client_callback.download_file')
