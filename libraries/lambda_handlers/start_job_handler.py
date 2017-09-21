@@ -11,4 +11,6 @@ class StartJobHandler(Handler):
         :param context:
         """
         job_id = self.retrieve(self.data, 'job_id', 'Payload')
-        return TxManager().start_job(job_id)
+        job = TxManager().start_job(job_id)
+        if job:
+            return dict(job)

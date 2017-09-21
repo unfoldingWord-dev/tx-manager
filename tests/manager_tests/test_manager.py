@@ -540,7 +540,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job7')
 
         # job 7's entry in database should have been updated
-        job = TxJob.get('job7')
+        job = TxJob().get('job7')
         self.assertEqual(job.job_id, 'job7')
         self.assertEqual(len(job.errors), 2)
 

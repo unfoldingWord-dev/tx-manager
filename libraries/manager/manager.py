@@ -168,11 +168,11 @@ class TxManager(object):
 
         if not job:
             job = TxJob(job_id=job_id, success=False, message='No job with ID {} has been requested'.format(job_id))
-            return dict(job)  # Job doesn't exist, return
+            return job  # Job doesn't exist, return
 
         # Only start the job if the status is 'requested' and a started timestamp hasn't been set
         if job.status != 'requested' or job.started_at:
-            return dict(job)  # Job already started, return
+            return job  # Job already started, return
 
         job.started_at = datetime.utcnow()
         job.status = 'started'
@@ -280,7 +280,7 @@ class TxManager(object):
         if job.callback:
             self.do_callback(job.callback, callback_payload)
 
-        return dict(job)
+        return job
 
     def do_callback(self, url, payload):
         if url.startswith('http'):
