@@ -13,4 +13,9 @@ class ListJobsHandler(Handler):
         :param context:
         :return dict:
         """
-        return json.dumps(TxManager().list_jobs(self.data), default=json_serial)
+        jobs = TxManager().list_jobs(self.data)
+        ret = []
+        if jobs:
+            for job in jobs:
+                ret.append(dict(job))
+        return ret

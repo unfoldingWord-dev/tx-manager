@@ -16,4 +16,4 @@ class TestListJobsHandler(TestCase):
             }
         }
         handler = ListJobsHandler()
-        self.assertIsNone(handler.handle(event, None))
+        self.assertEqual(handler.handle(event, None), [])
