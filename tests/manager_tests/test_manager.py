@@ -46,6 +46,10 @@ class ManagerTest(unittest.TestCase):
         self.init_items()
         self.populate_tables()
 
+    def tearDown(self):
+        """Runs after each test."""
+        App.db_close()
+
     def init_tables(self):
         try:
             App.module_db_handler().table.delete()

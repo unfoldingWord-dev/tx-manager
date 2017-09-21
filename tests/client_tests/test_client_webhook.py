@@ -60,6 +60,8 @@ class TestClientWebhook(unittest.TestCase):
         }
 
     def tearDown(self):
+        """Runs after each test."""
+        App.db_close()
         shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
 
     @patch('libraries.client.client_webhook.download_file')
