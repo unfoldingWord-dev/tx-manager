@@ -8,6 +8,42 @@ from libraries.converters.usfm2html_converter import Usfm2HtmlConverter
 
 
 class TestConvertHandler(TestCase):
+
+    def setUp(self):
+        """Runs before each test."""
+        self.usfm_event = {
+            'data': {
+                'job': {
+                    "input_format": "usfm",
+                    "convert_module": "usfm2html",
+                    'message': 'Conversion started...',
+                    'started_at': '2017-03-08T18:57:53Z',
+                    'errors': [],
+                    'job_id': '1234587890',
+                    'method': 'GET',
+                    'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
+                    'status': 'started',
+                    'warnings': [],
+                    'output_format': 'html',
+                    'expires_at': '2017-03-09T18:57:51Z',
+                    'user': 'exampleuser',
+                    'cdn_file': 'tx/job/1234567890.zip',
+                    'cdn_bucket': 'test_cdn_bucket',
+                    "log": ["Started job b07f65d8be71fef116841e5161f3d7f9b69b83673bf72527f1d93186d8869310 at 2017-03-15T17:50:14Z",
+                            "Telling module usfm2html to convert https://s3-us-west-2.amazonaws.com/test-tx-webhook/preconvert/acf4d7eaf4.zip and put at https://test-cdn.door43.org/tx/job/b07f65d8be71fef116841e5161f3d7f9b69b83673bf72527f1d93186d8869310.zip"],
+                    'ended_at': None,
+                    'success': None,
+                    'created_at': '2017-03-08T18:57:51Z',
+                    'callback': 'https://api.example.com/client/callback',
+                    'eta': '2017-03-08T18:58:11Z',
+                    'output': 'https://cdn.example.com/tx/job/a07116859e82e4596798cf81349a445e3dcecef463913f762cc5210aebe93db0.zip',
+                    'identifier': 'richmahn/en-obs/705948ab00',
+                    'resource_type': 'obs',
+                    'options': {'pageSize': 'A4'}
+                }
+            }
+        }
+
     @mock.patch('libraries.converters.converter.Converter.run')
     def test_handle_for_obs(self, mock_convert_run):
         mock_convert_run.return_value = None
@@ -84,6 +120,51 @@ class TestConvertHandler(TestCase):
     @mock.patch('libraries.converters.converter.Converter.run')
     def test_handle_callback_success(self, mock_convert_run, mock_request_post):
         # given
+        expected_response_code = 200
+        mock_convert_run.return_value = {
+            'dummy_data': 'stuff'
+        }
+        mock_response = Response()
+        mock_response.status_code = expected_response_code
+        mock_response.reason = 'OK'
+        mock_request_post.return_value = mock_response
+        event = self.usfm_event
+        event['data']['convert_callback'] = 'http://dummy.org'
+        convert_handler = ConvertHandler(converter_class=Usfm2HtmlConverter)
+
+        # when
+        response = convert_handler.handle(event, None)
+
+        # then
+        self.validate_response(response, convert_handler, expected_response_code)
+
+    @mock.patch('requests.post')
+    @mock.patch('libraries.converters.converter.Converter.run')
+    def test_handle_callback_failure(self, mock_convert_run, mock_request_post):
+        # given
+        expected_response_code = 504
+        mock_convert_run.return_value = {
+            'dummy_data': 'stuff'
+        }
+        mock_response = Response()
+        mock_response.status_code = expected_response_code
+        mock_response.reason = 'OK'
+        mock_request_post.return_value = mock_response
+        event = self.usfm_event
+        event['data']['convert_callback'] = 'http://dummy.org'
+        convert_handler = ConvertHandler(converter_class=Usfm2HtmlConverter)
+
+        # when
+        response = convert_handler.handle(event, None)
+
+        # then
+        self.validate_response(response, convert_handler, expected_response_code)
+
+    @mock.patch('requests.post')
+    @mock.patch('libraries.converters.converter.Converter.run')
+    def test_handle_callback_invalid_url(self, mock_convert_run, mock_request_post):
+        # given
+        expected_response_code = 0
         mock_convert_run.return_value = {
             'dummy_data': 'stuff'
         }
@@ -91,47 +172,23 @@ class TestConvertHandler(TestCase):
         mock_response.status_code = 200
         mock_response.reason = 'OK'
         mock_request_post.return_value = mock_response
-        event = {
-            'data': {
-                'job': {
-                    "input_format": "usfm",
-                    "convert_module": "usfm2html",
-                    'message': 'Conversion started...',
-                    'started_at': '2017-03-08T18:57:53Z',
-                    'errors': [],
-                    'job_id': '1234587890',
-                    'method': 'GET',
-                    'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
-                    'status': 'started',
-                    'warnings': [],
-                    'output_format': 'html',
-                    'expires_at': '2017-03-09T18:57:51Z',
-                    'user': 'exampleuser',
-                    'cdn_file': 'tx/job/1234567890.zip',
-                    'cdn_bucket': 'test_cdn_bucket',
-                    "log": ["Started job b07f65d8be71fef116841e5161f3d7f9b69b83673bf72527f1d93186d8869310 at 2017-03-15T17:50:14Z",
-                            "Telling module usfm2html to convert https://s3-us-west-2.amazonaws.com/test-tx-webhook/preconvert/acf4d7eaf4.zip and put at https://test-cdn.door43.org/tx/job/b07f65d8be71fef116841e5161f3d7f9b69b83673bf72527f1d93186d8869310.zip"],
-                    'ended_at': None,
-                    'success': None,
-                    'created_at': '2017-03-08T18:57:51Z',
-                    'callback': 'https://api.example.com/client/callback',
-                    'eta': '2017-03-08T18:58:11Z',
-                    'output': 'https://cdn.example.com/tx/job/a07116859e82e4596798cf81349a445e3dcecef463913f762cc5210aebe93db0.zip',
-                    'identifier': 'richmahn/en-obs/705948ab00',
-                    'resource_type': 'obs',
-                    'options': {'pageSize': 'A4'}
-                },
-                'convert_callback': 'http://dummy.org'
-            }
-        }
+        event = self.usfm_event
+        event['data']['convert_callback'] = 'dummy.org'
         convert_handler = ConvertHandler(converter_class=Usfm2HtmlConverter)
 
         # when
         response = convert_handler.handle(event, None)
 
         # then
+        self.validate_response(response, convert_handler, expected_response_code)
+
+    #
+    # helpers
+    #
+
+    def validate_response(self, response, convert_handler, expected_response_code):
         self.assertIsNotNone(response)
-        self.assertEquals(convert_handler.callback_status, 200)
+        self.assertEquals(convert_handler.callback_status, expected_response_code)
         callback_payload = convert_handler.callback_payload
         self.assertIsNotNone(callback_payload)
         self.assertIsNotNone(callback_payload['results'])
