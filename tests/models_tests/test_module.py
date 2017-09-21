@@ -91,11 +91,11 @@ class TxModuleTests(TestCase):
 
     def test_load_module(self):
         # Test loading by just giving it the name in the constructor
-        job = TxModule('module1')
-        self.assertEqual(job.get_db_data(), TxModule(self.items['module1']).get_db_data())
+        tx_module = TxModule('module1')
+        self.assertEqual(tx_module.get_db_data(), TxModule(self.items['module1']).get_db_data())
         # Test loading by just giving it only the name in the data array in the constructor
-        job = TxModule({'name': 'module2'})
-        self.assertEqual(job.get_db_data(), TxModule(self.items['module2']).get_db_data())
+        tx_module = TxModule({'name': 'module2'})
+        self.assertEqual(tx_module.get_db_data(), TxModule(self.items['module2']).get_db_data())
 
     def test_update_module(self):
         tx_module = TxModule()
