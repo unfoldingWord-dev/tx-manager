@@ -782,7 +782,7 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxJob().load({'job_id': job_id})
+                job = TxJob.get(job_id)
                 self.assertIsNotNone(job)
                 App.logger.debug("job " + job_id + " status at " + str(elapsed_time(start)) + ":\n" + str(job.log))
 
@@ -810,7 +810,7 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxJob().load({'job_id': job_id})
+            job = TxJob.get(job_id)
             self.assertIsNotNone(job)
             elapsed_seconds = elapsed_time(start)
             App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
