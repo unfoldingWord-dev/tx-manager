@@ -256,7 +256,6 @@ class App(object):
             cls._db_session.close_all()
             cls._db_session = None
         if cls._db_engine:
-            cls._db_engine.close()
             cls._db_engine.dispose()
             cls._db_engine = None
 
