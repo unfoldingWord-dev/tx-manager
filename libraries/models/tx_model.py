@@ -7,7 +7,7 @@ from libraries.app.app import App
 class TxModel(object):
 
     def insert(self):
-        App.db().add(self)
+        App.db(True).add(self)
         App.db().commit()
         App.db().close()
 

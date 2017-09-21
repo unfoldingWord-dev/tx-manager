@@ -230,7 +230,7 @@ class App(object):
         if not cls._db_engine:
             if not cls.db_connection_string:
                 cls.db_connection_string = cls.construct_connection_string()
-            cls._db_engine = create_engine(cls.db_connection_string, echo=echo, poolclass=NullPool)
+            cls._db_engine = create_engine(cls.db_connection_string, echo=echo)
         return cls._db_engine
 
     @classmethod
@@ -239,7 +239,7 @@ class App(object):
         :param mixed echo:
         """
         if not cls._db:
-            cls._db = sessionmaker(bind=cls.db_engine(echo))()
+            cls._db = sessionmaker(bind=cls.db_engine(echo), expire_on_commit=False)()
             from libraries.models.manifest import TxManifest
             TxManifest.__table__.name = cls.manifest_table_name
             from libraries.models.job import TxJob

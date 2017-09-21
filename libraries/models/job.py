@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
+from dateutil.parser import parse
 from libraries.models.tx_model import TxModel
 from libraries.models.text_pickle_type import TextPickleType
 from libraries.app.app import App
@@ -43,6 +44,18 @@ class TxJob(App.Base, TxModel):
         self.warnings = []
         self.errors = []
         super(TxJob, self).__init__(**kwargs)
+        self.created_at = self.check_date_format(self.created_at)
+        self.started_at = self.check_date_format(self.started_at)
+        self.ended_at = self.check_date_format(self.ended_at)
+        self.updated_at = self.check_date_format(self.updated_at)
+        self.expires_at = self.check_date_format(self.expires_at)
+        self.eta = self.check_date_format(self.eta)
+
+    def check_date_format(self, date):
+        if isinstance(date, basestring):
+            return parse(date)
+        else:
+            return date
 
     def link(self, link):
         self.links.append(link)

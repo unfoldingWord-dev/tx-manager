@@ -239,7 +239,7 @@ class ClientCallback(object):
         project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, owner_name, repo_name)
         commit = {
             'id': commit_id,
-            'created_at': self.job.created_at,
+            'created_at': self.job.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
             'status': self.job.status,
             'success': self.job.success,
             'started_at': None,

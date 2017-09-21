@@ -198,9 +198,12 @@ class TestClientWebhook(unittest.TestCase):
         except:
             captured_error = True
 
+        print(self.get_build_log_json())
+
         # then
         self.assertTrue(captured_error)
-        self.validateResults2(self.get_build_log_json(), expected_job_count, expected_error_count, expected_warnings_count)
+        self.validateResults2(self.get_build_log_json(), expected_job_count, expected_error_count,
+                              expected_warnings_count)
 
     #
     # helpers

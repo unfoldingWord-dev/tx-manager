@@ -175,10 +175,6 @@ class ClientWebhook(object):
                 linter_payload['single_file'] = book
                 lint_results = self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload,
                                                                     async=True)
-                if 'success' in lint_results and lint_results['success']:
-                    job.warnings += lint_results['warnings']
-                    job.update()
-
             jobs.append(job)
             last_job_id = job.job_id
 
