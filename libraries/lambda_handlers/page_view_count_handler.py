@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, print_function
 import json
-import urllib
 from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.lambda_handlers.handler import Handler
 

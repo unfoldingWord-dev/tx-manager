@@ -7,6 +7,7 @@ import unittest
 import hashlib
 import boto3
 from mock import patch
+from datetime import datetime
 from libraries.client.client_webhook import ClientWebhook
 from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import read_file
@@ -14,6 +15,7 @@ from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
 from moto import mock_s3, mock_dynamodb2, mock_sqs
 from libraries.app.app import App
+from libraries.general_tools.file_utils import json_serial
 
 
 @mock_s3
@@ -23,18 +25,6 @@ class TestClientWebhook(unittest.TestCase):
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
-    default_mock_job_return_value = TxJob({
-        'job_id': '0',
-        'status': 'started',
-        'success': 'success',
-        'resource_type': 'obs',
-        'input_format': 'md',
-        'output_format': 'html',
-        'convert_module': 'module1',
-        'created_at': '2017-05-22T13:39:15Z',
-        'errors': []
-    })
-    mock_job_return_value = default_mock_job_return_value
 
     def setUp(self):
         """Runs before each test."""
@@ -55,39 +45,24 @@ class TestClientWebhook(unittest.TestCase):
         self.linter_success = True
         self.linter_warnings = []
 
-        # copy the job object
-        TestClientWebhook.mock_job_return_value = TxJob(self.default_mock_job_return_value.get_db_data())
         self.uploaded_files = []
-        self.init_tables()
+
+        self.job_data = {
+            'job_id': '0',
+            'status': 'started',
+            'success': 'success',
+            'resource_type': 'obs',
+            'input_format': 'md',
+            'output_format': 'html',
+            'convert_module': 'module1',
+            'created_at': datetime.utcnow(),
+            'errors': []
+        }
 
     def tearDown(self):
+        """Runs after each test."""
+        App.db_close()
         shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
-
-    def init_tables(self):
-        try:
-            App.job_db_handler().table.delete()
-        except:
-            pass
-
-        App.job_db_handler().resource.create_table(
-            TableName=App.job_table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'job_id',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'job_id',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
 
     @patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
@@ -118,11 +93,10 @@ class TestClientWebhook(unittest.TestCase):
         # Check repo was added to manifest table
         repo_name = client_web_hook.commit_data['repository']['name']
         user_name = client_web_hook.commit_data['repository']['owner']['username']
-        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')
-        App.db_close()
 
     @patch('libraries.client.client_webhook.download_file')
     @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
@@ -131,7 +105,7 @@ class TestClientWebhook(unittest.TestCase):
         mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
         client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
                                                          mock_download_file)
-        TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
+        self.job_data['errors'] = ['error 1', 'error 2']
         expected_job_count = 1
         expected_error_count = 2
 
@@ -214,7 +188,7 @@ class TestClientWebhook(unittest.TestCase):
         self.linter_success = True
         self.linter_warnings = ["warning!!"]
         mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        TestClientWebhook.mock_job_return_value.errors = ['error 1', 'error 2']
+        self.job_data['errors'] = ['error 1', 'error 2']
         expected_job_count = 4
         expected_error_count = 2 * expected_job_count
         expected_warnings_count = expected_job_count * len(self.linter_warnings)
@@ -226,9 +200,12 @@ class TestClientWebhook(unittest.TestCase):
         except:
             captured_error = True
 
+        print(self.get_build_log_json())
+
         # then
         self.assertTrue(captured_error)
-        self.validateResults2(self.get_build_log_json(), expected_job_count, expected_error_count, expected_warnings_count)
+        self.validateResults2(self.get_build_log_json(), expected_job_count, expected_error_count,
+                              expected_warnings_count)
 
     #
     # helpers
@@ -250,7 +227,8 @@ class TestClientWebhook(unittest.TestCase):
             self.assertTrue(len(results['source']) > 1)
         self.assertEqual(len(results['errors']), expected_error_count)
         self.assertEqual(multiple_job, 'multiple' in results)
-        self.assertDictEqual(results, self.get_build_log_json())
+        self.maxDiff = None
+        self.assertDictEqual(json.loads(json.dumps(results, default=json_serial)), self.get_build_log_json())
         self.assertTrue(len(self.get_project_json()) >= 4)
 
     def get_build_log_json(self):
@@ -284,7 +262,7 @@ class TestClientWebhook(unittest.TestCase):
         source = os.path.join(base_path, repo_name)
         commit_data = self.get_commit_data(source)
         self.cwh = ClientWebhook(commit_data)
-        self.cwh.add_payload_to_tx_converter = self.mock_add_payload_to_tx_converter
+        self.cwh.send_payload_to_request_job = self.mock_send_payload_to_request_job
         self.cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
         return self.cwh
 
@@ -292,14 +270,14 @@ class TestClientWebhook(unittest.TestCase):
         if source != target:
             shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
 
-    def mock_add_payload_to_tx_converter(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
+    def mock_send_payload_to_request_job(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
         self.job_request_count += 1
-        mock_job_return_value = TestClientWebhook.mock_job_return_value
-        mock_job_return_value.job_id = hashlib.sha256().hexdigest()
-        mock_job_return_value.db_handler = App.job_db_handler()
-        mock_job_return_value.source = payload['source']
-        mock_job_return_value.insert()
-        return identifier, mock_job_return_value
+        # Make a job and save it to the DB like tx-manager would
+        mock_job = TxJob(**self.job_data)
+        mock_job.source = payload['data']['source']
+        mock_job.job_id = hashlib.sha256(os.urandom(8)).hexdigest()
+        mock_job.insert()
+        return identifier, mock_job
 
     def mock_send_payload_to_run_linter(self, payload, async=False):
         data = payload['data']
@@ -339,7 +317,7 @@ class TestClientWebhook(unittest.TestCase):
             #setup linter messaging
             sqs = boto3.resource('sqs')
             sqs.create_queue(QueueName=App.linter_messaging_name, Attributes={'DelaySeconds': '5'})
-        except Exception as e:
+        except:
             pass
 
     def get_commit_data(self, source_path):
