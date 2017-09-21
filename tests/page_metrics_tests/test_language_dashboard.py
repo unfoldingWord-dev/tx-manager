@@ -41,6 +41,10 @@ class LanguageDashboardTest(unittest.TestCase):
             },
         )
 
+    def tearDown(self):
+        """Runs after each test."""
+        App.db_close()
+
     def test_build_language_popularity_tables_empty(self):
         # given
         max_count = 10

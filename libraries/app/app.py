@@ -230,7 +230,10 @@ class App(object):
         if not cls._db_engine:
             if not cls.db_connection_string:
                 cls.db_connection_string = cls.construct_connection_string()
-            cls._db_engine = create_engine(cls.db_connection_string, echo=echo)
+            if not cls.db_connection_string.startswith('sqlite://'):
+                cls._db_engine = create_engine(cls.db_connection_string, echo=echo, poolclass=NullPool)
+            else:
+                cls._db_engine = create_engine(cls.db_connection_string, echo=echo)
         return cls._db_engine
 
     @classmethod
@@ -251,6 +254,7 @@ class App(object):
     def db_close(cls):
         if cls._db:
             cls._db.close_all()
+            cls._db.dispose()
             cls._db = None
             cls._db_engine = None
 

@@ -39,6 +39,7 @@ class TestApp(unittest.TestCase):
         user_from_db = User.get(name='ed')
         self.assertIsNotNone(user_from_db)
         self.assertEqual(user_from_db.password, '12345')
+        App.db_close()
 
     def test_setup_db_with_connection_string_parts(self):
         App(db_protocol='sqlite', db_user=None, db_pass=None, db_end_point=None, db_port=None, db_name=':memory:',
