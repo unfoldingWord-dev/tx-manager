@@ -15,6 +15,8 @@ class LanguageDashboardTest(unittest.TestCase):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         self.tx_manager = TxManager()
+        self.searches = None
+        self.language_views = None
 
         try:
             App.language_stats_db_handler().table.delete()
@@ -39,6 +41,24 @@ class LanguageDashboardTest(unittest.TestCase):
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
             },
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'search_type-views-index',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'search_type',
+                            'KeyType': 'HASH'
+                        },
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'ALL'
+                    },
+                    'ProvisionedThroughput': {
+                        'ReadCapacityUnits': 123,
+                        'WriteCapacityUnits': 123
+                    }
+                },
+            ],
         )
 
     def tearDown(self):
@@ -56,7 +76,7 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEquals(len(tx_manager.language_views), 0)
-        self.assertEquals(len(tx_manager.language_dates), 0)
+        self.assertEqual(tx_manager.searches, [])
 
     def test_build_language_popularity_tables_ten_items(self):
         # given
@@ -70,7 +90,21 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEquals(len(tx_manager.language_views), max_count)
-        self.assertEquals(len(tx_manager.language_dates), max_count)
+        self.assertEqual(tx_manager.searches, [])
+
+    def test_build_search_popularity_tables_ten_items(self):
+        # given
+        max_count = 10
+        self.initialze_searches_table(max_count)
+        tx_manager = TxManager()
+        body = BeautifulSoup('<h1>Searches</h1>', 'html.parser')
+
+        # when
+        tx_manager.build_language_popularity_tables(body, max_count)
+
+        # then
+        self.assertEquals(len(tx_manager.searches), max_count)
+        self.assertEqual(tx_manager.language_views, [])
 
     def test_build_language_popularity_tables_invalid_table_name(self):
         # given
@@ -83,7 +117,7 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEqual(tx_manager.language_views, [])
-        self.assertEqual(tx_manager.language_dates, [])
+        self.assertEqual(tx_manager.searches, [])
 
     def test_build_language_popularity_tables_no_table_name(self):
         # given
@@ -98,37 +132,37 @@ class LanguageDashboardTest(unittest.TestCase):
 
         # then
         self.assertEqual(tx_manager.language_views, [])
-        self.assertEqual(tx_manager.language_dates, [])
-
-    def test_generate_most_recent_lang_table(self):
-        # given
-        max_count = 5
-        item_count = 10
-        self.get_view_items(item_count)
-        tx_manager = TxManager()
-        body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
-
-        # when
-        tx_manager.generate_most_recent_lang_table(body, self.language_dates, max_count)
-
-        # then
-        table_id = 'language-recent'
-        row_id = 'recent-'
-        self.validate_table(body, table_id, row_id, max_count)
+        self.assertEqual(tx_manager.searches, [])
 
     def test_generate_highest_views_lang_table(self):
         # given
         max_count = 6
         item_count = 10
-        self.get_view_items(item_count)
+        self.get_language_view_items(item_count)
         tx_manager = TxManager()
         body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
 
         # when
-        tx_manager.generate_highest_views_lang_table(body, self.language_dates, max_count)
+        tx_manager.generate_highest_views_lang_table(body, self.language_views, max_count)
 
         # then
         table_id = 'language-popularity'
+        row_id = 'popular-'
+        self.validate_table(body, table_id, row_id, max_count)
+
+    def test_generate_highest_views_search_table(self):
+        # given
+        max_count = 6
+        item_count = 10
+        self.get_search_items(item_count)
+        tx_manager = TxManager()
+        body = BeautifulSoup('<h1>Languages</h1>', 'html.parser')
+
+        # when
+        tx_manager.generate_highest_searches_table(body, self.searches, max_count)
+
+        # then
+        table_id = 'search-popularity'
         row_id = 'popular-'
         self.validate_table(body, table_id, row_id, max_count)
 
@@ -153,11 +187,25 @@ class LanguageDashboardTest(unittest.TestCase):
             lang_stat.views = i + 1100
             lang_stat.update()
 
-    def get_view_items(self, count):
+    def initialze_searches_table(self, count):
+        for i in range(0, count):
+            search = '?lc=en' + str(i+1)
+            lang_stat = LanguageStats({})
+            lang_stat.lang_code = search
+            lang_stat.last_updated = '2017-02-11T15:43:11.{0}Z'.format(i+1)
+            lang_stat.views = i + 20
+            lang_stat.search_type = 'Y'
+            lang_stat.update()
+
+    def get_language_view_items(self, count):
         self.initialze_lang_stats_table(count)
         vc = PageMetrics()
         self.language_views = vc.get_language_views_sorted_by_count()
-        self.language_dates = vc.get_language_views_sorted_by_date()
+
+    def get_search_items(self, count):
+        self.initialze_searches_table(count)
+        vc = PageMetrics()
+        self.searches = vc.get_searches_sorted_by_count()
 
 
 if __name__ == "__main__":

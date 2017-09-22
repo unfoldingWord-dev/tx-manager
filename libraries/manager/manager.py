@@ -1,12 +1,15 @@
 from __future__ import unicode_literals, print_function
 import json
 import hashlib
+import tempfile
+import os
 import requests
 from datetime import datetime
 from datetime import timedelta
 from bs4 import BeautifulSoup
 from libraries.general_tools.data_utils import json_serial
 from libraries.door43_tools.page_metrics import PageMetrics
+from libraries.general_tools import file_utils
 from libraries.models.job import TxJob
 from libraries.models.module import TxModule
 from libraries.app.app import App
@@ -21,7 +24,7 @@ class TxManager(object):
         self.jobs_failures = 0
         self.jobs_success = 0
         self.language_views = None
-        self.language_dates = None
+        self.searches = None
 
     @staticmethod
     def get_user(user_token):
@@ -328,17 +331,21 @@ class TxManager(object):
             for item in items:
                 module_names.append(item.name)
 
+            App.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
+            App.logger.debug("Reading from Jobs table")
+
             registered_jobs = self.list_jobs({"convert_module": {"condition": "is_in", "value": module_names}}, False)
             total_job_count = TxJob.query().count()
             registered_job_count = registered_jobs.count()
+
+            App.logger.debug("Finished reading from Jobs table")
 
             # sanity check since AWS can be slow to update job count reported in table (every 6 hours)
             if registered_job_count > total_job_count:
                 total_job_count = registered_job_count
 
-            App.logger.debug("Found: " + str(len(items)) + " item[s] in tx-module")
-
-            body = BeautifulSoup('<h1>TX-Manager Dashboard</h1><h2>Module Attributes</h2><br><table id="status"></table>',
+            body = BeautifulSoup('<h1>TX-Manager Dashboard - {0}</h1>'
+                                 '<h2>Module Attributes</h2><br><table id="status"></table>'.format(datetime.now()),
                                  'html.parser')
             for item in items:
                 module_name = item.name
@@ -490,7 +497,18 @@ class TxManager(object):
 
             body.append(failure_table)
             self.build_language_popularity_tables(body, max_failures)
-            dashboard['body'] = body.prettify('UTF-8')
+            body_html = body.prettify('UTF-8')
+            dashboard['body'] = body_html
+
+            # save to cdn in case HTTP connection times out
+            try:
+                self.temp_dir = tempfile.mkdtemp(suffix="", prefix="dashboard_")
+                temp_file = os.path.join(self.temp_dir, "index.html")
+                file_utils.write_file(temp_file, body_html)
+                cdn_handler = App.cdn_s3_handler()
+                cdn_handler.upload_file(temp_file, 'dashboard/index.html')
+            except Exception as e:
+                App.logger.debug("Could not save dashboard: " + str(e))
         else:
             App.logger.debug("No modules found.")
 
@@ -499,37 +517,10 @@ class TxManager(object):
 
     def build_language_popularity_tables(self, body, max_count):
         vc = PageMetrics()
-        self.language_views = vc.get_language_views_sorted_by_count()
-        self.language_dates = vc.get_language_views_sorted_by_date()
+        self.language_views = vc.get_language_views_sorted_by_count(reverse_sort=True, max_count=max_count)
         self.generate_highest_views_lang_table(body, self.language_views, max_count)
-        self.generate_most_recent_lang_table(body, self.language_dates, max_count)
-
-    def generate_most_recent_lang_table(self, body, dates, max_count):
-        body.append(BeautifulSoup('<h2>Recent Languages</h2>', 'html.parser'))
-        language_recent_table = BeautifulSoup(
-            '<table id="language-recent" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
-            'html.parser')
-        language_recent_table.table.append(BeautifulSoup('''
-                <tr id="header">
-                <th class="hdr">Updated</th>
-                <th class="hdr">Language Code</th>''',
-                                                         'html.parser'))
-
-        if dates is not None:
-            for i in range(0, max_count):
-                if i >= len(dates):
-                    break
-                item = dates[i]
-                try:
-                    language_recent_table.table.append(BeautifulSoup(
-                        '<tr id="recent-' + str(i) + '" class="module-job-id">'
-                        + '<td>' + item['last_updated'] + '</td>'
-                        + '<td>' + item['lang_code'] + '</td>'
-                        + '</tr>',
-                        'html.parser'))
-                except:
-                    pass
-        body.append(language_recent_table)
+        self.searches = vc.get_searches_sorted_by_count(reverse_sort=True, max_count=max_count)
+        self.generate_highest_searches_table(body, self.searches, max_count)
 
     def generate_highest_views_lang_table(self, body, views, max_count):
         body.append(BeautifulSoup('<h2>Popular Languages</h2>', 'html.parser'))
@@ -556,6 +547,32 @@ class TxManager(object):
                 except:
                     pass
         body.append(language_popularity_table)
+
+    def generate_highest_searches_table(self, body, views, max_count):
+        body.append(BeautifulSoup('<h2>Popular Searches</h2>', 'html.parser'))
+        search_popularity_table = BeautifulSoup(
+            '<table id="search-popularity" cellpadding="4" border="1" style="border-collapse:collapse"></table>',
+            'html.parser')
+        search_popularity_table.table.append(BeautifulSoup('''
+                <tr id="header">
+                <th class="hdr">Views</th>
+                <th class="hdr">Search</th>''',
+                                                             'html.parser'))
+        if views is not None:
+            for i in range(0, max_count):
+                if i >= len(views):
+                    break
+                item = views[i]
+                try:
+                    search_popularity_table.table.append(BeautifulSoup(
+                        '<tr id="popular-' + str(i) + '" class="module-job-id">'
+                        + '<td>' + str(item['views']) + '</td>'
+                        + '<td>' + item['lang_code'] + '</td>'
+                        + '</tr>',
+                        'html.parser'))
+                except:
+                    pass
+        body.append(search_popularity_table)
 
     def get_jobs_counts_for_module(self, jobs, module_name):
         self.jobs_warnings = 0
