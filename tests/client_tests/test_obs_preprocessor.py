@@ -108,7 +108,9 @@ class TestObsPreprocessor(unittest.TestCase):
 
         return rc, repo_dir, temp_dir
 
-    def verifyTransform(self, folder, missing_chapters = []):
+    def verifyTransform(self, folder, missing_chapters=None):
+        if not missing_chapters:
+            missing_chapters = []
         files_to_verify = []
         files_missing = []
         for i in range(1, 51):

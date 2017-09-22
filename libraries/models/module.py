@@ -33,5 +33,5 @@ class TxModule(App.Base, TxModel):
         self.resource_types = []
         self.version = '1'
         super(TxModule, self).__init__(**kwargs)
-        # self.created_at = convert_string_to_date(self.created_at)
-        # self.updated_at = convert_string_to_date(self.updated_at)
+        self.created_at = convert_string_to_date(self.created_at)
+        self.updated_at = convert_string_to_date(self.updated_at)

@@ -1,11 +1,11 @@
 {
     "name": "usfm2html",
-    "version": "1",
+    "version": "2",
     "type": "conversion",
     "resource_types": ["bible", "ulb", "udb", "reg"],
     "input_format": ["usfm"],
     "output_format": ["html"],
     "options": {},
-    "private_links": {},
-    "public_links": {}
+    "private_links": [],
+    "public_links": []
 }

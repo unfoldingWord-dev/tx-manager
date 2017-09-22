@@ -123,7 +123,10 @@ class TestTemplater(unittest.TestCase):
         template.titles = template_pre.titles
         return template.run()
 
-    def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters = []):
+    def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters=None):
+        if not missing_chapters:
+            missing_chapters = []
+
         self.assertIsNotNone(output_folder)
         self.assertEqual(success, expect_success)
 
@@ -148,7 +151,9 @@ class TestTemplater(unittest.TestCase):
             file_name = os.path.join(output_folder, file_to_verify)
             self.assertTrue(os.path.isfile(file_name), 'file not found: {0}'.format(file_name))
 
-    def verifyTaTemplater(self, success, expect_success, output_folder, filesToVerify=[]):
+    def verifyTaTemplater(self, success, expect_success, output_folder, filesToVerify=None):
+        if not filesToVerify:
+            filesToVerify = None
         self.assertIsNotNone(output_folder)
         self.assertEqual(success, expect_success)
         for file_name in filesToVerify:
