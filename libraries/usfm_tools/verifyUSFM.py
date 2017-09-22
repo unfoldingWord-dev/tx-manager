@@ -242,50 +242,50 @@ def verifyVerseCount():
 
     if state.chapter > 0 and state.verse != state.nVerses(state.ID, state.chapter):
         if state.reference != 'REV 12:18':  # Revelation 12 may have 17 or 18 verses
-            report_error("Chapter should have " + str(state.nVerses(state.ID, state.chapter)) + " verses: " + state.reference + '\n')
+            report_error(state.reference + " - Should have " + str(state.nVerses(state.ID, state.chapter)) + " verses" + '\n')
 
 def verifyNotEmpty(filename):
     state = State()
     if not state.ID or state.chapter == 0:
-        report_error(filename + " -- may be empty.\n")
+        report_error(filename + " - File may be empty.\n")
 
 def verifyIdentification(book_code):
     state = State()
     if not state.ID:
-        report_error("missing \\id tag")
+        report_error( book_code + " - Missing \\id tag")
     elif (book_code is not None) and (book_code != state.ID):
-        report_error("book code '" + state.ID + "' found in \\id tag does not match code '" + book_code + "' found in file name")
+        report_error( state.ID + " - Found in \\id tag does not match code '" + book_code + "'' found in file name")
 
     if not state.IDE:
-        report_error("missing \\ide tag")
+        report_error(book_code + " - Missing \\ide tag")
 
     if not state.heading:
-        report_error("missing \\h tag")
+        report_error(book_code + " - Missing \\h tag")
 
     if not state.toc1:
-        report_error("missing \\toc1 tag")
+        report_error(book_code + " - Missing \\toc1 tag")
 
     if not state.toc2:
-        report_error("missing \\toc2 tag")
+        report_error(book_code + " - Missing \\toc2 tag")
 
     if not state.toc3:
-        report_error("missing \\toc3 tag")
+        report_error(book_code + " - Missing \\toc3 tag")
 
     if not state.mt:
-        report_error("missing \\mt tag")
+        report_error(book_code + " - Missing \\mt tag")
 
-def verifyChapterAndVerseMarkers(text):
+def verifyChapterAndVerseMarkers(text, book_code):
     # check for chapter or verse tags without numbers
     for no_num in missing_num_re.finditer(text):
-        report_error('Chapter or verse tag invalid: "{0}"'.format(getNotEmptyGroup(no_num)))
+        report_error(book_code + ' - Chapter or verse tag invalid: "{0}"'.format(getNotEmptyGroup(no_num)))
 
     # check for chapter tags missing space after number
     for space in chapter_missing_space_re.finditer(text):
-        report_error('Chapter tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+        report_error(book_code + ' - Chapter tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
 
     # check for verse tags missing space after number
     for space in verse_missing_space_re.finditer(text):
-        report_error('Verse tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+        report_error(book_code + ' - Verse tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
 
 def getNotEmptyGroup(match):
     for i in range(1, len(match.groups()) + 1):
@@ -301,7 +301,7 @@ def verifyChapterCount():
         if len(state.chapters) != expected_chapters:
             for i in range(1, expected_chapters + 1):
                 if i not in state.chapters:
-                    report_error(state.ID + " missing chapter " + str(i) + "\n")
+                    report_error(state.ID + " " + str(i) + " - Missing chapter " + "\n")
 
 # def printToken(token):
 #     if token.isV():
@@ -395,31 +395,31 @@ def takeID(id):
     state = State()
     code = '' if not id else id.split(' ')[0]
     if len(code) < 3:
-        report_error("Invalid ID: " + id + '\n')
+        report_error(state.reference + " - Invalid ID: " + id + '\n')
         return
     if code in state.getIDs():
-        report_error("Duplicate ID: " + id + '\n')
+        report_error(state.reference + " - Duplicate ID: " + id + '\n')
         return
     state.loadVerseCounts()
     for k in State.verseCounts:  # look for match in bible names
         if k == code:
             state.addID(code)
             return
-    report_error("Invalid Code '" + code + "' in ID: '" + id + "'\n")
+    report_error(state.reference + " - Invalid Code '" + code + "' in ID: '" + id + "'\n")
 
 def takeC(c):
     state = State()
     state.addChapter(c)
     if len(state.IDs) == 0:
-        report_error("Missing ID before chapter: " + c + '\n')
+        report_error(state.reference + " - Missing ID before chapter: " + c + '\n')
     if state.chapter < state.lastChapter:
-        report_error("Chapter out of order: " + state.reference + '\n')
+        report_error(state.reference +" - Chapter out of order" +  '\n')
     elif state.chapter == state.lastChapter:
-        report_error("Duplicate chapter: " + state.reference + '\n')
+        report_error(state.reference + " - Duplicate chapter" +  '\n')
     elif state.chapter > state.lastChapter + 2:
-        report_error("Missing chapters between: " + state.lastRef + " and " + state.reference + '\n')
+        report_error(state.lastRef + " - Missing chapters between this and: " + state.reference + '\n')
     elif state.chapter > state.lastChapter + 1:
-        report_error("Missing chapter between " + state.lastRef + " and " + state.reference + '\n')
+        report_error(state.lastRef + " - Missing chapter between this and: " + state.reference + '\n')
 
 def takeP():
     state = State()
@@ -430,24 +430,24 @@ def takeV(v):
     state.addVerses(v)
     if state.lastVerse == 0:  # if first verse in chapter
         if len(state.IDs) == 0 and state.chapter == 0:
-            report_error("Missing ID before verse: " + v + '\n')
+            report_error(state.reference + " " + v + " - Missing ID before verse" + '\n')
         if state.chapter == 0:
-            report_error("Missing chapter tag: " + state.reference + '\n')
+            report_error(state.reference + " - Missing chapter tag" + '\n')
         if (state.nParagraphs == 0) and (state.nQuotes == 0):
-            report_error("Missing paragraph marker (\\p) or quote (\\q) before: " + state.reference + '\n')
+            report_error(state.reference + " - Missing paragraph marker (\\p) or quote (\\q) before: " +  '\n')
 
     if state.verse < state.lastVerse and state.addError(state.lastRef):
-        report_error("Verse out of order: " + state.reference + " after " + state.lastRef + '\n')
+        report_error(state.reference + " - Verse out of order: after " + state.lastRef + '\n')
         state.addError(state.reference)
     elif state.verse == state.lastVerse:
-        report_error("Duplicated verse: " + state.reference + '\n')
+        report_error(state.reference + " - Duplicated verse" + '\n')
     elif state.verse > state.lastVerse + 1 and state.addError(state.lastRef):
         if state.lastRef == 'MAT 17:20' and state.reference == 'MAT 17:22':
             exception = 'MAT 17:21'
         elif state.lastRef == 'MAT 18:10' and state.reference == 'MAT 18:12':
             exception = 'MAT 18:11'
         else:
-            report_error("Missing verse(s) between: " + state.lastRef + " and " + state.reference + '\n')
+            report_error(state.lastRef + " - Missing verse(s) between this and: " + state.reference + '\n')
 
 def takeText(t):
     state = State()
@@ -455,20 +455,20 @@ def takeText(t):
     if not state.textOkay() and not lastToken.isM() and not lastToken.isFS() and not lastToken.isFE()\
             and not lastToken.isSP() and not lastToken.isD():
         if t[0] == '\\':
-            report_error("Uncommon or invalid marker around " + state.reference + '\n')
+            report_error(state.reference + " - Nearby uncommon or invalid marker" + '\n')
         else:
             # print "Missing verse marker before text: <" + t.encode('utf-8') + "> around " + state.reference
             # report_error("Missing verse marker or extra text around " + state.reference + ": <" + t[0:10] + '>.\n')
-            report_error("Missing verse marker or extra text around " + state.reference + '\n')
+            report_error(state.reference + " - Missing verse marker or extra text nearby " + '\n')
         if lastToken:
-            report_error("  preceding Token.type was " + lastToken.getType() + '\n')
+            report_error(state.reference + " - Preceding Token.type was " + lastToken.getType() + '\n')
         else:
-            report_error("  no preceding Token\n")
+            report_error(state.reference + " - No preceding Token\n")
     state.addText()
 
 def takeUnknown(state, token):
     value = token.getValue()
-    report_error("Unknown Token: '\\" + value + "' at " + state.reference + '\n')
+    report_error( state.reference + " - Unknown Token: '\\" + value + '\n')
 
 # Returns True if token is the start of a footnote - note that verse can contain footnote for more reasons than just
 #       does not appear in some manuscripts.
@@ -490,7 +490,7 @@ def isCrossRef(token):
 def take(token):
     state = State()
     if state.needText() and not token.isTEXT() and not isFootnoted(token) and not isCrossRef(token):
-        report_error("Empty verse: " + state.reference + '\n')
+        report_error( state.reference + " - Empty verse" +'\n')
     if token.isID():
         takeID(token.value)
     elif token.isIDE():
@@ -533,7 +533,7 @@ def take(token):
 #
 #     print("CHECKING " + filename + ":")
 #     sys.stdout.flush()
-#     verifyChapterAndVerseMarkers(str)
+#     verifyChapterAndVerseMarkers(str, filename)
 #     for token in parseUsfm.parseString(str):
 #         take(token)
 #     verifyNotEmpty(filename)
@@ -551,7 +551,7 @@ def verify_contents_quiet(unicodestring, filename, book_code, lang_code):
     state = State()
     state.reset_all()  # clear out previous values
     state.setLanguageCode(lang_code)
-    verifyChapterAndVerseMarkers(unicodestring)
+    verifyChapterAndVerseMarkers(unicodestring, book_code)
     for token in parseUsfm.parse_string(unicodestring):
         take(token)
     verifyNotEmpty(filename)

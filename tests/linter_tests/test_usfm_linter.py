@@ -448,7 +448,7 @@ class TestUsfmLinter(LinterTestCase):
         linter.parse_usfm_text(sub_path, file_name, book_text, book_full_name, book_code)
         self.verify_results_counts(expected_warnings, linter)
 
-    @unittest.skip("Skip test for time reasons - leave for standalone testing")
+    @unittest.skip("Skip test_EnUlbValid test for time reasons - leave for standalone testing")
     def test_EnUlbValid(self):
         out_dir = self.unzip_resource('en_ulb.zip')
         expected_warnings = 0

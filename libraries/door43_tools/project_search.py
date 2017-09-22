@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import json
 import datetime
+from libraries.door43_tools.page_metrics import PageMetrics
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 
@@ -13,6 +14,7 @@ class ProjectSearch(object):
     def __init__(self):
         self.error = None
         self.criterion = None
+        self.url_params = None
 
     def search_projects(self, criterion):
         """
@@ -27,11 +29,24 @@ class ProjectSearch(object):
         try:
             query = TxManifest.query()
 
-            for k in self.criterion:
+            self.url_params = ""
+            k = 'languages'
+            if k in self.criterion:  # apply languages first
+                v = self.criterion[k]
+                del self.criterion[k]
+                query = self.apply_filters(query, k, v)
+                if query is None:
+                    return None
+
+            for k in self.criterion:  # apply everything else
                 v = self.criterion[k]
                 query = self.apply_filters(query, k, v)
                 if query is None:
                     return None
+
+            if len(self.url_params) > 0 and (self.url_params[0] == '&'):
+                self.url_params = self.url_params[1:]
+            self.url_params = '?' + self.url_params
 
             if 'sort_by' in self.criterion:
                 db_key = getattr(TxManifest, self.criterion['sort_by'], None)
@@ -51,10 +66,12 @@ class ProjectSearch(object):
         results = query.limit(limit).all()  # get all matching
         data = []
         if results:
-            App.logger.debug('Returning search result count of {0}')
+            App.logger.debug('Returning search result count of {0}'.format(len(results)))
 
             returned_fields = "repo_name, user_name, title, lang_code, manifest, last_updated, views" \
                 if "returnedFields" not in self.criterion else self.criterion["returnedFields"]
+            returned_fields = returned_fields.replace('resID', 'resource_id')
+            returned_fields = returned_fields.replace('resType', 'resource_type')
             returned_fields = returned_fields.split(',')
 
             # copy wanted fields from this result item
@@ -63,14 +80,23 @@ class ProjectSearch(object):
                 for key in returned_fields:
                     key = key.strip()
                     if hasattr(result, key):
-                        item[key] = getattr(result, key)
-                        if isinstance(item[key], datetime.datetime):
-                            item[key] = str(item[key])
+                        value = getattr(result, key)
+                        destination_key = key
+                        if key == 'resource_id':
+                            destination_key = 'resID'
+                        elif key == 'resource_type':
+                            destination_key = 'resType'
+                        item[destination_key] = value
+                        if isinstance(value, datetime.datetime):
+                            item[destination_key] = str(value)
                 data.append(item)
 
         else:  # record is not present
             App.logger.debug('No entries found in search')
 
+        App.db_close()
+
+        self.save_url_search()
         return data
 
     def apply_filters(self, query, key, value):
@@ -85,24 +111,38 @@ class ProjectSearch(object):
                 query = query.filter(TxManifest.last_updated >= recent_in_seconds)
             elif key == 'repo_name':
                 query = query.filter(TxManifest.repo_name.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == 'user_name':
                 query = query.filter(TxManifest.user_name.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == 'title':
                 query = query.filter(TxManifest.title.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == 'manifest':
                 query = query.filter(TxManifest.manifest.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == "time":
                 query = query.filter(TxManifest.last_updated.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == "resID":
                 query = query.filter(TxManifest.resource_id.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == "resType":
                 query = query.filter(TxManifest.resource_type.contains(value))
+                self.url_params += '&' + key + '=' + value
             elif key == "languages":
-                query = set_contains_set_filter(query, "lang_code", value)
+                query, filter_set = set_contains_set_filter(query, "lang_code", value)
+                if filter_set is None:
+                    self.url_params += '&lc=' + value
+                else:
+                    filter_set.sort()
+                    for filter in filter_set:
+                        self.url_params += '&lc=' + filter
             elif key == 'full_text':
                 query = query.filter((TxManifest.user_name.contains(value))
                                      | (TxManifest.repo_name.contains(value))
                                      | (TxManifest.manifest.contains(value)))
+                self.url_params += '&' + 'q' + '=' + value
             elif key == "returnedFields" or key == "sort_by" or key == "sort_by_reversed" or key == "matchLimit":
                 pass  # skip this item
             else:
@@ -118,6 +158,9 @@ class ProjectSearch(object):
         self.error = msg
         App.logger.debug(msg)
 
+    def save_url_search(self):
+        PageMetrics().increment_search_params(self.url_params)
+
 
 def set_contains_set_filter(query, key, value):
     db_key = getattr(TxManifest, key, None)
@@ -125,10 +168,10 @@ def set_contains_set_filter(query, key, value):
         filter_set_str = value[1:].split(']')
         filter_set = filter_set_str[0].split(',')
         query = query.filter(db_key.in_(filter_set))
-    else:
-        query = query.filter(db_key.like(value))
+        return query, filter_set
 
-    return query
+    query = query.filter(db_key.like(value))
+    return query, None
 
 
 def parse_int(s, default_value=None):
