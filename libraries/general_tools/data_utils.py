@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 from datetime import datetime, date
+from dateutil.parser import parse
 
 
 def mask_fields(dictionary, fields_to_mask, show_num_chars=2):
@@ -37,3 +38,10 @@ def json_serial(obj):
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     raise TypeError("Type %s not serializable" % type(obj))
+
+
+def convert_string_to_date(date_str):
+    if isinstance(date_str, basestring):
+        return parse(date_str)
+    else:
+        return date_str

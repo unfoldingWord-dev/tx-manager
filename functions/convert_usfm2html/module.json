@@ -5,7 +5,7 @@
     "resource_types": ["bible", "ulb", "udb", "reg"],
     "input_format": ["usfm"],
     "output_format": ["html"],
-    "options": [],
-    "private_links": [],
-    "public_links": []
+    "options": {},
+    "private_links": {},
+    "public_links": {}
 }

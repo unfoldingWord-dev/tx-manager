@@ -69,7 +69,7 @@ class App(object):
     gogs_url = 'https://git.door43.org'
     gogs_domain_name = 'git.door43.org'
     gogs_ip_address = '127.0.0.1'
-    module_table_name = 'tx-module'
+    module_table_name = 'modules'
     language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
     db_protocol = 'mysql+pymysql'
@@ -83,9 +83,8 @@ class App(object):
 
     # Prefixing vars
     # All variables that we change based on production, development and testing environments.
-    prefixable_vars = ['api_url', 'pre_convert_bucket', 'cdn_bucket', 'door43_bucket',
-                       'module_table_name', 'language_stats_table_name', 'linter_messaging_name',
-                       'db_name', 'db_user']
+    prefixable_vars = ['api_url', 'pre_convert_bucket', 'cdn_bucket', 'door43_bucket', 'language_stats_table_name',
+                       'linter_messaging_name', 'db_name', 'db_user']
 
     # DB related
     Base = declarative_base()  # To be used in all libraries/model classes as the parent class: App.ModelBase
@@ -106,8 +105,6 @@ class App(object):
     _cdn_s3_handler = None
     _door43_s3_handler = None
     _pre_convert_s3_handler = None
-    _job_db_handler = None
-    _module_db_handler = None
     _language_stats_db_handler = None
     _lambda_handler = None
     _gogs_handler = None
@@ -189,15 +186,6 @@ class App(object):
         return cls._pre_convert_s3_handler
 
     @classmethod
-    def module_db_handler(cls):
-        if not cls._module_db_handler:
-            cls._module_db_handler = DynamoDBHandler(table_name=cls.module_table_name,
-                                                     aws_access_key_id=cls.aws_access_key_id,
-                                                     aws_secret_access_key=cls.aws_secret_access_key,
-                                                     aws_region_name=cls.aws_region_name)
-        return cls._module_db_handler
-
-    @classmethod
     def language_stats_db_handler(cls):
         if not cls._language_stats_db_handler:
             cls._language_stats_db_handler = DynamoDBHandler(table_name=cls.language_stats_table_name,
@@ -247,7 +235,9 @@ class App(object):
             TxManifest.__table__.name = cls.manifest_table_name
             from libraries.models.job import TxJob
             TxJob.__table__.name = cls.job_table_name
-            cls.db_create_tables([TxManifest.__table__, TxJob.__table__])
+            from libraries.models.module import TxModule
+            TxModule.__table__.name = cls.module_table_name
+            cls.db_create_tables([TxManifest.__table__, TxJob.__table__, TxModule.__table__])
         return cls._db_session
 
     @classmethod

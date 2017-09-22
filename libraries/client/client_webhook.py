@@ -76,7 +76,6 @@ class ClientWebhook(object):
             'resource_id': rc.resource.identifier,
             'resource_type': rc.resource.type,
             'title': rc.resource.title,
-            'last_updated': datetime.utcnow(),
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is

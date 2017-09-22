@@ -5,7 +5,7 @@
     "resource_types": ["obs", "ta"],
     "input_format": ["md"],
     "output_format": ["html"],
-    "options": [],
-    "private_links": [],
-    "public_links": []
+    "options": {},
+    "private_links": {},
+    "public_links": {}
 }

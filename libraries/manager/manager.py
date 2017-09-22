@@ -29,13 +29,11 @@ class TxManager(object):
 
     @staticmethod
     def get_converter_module(job):
-        tx_modules = TxModule().query()
-        for tx_module in tx_modules:
-            if job.resource_type in tx_module.resource_types:
-                if job.input_format in tx_module.input_format:
-                    if job.output_format in tx_module.output_format:
-                        return tx_module
-        return None
+        return TxModule.query().filter(TxModule.type=='conversion')\
+            .filter(TxModule.input_format.contains(job.input_format))\
+            .filter(TxModule.output_format.contains(job.output_format))\
+            .filter(TxModule.resource_types.contains(job.resource_type))\
+            .first()
 
     def request_job(self, job_data):
         if 'gogs_user_token' not in job_data:
@@ -292,7 +290,7 @@ class TxManager(object):
 
     @staticmethod
     def register_module(data):
-        tx_module = TxModule(data=data)
+        tx_module = TxModule(**data)
 
         if not tx_module.name:
             raise Exception('"name" not given.')
@@ -307,7 +305,7 @@ class TxManager(object):
 
         tx_module.public_links.append("{0}/tx/convert/{1}".format(App.api_url, tx_module.name))
         tx_module.insert()
-        return tx_module.get_db_data()
+        return tx_module
 
     def generate_dashboard(self, max_failures=MAX_FAILURES):
         """

@@ -40,7 +40,6 @@ class ManagerTest(unittest.TestCase):
         ManagerTest.mock_gogs.reset_mock()
         ManagerTest.requested_urls = []
         self.tx_manager = TxManager()
-        self.init_tables()
         self.job_items = {}
         self.module_items = {}
         self.init_items()
@@ -49,32 +48,6 @@ class ManagerTest(unittest.TestCase):
     def tearDown(self):
         """Runs after each test."""
         App.db_close()
-
-    def init_tables(self):
-        try:
-            App.module_db_handler().table.delete()
-        except:
-            pass
-
-        App.module_db_handler().resource.create_table(
-            TableName=App.module_table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'name',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'name',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
 
     def init_items(self):
         self.job_items = {
@@ -90,8 +63,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job2': {
                 'job_id': 'job2',
@@ -104,8 +75,6 @@ class ManagerTest(unittest.TestCase):
                 'identifier': 'tx-manager-test-data/en-ulb-jud/6778aa89bd',
                 'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip',
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job3': {
                 'job_id': 'job3',
@@ -120,8 +89,6 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
                 'warnings': [],
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job4': {
                 'job_id': 'job4',
@@ -134,8 +101,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job5': {
                 'job_id': 'job5',
@@ -148,8 +113,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job7': {
                 'job_id': 'job7',
@@ -162,8 +125,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job8': {
                 'job_id': 'job8',
@@ -176,8 +137,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job9': {
                 'job_id': 'job9',
@@ -190,8 +149,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job10': {
                 'job_id': 'job10',
@@ -205,8 +162,6 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZ.zip',
                 'errors': ['error1', 'error2'],
                 'cdn_bucket': 'cdn.door43.org',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             },
             'job11': {
                 'job_id': 'job11',
@@ -220,8 +175,6 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip',
                 'errors': ['error1', 'error2', 'error3'],
                 'cdn_bucket': 'cdn.door43.org',
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
             }
         }
         self.module_items = {
@@ -230,8 +183,8 @@ class ManagerTest(unittest.TestCase):
                 'type': 'conversion',
                 'version': '1',
                 'resource_types': ['obs', 'ulb'],
-                'input_format': 'md',
-                'output_format': 'html',
+                'input_format': ['md'],
+                'output_format': ['html'],
                 'public_links': ['{0}/tx/convert/md2html'.format(App.api_url)],
                 'private_links': ['{0}/tx/private/module1'.format(App.api_url)],
                 'options': {'pageSize': 'A4'}
@@ -241,8 +194,8 @@ class ManagerTest(unittest.TestCase):
                 'type': 'conversion',
                 'version': '1',
                 'resource_types': ['ulb'],
-                'input_format': 'usfm',
-                'output_format': 'html',
+                'input_format': ['usfm'],
+                'output_format': ['html'],
                 'public_links': ['{0}/tx/convert/usfm2html'.format(App.api_url)],
                 'private_links': [],
                 'options': {'pageSize': 'A4'}
@@ -252,8 +205,8 @@ class ManagerTest(unittest.TestCase):
                 'type': 'conversion',
                 'version': '1',
                 'resource_types': ['other', 'yet_another'],
-                'input_format': 'md',
-                'output_format': 'html',
+                'input_format': ['md'],
+                'output_format': ['html'],
                 'public_links': [],
                 'private_links': [],
                 'options': {}
@@ -266,7 +219,8 @@ class ManagerTest(unittest.TestCase):
             tx_job.insert()
 
         for idx in self.module_items:
-            TxModule().insert(self.module_items[idx])
+            tx_module = TxModule(**self.module_items[idx])
+            tx_module.insert()
 
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
     def test_request_job(self, mock_invoke):
@@ -552,9 +506,7 @@ class ManagerTest(unittest.TestCase):
         """Test list_jobs and list_endpoint methods."""
         tx_manager = TxManager()
         jobs = tx_manager.list_jobs({'gogs_user_token': 'token2'}, True)
-        jobs_data = [dict(job) for job in jobs]
-        expected = [dict(TxJob(**self.job_items[job_id])) for job_id in self.job_items]
-        self.assertItemsEqual(jobs_data, expected)
+        self.assertEqual(jobs.count(), len(self.job_items))
 
         self.assertRaises(Exception, tx_manager.list_jobs, {'bad_key': 'token1'})
         self.assertRaises(Exception, tx_manager.list_jobs, {'gogs_user_token': 'bad_token'})
@@ -577,16 +529,22 @@ class ManagerTest(unittest.TestCase):
 
     def test_register_module(self):
         data = {
-            'name': 'module1',
+            'name': 'module4',
             'type': 'conversion',
             'resource_types': ['obs'],
             'input_format': 'md',
-            'output_format': 'html'
+            'output_format': 'html',
+            'options': {'pageSize': 'A4'},
+            'public_links': [],
+            'private_links': []
         }
         self.tx_manager.register_module(data)
-        tx_module = TxModule().load({'name': data['name']})
-        data['public_links'] = ['{0}/tx/convert/{1}'.format(App.api_url, data['name'])]
-        self.assertEqual(tx_module.get_db_data(), TxModule(data).get_db_data())
+        tx_module = TxModule.get(name=data['name'])
+        self.assertIsNotNone(tx_module)
+        self.assertEqual(tx_module.options['pageSize'], 'A4')
+        self.assertEqual(tx_module.created_at.year, datetime.utcnow().year)
+        self.assertEqual(tx_module.updated_at.year, datetime.utcnow().year)
+        self.assertEqual(tx_module.public_links, ['{0}/tx/convert/{1}'.format(App.api_url, data['name'])])
 
         test_missing_keys = ['name', 'type', 'input_format', 'output_format', 'resource_types']
         for key in test_missing_keys:
@@ -697,6 +655,13 @@ class ManagerTest(unittest.TestCase):
         failure_table = soup.find('table', id='failed')
         expected_failure_count = expected_max_failures
         self.validateFailureTable(failure_table, expected_failure_count)
+
+    def test_get_converter_module(self):
+        manager = TxManager()
+        job = TxJob.get('job1')
+        converter = manager.get_converter_module(job)
+        self.assertIsNotNone(converter)
+        self.assertEqual(converter.name, 'module1')
 
     # helper methods #
 
