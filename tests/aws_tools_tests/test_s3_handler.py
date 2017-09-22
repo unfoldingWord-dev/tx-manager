@@ -77,7 +77,8 @@ class S3HandlerTests(TestCase):
     def test_get_file_contents_bad(self):
         ret = self.handler.get_file_contents("from/from_bad.txt")
         self.assertFalse(ret)
-        self.assertRaises(Exception, self.handler.get_file_contents, key="from_bad_dir/from_bad_file", catch_exception=False)
+        self.assertRaises(Exception, self.handler.get_file_contents, key="from_bad_dir/from_bad_file",
+                          catch_exception=False)
 
     def test_create_bucket(self):
         handler = S3Handler()
