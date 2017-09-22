@@ -17,8 +17,7 @@ class ProjectPrinter(object):
     if the print_all.html page doesn't already exist. Return the contents of print_all.html
     """
 
-    @staticmethod
-    def print_project(project_id):
+    def print_project(self, project_id):
         """
         :param string project_id: 
         :return string: 

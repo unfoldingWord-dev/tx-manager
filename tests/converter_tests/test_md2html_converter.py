@@ -194,7 +194,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
 
         # make sure we have some text
         text = content.text
-        if( (text==None) | (len(text) <= 2)): # length should be longer than a couple of linefeeds
+        if text is None or len(text) <= 2:  # length should be longer than a couple of line feeds
             return None
 
         return content

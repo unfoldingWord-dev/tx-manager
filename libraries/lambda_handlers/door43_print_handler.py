@@ -15,4 +15,4 @@ class Door43PrintHandler(Handler):
         project_id = self.retrieve(self.data, 'id', 'Parameters')
 
         # Execute
-        return ProjectPrinter.print_project(project_id)
+        return ProjectPrinter().print_project(project_id)

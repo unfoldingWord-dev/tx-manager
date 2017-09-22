@@ -100,7 +100,7 @@ class TxManifestTests(TestCase):
         tx_manifest.title = 'Unlocked Dynamic Bible'
         tx_manifest.update()
         manifest_from_db = TxManifest.get(repo_name=repo_name, user_name=user_name)
-        self.assertEqual(dict(tx_manifest), dict(manifest_from_db))
+        self.assertEqual(manifest_from_db.title, tx_manifest.title)
         # Update by giving a dict to update()
         tx_manifest.views = 5
         tx_manifest.update()
