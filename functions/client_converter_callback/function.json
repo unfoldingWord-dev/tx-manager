@@ -1,0 +1,3 @@
+{
+  "description": "Callback function for the Web Client, called by https://api.door43.org/client/converter/callback"
+}
