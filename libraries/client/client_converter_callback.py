@@ -39,7 +39,9 @@ class ClientConverterCallback(object):
         self.job = TxJob.get(job_id)
 
         if not self.job:
-            App.logger.error('No job found for job_id = {0}, identifier = {0}'.format(job_id, self.identifier))
+            error = 'No job found for job_id = {0}, identifier = {0}'.format(job_id, self.identifier)
+            App.logger.error(error)
+            raise Exception(error)
 
         if len(job_id_parts) == 4:
             part_count, part_id, book = job_id_parts[1:]
