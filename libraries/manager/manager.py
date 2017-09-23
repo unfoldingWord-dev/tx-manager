@@ -49,7 +49,7 @@ class TxManager(object):
             raise Exception('Invalid user_token. User not found.')
 
         del job_data['gogs_user_token']
-        job_data['user'] = user.username
+        job_data['token_user'] = user.username
 
         job = TxJob(**job_data)
 
