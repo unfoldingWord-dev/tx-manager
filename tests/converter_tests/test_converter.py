@@ -135,16 +135,44 @@ class TestConverter(unittest.TestCase):
         # then
         self.validate_response(results, tx, expected_response_code)
 
+    @mock.patch('requests.post')
+    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.convert')
+    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.download_archive')
+    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.upload_archive')
+    def test_convert_callback_missing_job_id(self, mock_upload_archive, mock_download_archive, mock_convert,
+                                             mock_request_post):
+        # given
+        expected_response_code = 200
+        mock_download_archive.return_value = True
+        mock_upload_archive.return_value = True
+        mock_convert.return_value = True
+        mock_response = Response()
+        mock_response.status_code = expected_response_code
+        mock_response.reason = 'OK'
+        mock_request_post.return_value = mock_response
+        payload = self.payload
+        payload['convert_callback'] = 'http://dummy.org'
+        del payload['job']['job_id']
+
+        # when
+        with closing(Usfm2HtmlConverter('', 'dummy_type', self.zip_file, payload=payload)) as tx:
+            tx.input_zip_file = self.zip_file
+            results = tx.run()
+
+        # then
+        self.validate_response(results, tx, expected_response_code, valid_job_id=False)
+
     #
     # helpers
     #
 
-    def validate_response(self, results, converter, expected_response_code):
+    def validate_response(self, results, converter, expected_response_code, valid_job_id=True):
         self.assertEquals(converter.callback_status, expected_response_code)
         self.assertTrue('results' in converter.callback_results)
         self.assertIsNotNone(converter.callback_results['results'])
         self.assertTrue('job_id' in converter.callback_results)
-        self.assertIsNotNone(converter.callback_results['job_id'])
+        if valid_job_id:
+            self.assertIsNotNone(converter.callback_results['job_id'])
         self.assertEquals(results, converter.callback_results['results'])
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):
