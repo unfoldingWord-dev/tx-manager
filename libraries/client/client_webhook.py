@@ -109,7 +109,8 @@ class ClientWebhook(object):
             # Send lint request
             if job.status != 'failed':
                 linter_payload = {
-                    'linter_messaging_name': ''  # disable messaging
+                    'linter_messaging_name': '',  # disable messaging
+                    's3_commit_key': "{0}/lint_log.json".format(identifier)
                 }
                 lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url, extra_data=linter_payload)
                 if 'success' in lint_results and lint_results['success']:
@@ -156,7 +157,7 @@ class ClientWebhook(object):
         linter_queue = LinterMessaging(App.linter_messaging_name)
         source_urls = self.clear_out_any_old_messages(linter_queue, book_count, books, file_key)
         linter_payload = {
-            'linter_messaging_name': App.prefix + App.base_linter_messaging_name
+            'linter_messaging_name': App.linter_messaging_name
         }
 
         build_log_json = {}
