@@ -21,35 +21,12 @@ class TestConverter(unittest.TestCase):
         self.zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         self.zip_file = self.make_duplicate_zip_that_can_be_deleted(self.zip_file)
 
-        self.payload = {
-            'job': {
-                "input_format": "usfm",
-                "convert_module": "usfm2html",
-                'message': 'Conversion started...',
-                'started_at': '2017-03-08T18:57:53Z',
-                'errors': [],
-                'job_id': '1234587890',
-                'method': 'GET',
-                'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
-                'status': 'started',
-                'warnings': [],
-                'output_format': 'html',
-                'expires_at': '2017-03-09T18:57:51Z',
-                'user': 'exampleuser',
-                'cdn_file': 'tx/job/1234567890.zip',
-                'cdn_bucket': 'test_cdn_bucket',
-                "log": ["Started job b07f65d8be71fef116841e5161f3d7f9b69b83673bf72527f1d93186d8869310 at 2017-03-15T17:50:14Z",
-                        "Telling module usfm2html to convert https://s3-us-west-2.amazonaws.com/test-tx-webhook/preconvert/acf4d7eaf4.zip and put at https://test-cdn.door43.org/tx/job/b07f65d8be71fef116841e5161f3d7f9b69b83673bf72527f1d93186d8869310.zip"],
-                'ended_at': None,
-                'success': None,
-                'created_at': '2017-03-08T18:57:51Z',
-                'callback': 'https://api.example.com/client/callback',
-                'eta': '2017-03-08T18:58:11Z',
-                'output': 'https://cdn.example.com/tx/job/a07116859e82e4596798cf81349a445e3dcecef463913f762cc5210aebe93db0.zip',
-                'identifier': 'richmahn/en-obs/705948ab00',
-                'resource_type': 'obs',
-                'options': {'pageSize': 'A4'}
-            }
+        self.params = {
+            'cdn_file': 'tx/job/1234567890.zip',
+            'identity': 'richmahn/en-obs/705948ab00',
+            'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
+            'resource_type': 'obs',
+            'options': {'pageSize': 'A4'}
         }
 
     def tearDown(self):
@@ -72,11 +49,11 @@ class TestConverter(unittest.TestCase):
         mock_response.status_code = expected_response_code
         mock_response.reason = 'OK'
         mock_request_post.return_value = mock_response
-        payload = self.payload
-        payload['convert_callback'] = 'http://dummy.org'
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
 
         # when
-        with closing(Usfm2HtmlConverter('', 'dummy_type', self.zip_file, payload=payload)) as tx:
+        with closing(self.get_converter(params)) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -98,11 +75,11 @@ class TestConverter(unittest.TestCase):
         mock_response.status_code = expected_response_code
         mock_response.reason = 'Timed out'
         mock_request_post.return_value = mock_response
-        payload = self.payload
-        payload['convert_callback'] = 'http://dummy.org'
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
 
         # when
-        with closing(Usfm2HtmlConverter('', 'dummy_type', self.zip_file, payload=payload)) as tx:
+        with closing(self.get_converter(params)) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -124,11 +101,11 @@ class TestConverter(unittest.TestCase):
         mock_response.status_code = expected_response_code
         mock_response.reason = 'Timed out'
         mock_request_post.return_value = mock_response
-        payload = self.payload
-        payload['convert_callback'] = 'dummy.org'
+        params = self.params
+        params['convert_callback'] = 'dummy.org'
 
         # when
-        with closing(Usfm2HtmlConverter('', 'dummy_type', self.zip_file, payload=payload)) as tx:
+        with closing(self.get_converter(params)) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -150,29 +127,29 @@ class TestConverter(unittest.TestCase):
         mock_response.status_code = expected_response_code
         mock_response.reason = 'OK'
         mock_request_post.return_value = mock_response
-        payload = self.payload
-        payload['convert_callback'] = 'http://dummy.org'
-        del payload['job']['job_id']
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
+        del params['identity']
 
         # when
-        with closing(Usfm2HtmlConverter('', 'dummy_type', self.zip_file, payload=payload)) as tx:
+        with closing(self.get_converter(params)) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
         # then
-        self.validate_response(results, tx, expected_response_code, valid_job_id=False)
+        self.validate_response(results, tx, expected_response_code, valid_identity=False)
 
     #
     # helpers
     #
 
-    def validate_response(self, results, converter, expected_response_code, valid_job_id=True):
+    def validate_response(self, results, converter, expected_response_code, valid_identity=True):
         self.assertEquals(converter.callback_status, expected_response_code)
         self.assertTrue('results' in converter.callback_results)
         self.assertIsNotNone(converter.callback_results['results'])
-        self.assertTrue('job_id' in converter.callback_results)
-        if valid_job_id:
-            self.assertIsNotNone(converter.callback_results['job_id'])
+        self.assertTrue('identity' in converter.callback_results)
+        if valid_identity:
+            self.assertIsNotNone(converter.callback_results['identity'])
         self.assertEquals(results, converter.callback_results['results'])
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):
@@ -180,6 +157,17 @@ class TestConverter(unittest.TestCase):
         shutil.copy(zip_file, in_zip_file)
         zip_file = in_zip_file
         return zip_file
+
+    def get_converter(self, params):
+        source = params['source']
+        resource = params['resource_type']
+        cdn_file = params['cdn_file']
+        options = params['options']
+        identity = None if 'identity' not in params else params['identity']
+        convert_callback = None if 'convert_callback' not in params else params['convert_callback']
+        return Usfm2HtmlConverter(source, resource, cdn_file=cdn_file, options=options,
+                                  convert_callback=convert_callback, identity=identity)
+
 
 if __name__ == '__main__':
     unittest.main()

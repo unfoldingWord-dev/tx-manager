@@ -3,7 +3,6 @@ import os
 import tempfile
 import traceback
 import requests
-import copy
 import shutil
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
@@ -17,7 +16,7 @@ class Converter(object):
 
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source, resource, cdn_file=None, options=None, payload=None):
+    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identity=None):
         """
         :param string source:
         :param string resource:
@@ -30,7 +29,6 @@ class Converter(object):
         self.resource = resource
         self.cdn_file = cdn_file
         self.options = {} if not options else options
-        self.payload = {} if not payload else payload
 
         self.log = ConvertLogger()
         self.download_dir = tempfile.mkdtemp(prefix='download_')
@@ -38,14 +36,12 @@ class Converter(object):
         self.input_zip_file = None  # If set, won't download the repo archive. Used for testing
         self.output_dir = tempfile.mkdtemp(prefix='output_')
         self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource), suffix='.zip')
-        self.callback = None if 'convert_callback' not in self.payload else self.payload['convert_callback']
+        self.callback = convert_callback
         self.callback_status = 0
         self.callback_results = None
-        if ('job' in self.payload) and ('job_id' in self.payload['job']):
-            self.job_id = self.payload['job']['job_id']
-        elif self.callback:
-            App.logger.error("Job id not given for callback")
-            self.job_id = None
+        self.identity = identity
+        if self.callback and not identity:
+            App.logger.error("Identity not given for callback")
 
     def close(self):
         """delete temp files"""
@@ -108,7 +104,7 @@ class Converter(object):
 
         if self.callback is not None:
             self.callback_results = {
-                'job_id': self.job_id,
+                'identity': self.identity,
                 'results': result
             }
             self.do_callback(self.callback, self.callback_results)
