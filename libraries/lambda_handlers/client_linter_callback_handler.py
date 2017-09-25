@@ -1,6 +1,6 @@
 from __future__ import unicode_literals, print_function
 from libraries.lambda_handlers.handler import Handler
-from libraries.linters.linter_callback import ClientLinterCallback
+from libraries.linters.client_linter_callback import ClientLinterCallback
 
 
 class ClientLinterCallbackHandler(Handler):
