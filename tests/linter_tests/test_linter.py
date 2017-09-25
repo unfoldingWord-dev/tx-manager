@@ -73,6 +73,30 @@ class TestLinter(LinterTestCase):
         result = linter.run()
         self.validate_response(result, linter, expected_response_code, valid_identity=True)
 
+    @mock.patch('requests.post')
+    def test_callback_invalid_url(self, mock_request_post):
+        expected_response_code = 0
+        response_string = 'Timed out'
+        self.set_mock_response(mock_request_post, expected_response_code, response_string)
+        lint_callback = 'dummy.org'
+        identity = "my_stuff"
+        linter = MyLinter(source_zip_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
+                          identity=identity)
+        result = linter.run()
+        self.validate_response(result, linter, expected_response_code, valid_identity=True)
+
+    @mock.patch('requests.post')
+    def test_callback_missing_identity(self, mock_request_post):
+        expected_response_code = 200
+        response_string = 'OK'
+        self.set_mock_response(mock_request_post, expected_response_code, response_string)
+        lint_callback = 'http://dummy.org'
+        identity = "my_stuff"
+        linter = MyLinter(source_zip_url='#broken', source_dir='source_dir', lint_callback=lint_callback)
+        linter.mock_download = True
+        result = linter.run()
+        self.validate_response(result, linter, expected_response_code, valid_identity=False)
+
     #
     # helpers
     #
