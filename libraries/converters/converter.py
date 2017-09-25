@@ -3,10 +3,10 @@ import os
 import tempfile
 import traceback
 import requests
-import shutil
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
 from libraries.app.app import App
+from shutil import copy
 from convert_logger import ConvertLogger
 from abc import ABCMeta, abstractmethod
 
@@ -22,7 +22,8 @@ class Converter(object):
         :param string resource:
         :param string cdn_file:
         :param dict options:
-        :param dict payload:
+        :param string convert_callback:
+        :param string identity:
         """
         self.options = {}
         self.source = source
@@ -125,7 +126,7 @@ class Converter(object):
 
     def upload_archive(self):
         if self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
-            shutil.copy(self.output_zip_file, self.cdn_file)
+            copy(self.output_zip_file, self.cdn_file)
         elif App.cdn_s3_handler():
             App.cdn_s3_handler().upload_file(self.output_zip_file, self.cdn_file)
 
