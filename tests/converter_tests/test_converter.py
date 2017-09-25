@@ -2,13 +2,31 @@ from __future__ import absolute_import, unicode_literals, print_function
 import os
 import tempfile
 import unittest
-from contextlib import closing
-
 import shutil
+from contextlib import closing
 from mock import mock
 from requests import Response
+from libraries.converters.converter import Converter
 from libraries.converters.usfm2html_converter import Usfm2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree
+
+
+class MyConverter(Converter):
+    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identity=None):
+        super(MyConverter, self).__init__(source, resource, cdn_file=cdn_file, options=options,
+                                          convert_callback=convert_callback, identity=identity)
+        self.convert_return = None
+        self.download_return = None
+        self.upload_return = None
+
+    def convert(self):
+        return self.convert_return
+
+    def download_archive(self):
+        return self.download_return
+
+    def upload_archive(self):
+        return self.upload_return
 
 
 class TestConverter(unittest.TestCase):
@@ -35,25 +53,17 @@ class TestConverter(unittest.TestCase):
         remove_tree(self.temp_dir)
 
     @mock.patch('requests.post')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.convert')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.download_archive')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.upload_archive')
-    def test_convert_callback_success(self, mock_upload_archive, mock_download_archive, mock_convert,
-                                      mock_request_post):
+    def test_convert_callback_success(self, mock_request_post):
         # given
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
+        converter = self.get_converter(params)
         expected_response_code = 200
-        mock_download_archive.return_value = True
-        mock_upload_archive.return_value = True
-        mock_convert.return_value = True
-        mock_response = Response()
-        mock_response.status_code = expected_response_code
-        mock_response.reason = 'OK'
-        mock_request_post.return_value = mock_response
-        params = self.params
-        params['convert_callback'] = 'http://dummy.org'
+        response_string = 'OK'
+        self.get_mock_response(mock_request_post, expected_response_code, response_string)
 
         # when
-        with closing(self.get_converter(params)) as tx:
+        with closing(converter) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -61,25 +71,19 @@ class TestConverter(unittest.TestCase):
         self.validate_response(results, tx, expected_response_code)
 
     @mock.patch('requests.post')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.convert')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.download_archive')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.upload_archive')
-    def test_convert_callback_failure(self, mock_upload_archive, mock_download_archive, mock_convert,
-                                      mock_request_post):
+    def test_convert_callback_failure(self, mock_request_post):
         # given
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
+        converter = self.get_converter(params)
         expected_response_code = 504
-        mock_download_archive.return_value = True
-        mock_upload_archive.return_value = True
-        mock_convert.return_value = True
-        mock_response = Response()
-        mock_response.status_code = expected_response_code
-        mock_response.reason = 'Timed out'
-        mock_request_post.return_value = mock_response
+        response_string = 'Timed out'
+        self.get_mock_response(mock_request_post, expected_response_code, response_string)
         params = self.params
         params['convert_callback'] = 'http://dummy.org'
 
         # when
-        with closing(self.get_converter(params)) as tx:
+        with closing(converter) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -87,25 +91,19 @@ class TestConverter(unittest.TestCase):
         self.validate_response(results, tx, expected_response_code)
 
     @mock.patch('requests.post')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.convert')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.download_archive')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.upload_archive')
-    def test_convert_callback_invalid_url(self, mock_upload_archive, mock_download_archive, mock_convert,
-                                          mock_request_post):
+    def test_convert_callback_invalid_url(self, mock_request_post):
         # given
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
+        converter = self.get_converter(params)
         expected_response_code = 0
-        mock_download_archive.return_value = True
-        mock_upload_archive.return_value = True
-        mock_convert.return_value = True
-        mock_response = Response()
-        mock_response.status_code = expected_response_code
-        mock_response.reason = 'Timed out'
-        mock_request_post.return_value = mock_response
+        response_string = 'Timed out'
+        self.get_mock_response(mock_request_post, expected_response_code, response_string)
         params = self.params
         params['convert_callback'] = 'dummy.org'
 
         # when
-        with closing(self.get_converter(params)) as tx:
+        with closing(converter) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -113,26 +111,20 @@ class TestConverter(unittest.TestCase):
         self.validate_response(results, tx, expected_response_code)
 
     @mock.patch('requests.post')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.convert')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.download_archive')
-    @mock.patch('libraries.converters.usfm2html_converter.Usfm2HtmlConverter.upload_archive')
-    def test_convert_callback_missing_job_id(self, mock_upload_archive, mock_download_archive, mock_convert,
-                                             mock_request_post):
+    def test_convert_callback_missing_job_id(self, mock_request_post):
         # given
+        params = self.params
+        params['convert_callback'] = 'http://dummy.org'
+        converter = self.get_converter(params)
         expected_response_code = 200
-        mock_download_archive.return_value = True
-        mock_upload_archive.return_value = True
-        mock_convert.return_value = True
-        mock_response = Response()
-        mock_response.status_code = expected_response_code
-        mock_response.reason = 'OK'
-        mock_request_post.return_value = mock_response
+        response_string = 'OK'
+        self.get_mock_response(mock_request_post, expected_response_code, response_string)
         params = self.params
         params['convert_callback'] = 'http://dummy.org'
         del params['identity']
 
         # when
-        with closing(self.get_converter(params)) as tx:
+        with closing(converter) as tx:
             tx.input_zip_file = self.zip_file
             results = tx.run()
 
@@ -142,6 +134,12 @@ class TestConverter(unittest.TestCase):
     #
     # helpers
     #
+
+    def get_mock_response(self, mock_request_post, expected_response_code, response_string):
+        mock_response = Response()
+        mock_response.status_code = expected_response_code
+        mock_response.reason = response_string
+        mock_request_post.return_value = mock_response
 
     def validate_response(self, results, converter, expected_response_code, valid_identity=True):
         self.assertEquals(converter.callback_status, expected_response_code)
@@ -165,8 +163,12 @@ class TestConverter(unittest.TestCase):
         options = params['options']
         identity = None if 'identity' not in params else params['identity']
         convert_callback = None if 'convert_callback' not in params else params['convert_callback']
-        return Usfm2HtmlConverter(source, resource, cdn_file=cdn_file, options=options,
-                                  convert_callback=convert_callback, identity=identity)
+        converter = Usfm2HtmlConverter(source, resource, cdn_file=cdn_file, options=options,
+                                       convert_callback=convert_callback, identity=identity)
+        converter.download_return = True
+        converter.upload_return = True
+        converter.convert_return = True
+        return converter
 
 
 if __name__ == '__main__':
