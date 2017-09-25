@@ -78,3 +78,18 @@ class TestConvertHandler(TestCase):
             }
         }
         self.assertIsNone(ConvertHandler(converter_class=Usfm2HtmlConverter).handle(event, None))
+
+    @mock.patch('libraries.converters.converter.Converter.run')
+    def test_handle_for_client_callback(self, mock_convert_run):
+        mock_convert_run.return_value = None
+        event = {
+            'data': {
+                'convert_callback': 'http://callback.org',
+                'cdn_file': 'tx/job/1234567890.zip',
+                'identity': 'richmahn/en-obs/705948ab00',
+                'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
+                'resource_type': 'obs',
+                'options': {'pageSize': 'A4'}
+            }
+        }
+        self.assertIsNone(ConvertHandler(converter_class=Usfm2HtmlConverter).handle(event, None))
