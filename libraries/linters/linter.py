@@ -16,12 +16,14 @@ class Linter(object):
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
-                 convert_callback=None, identity=None, **kwargs):
+                 lint_callback=None, identity=None, **kwargs):
         """
         :param string source_zip_url: The main way to give Linter the files
         :param string source_zip_file: If set, will just unzip this local file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
+        :param string lint_callback: If set, will do callback
+        :param string identity: 
         :params dict kwargs:
         """
         self.source_zip_url = source_zip_url
@@ -40,7 +42,7 @@ class Linter(object):
             self.repo_owner = self.commit_data['repository']['owner']['username']
         self.rc = None   # Constructed later when we know we have a source_dir
 
-        self.callback = convert_callback
+        self.callback = lint_callback
         self.callback_status = 0
         self.callback_results = None
         self.identity = identity
