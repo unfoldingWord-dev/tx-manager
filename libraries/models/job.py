@@ -1,11 +1,11 @@
 from __future__ import unicode_literals, print_function
-from sqlalchemy import Column, String, DateTime, Boolean
+from sqlalchemy import Column, String, DateTime, Boolean, func
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
-from dateutil.parser import parse
 from libraries.models.tx_model import TxModel
 from libraries.models.text_pickle_type import TextPickleType
 from libraries.app.app import App
+from libraries.general_tools.data_utils import convert_string_to_date
 
 
 class TxJob(App.Base, TxModel):
@@ -24,8 +24,8 @@ class TxJob(App.Base, TxModel):
     cdn_bucket = Column(String(255), nullable=True)
     cdn_file = Column(String(255), nullable=True)
     callback = Column(String(255), nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     expires_at = Column(DateTime, nullable=True)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
@@ -36,7 +36,7 @@ class TxJob(App.Base, TxModel):
     warnings = Column(TextPickleType(), nullable=True, default=[])
     errors = Column(TextPickleType(), nullable=True, default=[])
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         # Init attributes
         self.success = False
         self.links = []
@@ -44,18 +44,12 @@ class TxJob(App.Base, TxModel):
         self.warnings = []
         self.errors = []
         super(TxJob, self).__init__(**kwargs)
-        self.created_at = self.check_date_format(self.created_at)
-        self.started_at = self.check_date_format(self.started_at)
-        self.ended_at = self.check_date_format(self.ended_at)
-        self.updated_at = self.check_date_format(self.updated_at)
-        self.expires_at = self.check_date_format(self.expires_at)
-        self.eta = self.check_date_format(self.eta)
-
-    def check_date_format(self, date):
-        if isinstance(date, basestring):
-            return parse(date)
-        else:
-            return date
+        self.created_at = convert_string_to_date(self.created_at)
+        self.updated_at = convert_string_to_date(self.updated_at)
+        self.started_at = convert_string_to_date(self.started_at)
+        self.ended_at = convert_string_to_date(self.ended_at)
+        self.expires_at = convert_string_to_date(self.expires_at)
+        self.eta = convert_string_to_date(self.eta)
 
     def link(self, link):
         self.links.append(link)

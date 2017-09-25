@@ -12,4 +12,4 @@ class RegisterModuleHandler(Handler):
         :return dict:
         """
         # Execute
-        return TxManager().register_module(self.data)
+        return dict(TxManager().register_module(self.data))

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import unittest
 from moto import mock_dynamodb2
-from libraries.models.module import Model
+from libraries.models.model import Model
 from libraries.aws_tools.dynamodb_handler import DynamoDBHandler
 
 
