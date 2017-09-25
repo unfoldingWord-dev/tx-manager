@@ -111,7 +111,7 @@ class TestConverter(unittest.TestCase):
         self.validate_response(results, tx, expected_response_code)
 
     @mock.patch('requests.post')
-    def test_convert_callback_missing_job_id(self, mock_request_post):
+    def test_convert_callback_missing_identity(self, mock_request_post):
         # given
         params = self.params
         params['convert_callback'] = 'http://dummy.org'
