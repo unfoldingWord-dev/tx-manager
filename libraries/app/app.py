@@ -72,6 +72,7 @@ class App(object):
     module_table_name = 'modules'
     language_stats_table_name = 'language-stats'
     linter_messaging_name = None
+    base_linter_messaging_name = 'linter_complete'
     db_protocol = 'mysql+pymysql'
     db_user = 'tx'
     db_pass = None
