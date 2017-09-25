@@ -3,7 +3,6 @@ import urllib
 import copy
 import os
 import tempfile
-import requests
 import json
 from datetime import datetime
 from libraries.door43_tools.linter_messaging import LinterMessaging
@@ -109,7 +108,10 @@ class ClientWebhook(object):
 
             # Send lint request
             if job.status != 'failed':
-                lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url)
+                linter_payload = {
+                    'linter_messaging_name': ''  # disable messaging
+                }
+                lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url, extra_data=linter_payload)
                 if 'success' in lint_results and lint_results['success']:
                     job.warnings += lint_results['warnings']
                     job.update()
@@ -172,7 +174,6 @@ class ClientWebhook(object):
             # Send lint request
             linter_payload['single_file'] = book
             linter_payload['s3_commit_key'] = "{0}/{1}/lint_log.json".format(master_s3_commit_key,i)
-
             lint_results = self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload,
                                                                 async=True)
             jobs.append(job)

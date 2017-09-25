@@ -28,7 +28,7 @@ class RunLinterHandler(Handler):
                               single_file=single_file, lint_callback=lint_callback, identity=identity,
                               s3_commit_key=s3_commit_key)
         ret_value = linter.run()
-        if App.linter_messaging_name:
+        if len(App.linter_messaging_name):
             message_queue = LinterMessaging(App.linter_messaging_name)
             while True:
                 success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
