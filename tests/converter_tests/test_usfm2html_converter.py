@@ -17,12 +17,12 @@ class TestUsfmHtmlConverter(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName))
-        self.out_dir = ''
+        self.temp_dir = tempfile.mkdtemp(prefix='TestUsfmHtmlConverter')
 
     def tearDown(self):
         """Runs after each test."""
         # delete temp files
-        remove_tree(self.out_dir)
+        remove_tree(self.temp_dir)
 
     @classmethod
     def setUpClass(cls):
@@ -57,16 +57,15 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        out_zip_file = tempfile.mktemp('.zip')
+        out_zip_file = tempfile.mktemp('.zip', dir=self.temp_dir)
         with closing(Usfm2HtmlConverter('', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(results)
-        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
-        remove(out_zip_file)
         files_to_verify = ['60-JAS.html', '61-1PE.html', '62-2PE.html', '63-1JN.html', '64-2JN.html', '65-3JN.html',
                            '66-JUD.html', '67-REV.html']
         for file_to_verify in files_to_verify:
@@ -78,7 +77,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        out_zip_file = tempfile.mktemp('.zip')
+        out_zip_file = tempfile.mktemp('.zip', dir=self.temp_dir)
         source_url = 'http://test.com/preconvert/22f3d09f7a.zip?convert_only=60-JAS.usfm'
         with closing(Usfm2HtmlConverter(source_url, 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -86,9 +85,8 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(results)
-        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
-        remove(out_zip_file)
         files_to_verify = ['60-JAS.html']
         for file_to_verify in files_to_verify:
             file_name = os.path.join(self.out_dir, file_to_verify)
@@ -105,7 +103,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        out_zip_file = tempfile.mktemp('.zip')
+        out_zip_file = tempfile.mktemp('.zip', dir=self.temp_dir)
         source_url = 'http://test.com/preconvert/22f3d09f7a.zip?convert_only=60-JAS.usfm,66-JUD.usfm'
         with closing(Usfm2HtmlConverter(source_url, 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
@@ -113,9 +111,8 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(results)
-        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
-        remove(out_zip_file)
         files_to_verify = ['66-JUD.html', '60-JAS.html']
         for file_to_verify in files_to_verify:
             file_name = os.path.join(self.out_dir, file_to_verify)
@@ -134,16 +131,15 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        out_zip_file = tempfile.mktemp('.zip')
+        out_zip_file = tempfile.mktemp('.zip', dir=self.temp_dir)
         with closing(Usfm2HtmlConverter('', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(results)
-        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
-        remove(out_zip_file)
         files_to_verify = ['51-PHP.html']
         self.verifyFiles(files_to_verify)
 
@@ -154,16 +150,15 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, '51-PHP.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        out_zip_file = tempfile.mktemp('.zip')
+        out_zip_file = tempfile.mktemp('.zip', dir=self.temp_dir)
         with closing(Usfm2HtmlConverter(' ', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(results)
-        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
-        remove(out_zip_file)
         files_to_verify = ['51-PHP.html']
         self.verifyFiles(files_to_verify)
 
@@ -173,21 +168,20 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         """
         zip_file = os.path.join(self.resources_dir, 'kpb_mat_text_udb.zip')
         zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        out_zip_file = tempfile.mktemp('.zip')
+        out_zip_file = tempfile.mktemp('.zip', dir=self.temp_dir)
         with closing(Usfm2HtmlConverter('', 'udb', out_zip_file)) as tx:
             tx.input_zip_file = zip_file
             results = tx.run()
         # verify the output
         self.assertTrue(os.path.isfile(out_zip_file), "There was no output zip file produced.")
         self.assertIsNotNone(results)
-        self.out_dir = tempfile.mkdtemp(prefix='udb_')
+        self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
-        remove(out_zip_file)
         files_to_verify = ['41-MAT.html']
         self.verifyFiles(files_to_verify)
 
     def test_bad_source(self):
-        """This tests giving a bad resource type to the converter"""
+        """This tests giving a bad source to the converter"""
         with closing(Usfm2HtmlConverter('bad_source', 'bad_resource')) as tx:
             result = tx.run()
         self.assertFalse(result['success'])
@@ -220,7 +214,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
             self.assertTrue(len(usfm) > 10, 'Bible usfm file contents missing: {0}'.format(file_to_verify))
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):
-        in_zip_file = tempfile.mktemp(prefix="test_data", suffix=".zip")
+        in_zip_file = tempfile.mktemp(prefix="test_data", suffix=".zip", dir=self.temp_dir)
         shutil.copy(zip_file, in_zip_file)
         zip_file = in_zip_file
         return zip_file
