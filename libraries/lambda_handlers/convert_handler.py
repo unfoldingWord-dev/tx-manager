@@ -29,14 +29,13 @@ class ConvertHandler(Handler):
         resource = self.retrieve(job, 'resource_type', 'job')
         cdn_file = self.retrieve(job, 'cdn_file', 'job')
         options = {} if 'options' not in job else job['options']
-        payload = {
-            'job': job
-        }
+        payload = {'job': job}
         if 'convert_callback' in self.data:
             payload['convert_callback'] = self.data['convert_callback']
 
         # Execute
-        converter = self.converter_class(source=source, resource=resource, cdn_file=cdn_file, options=options, payload=payload)
+        converter = self.converter_class(source=source, resource=resource, cdn_file=cdn_file, options=options,
+                                         payload=payload)
         results = converter.run()
         converter.close()  # do cleanup after run
         return results
