@@ -16,7 +16,7 @@ class Linter(object):
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
-                 lint_callback=None, identity=None, s3_commit_key=None, **kwargs):
+                 lint_callback=None, identity=None, s3_results_key=None, **kwargs):
         """
         :param string source_zip_url: The main way to give Linter the files
         :param string source_zip_file: If set, will just unzip this local file
@@ -24,7 +24,7 @@ class Linter(object):
         :param dict commit_data: Can get the changes, commit_url, etc from this
         :param string lint_callback: If set, will do callback
         :param string identity: 
-        :param string s3_commit_key:
+        :param string s3_results_key:
         :params dict kwargs:
         """
         self.source_zip_url = source_zip_url
@@ -49,9 +49,9 @@ class Linter(object):
         self.identity = identity
         if self.callback and not identity:
             App.logger.error("Identity not given for callback")
-        self.s3_commit_key = s3_commit_key
-        if self.callback and not s3_commit_key:
-            App.logger.error("s3_commit_key not given for callback")
+        self.s3_results_key = s3_results_key
+        if self.callback and not s3_results_key:
+            App.logger.error("s3_results_key not given for callback")
 
     def close(self):
         """delete temp files"""
@@ -103,7 +103,7 @@ class Linter(object):
         if self.callback is not None:
             self.callback_results = {
                 'identity': self.identity,
-                's3_commit_key': self.s3_commit_key,
+                's3_results_key': self.s3_results_key,
                 'results': result
             }
             self.do_callback(self.callback, self.callback_results)
