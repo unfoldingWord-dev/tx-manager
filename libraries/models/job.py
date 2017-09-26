@@ -11,12 +11,13 @@ from libraries.general_tools.data_utils import convert_string_to_date
 class TxJob(App.Base, TxModel):
     __tablename__ = App.job_table_name
     job_id = Column(String(100), primary_key=True)
+    identifier = Column(String(255), nullable=True)
     owner_name = Column(String(255), nullable=True)
     repo_name = Column(String(255), nullable=True)
     commit_id = Column(String(255), nullable=True)
     status = Column(String(255), nullable=True)
     success = Column(Boolean, nullable=True, default=False)
-    token_user = Column(String(255), nullable=True)
+    user = Column(String(255), nullable=True)
     convert_module = Column(String(255), nullable=True)
     resource_type = Column(String(255), nullable=True)
     input_format = Column(String(255), nullable=True)
