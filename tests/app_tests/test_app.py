@@ -57,7 +57,7 @@ class TestApp(unittest.TestCase):
 
     @mock_dynamodb2
     def test_dynamodb_handler(self):
-        self.assertIsNotNone(App.module_db_handler())
+        self.assertIsNotNone(App.language_stats_db_handler())
 
     def test_prefix_vars(self):
         App(prefix='')

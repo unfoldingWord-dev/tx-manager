@@ -570,7 +570,7 @@ class TestConversions(TestCase):
         start_time = time.time()
         time_out = 60
         found = []
-        while (len(found) < len(check_list)):
+        while len(found) < len(check_list):
             elapsed_seconds = elapsed_time(start_time)
             if elapsed_seconds > time_out:
                 self.warn("timeout ({0} sec) getting deployed files".format(elapsed_seconds))
