@@ -307,6 +307,10 @@ class TxManager(object):
             raise Exception('"resource_types" not given.')
 
         tx_module.public_links.append("{0}/tx/convert/{1}".format(App.api_url, tx_module.name))
+        
+        old_module = TxModule.get(name=tx_module.name)
+        if old_module:
+            old_module.delete()
         tx_module.insert()
         return tx_module
 
