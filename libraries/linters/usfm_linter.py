@@ -82,10 +82,13 @@ class UsfmLinter(Linter):
                 self.found_books.append(book_code)
 
             if len(errors):
-                prefix = "File '{0}' book code '{1}': ".format(sub_path, book_code)
                 for error in errors:
-                    self.log.warning(prefix + error)
+                    parts = error.split( ":" )
 
+                    if( len( parts ) < 2 ):
+                        parts.push( "")
+
+                    self.log.warning( "{0} {1} - {2}".format(book_code, " ".join( parts[1:] ), parts[0] ))
         except Exception as e:
             # for debugging
             self.log.warning("Failed to verify book '{0}', exception: {1}".format(file_name, str(e)))

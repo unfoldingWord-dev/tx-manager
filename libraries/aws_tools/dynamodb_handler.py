@@ -23,7 +23,10 @@ class DynamoDBHandler(object):
                               region_name=self.aws_region_name)
             self.resource = session.resource('dynamodb')
         else:
-            self.resource = boto3.resource('dynamodb')
+            self.resource = boto3.resource('dynamodb',
+                                           aws_access_key_id=self.aws_access_key_id,
+                                           aws_secret_access_key=self.aws_secret_access_key,
+                                           region_name=self.aws_region_name)
         self.table = self.resource.Table(self.table_name)
 
     def get_item(self, keys):
@@ -80,14 +83,23 @@ class DynamoDBHandler(object):
         """
         return self.table.item_count
 
+    def query_raw(self, **params):
+        """
+        gets
+        :param params:
+        :return:
+        """
+        response = self.table.query(**params)
+        return response
+
     def query_items(self, query=None, only_fields_with_values=True, query_chunk_limit=-1):
         """
-        gets items from database
-        :param query: 
+        gets items from database (this actually does scan, not query.  See query_raw() for true query)
+        :param query:
         :param only_fields_with_values: 
         :param query_chunk_limit: not an absolute count, but a threshold where we stop fetching more chunks
                         (if negative then no limit, but will read all chunks)
-        :return: 
+        :return:
         """
         filter_expression = None
         if query and len(query) >= 1:

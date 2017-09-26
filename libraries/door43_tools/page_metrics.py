@@ -4,6 +4,7 @@ import urlparse
 from decimal import Decimal
 from datetime import datetime
 from operator import itemgetter
+from boto3.dynamodb.conditions import Key
 from libraries.models.language_stats import LanguageStats
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
@@ -16,6 +17,7 @@ class PageMetrics(object):
 
     def __init__(self):
         self.languages = None
+        self.searches = None
 
     def get_view_count(self, path, increment=0):
         """
@@ -45,21 +47,19 @@ class PageMetrics(object):
 
         App.logger.debug("Valid repo url: " + path)
         # First see record already exists in DB
-        tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo_name, user_name=repo_owner).first()
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=repo_owner)
         if tx_manifest:
             if increment:
                 tx_manifest.views += 1
                 App.logger.debug('Incrementing view count to {0}'.format(tx_manifest.views))
-                App.db.commit()
+                tx_manifest.update()
             else:
                 App.logger.debug('Returning stored view count of {0}'.format(tx_manifest.views))
             view_count = tx_manifest.views
         else:  # record is not present
             App.logger.debug('No entries for page in manifest table')
             view_count = 0
-
         response['view_count'] = view_count
-
         return response
 
     def get_language_view_count(self, path, increment=0):
@@ -130,6 +130,48 @@ class PageMetrics(object):
 
         return response
 
+    def increment_search_params(self, path):
+        """
+        increment search parameter count
+        :param path:
+        :return:
+        """
+        parts = path.split('?')
+        if (len(parts) > 1) and (len(parts[1]) > 0):
+            search_params = '?' + parts[1]
+        else:
+            App.logger.warning("Invalid language page url: '{0}'".format(path))
+            return -1
+
+        App.logger.debug("Valid search params '" + search_params + "' from url: " + path)
+        try:
+            # First see record already exists in DB
+            lang_stats = LanguageStats({'lang_code': search_params})
+            if lang_stats.lang_code:  # see if data in table
+                lang_stats.views += 1
+                lang_stats.search_type = 'Y'
+                App.logger.debug('Incrementing view count to {0}'.format(lang_stats.views))
+                self.update_lang_stats(lang_stats)
+
+            else:  # record is not present, creat
+                lang_stats.views = 0
+                lang_stats.lang_code = search_params
+                lang_stats.views += 1
+                lang_stats.search_type = 'Y'
+                App.logger.debug('No entries for {0} in {1} table, creating'.format(search_params,
+                                                                                    App.language_stats_table_name))
+                self.update_lang_stats(lang_stats)
+
+            view_count = lang_stats.views
+            if type(view_count) is Decimal:
+                view_count = int(view_count.to_integral_value())
+
+        except Exception as e:
+            App.logger.exception('Error accessing {0} table'.format(App.language_stats_table_name), exc_info=e)
+            return -1
+
+        return view_count
+
     @staticmethod
     def validate_language_code(language_code):
         """
@@ -161,29 +203,53 @@ class PageMetrics(object):
         lang_stats.last_updated = utcnow.strftime("%Y-%m-%dT%H:%M:%SZ")
         lang_stats.update()
 
-    def list_language_views(self):
+    def list_language_views(self, reverse_sort=True, max_count=0):
         """
         get list of all the language view records
         :return:
         """
-        # First see record already exists in DB
-        language_items = LanguageStats().query({"monitor": {"condition": "eq", "value": True}})
-        self.languages = []
-        if language_items and len(language_items):
-            for language in language_items:
-                self.languages.append(language.get_db_data())
+        self.languages = self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count,
+                                                          search_type=False)
         return self.languages
 
-    def get_language_views_sorted_by_count(self, reverse_sort=True):
+    def list_search_views(self, reverse_sort=True, max_count=0):
+        """
+        get list of all the search records
+        :return:
+        """
+        self.searches = self.list_language_table_entries(reverse_sort=reverse_sort, max_count=max_count,
+                                                         search_type=True)
+        return self.searches
+
+    def list_language_table_entries(self, reverse_sort=True, max_count=20, search_type=False):
+        """
+        get list of all the language table records filtered by type
+        :return:
+        """
+        search_key = 'N' if search_type is False else 'Y'
+        params = {
+            'IndexName': 'search_type-views-index',
+            'KeyConditionExpression': Key('search_type').eq(search_key),
+            'ScanIndexForward': not reverse_sort
+        }
+        if max_count > 0:
+            params['Limit'] = max_count
+        db_handler = App.language_stats_db_handler()
+        results = db_handler.query_raw(**params)
+        items = results['Items']
+        return items
+
+    def get_language_views_sorted_by_count(self, reverse_sort=True, max_count=0):
         """
         Get list of language views records sorted by views.
+        :param max_count:
         :param reverse_sort:
         :return:
         """
         newlist = None
         if self.languages is None:
             try:
-                self.list_language_views()
+                self.list_language_views(reverse_sort=reverse_sort, max_count=max_count)
             except:
                 pass
 
@@ -192,20 +258,21 @@ class PageMetrics(object):
 
         return newlist
 
-    def get_language_views_sorted_by_date(self, reverse_sort=True):
+    def get_searches_sorted_by_count(self, reverse_sort=True, max_count=0):
         """
-        Get list of language views records sorted by time last viewed.
+        Get list of language views records sorted by views.
+        :param max_count:
         :param reverse_sort:
         :return:
         """
         newlist = None
-        if self.languages is None:
+        if self.searches is None:
             try:
-                self.list_language_views()
+                self.list_search_views(reverse_sort=reverse_sort, max_count=max_count)
             except:
                 pass
 
-        if self.languages is not None:
-            newlist = sorted(self.languages, key=itemgetter('last_updated'), reverse=reverse_sort)
+        if self.searches is not None:
+            newlist = sorted(self.searches, key=itemgetter('views'), reverse=reverse_sort)
 
         return newlist

@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 import os
 import tempfile
 import traceback
+import requests
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, remove_tree
 from lint_logger import LintLogger
@@ -14,12 +15,16 @@ class Linter(object):
     __metaclass__ = ABCMeta
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None, **kwargs):
+    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
+                 lint_callback=None, identity=None, s3_results_key=None, **kwargs):
         """
         :param string source_zip_url: The main way to give Linter the files
         :param string source_zip_file: If set, will just unzip this local file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
+        :param string lint_callback: If set, will do callback
+        :param string identity: 
+        :param string s3_results_key:
         :params dict kwargs:
         """
         self.source_zip_url = source_zip_url
@@ -37,6 +42,16 @@ class Linter(object):
             self.repo_name = self.commit_data['repository']['name']
             self.repo_owner = self.commit_data['repository']['owner']['username']
         self.rc = None   # Constructed later when we know we have a source_dir
+
+        self.callback = lint_callback
+        self.callback_status = 0
+        self.callback_results = None
+        self.identity = identity
+        if self.callback and not identity:
+            App.logger.error("Identity not given for callback")
+        self.s3_results_key = s3_results_key
+        if self.callback and not s3_results_key:
+            App.logger.error("s3_results_key not given for callback")
 
     def close(self):
         """delete temp files"""
@@ -84,6 +99,15 @@ class Linter(object):
             'success': success,
             'warnings': self.log.warnings,
         }
+
+        if self.callback is not None:
+            self.callback_results = {
+                'identity': self.identity,
+                's3_results_key': self.s3_results_key,
+                'results': result
+            }
+            self.do_callback(self.callback, self.callback_results)
+
         App.logger.debug("Linter results: " + str(result))
         return result
 
@@ -106,3 +130,17 @@ class Linter(object):
             self.source_dir = os.path.join(self.temp_dir, dirs[0])
         else:
             self.source_dir = self.temp_dir
+
+    def do_callback(self, url, payload):
+        if url.startswith('http'):
+            headers = {"content-type": "application/json"}
+            App.logger.debug('Making callback to {0} with payload:'.format(url))
+            App.logger.debug(payload)
+            response = requests.post(url, json=payload, headers=headers)
+            self.callback_status = response.status_code
+            if (self.callback_status >= 200) and (self.callback_status < 299):
+                App.logger.debug('finished.')
+            else:
+                App.logger.error('Error calling callback code {0}: {1}'.format(self.callback_status, response.reason))
+        else:
+            App.logger.error('Invalid callback url: {0}'.format(url))

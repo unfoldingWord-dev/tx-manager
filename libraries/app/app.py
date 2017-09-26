@@ -9,6 +9,7 @@ from libraries.gogs_tools.gogs_handler import GogsHandler
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 def resetable(cls):
@@ -26,6 +27,7 @@ def reset_class(cls):
                 setattr(cls, key, value)
         except AttributeError:
             pass
+    cls.dirty = False
 
 
 def setup_logger(logger, level):
@@ -55,6 +57,7 @@ class App(object):
     """
     _resetable_cache_ = {}
     name = 'tx-manager'
+    dirty = False
 
     # Stage Variables, defaults
     prefix = ''
@@ -66,8 +69,7 @@ class App(object):
     gogs_url = 'https://git.door43.org'
     gogs_domain_name = 'git.door43.org'
     gogs_ip_address = '127.0.0.1'
-    job_table_name = 'tx-job'
-    module_table_name = 'tx-module'
+    module_table_name = 'modules'
     language_stats_table_name = 'language-stats'
     linter_messaging_name = 'linter_complete'
     db_protocol = 'mysql+pymysql'
@@ -81,54 +83,56 @@ class App(object):
 
     # Prefixing vars
     # All variables that we change based on production, development and testing environments.
-    prefixable_vars = ['api_url', 'pre_convert_bucket', 'cdn_bucket', 'door43_bucket', 'job_table_name',
-                       'module_table_name', 'language_stats_table_name', 'linter_messaging_name',
-                       'db_name', 'db_user']
+    prefixable_vars = ['api_url', 'pre_convert_bucket', 'cdn_bucket', 'door43_bucket', 'language_stats_table_name',
+                       'linter_messaging_name', 'db_name', 'db_user']
 
     # DB related
-    ModelBase = declarative_base()  # To be used in all libraries/model classes as the parent class: App.ModelBase
+    Base = declarative_base()  # To be used in all libraries/model classes as the parent class: App.ModelBase
     auto_setup_db = True
     manifest_table_name = 'manifests'
+    job_table_name = 'jobs'
     db_echo = False  # Whether or not to echo DB queries to the debug log. Useful for debugging. Set before setup_db()
-    db_engine = None
-    db = None
     echo = False
 
-    # S3 and DynamoDB Handler related
-    auto_setup_handlers = True
-    cdn_s3_handler = None
-    door43_s3_handler = None
-    pre_convert_s3_handler = None
-    job_db_handler = None
-    module_db_handler = None
-    language_stats_db_handler = None
-    lambda_handler = None
-    gogs_handler = None
+    # Credentials
     aws_access_key_id = None
     aws_secret_access_key = None
     aws_region_name = 'us-west-2'
 
+    # Handlers
+    _db_engine = None
+    _db_session = None
+    _cdn_s3_handler = None
+    _door43_s3_handler = None
+    _pre_convert_s3_handler = None
+    _language_stats_db_handler = None
+    _lambda_handler = None
+    _gogs_handler = None
+
+    # Logger
     logger = logging.getLogger()
     setup_logger(logger, logging.DEBUG)
 
-    def __init__(self, reset=True, **kwargs):
+    def __init__(self, **kwargs):
         """
         Using init to set the class variables with App(var=value)
         :param kwargs:
         """
-        if reset:
+        self.init(**kwargs)
+
+    @classmethod
+    def init(cls, reset=True, **kwargs):
+        """
+        Class init method to set all vars
+        :param bool reset:
+        :param kwargs:
+        """
+        if cls.dirty and reset:
+            App.db_close()
             reset_class(App)
-
-        if 'prefix' in kwargs and kwargs['prefix'] != App.prefix:
-            App.prefix_vars(kwargs['prefix'])
-
-        App.set_vars(**kwargs)
-
-        if App.auto_setup_handlers:
-            App.setup_handlers()
-
-        if App.auto_setup_db and (App.db_connection_string or App.db_pass or App.db_protocol == 'sqlite'):
-            App.setup_db(self.echo)
+        if 'prefix' in kwargs and kwargs['prefix'] != cls.prefix:
+            cls.prefix_vars(kwargs['prefix'])
+        cls.set_vars(**kwargs)
 
     @classmethod
     def prefix_vars(cls, prefix):
@@ -137,87 +141,133 @@ class App(object):
         :return:
         """
         url_re = re.compile(r'^(https*://)')  # Current prefix in URLs
-        for var in App.prefixable_vars:
+        for var in cls.prefixable_vars:
             value = getattr(App, var)
             if re.match(url_re, value):
                 value = re.sub(url_re, r'\1{0}'.format(prefix), value)
             else:
                 value = prefix + value
             setattr(App, var, value)
-        App.prefix = prefix
+        cls.prefix = prefix
+        cls.dirty = True
 
     @classmethod
     def set_vars(cls, **kwargs):
         for var, value in kwargs.iteritems():
             if hasattr(App, var):
                 setattr(App, var, value)
+                cls.dirty = True
 
     @classmethod
-    def setup_handlers(cls):
-        App.cdn_s3_handler = S3Handler(bucket_name=App.cdn_bucket,
-                                       aws_access_key_id=App.aws_access_key_id,
-                                       aws_secret_access_key=App.aws_secret_access_key,
-                                       aws_region_name=App.aws_region_name)
-        App.door43_s3_handler = S3Handler(bucket_name=App.door43_bucket,
-                                          aws_access_key_id=App.aws_access_key_id,
-                                          aws_secret_access_key=App.aws_secret_access_key,
-                                          aws_region_name=App.aws_region_name)
-        App.pre_convert_s3_handler = S3Handler(bucket_name=App.pre_convert_bucket,
-                                               aws_access_key_id=App.aws_access_key_id,
-                                               aws_secret_access_key=App.aws_secret_access_key,
-                                               aws_region_name=App.aws_region_name)
-        App.job_db_handler = DynamoDBHandler(table_name=App.job_table_name,
-                                             aws_access_key_id=App.aws_access_key_id,
-                                             aws_secret_access_key=App.aws_secret_access_key,
-                                             aws_region_name=App.aws_region_name)
-        App.module_db_handler = DynamoDBHandler(table_name=App.module_table_name,
-                                                aws_access_key_id=App.aws_access_key_id,
-                                                aws_secret_access_key=App.aws_secret_access_key,
-                                                aws_region_name=App.aws_region_name)
-        App.language_stats_db_handler = DynamoDBHandler(table_name=App.language_stats_table_name,
-                                                        aws_access_key_id=App.aws_access_key_id,
-                                                        aws_secret_access_key=App.aws_secret_access_key,
-                                                        aws_region_name=App.aws_region_name)
-        App.lambda_handler = LambdaHandler(aws_access_key_id=App.aws_access_key_id,
-                                           aws_secret_access_key=App.aws_secret_access_key,
-                                           aws_region_name=App.aws_region_name)
-        App.gogs_handler = GogsHandler(gogs_url=App.gogs_url)
+    def cdn_s3_handler(cls):
+        if not cls._cdn_s3_handler:
+            cls._cdn_s3_handler = S3Handler(bucket_name=cls.cdn_bucket,
+                                            aws_access_key_id=cls.aws_access_key_id,
+                                            aws_secret_access_key=cls.aws_secret_access_key,
+                                            aws_region_name=cls.aws_region_name)
+        return cls._cdn_s3_handler
 
     @classmethod
-    def setup_db(cls, echo=False):
+    def door43_s3_handler(cls):
+        if not cls._door43_s3_handler:
+            cls._door43_s3_handler = S3Handler(bucket_name=cls.door43_bucket,
+                                               aws_access_key_id=cls.aws_access_key_id,
+                                               aws_secret_access_key=cls.aws_secret_access_key,
+                                               aws_region_name=cls.aws_region_name)
+        return cls._door43_s3_handler
+
+    @classmethod
+    def pre_convert_s3_handler(cls):
+        if not cls._pre_convert_s3_handler:
+            cls._pre_convert_s3_handler = S3Handler(bucket_name=cls.pre_convert_bucket,
+                                                    aws_access_key_id=cls.aws_access_key_id,
+                                                    aws_secret_access_key=cls.aws_secret_access_key,
+                                                    aws_region_name=cls.aws_region_name)
+        return cls._pre_convert_s3_handler
+
+    @classmethod
+    def language_stats_db_handler(cls):
+        if not cls._language_stats_db_handler:
+            cls._language_stats_db_handler = DynamoDBHandler(table_name=cls.language_stats_table_name,
+                                                             aws_access_key_id=cls.aws_access_key_id,
+                                                             aws_secret_access_key=cls.aws_secret_access_key,
+                                                             aws_region_name=cls.aws_region_name)
+        return cls._language_stats_db_handler
+
+    @classmethod
+    def lambda_handler(cls):
+        if not cls._lambda_handler:
+            cls._lambda_handler = LambdaHandler(aws_access_key_id=cls.aws_access_key_id,
+                                                aws_secret_access_key=cls.aws_secret_access_key,
+                                                aws_region_name=cls.aws_region_name)
+        return cls._lambda_handler
+
+    @classmethod
+    def gogs_handler(cls):
+        if not cls._gogs_handler:
+            cls._gogs_handler = GogsHandler(gogs_url=cls.gogs_url)
+        return cls._gogs_handler
+
+    @classmethod
+    def db_engine(cls, echo=None):
         """
-        :param bool echo:
+        :param mixed echo:
         """
-        if not App.db_connection_string:
-            App.db_connection_string = App.construct_connection_string()
-        App.db_engine = create_engine(App.db_connection_string, echo=echo)
-        session = sessionmaker(bind=App.db_engine)()
-        App.db = session
-
-        from libraries.models.manifest import TxManifest
-        TxManifest.__table__.name = App.manifest_table_name
-        App.create_tables([TxManifest.__table__])
-        return session
+        if echo is None or not isinstance(echo, bool):
+            echo = cls.echo
+        if not cls._db_engine:
+            if not cls.db_connection_string:
+                cls.db_connection_string = cls.construct_connection_string()
+            if not cls.db_connection_string.startswith('sqlite://'):
+                cls._db_engine = create_engine(cls.db_connection_string, echo=echo, poolclass=NullPool)
+            else:
+                cls._db_engine = create_engine(cls.db_connection_string, echo=echo)
+        return cls._db_engine
 
     @classmethod
-    def create_tables(cls, tables=None):
-        App.ModelBase.metadata.create_all(App.db_engine, tables=tables)
+    def db(cls, echo=None):
+        """
+        :param mixed echo:
+        """
+        if not cls._db_session:
+            cls._db_session = sessionmaker(bind=cls.db_engine(echo), expire_on_commit=False)()
+            from libraries.models.manifest import TxManifest
+            TxManifest.__table__.name = cls.manifest_table_name
+            from libraries.models.job import TxJob
+            TxJob.__table__.name = cls.job_table_name
+            from libraries.models.module import TxModule
+            TxModule.__table__.name = cls.module_table_name
+            cls.db_create_tables([TxManifest.__table__, TxJob.__table__, TxModule.__table__])
+        return cls._db_session
+
+    @classmethod
+    def db_close(cls):
+        if cls._db_session:
+            cls._db_session.close_all()
+            cls._db_session = None
+        if cls._db_engine:
+            cls._db_engine.dispose()
+            cls._db_engine = None
+
+    @classmethod
+    def db_create_tables(cls, tables=None):
+        cls.Base.metadata.create_all(cls.db_engine(), tables=tables)
 
     @classmethod
     def construct_connection_string(cls):
-        db_connection_string = App.db_protocol+'://'
-        if App.db_user:
-            db_connection_string += App.db_user
-            if App.db_pass:
-                db_connection_string += ':'+App.db_pass
-            if App.db_end_point:
+        db_connection_string = cls.db_protocol+'://'
+        if cls.db_user:
+            db_connection_string += cls.db_user
+            if cls.db_pass:
+                db_connection_string += ':'+cls.db_pass
+            if cls.db_end_point:
                 db_connection_string += '@'
-        if App.db_end_point:
-            db_connection_string += App.db_end_point
-            if App.db_port:
-                db_connection_string += ':'+App.db_port
-        if App.db_name:
-            db_connection_string += '/'+App.db_name
-        if App.db_connection_string_params:
-            db_connection_string += '?'+App.db_connection_string_params
+        if cls.db_end_point:
+            db_connection_string += cls.db_end_point
+            if cls.db_port:
+                db_connection_string += ':'+cls.db_port
+        if cls.db_name:
+            db_connection_string += '/'+cls.db_name
+        if cls.db_connection_string_params:
+            db_connection_string += '?'+cls.db_connection_string_params
         return db_connection_string

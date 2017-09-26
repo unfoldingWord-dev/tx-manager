@@ -123,7 +123,7 @@ class TestTemplater(unittest.TestCase):
         template.titles = template_pre.titles
         return template.run()
 
-    def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters = []):
+    def verifyObsTemplater(self, success, expect_success, output_folder, missing_chapters=[]):
         self.assertIsNotNone(output_folder)
         self.assertEqual(success, expect_success)
 

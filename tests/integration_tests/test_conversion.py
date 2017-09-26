@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
 from libraries.manager.manager import TxManager
 from libraries.general_tools.file_utils import unzip
-from libraries.aws_tools.s3_handler import S3Handler
 from libraries.client.client_webhook import ClientWebhook
 from libraries.models.manifest import TxManifest
 from libraries.models.job import TxJob
@@ -55,6 +54,9 @@ class TestConversions(TestCase):
         branch = os.environ.get('TRAVIS_BRANCH', 'develop')  # default is testing develop branch (dev)
         gogs_user_token = os.environ.get('GOGS_USER_TOKEN', '')
         db_pass = os.environ.get('DB_PASS', '')
+
+        if not db_pass:
+            db_pass = os.environ.get('{0}_DB_PASS'.format(branch.upper()), '')
 
         if branch == 'master':
             prefix = ''  # no prefix for production
@@ -472,7 +474,7 @@ class TestConversions(TestCase):
         if len(build_log_json['errors']) > 0:
             self.warn("WARNING: Found build_log errors: " + str(build_log_json['errors']))
 
-        door43_handler = S3Handler(App.door43_bucket)
+        door43_handler = App.door43_s3_handler()
         deployed_build_log = self.check_deployed_files(door43_handler, expected_output_names, "html",
                                                        destination_key, chapter_count)
 
@@ -484,12 +486,11 @@ class TestConversions(TestCase):
         self.assertTrue(success)
 
         # Test that repo is in manifest table
-        if App.db:
-            tx_manifest = App.db.query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
-            # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
-            self.assertIsNotNone(tx_manifest)
-            self.assertEqual(tx_manifest.repo_name, repo)
-            self.assertEqual(tx_manifest.user_name, user)
+        tx_manifest = TxManifest.get(repo_name=repo, user_name=user)
+        # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
+        self.assertIsNotNone(tx_manifest)
+        self.assertEqual(tx_manifest.repo_name, repo)
+        self.assertEqual(tx_manifest.user_name, user)
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
@@ -498,7 +499,7 @@ class TestConversions(TestCase):
                 "user", "warnings"]
 
         if converted_build_log != deployed_build_log:
-            converted_build_log = App.cdn_s3_handler.get_file_contents(
+            converted_build_log = App.cdn_s3_handler().get_file_contents(
                 os.path.join(destination_key, "build_log.json"))  # make sure we have the latest
         if converted_build_log != deployed_build_log:
             deployed_build_log_ = json.loads(deployed_build_log)
@@ -569,10 +570,15 @@ class TestConversions(TestCase):
 
         check_list.append("index.html")
 
-        retries = 0
-        max_retries = 10
+        start_time = time.time()
+        time_out = 60
         found = []
-        while (retries < max_retries) and (len(found) < len(check_list)):
+        while len(found) < len(check_list):
+            elapsed_seconds = elapsed_time(start_time)
+            if elapsed_seconds > time_out:
+                self.warn("timeout ({0} sec) getting deployed files".format(elapsed_seconds))
+                break
+
             time.sleep(5)
             for file_name in check_list:
                 if file_name in found:
@@ -608,21 +614,22 @@ class TestConversions(TestCase):
             check_list = ['{0:0>2}.html'.format(i) for i in range(1, chapter_count + 1)]
             # checkList.append("index.html")
 
-        retries = 0
-        max_retries = 7
+        start_time = time.time()
+        time_out = 60
         for file_name in check_list:
             path = os.path.join(key, file_name)
             App.logger.debug("checking destination folder for: " + path)
             output = handler.get_file_contents(path)
             while output is None:  # try again in a moment since upload files may not be finished
-                time.sleep(5)
-                retries += 1
-                if retries > max_retries:
-                    self.warn("timeout getting file: " + path)
+                elapsed_seconds = elapsed_time(start_time)
+                if elapsed_seconds > time_out:
+                    self.warn("timeout ({0} sec) getting file: {1}".format(elapsed_seconds, path))
                     break
 
                 # App.logger.debug("retry fetch of: " + path)
                 output = handler.get_file_contents(path)
+                if output is None:
+                    time.sleep(5)
 
             self.assertIsNotNone(output, "missing file: " + path)
 
@@ -638,7 +645,7 @@ class TestConversions(TestCase):
         build_log_json = None
         job = None
         success = False
-        self.cdn_handler = S3Handler(App.cdn_bucket)
+        self.cdn_handler = App.cdn_s3_handler()
         # TODO: change this to use gogs API when finished
         commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)
         commit_len = len(commit_id)
@@ -653,22 +660,22 @@ class TestConversions(TestCase):
 
     def empty_destination_folder(self, commit_sha, repo, user):
         destination_key = self.get_destination_s3_key(commit_sha, repo, user)
-        for obj in App.cdn_s3_handler.get_objects(prefix=destination_key):
+        for obj in App.cdn_s3_handler().get_objects(prefix=destination_key):
             App.logger.debug("deleting destination file: " + obj.key)
-            App.cdn_s3_handler.delete_file(obj.key)
+            App.cdn_s3_handler().delete_file(obj.key)
 
     def delete_preconvert_zip_file(self, commit_sha):
-        self.preconvert_handler = S3Handler(App.pre_convert_bucket)
+        self.preconvert_handler = App.pre_convert_s3_handler()
         preconvert_key = self.get_preconvert_s3_key(commit_sha)
-        if App.pre_convert_s3_handler.key_exists(preconvert_key):
+        if App.pre_convert_s3_handler().key_exists(preconvert_key):
             App.logger.debug("deleting preconvert file: " + preconvert_key)
-            App.pre_convert_s3_handler.delete_file(preconvert_key, catch_exception=True)
+            App.pre_convert_s3_handler().delete_file(preconvert_key, catch_exception=True)
 
     def delete_tx_output_zip_file(self, commit_id):
         tx_output_key = self.get_tx_output_s3_key(commit_id)
-        if App.cdn_s3_handler.key_exists(tx_output_key):
+        if App.cdn_s3_handler().key_exists(tx_output_key):
             App.logger.debug("deleting tx output file: " + tx_output_key)
-            App.cdn_s3_handler.delete_file(tx_output_key, catch_exception=True)
+            App.cdn_s3_handler().delete_file(tx_output_key, catch_exception=True)
 
     def get_tx_output_s3_key(self, commit_id):
         output_key = 'tx/job/{0}.zip'.format(commit_id)
@@ -735,8 +742,7 @@ class TestConversions(TestCase):
                 self.warn(message)
                 return None, False, None
 
-        elapsed_seconds = int(time.time() - start)
-        App.logger.debug("webhook completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("webhook completed in " + str(elapsed_time(start)) + " seconds")
 
         if "build_logs" not in build_log_json:  # if not multiple parts
             job_id = build_log_json['job_id']
@@ -778,10 +784,9 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxJob().load({'job_id': job_id})
+                job = TxJob.get(job_id)
                 self.assertIsNotNone(job)
-                elapsed_seconds = int(time.time() - start)
-                App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
+                App.logger.debug("job " + job_id + " status at " + str(elapsed_time(start)) + ":\n" + str(job.log))
 
                 if job.ended_at is not None:
                     finished.append(job_id)
@@ -807,9 +812,9 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxJob().load({'job_id': job_id})
+            job = TxJob.get(job_id)
             self.assertIsNotNone(job)
-            elapsed_seconds = int(time.time() - start)
+            elapsed_seconds = elapsed_time(start)
             App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))
 
             if job.ended_at is not None:
@@ -823,7 +828,7 @@ class TestConversions(TestCase):
 
     def get_json_file(self, commit_sha, file_name, repo, user):
         key = 'u/{0}/{1}/{2}/{3}'.format(user, repo, commit_sha, file_name)
-        text = App.cdn_s3_handler.get_json(key)
+        text = App.cdn_s3_handler().get_json(key)
         return text
 
     def fetch_commit_data_for_repo(self, base_url, repo, user):
@@ -877,3 +882,8 @@ class TestConversions(TestCase):
                 text = string
                 return text
         return None
+
+
+def elapsed_time(start_time):
+    elapsed_seconds = int(time.time() - start_time)
+    return elapsed_seconds

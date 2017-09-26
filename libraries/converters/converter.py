@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 import os
 import tempfile
 import traceback
+import requests
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
 from libraries.app.app import App
@@ -15,21 +16,20 @@ class Converter(object):
 
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source, resource, cdn_file=None, options=None):
+    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identity=None):
         """
         :param string source:
         :param string resource:
         :param string cdn_file:
         :param dict options:
+        :param string convert_callback:
+        :param string identity:
         """
         self.options = {}
         self.source = source
         self.resource = resource
         self.cdn_file = cdn_file
-        self.options = options
-
-        if not self.options:
-            self.options = {}
+        self.options = {} if not options else options
 
         self.log = ConvertLogger()
         self.download_dir = tempfile.mkdtemp(prefix='download_')
@@ -37,6 +37,12 @@ class Converter(object):
         self.input_zip_file = None  # If set, won't download the repo archive. Used for testing
         self.output_dir = tempfile.mkdtemp(prefix='output_')
         self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource), suffix='.zip')
+        self.callback = convert_callback
+        self.callback_status = 0
+        self.callback_results = None
+        self.identity = identity
+        if self.callback and not identity:
+            App.logger.error("Identity not given for callback")
 
     def close(self):
         """delete temp files"""
@@ -96,6 +102,14 @@ class Converter(object):
             'warnings': self.log.logs['warning'],
             'errors': self.log.logs['error']
         }
+
+        if self.callback is not None:
+            self.callback_results = {
+                'identity': self.identity,
+                'results': result
+            }
+            self.do_callback(self.callback, self.callback_results)
+
         App.logger.debug(result)
         return result
 
@@ -113,5 +127,19 @@ class Converter(object):
     def upload_archive(self):
         if self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
             copy(self.output_zip_file, self.cdn_file)
-        elif App.cdn_s3_handler:
-            App.cdn_s3_handler.upload_file(self.output_zip_file, self.cdn_file)
+        elif App.cdn_s3_handler():
+            App.cdn_s3_handler().upload_file(self.output_zip_file, self.cdn_file)
+
+    def do_callback(self, url, payload):
+        if url.startswith('http'):
+            headers = {"content-type": "application/json"}
+            App.logger.debug('Making callback to {0} with payload:'.format(url))
+            App.logger.debug(payload)
+            response = requests.post(url, json=payload, headers=headers)
+            self.callback_status = response.status_code
+            if (self.callback_status >= 200) and (self.callback_status < 299):
+                App.logger.debug('finished.')
+            else:
+                App.logger.error('Error calling callback code {0}: {1}'.format(self.callback_status, response.reason))
+        else:
+            App.logger.error('Invalid callback url: {0}'.format(url))

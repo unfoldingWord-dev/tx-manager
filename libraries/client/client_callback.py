@@ -14,7 +14,12 @@ class ClientCallback(object):
         """
         :param dict job_data:
         """
-        self.job = TxJob(job_data)
+        self.job_data = job_data
+        self.job = None
+        if self.job_data and 'job_id' in job_data:
+            self.job = TxJob.get(job_data['job_id'])
+        if not self.job:
+            self.job = TxJob(**job_data)
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
 
     def process_callback(self):
@@ -71,7 +76,7 @@ class ClientCallback(object):
 
             # check if all parts are present, if not return
             missing_parts = []
-            finished_parts = App.cdn_s3_handler.get_objects(prefix=s3_commit_key, suffix='/finished')
+            finished_parts = App.cdn_s3_handler().get_objects(prefix=s3_commit_key, suffix='/finished')
             finished_parts_file_names = ','.join([finished_parts[x].key for x in range(len(finished_parts))])
             App.logger.debug('found finished files: ' + finished_parts_file_names)
 
@@ -150,9 +155,12 @@ class ClientCallback(object):
                 book = 'part_' + str(i)  # generate dummy name
 
             # merge build_log data
-            self.job.log += self.prefix_list(build_log_json, 'log', book)
-            self.job.errors += self.prefix_list(build_log_json, 'errors', book)
-            self.job.warnings += self.prefix_list(build_log_json, 'warnings', book)
+            for message in self.prefix_list(build_log_json, 'log', book):
+                self.job.log_message(message)
+            for message in self.prefix_list(build_log_json, 'errors', book):
+                self.job.error_message(message)
+            for message in self.prefix_list(build_log_json, 'warnings', book):
+                self.job.warning_message(message)
             if ('status' in build_log_json) and (build_log_json['status'] != 'success'):
                 self.job.status = build_log_json['status']
             if ('success' in build_log_json) and (build_log_json['success'] is not None):
@@ -221,26 +229,26 @@ class ClientCallback(object):
                 path = os.path.join(root, f)
                 key = s3_commit_key + path.replace(unzip_dir, '')
                 App.logger.debug('Uploading {0} to {1}'.format(f, key))
-                App.cdn_s3_handler.upload_file(path, key)
+                App.cdn_s3_handler().upload_file(path, key)
 
     def update_project_file(self, commit_id, owner_name, repo_name):
         project_json_key = 'u/{0}/{1}/project.json'.format(owner_name, repo_name)
-        project_json = App.cdn_s3_handler.get_json(project_json_key)
+        project_json = App.cdn_s3_handler().get_json(project_json_key)
         project_json['user'] = owner_name
         project_json['repo'] = repo_name
         project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, owner_name, repo_name)
         commit = {
             'id': commit_id,
-            'created_at': self.job.created_at,
+            'created_at': self.job.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
             'status': self.job.status,
             'success': self.job.success,
             'started_at': None,
             'ended_at': None
         }
         if self.job.started_at:
-            commit['started_at'] = self.job.started_at
+            commit['started_at'] = self.job.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         if self.job.ended_at:
-            commit['ended_at'] = self.job.ended_at
+            commit['ended_at'] = self.job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         if 'commits' not in project_json:
             project_json['commits'] = []
         commits = []
@@ -251,7 +259,7 @@ class ClientCallback(object):
         project_json['commits'] = commits
         project_file = os.path.join(self.temp_dir, 'project.json')
         write_file(project_file, project_json)
-        App.cdn_s3_handler.upload_file(project_file, project_json_key, 0)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key, 0)
         return project_json
 
     def update_build_log(self, s3_base_key, part=''):
@@ -260,8 +268,14 @@ class ClientCallback(object):
         return build_log_json
 
     def upload_build_log(self, build_log_json, s3_base_key, part=''):
-        build_log_json['started_at'] = self.job.started_at
-        build_log_json['ended_at'] = self.job.ended_at
+        if self.job.started_at:
+            build_log_json['started_at'] = self.job.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            build_log_json['started_at'] = None
+        if self.job.ended_at:
+            build_log_json['ended_at'] = self.job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            build_log_json['ended_at'] = None
         build_log_json['success'] = self.job.success
         build_log_json['status'] = self.job.status
         build_log_json['message'] = self.job.message
@@ -287,12 +301,12 @@ class ClientCallback(object):
         file_name = os.path.join(self.temp_dir, 'contents.json')
         write_file(file_name, contents)
         App.logger.debug('Writing file to ' + key)
-        App.cdn_s3_handler.upload_file(file_name, key, 0)
+        App.cdn_s3_handler().upload_file(file_name, key, 0)
 
     def get_build_log(self, s3_base_key, part=''):
         build_log_key = self.get_build_log_key(s3_base_key, part)
         # App.logger.debug('Reading build log from ' + build_log_key)
-        build_log_json = App.cdn_s3_handler.get_json(build_log_key)
+        build_log_json = App.cdn_s3_handler().get_json(build_log_key)
         # App.logger.debug('build_log contents: ' + json.dumps(build_log_json))
         return build_log_json
 
