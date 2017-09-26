@@ -84,7 +84,7 @@ class ClientLinterCallback(object):
 
         ClientLinterCallback.upload_build_log(build_log, 'linter_log.json', self.temp_dir, self.s3_results_key)
 
-        ClientLinterCallback.check_if_conversion_finished(multiple_project, self.s3_results_key)
+        ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.temp_dir)
 
         remove_tree(self.temp_dir)  # cleanup
         return
@@ -98,11 +98,66 @@ class ClientLinterCallback(object):
         App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
 
     @staticmethod
-    def check_if_conversion_finished(is_multiple_project, s3_commit_key):
-        # TODO blm
-        return True
+    def deploy_if_conversion_finished(is_multiple_project, s3_commit_key, identifier, output_dir):
+        build_log = None
+        master_s3_key = s3_commit_key
+        if not is_multiple_project:
+            build_log = ClientLinterCallback.merge_build_status_for_part(build_log, s3_commit_key)
+        else:
+            job_id_parts = identifier.split('/')
+            job_id, part_count = job_id_parts
+            master_s3_key = '/'.join(s3_commit_key.split('/')[:-1])
+            for i in range(0, part_count):
+                part_key = "{0}/{1}".format(master_s3_key, i)
+                build_log = ClientLinterCallback.merge_build_status_for_part(build_log, part_key)
+                if build_log is None:
+                    break
+
+        if build_log is not None:  # if all parts found, save build log and kick off deploy
+            # set overall status
+            if len(build_log['errors']):
+                build_log['status'] = 'errors'
+            elif len(build_log['warnings']):
+                build_log['status'] = 'warnings'
+            ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, master_s3_key)
+
+        return build_log
 
     @staticmethod
-    def get_build_status_for_part(s3_commit_key):
-        get_file_contents()
-        return True
+    def merge_build_status_for_part(build_log, s3_commit_key):
+        """
+        merges convert and linter status for this part of conversion into build_log.  Returns None if part not finished.
+        :param build_log:
+        :param s3_commit_key:
+        :return:
+        """
+        results = ClientLinterCallback.merge_build_status_for_file(build_log, s3_commit_key, "build_log.json")
+        if results:
+            build_log = results
+            results = ClientLinterCallback.merge_build_status_for_file(build_log, s3_commit_key, "linter_log.json")
+            if results:
+                return results
+
+        return None
+
+    @staticmethod
+    def merge_build_status_for_file(build_log, s3_commit_key, file_name):
+        key = "{0}/{1}".format(s3_commit_key, file_name)
+        file_results = App.cdn_s3_handler().get_file_contents(key)
+        if file_results:
+            if build_log is None:
+                build_log = file_results
+            else:
+                ClientLinterCallback.merge_lists(build_log, file_results, 'log')
+                ClientLinterCallback.merge_lists(build_log, file_results, 'warnings')
+                ClientLinterCallback.merge_lists(build_log, file_results, 'errors')
+                if ('success' in file_results) and (file_results['success'] is not None):
+                    build_log['success'] = file_results['success']
+
+        return build_log
+        return None
+
+    @staticmethod
+    def merge_lists(build_log, file_results, key):
+        if key in file_results:
+            build_log[key].append(file_results[key])
