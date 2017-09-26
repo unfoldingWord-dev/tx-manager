@@ -25,13 +25,13 @@ class RunLinterHandler(Handler):
         single_file = self.retrieve(self.data, 'single_file', 'payload', required=False, default=None)
         lint_callback = self.retrieve(self.data, 'lint_callback', 'payload', required=False, default=None)
         identity = self.retrieve(self.data, 'identity', 'payload', required=False, default=None)
-        s3_commit_key = self.retrieve(self.data, 's3_commit_key', 'payload', required=False, default=None)
+        s3_results_key = self.retrieve(self.data, 's3_results_key', 'payload', required=False, default=None)
 
         # Execute
         linter_class = LinterHandler.get_linter_class(resource_id)
         linter = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
                               single_file=single_file, lint_callback=lint_callback, identity=identity,
-                              s3_commit_key=s3_commit_key)
+                              s3_commit_key=s3_results_key)
         ret_value = linter.run()
         if len(App.linter_messaging_name):
             message_queue = LinterMessaging(App.linter_messaging_name)
