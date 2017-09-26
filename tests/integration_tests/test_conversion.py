@@ -56,7 +56,7 @@ class TestConversions(TestCase):
         db_pass = os.environ.get('DB_PASS', '')
 
         if not db_pass:
-            db_pass = os.eniron.get('{0}_DB_PASS'.format(branch.upper()), '')
+            db_pass = os.environ.get('{0}_DB_PASS'.format(branch.upper()), '')
 
         if branch == 'master':
             prefix = ''  # no prefix for production
