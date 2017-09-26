@@ -12,4 +12,4 @@ class ClientLinterCallbackHandler(Handler):
         :return dict:
         """
         # Execute
-        return ClientLinterCallback(**self.data).process_converter_callback()
+        return ClientLinterCallback(**self.data).process_callback()
