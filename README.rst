@@ -148,9 +148,9 @@ NOTE: This gives URLs and bucket names for test.  For development, replace the `
         * input_format - The input format of the files (e.g. md)
         * output_format - The desired output format (e.g. html)
 
-    *these variables are set up in the* `'tx' Stage Variables <https://us-west-2.console.aws.amazon.com/apigateway/home?region=us-west-2#/apis/cra9rimna1/stages/tx>`_ *, so dev and prod gateways can have different variables.*
+    * these variables are set up in the* `'tx' Stage Variables <https://us-west-2.console.aws.amazon.com/apigateway/home?region=us-west-2#/apis/cra9rimna1/stages/tx>`_ *, so dev and prod gateways can have different variables.*
 
-    From the above information, tX Manager's setup_job function will determine what converter to use for this job and will save this job request to the `tx-job table <https://us-west-2.console.aws.amazon.com/dynamodb/home?region=us-west-2#tables:selected=tx-job>`_. Inserting this job into the DynamoDB will trigger the `tX Manager Start Job lambda function <https://github.com/unfoldingWord-dev/tx-manager-lambda/blob/develop/functions/start_job/main.py>`_.
+    From the above information, tX Manager's request_job function will determine what converter to use for this job and will save this job request to the `jobs` table. It will then invoke the `tX Manager Start Job lambda function <https://github.com/unfoldingWord-dev/tx-manager-lambda/blob/develop/functions/start_job/main.py>`_.
 
 4. Start Job (a) (Lamdbda function - DynamoDB tx-job table insert triggered)
 

@@ -5,6 +5,7 @@ import mock
 from bs4 import BeautifulSoup
 from tests.manager_tests import mock_utils
 from moto import mock_dynamodb2
+from datetime import datetime
 from libraries.models.job import TxJob
 from libraries.manager.manager import TxManager
 from libraries.models.module import TxModule
@@ -39,62 +40,14 @@ class ManagerTest(unittest.TestCase):
         ManagerTest.mock_gogs.reset_mock()
         ManagerTest.requested_urls = []
         self.tx_manager = TxManager()
-        self.init_tables()
         self.job_items = {}
         self.module_items = {}
         self.init_items()
         self.populate_tables()
 
-    def init_tables(self):
-        try:
-            App.job_db_handler().table.delete()
-        except:
-            pass
-
-        App.job_db_handler().resource.create_table(
-            TableName=App.job_table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'job_id',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'job_id',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
-
-        try:
-            App.module_db_handler().table.delete()
-        except:
-            pass
-
-        App.module_db_handler().resource.create_table(
-            TableName=App.module_table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'name',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'name',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-        )
+    def tearDown(self):
+        """Runs after each test."""
+        App.db_close()
 
     def init_items(self):
         self.job_items = {
@@ -110,7 +63,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at':	'2017-04-12T17:03:05Z'
             },
             'job2': {
                 'job_id': 'job2',
@@ -123,7 +75,6 @@ class ManagerTest(unittest.TestCase):
                 'identifier': 'tx-manager-test-data/en-ulb-jud/6778aa89bd',
                 'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip',
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip',
-                'created_at':	'2017-04-12T17:03:06Z'
             },
             'job3': {
                 'job_id': 'job3',
@@ -138,7 +89,6 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
                 'warnings': [],
-                'created_at':	'2017-04-12T17:03:07Z'
             },
             'job4': {
                 'job_id': 'job4',
@@ -151,7 +101,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at':	'2017-04-12T17:03:08Z'
             },
             'job5': {
                 'job_id': 'job5',
@@ -164,7 +113,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at':	'2017-04-12T17:03:09Z'
             },
             'job7': {
                 'job_id': 'job7',
@@ -177,7 +125,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at':	'2017-04-12T17:03:10Z'
             },
             'job8': {
                 'job_id': 'job8',
@@ -190,7 +137,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at':	'2017-04-12T17:03:11Z'
             },
             'job9': {
                 'job_id': 'job9',
@@ -203,7 +149,6 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
-                'created_at':	'2017-04-12T17:03:12Z'
             },
             'job10': {
                 'job_id': 'job10',
@@ -217,7 +162,6 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZ.zip',
                 'errors': ['error1', 'error2'],
                 'cdn_bucket': 'cdn.door43.org',
-                'created_at': '2017-03-12T17:03:13Z'
             },
             'job11': {
                 'job_id': 'job11',
@@ -231,7 +175,6 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip',
                 'errors': ['error1', 'error2', 'error3'],
                 'cdn_bucket': 'cdn.door43.org',
-                'created_at': '2017-05-12T17:03:14Z'
             }
         }
         self.module_items = {
@@ -240,8 +183,8 @@ class ManagerTest(unittest.TestCase):
                 'type': 'conversion',
                 'version': '1',
                 'resource_types': ['obs', 'ulb'],
-                'input_format': 'md',
-                'output_format': 'html',
+                'input_format': ['md'],
+                'output_format': ['html'],
                 'public_links': ['{0}/tx/convert/md2html'.format(App.api_url)],
                 'private_links': ['{0}/tx/private/module1'.format(App.api_url)],
                 'options': {'pageSize': 'A4'}
@@ -251,8 +194,8 @@ class ManagerTest(unittest.TestCase):
                 'type': 'conversion',
                 'version': '1',
                 'resource_types': ['ulb'],
-                'input_format': 'usfm',
-                'output_format': 'html',
+                'input_format': ['usfm'],
+                'output_format': ['html'],
                 'public_links': ['{0}/tx/convert/usfm2html'.format(App.api_url)],
                 'private_links': [],
                 'options': {'pageSize': 'A4'}
@@ -262,8 +205,8 @@ class ManagerTest(unittest.TestCase):
                 'type': 'conversion',
                 'version': '1',
                 'resource_types': ['other', 'yet_another'],
-                'input_format': 'md',
-                'output_format': 'html',
+                'input_format': ['md'],
+                'output_format': ['html'],
                 'public_links': [],
                 'private_links': [],
                 'options': {}
@@ -272,12 +215,16 @@ class ManagerTest(unittest.TestCase):
 
     def populate_tables(self):
         for idx in self.job_items:
-            TxJob().insert(self.job_items[idx])
-        for idx in self.module_items:
-            TxModule().insert(self.module_items[idx])
+            tx_job = TxJob(**self.job_items[idx])
+            tx_job.insert()
 
-    def test_setup_job(self):
-        """Successful call of setup_job."""
+        for idx in self.module_items:
+            tx_module = TxModule(**self.module_items[idx])
+            tx_module.insert()
+
+    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
+    def test_request_job(self, mock_invoke):
+        """Successful call of request_job."""
         data = {
             'gogs_user_token': 'token1',
             'cdn_bucket':  'test_cdn_bucket',
@@ -286,15 +233,16 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
-        ret = self.tx_manager.setup_job(data)
+        ret = self.tx_manager.request_job(data)
+        print(ret)
         # assert an entry was added to job database
-        job = TxJob().load({'job_id': ret['job']['job_id']})
+        job = TxJob.get(ret['job']['job_id'])
         self.assertEqual(job.convert_module, 'module1')
         self.assertEqual(job.resource_type, 'obs')
         self.assertEqual(job.cdn_bucket, 'test_cdn_bucket')
 
-    def test_setup_job_bad_requests(self):
-        """Tests bad calls of setup_job due to missing or bad input."""
+    def test_request_job_bad_requests(self):
+        """Tests bad calls of request_job due to missing or bad input."""
         # Missing gogs_user_token
         data = {
             'cdn_bucket':  'test_cdn_bucket',
@@ -303,7 +251,7 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
         # Bad gogs_user_token
         data = {
@@ -314,7 +262,7 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
         # Missing cdn_bucket
         data = {
@@ -325,7 +273,7 @@ class ManagerTest(unittest.TestCase):
             'output_format': 'html'
         }
         App.cdn_bucket = None
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
         # Missing source
         data = {
@@ -335,7 +283,7 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
         # Missing resource_type
         self.tx_manager = TxManager()
@@ -346,7 +294,7 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
         # Missing input_format
         data = {
@@ -356,7 +304,7 @@ class ManagerTest(unittest.TestCase):
             'resource_type': 'obs',
             'output_format': 'html'
         }
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
         # Missing output_format
         data = {
@@ -366,10 +314,10 @@ class ManagerTest(unittest.TestCase):
             'resource_type': 'obs',
             'input_format': 'md'
         }
-        self.assertRaises(Exception, self.tx_manager.setup_job, data)
+        self.assertRaises(Exception, self.tx_manager.request_job, data)
 
-    def test_setup_job_malformed_input(self):
-        """Call setup_job with malformed data arguments."""
+    def test_request_job_malformed_input(self):
+        """Call request_job with malformed data arguments."""
         tx_manager = TxManager()
         data = {
             'gogs_user_token': 'token1',
@@ -382,14 +330,14 @@ class ManagerTest(unittest.TestCase):
             # should raise an exception if data is missing a required field
             missing = data.copy()
             del missing[key]
-            self.assertRaises(Exception, tx_manager.setup_job, missing)
+            self.assertRaises(Exception, tx_manager.request_job, missing)
         # should raise an exception if called with an invalid user_token
         bad_token = data.copy()
         bad_token['gogs_user_token'] = 'bad_token'
-        self.assertRaises(Exception, tx_manager.setup_job, bad_token)
+        self.assertRaises(Exception, tx_manager.request_job, bad_token)
 
-    def test_setup_job_no_converter(self):
-        """Call setup_job when there is no applicable converter."""
+    def test_request_job_no_converter(self):
+        """Call request_job when there is no applicable converter."""
         tx_manager = TxManager()
         data = {
             'gogs_user_token': 'token1',
@@ -399,7 +347,7 @@ class ManagerTest(unittest.TestCase):
             'input_format': 'md',
             'output_format': 'html'
         }
-        self.assertRaises(Exception, tx_manager.setup_job, data)
+        self.assertRaises(Exception, tx_manager.request_job, data)
 
     # noinspection PyUnusedLocal
     @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
@@ -424,7 +372,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job2')
 
         # job1's entry in database should have been updated
-        job = TxJob().load({'job_id': 'job2'})
+        job = TxJob.get('job2')
         self.assertEqual(job.job_id, 'job2')
         self.assertEqual(len(job.errors), 0)
         self.assertEqual(len(job.warnings), 1)
@@ -451,7 +399,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job3')
 
         # job2's entry in database should have been updated
-        job = TxJob().load({'job_id': 'job3'})
+        job = TxJob.get('job3')
         self.assertEqual(job.job_id, 'job3')
         self.assertEqual(len(job.errors), 0)
 
@@ -481,7 +429,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job4')
 
         # job3's entry in database should have been updated
-        job = TxJob().load({'job_id': 'job4'})
+        job = TxJob.get('job4')
         self.assertEqual(job.job_id, 'job4')
         self.assertGreater(len(job.errors), 0)
 
@@ -492,15 +440,15 @@ class ManagerTest(unittest.TestCase):
         ret4 = tx_manager.start_job('job5')
         ret5 = tx_manager.start_job('job6')
 
-        self.assertEqual(ret0['job_id'], 'job1')
-        self.assertEqual(ret4['job_id'], 'job5')
-        self.assertEqual(ret5['job_id'], 'job6')
-        self.assertFalse(ret5['success'])
-        self.assertEqual(ret5['message'], 'No job with ID job6 has been requested')
+        self.assertEqual(ret0.job_id, 'job1')
+        self.assertEqual(ret4.job_id, 'job5')
+        self.assertEqual(ret5.job_id, 'job6')
+        self.assertFalse(ret5.success)
+        self.assertEqual(ret5.message, 'No job with ID job6 has been requested')
 
         # last existent job (5) should be updated in database to include error
         # messages
-        job = TxJob().load({'job_id': 'job5'})
+        job = TxJob.get('job5')
         self.assertEqual(job.job_id, 'job5')
         self.assertTrue(len(job.errors) > 0)
 
@@ -513,13 +461,13 @@ class ManagerTest(unittest.TestCase):
 
         Should fail due to the response having an errorMessage
         """
-        job = TxJob().load({'job_id': 'job7'})
+        job = TxJob.get('job7')
         error_to_check = 'something bad happened!'
         mock_invoke.return_value = {'errorMessage': 'Bad Request: {0}'.format(error_to_check)}
         mock_requests_post.return_value = None
         self.tx_manager.start_job('job7')
         # job 6's entry in database should have been updated
-        job = TxJob().load({'job_id': 'job7'})
+        job = TxJob.get('job7')
         self.assertEqual(job.job_id, 'job7')
         self.assertEqual(len(job.errors), 1)
         self.assertEqual(job.errors[0], error_to_check)
@@ -550,7 +498,7 @@ class ManagerTest(unittest.TestCase):
         self.tx_manager.start_job('job7')
 
         # job 7's entry in database should have been updated
-        job = TxJob().load({'job_id': 'job7'})
+        job = TxJob.get('job7')
         self.assertEqual(job.job_id, 'job7')
         self.assertEqual(len(job.errors), 2)
 
@@ -558,9 +506,7 @@ class ManagerTest(unittest.TestCase):
         """Test list_jobs and list_endpoint methods."""
         tx_manager = TxManager()
         jobs = tx_manager.list_jobs({'gogs_user_token': 'token2'}, True)
-        jobs_data = [job.get_db_data() for job in jobs]
-        expected = [TxJob(self.job_items[job_id]).get_db_data() for job_id in self.job_items]
-        self.assertItemsEqual(jobs_data, expected)
+        self.assertEqual(jobs.count(), len(self.job_items))
 
         self.assertRaises(Exception, tx_manager.list_jobs, {'bad_key': 'token1'})
         self.assertRaises(Exception, tx_manager.list_jobs, {'gogs_user_token': 'bad_token'})
@@ -583,16 +529,22 @@ class ManagerTest(unittest.TestCase):
 
     def test_register_module(self):
         data = {
-            'name': 'module1',
+            'name': 'module4',
             'type': 'conversion',
             'resource_types': ['obs'],
             'input_format': 'md',
-            'output_format': 'html'
+            'output_format': 'html',
+            'options': {'pageSize': 'A4'},
+            'public_links': [],
+            'private_links': []
         }
         self.tx_manager.register_module(data)
-        tx_module = TxModule().load({'name': data['name']})
-        data['public_links'] = ['{0}/tx/convert/{1}'.format(App.api_url, data['name'])]
-        self.assertEqual(tx_module.get_db_data(), TxModule(data).get_db_data())
+        tx_module = TxModule.get(name=data['name'])
+        self.assertIsNotNone(tx_module)
+        self.assertEqual(tx_module.options['pageSize'], 'A4')
+        self.assertEqual(tx_module.created_at.year, datetime.utcnow().year)
+        self.assertEqual(tx_module.updated_at.year, datetime.utcnow().year)
+        self.assertEqual(tx_module.public_links, ['{0}/tx/convert/{1}'.format(App.api_url, data['name'])])
 
         test_missing_keys = ['name', 'type', 'input_format', 'output_format', 'resource_types']
         for key in test_missing_keys:
@@ -672,7 +624,7 @@ class ManagerTest(unittest.TestCase):
         expected_success_count = 0
         expected_warning_count = 0
         expected_failure_count = 5
-        self.validateModule(status_table, module_name, expected_row_count, expected_success_count, 
+        self.validateModule(status_table, module_name, expected_row_count, expected_success_count,
                             expected_failure_count, expected_warning_count)
 
         module_name = 'module2'
@@ -703,6 +655,13 @@ class ManagerTest(unittest.TestCase):
         failure_table = soup.find('table', id='failed')
         expected_failure_count = expected_max_failures
         self.validateFailureTable(failure_table, expected_failure_count)
+
+    def test_get_converter_module(self):
+        manager = TxManager()
+        job = TxJob.get('job1')
+        converter = manager.get_converter_module(job)
+        self.assertIsNotNone(converter)
+        self.assertEqual(converter.name, 'module1')
 
     # helper methods #
 

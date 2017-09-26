@@ -483,13 +483,11 @@ class TestConversions(TestCase):
         self.assertTrue(success)
 
         # Test that repo is in manifest table
-        if App.db_pass:
-            tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo, user_name=user).first()
-            # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
-            self.assertIsNotNone(tx_manifest)
-            self.assertEqual(tx_manifest.repo_name, repo)
-            self.assertEqual(tx_manifest.user_name, user)
-            App.db_close()
+        tx_manifest = TxManifest.get(repo_name=repo, user_name=user)
+        # Giving TxManifest above just the composite keys will cause it to load all the data from the App.
+        self.assertIsNotNone(tx_manifest)
+        self.assertEqual(tx_manifest.repo_name, repo)
+        self.assertEqual(tx_manifest.user_name, user)
 
     def compare_build_logs(self, converted_build_log, deployed_build_log, destination_key):
         keys = ["callback", "cdn_bucket", "cdn_file", "commit_id", "commit_message", "commit_url", "committed_by",
@@ -572,7 +570,7 @@ class TestConversions(TestCase):
         start_time = time.time()
         time_out = 60
         found = []
-        while (len(found) < len(check_list)):
+        while len(found) < len(check_list):
             elapsed_seconds = elapsed_time(start_time)
             if elapsed_seconds > time_out:
                 self.warn("timeout ({0} sec) getting deployed files".format(elapsed_seconds))
@@ -783,7 +781,7 @@ class TestConversions(TestCase):
                 if job_id in finished:
                     continue  # skip if job already finished
 
-                job = TxJob().load({'job_id': job_id})
+                job = TxJob.get(job_id)
                 self.assertIsNotNone(job)
                 App.logger.debug("job " + job_id + " status at " + str(elapsed_time(start)) + ":\n" + str(job.log))
 
@@ -811,7 +809,7 @@ class TestConversions(TestCase):
         end = start + polling_timeout
         while time.time() < end:
             time.sleep(sleep_interval)
-            job = TxJob().load({'job_id': job_id})
+            job = TxJob.get(job_id)
             self.assertIsNotNone(job)
             elapsed_seconds = elapsed_time(start)
             App.logger.debug("job " + job_id + " status at " + str(elapsed_seconds) + ":\n" + str(job.log))

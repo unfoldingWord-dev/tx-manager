@@ -149,7 +149,7 @@ class TestLinterMessaging(unittest.TestCase):
         # then
         self.assertFalse(notify_ret)
         self.assertIsNotNone(q.error)
-        self.assertGreaterEqual(q.message_oversize, LinterMessaging.MAX_MESSAGE_SIZE)
+        self.assertTrue(q.is_oversize())
 
     def test_largeMessage(self):
         # given
@@ -161,14 +161,14 @@ class TestLinterMessaging(unittest.TestCase):
         # when
         notify_ret = q.notify_lint_job_complete(message_key, True, payload=sent_message)
         results_error = q.error
-        results_message_oversize = q.message_oversize
+        results_message_oversize = q.is_oversize()
         wait_ret = q.wait_for_lint_jobs([message_key])
 
         # then
         self.assertTrue(notify_ret)
         self.assertTrue(wait_ret)
         self.assertIsNone(results_error)
-        self.assertEqual(results_message_oversize, 0)
+        self.assertFalse(results_message_oversize)
         finished_jobs = q.get_finished_lint_jobs()
         self.assertEquals(len(finished_jobs), 1)
         response_message = finished_jobs[message_key]['payload']

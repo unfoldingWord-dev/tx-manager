@@ -59,66 +59,59 @@ class TxManifestTests(TestCase):
     def populate_table(self):
         for idx in self.items:
             tx_manifest = TxManifest(**self.items[idx])
-            App.db().add(tx_manifest)
-        App.db().commit()
-        App.db_close()
+            tx_manifest.insert()
 
     def test_query_manifest(self):
-        manifests = App.db().query(TxManifest)
+        manifests = TxManifest.query()
         self.assertEqual(manifests.count(), len(self.items))
         for tx_manifest in manifests:
             self.assertEqual(tx_manifest.resource_id,
                              self.items['{0}/{1}'.format(tx_manifest.user_name, tx_manifest.repo_name)]['resource_id'])
-        App.db_close()
 
     def test_load_manifest(self):
         manifest_dict = self.items['Door43/en_obs']
         # Test loading by just giving it only the repo_name and user_name in the data array in the constructor
-        manifest_from_db = App.db().query(TxManifest).filter_by(repo_name=manifest_dict['repo_name'],
-                                                              user_name=manifest_dict['user_name']).first()
+        manifest_from_db = TxManifest.get(repo_name=manifest_dict['repo_name'],
+                                          user_name=manifest_dict['user_name'])
         self.assertEqual(manifest_from_db.resource_id, manifest_dict['resource_id'])
-        App.db_close()
 
     def test_insert_manifest(self):
         # Insert by giving fields in the constructor
-        tx_manifest = TxManifest(
-            repo_name='Test_Repo1',
-            user_name='Test_User1',
-            lang_code='es',
-            resource_id='ta',
-            resource_type='man',
-            title='translationAcadamy',
-            last_updated=datetime.utcnow()
-        )
-        App.db().add(tx_manifest)
-        App.db().commit()
-        manifest_from_db = App.db().query(TxManifest).filter_by(repo_name=tx_manifest.repo_name,
-                                                              user_name=tx_manifest.user_name).first()
+        data = {
+            'repo_name': 'Test_Repo1',
+            'user_name': 'Test_User1',
+            'lang_code': 'es',
+            'resource_id': 'ta',
+            'resource_type': 'man',
+            'title': 'translationAcadamy',
+            'last_updated': datetime.utcnow()
+        }
+        tx_manifest = TxManifest(**data)
+        tx_manifest.insert()
+        manifest_from_db = TxManifest.get(repo_name=data['repo_name'], user_name=data['user_name'])
         self.assertEqual(manifest_from_db.resource_id, 'ta')
-        App.db_close()
 
     def test_update_manifest(self):
         repo_name = self.items['francis/fr_ulb']['repo_name']
         user_name = self.items['francis/fr_ulb']['user_name']
-        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
         # Update by setting fields and calling update()
         tx_manifest.resource_id = 'udb'
         tx_manifest.title = 'Unlocked Dynamic Bible'
-        App.db().commit()
-        manifest_from_db = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
-        self.assertEqual(tx_manifest, manifest_from_db)
+        tx_manifest.update()
+        manifest_from_db = TxManifest.get(repo_name=repo_name, user_name=user_name)
+        self.assertEqual(manifest_from_db.title, tx_manifest.title)
         # Update by giving a dict to update()
         tx_manifest.views = 5
-        App.db().commit()
-        manifest_from_db = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest.update()
+        manifest_from_db = TxManifest.get(repo_name=repo_name, user_name=user_name)
         self.assertEqual(manifest_from_db.views, 5)
         App.db_close()
 
     def test_delete_manifest(self):
         repo_name = self.items['Door43/en_obs']['repo_name']
         user_name = self.items['Door43/en_obs']['user_name']
-        tx_manifest = App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).first()
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
         self.assertIsNotNone(tx_manifest)
-        App.db().delete(tx_manifest)
-        self.assertEqual(App.db().query(TxManifest).filter_by(repo_name=repo_name, user_name=user_name).count(), 0)
-        App.db_close()
+        tx_manifest.delete()
+        self.assertEqual(TxManifest.query(repo_name=repo_name, user_name=user_name).count(), 0)

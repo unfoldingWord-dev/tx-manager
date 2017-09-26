@@ -143,3 +143,6 @@ class MessagingService(object):
                 unfinished.remove(key)
             return unfinished
         return []
+
+    def is_oversize(self):
+        return self.message_oversize > 0
