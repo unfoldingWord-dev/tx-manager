@@ -9,7 +9,7 @@ class RunLinterHandler(Handler):
 
     def __init__(self):
         super(RunLinterHandler, self).__init__()
-        self.message_sent_count = 0
+        self.message_attempt_count = 0
         self.message_success = False
 
     def _handle(self, event, context):
@@ -36,13 +36,14 @@ class RunLinterHandler(Handler):
         if len(App.linter_messaging_name):
             message_queue = LinterMessaging(App.linter_messaging_name)
             while True:
-                self.message_sent_count += 1
+                self.message_attempt_count += 1
                 self.message_success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
                                                                               payload=ret_value)
                 if self.message_success:
                     break
-                if message_queue.message_oversize == 0:  # if other than oversize error
-                    linter.log.error("Message failure: {0}".format(message_queue.error))
+
+                if not message_queue.is_oversize():  # if other than oversize error
+                    App.logger.error("Message failure: {0}".format(message_queue.error))
                     break
 
                 # trim warnings list in half and try again
@@ -50,6 +51,6 @@ class RunLinterHandler(Handler):
                 warnings_len = len(warnings)
                 new_len = warnings_len / 2
                 ret_value['warnings'] = warnings[:new_len]
-                linter.log.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
+                App.logger.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
                                                                                                  new_len))
         return ret_value
