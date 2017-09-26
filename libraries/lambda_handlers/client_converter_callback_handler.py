@@ -11,5 +11,12 @@ class ClientConverterCallbackHandler(Handler):
         :param context:
         :return dict:
         """
+        # Gather arguments
+        identifier = self.retrieve(self.data, 'identifier', 'Payload')
+        success = self.retrieve(self.data, 'success', 'Payload', required=False, default=False)
+        info = self.retrieve(self.data, 'info', 'Payload', required=False, default=[])
+        warnings = self.retrieve(self.data, 'warnings', 'Payload', required=False, default=[])
+        errors = self.retrieve(self.data, 'errors', 'Payload', required=False, default=[])
+
         # Execute
-        return ClientConverterCallback(**self.data).process_converter_callback()
+        return ClientConverterCallback(identifier, success, info, warnings, errors).process_converter_callback()
