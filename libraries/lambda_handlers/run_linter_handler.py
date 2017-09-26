@@ -7,6 +7,11 @@ from libraries.app.app import App
 
 class RunLinterHandler(Handler):
 
+    def __init__(self):
+        super(RunLinterHandler, self).__init__()
+        self.message_sent_count = 0
+        self.message_success = False
+
     def _handle(self, event, context):
         """
         :param dict event:
@@ -31,9 +36,10 @@ class RunLinterHandler(Handler):
         if len(App.linter_messaging_name):
             message_queue = LinterMessaging(App.linter_messaging_name)
             while True:
-                success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
-                                                                 payload=ret_value)
-                if success:
+                self.message_sent_count += 1
+                self.message_success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
+                                                                              payload=ret_value)
+                if self.message_success:
                     break
                 if message_queue.message_oversize == 0:  # if other than oversize error
                     linter.log.error("Message failure: {0}".format(message_queue.error))
