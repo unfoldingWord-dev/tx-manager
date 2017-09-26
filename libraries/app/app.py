@@ -71,7 +71,7 @@ class App(object):
     gogs_ip_address = '127.0.0.1'
     module_table_name = 'modules'
     language_stats_table_name = 'language-stats'
-    linter_messaging_name = None
+    linter_messaging_name = 'linter_complete'
     db_protocol = 'mysql+pymysql'
     db_user = 'tx'
     db_pass = None

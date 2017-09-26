@@ -10,7 +10,7 @@ from libraries.models.job import TxJob
 
 class ClientLinterCallback(object):
 
-    def __init__(self, identifier, success, info, warnings, errors):
+    def __init__(self, identifier, success, info, warnings, errors, s3_results_key):
         """
         :param string identifier:
         :param bool success:
@@ -31,43 +31,78 @@ class ClientLinterCallback(object):
         if not self.errors:
             self.errors = []
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
-        self.job = None
+        self.s3_results_key = s3_results_key
 
     def process_converter_callback(self):
-        job_id_parts = self.identifier.split('/')
-        job_id = job_id_parts[0]
-        self.job = TxJob.get(job_id)
 
-        if not self.job:
-            error = 'No job found for job_id = {0}, identifier = {0}'.format(job_id, self.identifier)
+        if not self.identifier:
+            error = 'No identifier found'
             App.logger.error(error)
             raise Exception(error)
 
-        if len(job_id_parts) == 4:
+        if not self.s3_results_key:
+            error = 'No s3_commit_key found for identifier = {0}'.format(self.identifier)
+            App.logger.error(error)
+            raise Exception(error)
+
+        job_id_parts = self.identifier.split('/')
+        job_id = job_id_parts[0]
+
+        multiple_project = len(job_id_parts) == 4
+        if multiple_project:
             part_count, part_id, book = job_id_parts[1:]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
+        else:
+            App.logger.debug('Single project')
+
+        build_log = {
+            'job_id': job_id,
+            'identifier': self.identifier,
+            'success': self.success,
+            'multiple_project': multiple_project,
+            'log': self.log,
+            'warnings': self.warnings,
+            'errors': self.errors,
+            's3_commit_key': self.s3_results_key
+        }
 
         if not self.success:
             msg = "Linter failed for identifier: " + self.identifier
-            self.job.warnings_message(msg)
+            build_log['warnings'].append(msg)
             App.logger.error(msg)
         else:
             App.logger.debug("Linter {0} results:\n{1}".format(self.identifier, '\n'.join(self.warnings)))
 
-        has_warnings = False
-        for warning in self.warnings:
-            self.job.warnings_message(warning)
-            has_warnings = True
-
+        has_warnings = len(build_log['warnings']) > 0
         if has_warnings:
             msg = "Linter {0} has Warnings!".format(self.identifier)
-            self.job.log_message(msg)
+            build_log['log'].append(msg)
         else:
             msg = "Linter {0} completed with no warnings".format(self.identifier)
-            self.job.log_message(msg)
+            build_log['log'].append(msg)
 
-        self.job.update()
+        ClientLinterCallback.upload_build_log(build_log, 'linter_log.json', self.temp_dir, self.s3_results_key)
+
+        ClientLinterCallback.check_if_conversion_finished(multiple_project, self.s3_results_key)
 
         remove_tree(self.temp_dir)  # cleanup
         return
+
+    @staticmethod
+    def upload_build_log(build_log, file_name, output_dir, s3_commit_key):
+        build_log_file = os.path.join(output_dir, file_name)
+        write_file(build_log_file, build_log)
+        upload_key = '{0}/{1}'.format(s3_commit_key, file_name)
+        App.logger.debug('Saving build log to ' + upload_key)
+        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
+
+    @staticmethod
+    def check_if_conversion_finished(is_multiple_project, s3_commit_key):
+        # TODO blm
+        return True
+
+    @staticmethod
+    def get_build_status_for_part(s3_commit_key):
+        get_file_contents()
+        return True
