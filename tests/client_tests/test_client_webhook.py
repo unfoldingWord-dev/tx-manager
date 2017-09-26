@@ -309,7 +309,7 @@ class TestClientWebhook(unittest.TestCase):
     def mock_cdn_get_json(self, project_json_key):
         return {}
 
-    def mock_clear_commit_directory_in_cdn(self, s3_commit_key):
+    def mock_clear_commit_directory_in_cdn(self, s3_results_key):
         return
 
     def setup_linter(self):
