@@ -71,7 +71,7 @@ class ClientLinterCallback(object):
             build_log['warnings'].append(msg)
             App.logger.error(msg)
         else:
-            App.logger.debug("Linter {0} results:\n{1}".format(self.identifier, '\n'.join(self.warnings)))
+            App.logger.debug("Linter {0} warnings:\n{1}".format(self.identifier, '\n'.join(self.warnings)))
 
         has_warnings = len(build_log['warnings']) > 0
         if has_warnings:
@@ -83,7 +83,7 @@ class ClientLinterCallback(object):
 
         ClientLinterCallback.upload_build_log(build_log, 'linter_log.json', self.temp_dir, self.s3_results_key)
 
-        ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.temp_dir)
+        ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.identifier, self.temp_dir)
 
         remove_tree(self.temp_dir)  # cleanup
         return
@@ -92,20 +92,20 @@ class ClientLinterCallback(object):
     def upload_build_log(build_log, file_name, output_dir, s3_results_key):
         build_log_file = os.path.join(output_dir, file_name)
         write_file(build_log_file, build_log)
-        upload_key = '{0}/{1}'.format(s3_results_key, file_name)
-        App.logger.debug('Saving build log to ' + upload_key)
-        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
+        App.logger.debug('Saving build log to ' + s3_results_key)
+        App.cdn_s3_handler().upload_file(build_log_file, s3_results_key, cache_time=0)
 
     @staticmethod
     def deploy_if_conversion_finished(is_multiple_project, s3_results_key, identifier, output_dir):
         build_log = None
         master_s3_key = s3_results_key
         if not is_multiple_project:
-            build_log = ClientLinterCallback.merge_build_status_for_part(build_log, s3_results_key)
+            master_s3_key = '/'.join(s3_results_key.split('/')[:-1])
+            build_log = ClientLinterCallback.merge_build_status_for_part(build_log, master_s3_key)
         else:
             job_id_parts = identifier.split('/')
             job_id, part_count = job_id_parts
-            master_s3_key = '/'.join(s3_results_key.split('/')[:-1])
+            master_s3_key = '/'.join(s3_results_key.split('/')[:-2])
             for i in range(0, part_count):
                 part_key = "{0}/{1}".format(master_s3_key, i)
                 build_log = ClientLinterCallback.merge_build_status_for_part(build_log, part_key)
@@ -118,7 +118,8 @@ class ClientLinterCallback(object):
                 build_log['status'] = 'errors'
             elif len(build_log['warnings']):
                 build_log['status'] = 'warnings'
-            ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, master_s3_key)
+            file_name = "build_log.json"
+            build_log = ClientLinterCallback.upload_build_log(build_log, file_name, output_dir, master_s3_key + '/' + file_name)
 
         return build_log
 
@@ -133,16 +134,17 @@ class ClientLinterCallback(object):
         results = ClientLinterCallback.merge_build_status_for_file(build_log, s3_results_key, "build_log.json")
         if results:
             build_log = results
-            results = ClientLinterCallback.merge_build_status_for_file(build_log, s3_results_key, "linter_log.json")
+            results = ClientLinterCallback.merge_build_status_for_file(build_log, s3_results_key, "lint_log.json",
+                                                                       linter_file=True)
             if results:
                 return results
 
         return None
 
     @staticmethod
-    def merge_build_status_for_file(build_log, s3_results_key, file_name):
+    def merge_build_status_for_file(build_log, s3_results_key, file_name, linter_file=False):
         key = "{0}/{1}".format(s3_results_key, file_name)
-        file_results = App.cdn_s3_handler().get_file_contents(key)
+        file_results = App.cdn_s3_handler().get_json(key)
         if file_results:
             if build_log is None:
                 build_log = file_results
@@ -150,13 +152,14 @@ class ClientLinterCallback(object):
                 ClientLinterCallback.merge_lists(build_log, file_results, 'log')
                 ClientLinterCallback.merge_lists(build_log, file_results, 'warnings')
                 ClientLinterCallback.merge_lists(build_log, file_results, 'errors')
-                if ('success' in file_results) and (file_results['success'] is not None):
+                if not linter_file and ('success' in file_results) and (file_results['success'] is not None):
                     build_log['success'] = file_results['success']
 
-        return build_log
+            return build_log
         return None
 
     @staticmethod
     def merge_lists(build_log, file_results, key):
         if key in file_results:
-            build_log[key].append(file_results[key])
+            value = file_results[key]
+            build_log[key] += value
