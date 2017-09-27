@@ -83,6 +83,7 @@ class ClientWebhook(object):
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
             App.logger.debug('Updating manifest in manifest table: {0}'.format(manifest_data))
+            tx_manifest.update()
         else:
             tx_manifest = TxManifest(**manifest_data)
             App.logger.debug('Inserting manifest into manifest table: {0}'.format(tx_manifest))
