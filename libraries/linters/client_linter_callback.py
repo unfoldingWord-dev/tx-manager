@@ -23,6 +23,7 @@ class ClientLinterCallback(object):
         self.log = info
         self.warnings = warnings
         self.errors = errors
+        self.all_parts_completed = False
 
         if not self.log:
             self.log = []
@@ -40,7 +41,7 @@ class ClientLinterCallback(object):
             raise Exception(error)
 
         if not self.s3_results_key:
-            error = 'No s3_commit_key found for identifier = {0}'.format(self.identifier)
+            error = 'No s3_results_key found for identifier = {0}'.format(self.identifier)
             App.logger.error(error)
             raise Exception(error)
 
@@ -85,6 +86,7 @@ class ClientLinterCallback(object):
 
         results = ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.identifier, self.temp_dir)
         if results:
+            self.all_parts_completed = True
             build_log = results
 
         remove_tree(self.temp_dir)  # cleanup
