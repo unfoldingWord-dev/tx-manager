@@ -24,6 +24,7 @@ class ClientLinterCallback(object):
         self.warnings = warnings
         self.errors = errors
         self.all_parts_completed = False
+        self.multipart = False
 
         if not self.log:
             self.log = []
@@ -46,8 +47,8 @@ class ClientLinterCallback(object):
             raise Exception(error)
 
         id_parts = self.identifier.split('/')
-        multiple_project = len(id_parts) > 5
-        if multiple_project:
+        self.multipart = len(id_parts) > 5
+        if self.multipart:
             user, repo, commit, part_count, part_id, book = id_parts[:6]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
@@ -57,7 +58,7 @@ class ClientLinterCallback(object):
         build_log = {
             'identifier': self.identifier,
             'success': self.success,
-            'multiple_project': multiple_project,
+            'multipart_project': self.multipart,
             'log': self.log,
             'warnings': self.warnings,
             'errors': self.errors,
@@ -81,7 +82,7 @@ class ClientLinterCallback(object):
 
         ClientLinterCallback.upload_build_log(build_log, 'lint_log.json', self.temp_dir, self.s3_results_key)
 
-        results = ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.identifier, self.temp_dir)
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.s3_results_key, self.identifier, self.temp_dir)
         if results:
             self.all_parts_completed = True
             build_log = results
@@ -98,13 +99,15 @@ class ClientLinterCallback(object):
         App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
 
     @staticmethod
-    def deploy_if_conversion_finished(is_multiple_project, s3_results_key, identifier, output_dir):
+    def deploy_if_conversion_finished(s3_results_key, identifier, output_dir):
         build_log = None
         master_s3_key = s3_results_key
-        if not is_multiple_project:
+        id_parts = identifier.split('/')
+        multiple_project = len(id_parts) > 5
+
+        if not multiple_project:
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, master_s3_key)
         else:
-            id_parts = identifier.split('/')
             user, repo, commit, part_count, part_id, book = id_parts[:6]
             master_s3_key = '/'.join(s3_results_key.split('/')[:-1])
             for i in range(0, int(part_count)):

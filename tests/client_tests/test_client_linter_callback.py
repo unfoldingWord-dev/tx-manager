@@ -56,6 +56,7 @@ class TestClientLinterCallback(TestCase):
         self.expected_status = "success"
         self.expected_success = True
         self.expected_all_parts_completed = True
+        self.expected_multipart = False
 
     def tearDown(self):
         """Runs after each test."""
@@ -155,7 +156,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_build_not_finished(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        build_log_path = self.get_build_log_path()
+        build_log_path = self.get_json_log_path()
         file_utils.remove(build_log_path)
         self.expected_log_count = 1
         self.expected_status = None
@@ -171,7 +172,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_build_error(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        build_log_path = self.get_build_log_path()
+        build_log_path = self.get_json_log_path()
         build_log = file_utils.load_json_object(build_log_path)
         build_log['errors'].append('convert error')
         build_log['success'] = False
@@ -189,14 +190,14 @@ class TestClientLinterCallback(TestCase):
         # then
         self.validate_results(results, linter_cb)
 
-    def test_callbackLintNotFinished(self):
+    def test_callbackSimpleJob_LintNotFinished(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
         results_path = os.path.join(self.source_folder, 'temp')
         identifier = self.lint_callback_data['identifier']
 
         # when
-        results = ClientLinterCallback.deploy_if_conversion_finished(False, self.results_key, identifier, results_path)
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier, results_path)
 
         # then
         self.assertIsNone(results)
@@ -208,6 +209,7 @@ class TestClientLinterCallback(TestCase):
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
         self.lint_callback_data['identifier'] = 'tx-manager-test-data/en-ulb/22f3d09f7a/4/0/01-GEN.usfm'
         self.expected_log_count = 36
+        self.expected_multipart = True
         linter_cb = self.mock_client_linter_callback()
 
         # when
@@ -215,6 +217,48 @@ class TestClientLinterCallback(TestCase):
 
         # then
         self.validate_results(results, linter_cb)
+
+    def test_callbackMultpleJob_build_error(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/2'
+        self.lint_callback_data['identifier'] = 'tx-manager-test-data/en-ulb/22f3d09f7a/4/2/03-LEV.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        build_log_path = self.get_json_log_path()
+        build_log = file_utils.load_json_object(build_log_path)
+        build_log['errors'].append('convert error')
+        build_log['success'] = False
+        build_log['status'] = 'errors'
+        file_utils.write_file(build_log_path, build_log)
+        self.expected_error_count = 1
+        self.expected_success = False
+        self.expected_status = "errors"
+        self.expected_log_count = 36
+        self.expected_multipart = None
+        linter_cb = self.mock_client_linter_callback()
+
+        # when
+        results = linter_cb.process_callback()
+
+        # then
+        self.validate_results(results, linter_cb)
+
+    def test_callbackMultpleJob_LintNotFinished(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
+        self.lint_callback_data['identifier'] = '"tx-manager-test-data/en-ulb/22f3d09f7a/4/3/05-DEU.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        lint_log_path = self.get_json_log_path()
+        file_utils.remove(lint_log_path)
+        results_path = os.path.join(self.source_folder, 'temp')
+        identifier = self.lint_callback_data['identifier']
+
+        # when
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier, results_path)
+
+        # then
+        self.assertIsNone(results)
 
 
     #
@@ -225,9 +269,9 @@ class TestClientLinterCallback(TestCase):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'])
         return build_log_path
 
-    def get_build_log_path(self):
+    def get_json_log_path(self, file_name='build_log.json'):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'],
-                                      'build_log.json')
+                                      file_name)
         return build_log_path
 
     def unzip_resource_files(self, resource_file_name):
@@ -250,6 +294,9 @@ class TestClientLinterCallback(TestCase):
 
         self.assertEqual(results['success'], self.expected_success)
         self.assertEqual(linter_cb.all_parts_completed, self.expected_all_parts_completed)
+
+        if self.expected_multipart is not None:
+            self.assertEqual(linter_cb.multipart, self.expected_multipart)
 
     def mock_client_linter_callback(self, error=None):
         clcb = ClientLinterCallback(identifier=self.lint_callback_data['identifier'],
