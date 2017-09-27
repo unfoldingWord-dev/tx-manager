@@ -45,19 +45,16 @@ class ClientLinterCallback(object):
             App.logger.error(error)
             raise Exception(error)
 
-        job_id_parts = self.identifier.split('/')
-        job_id = job_id_parts[0]
-
-        multiple_project = len(job_id_parts) == 4
+        id_parts = self.identifier.split('/')
+        multiple_project = len(id_parts) > 5
         if multiple_project:
-            part_count, part_id, book = job_id_parts[1:]
+            user, repo, commit, part_count, part_id, book = id_parts[:6]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
         else:
             App.logger.debug('Single project')
 
         build_log = {
-            'job_id': job_id,
             'identifier': self.identifier,
             'success': self.success,
             'multiple_project': multiple_project,
@@ -107,10 +104,10 @@ class ClientLinterCallback(object):
         if not is_multiple_project:
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, master_s3_key)
         else:
-            job_id_parts = identifier.split('/')
-            job_id, part_count = job_id_parts
+            id_parts = identifier.split('/')
+            user, repo, commit, part_count, part_id, book = id_parts[:6]
             master_s3_key = '/'.join(s3_results_key.split('/')[:-1])
-            for i in range(0, part_count):
+            for i in range(0, int(part_count)):
                 part_key = "{0}/{1}".format(master_s3_key, i)
                 build_log = ClientLinterCallback.merge_build_status_for_part(build_log, part_key)
                 if build_log is None:
@@ -155,7 +152,7 @@ class ClientLinterCallback(object):
                 ClientLinterCallback.merge_lists(build_log, file_results, 'log')
                 ClientLinterCallback.merge_lists(build_log, file_results, 'warnings')
                 ClientLinterCallback.merge_lists(build_log, file_results, 'errors')
-                if not linter_file and ('success' in file_results) and (file_results['success'] is not None):
+                if not linter_file and ('success' in file_results) and (file_results['success'] is False):
                     build_log['success'] = file_results['success']
 
             return build_log

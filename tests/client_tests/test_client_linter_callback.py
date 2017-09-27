@@ -41,9 +41,10 @@ class TestClientLinterCallback(TestCase):
         self.raiseDownloadException = False
         self.source_folder = None
 
-        self.lint_callback_data_single = {
+        self.results_key = 'u/results'
+        self.lint_callback_data = {
             'identifier': 'dummy_id',
-            's3_results_key': 'results',
+            's3_results_key': self.results_key,
             'success': True,
             'info': [],
             'warnings': [],
@@ -76,7 +77,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_missing_id(self):
         # given
         self.expected_log_count = 9
-        del self.lint_callback_data_single['identifier']
+        del self.lint_callback_data['identifier']
         exception_thrown = False
 
         # when
@@ -92,7 +93,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_empty_id(self):
         # given
         self.expected_log_count = 9
-        self.lint_callback_data_single['identifier'] = ''
+        self.lint_callback_data['identifier'] = ''
         linter_cb = self.mock_client_linter_callback()
         exception_thrown = False
 
@@ -108,7 +109,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_empty_s3_results_key(self):
         # given
         self.expected_log_count = 9
-        self.lint_callback_data_single['s3_results_key'] = ''
+        self.lint_callback_data['s3_results_key'] = ''
         linter_cb = self.mock_client_linter_callback()
         exception_thrown = False
 
@@ -124,7 +125,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_lint_error(self):  # lint error treated as build warning
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        self.lint_callback_data_single['success'] = False
+        self.lint_callback_data['success'] = False
         self.expected_log_count = 9
         self.expected_warning_count = 1
         self.expected_status = "warnings"
@@ -139,7 +140,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_lint_warning(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        self.lint_callback_data_single['warnings'].append("lint warning")
+        self.lint_callback_data['warnings'].append("lint warning")
         self.expected_log_count = 9
         self.expected_warning_count = 1
         self.expected_status = "warnings"
@@ -192,24 +193,40 @@ class TestClientLinterCallback(TestCase):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
         results_path = os.path.join(self.source_folder, 'temp')
-        identifier = self.lint_callback_data_single['identifier']
+        identifier = self.lint_callback_data['identifier']
 
         # when
-        results = ClientLinterCallback.deploy_if_conversion_finished(False, 'results', identifier, results_path)
+        results = ClientLinterCallback.deploy_if_conversion_finished(False, self.results_key, identifier, results_path)
 
         # then
         self.assertIsNone(results)
+
+    def test_callbackMultpleJob(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.unzip_resource_files("en_ulb.zip")
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
+        self.lint_callback_data['identifier'] = 'tx-manager-test-data/en-ulb/22f3d09f7a/4/0/01-GEN.usfm'
+        self.expected_log_count = 36
+        linter_cb = self.mock_client_linter_callback()
+
+        # when
+        results = linter_cb.process_callback()
+
+        # then
+        self.validate_results(results, linter_cb)
+
 
     #
     # helpers
     #
 
     def get_results_folder(self):
-        build_log_path = os.path.join(self.source_folder, self.lint_callback_data_single['s3_results_key'])
+        build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'])
         return build_log_path
 
     def get_build_log_path(self):
-        build_log_path = os.path.join(self.source_folder, self.lint_callback_data_single['s3_results_key'],
+        build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'],
                                       'build_log.json')
         return build_log_path
 
@@ -218,7 +235,7 @@ class TestClientLinterCallback(TestCase):
         self.source_folder = tempfile.mkdtemp(dir=self.temp_dir, prefix='sources_')
         unzip(self.source_zip, self.source_folder)
         source_subfolder = os.path.join(self.source_folder, resource_file_name.split('.')[0])
-        results_subFolder = os.path.join(self.source_folder, 'results')
+        results_subFolder = os.path.join(self.source_folder, self.results_key)
         file_utils.copy_tree(source_subfolder, results_subFolder)
 
     def validate_results(self, results, linter_cb):
@@ -235,12 +252,12 @@ class TestClientLinterCallback(TestCase):
         self.assertEqual(linter_cb.all_parts_completed, self.expected_all_parts_completed)
 
     def mock_client_linter_callback(self, error=None):
-        clcb = ClientLinterCallback(identifier=self.lint_callback_data_single['identifier'],
-                                    success=self.lint_callback_data_single['success'],
-                                    info=self.lint_callback_data_single['info'],
-                                    warnings=self.lint_callback_data_single['warnings'],
-                                    errors=self.lint_callback_data_single['errors'],
-                                    s3_results_key=self.lint_callback_data_single['s3_results_key'])
+        clcb = ClientLinterCallback(identifier=self.lint_callback_data['identifier'],
+                                    success=self.lint_callback_data['success'],
+                                    info=self.lint_callback_data['info'],
+                                    warnings=self.lint_callback_data['warnings'],
+                                    errors=self.lint_callback_data['errors'],
+                                    s3_results_key=self.lint_callback_data['s3_results_key'])
         return clcb
 
     def mock_download_file(self, url, target):
