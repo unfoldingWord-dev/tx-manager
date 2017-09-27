@@ -120,6 +120,43 @@ class TestClientWebhook(unittest.TestCase):
 
     @patch('libraries.client.client_webhook.download_file')
     @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_processWebhook_update_manifest_table(self, mock_send_payload_to_run_linter, mock_download_file):
+        # given
+        manifest_data = {
+            'resource_id': ' ',
+            'title': ' ',
+            'manifest':  ' ',
+            'lang_code': ' ',
+            'user_name': 'tx-manager-test-data',
+            'resource_type': ' ',
+            'repo_name': 'en-ulb'}
+        tx_manifest = TxManifest(**manifest_data)
+        tx_manifest.insert()  # preload table with empty data
+        mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
+        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
+                                                         mock_download_file)
+        expected_job_count = 1
+        expected_error_count = 0
+
+        # when
+        results = client_web_hook.process_webhook()
+
+        # then
+        self.validateResults(results, expected_job_count, expected_error_count)
+
+        # Check repo was updated in manifest table
+        repo_name = client_web_hook.commit_data['repository']['name']
+        user_name = client_web_hook.commit_data['repository']['owner']['username']
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
+        self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
+        self.assertEqual(tx_manifest.resource_id, 'udb')
+        self.assertEqual(tx_manifest.lang_code, 'kpb')
+        self.assertEqual(tx_manifest.title, 'Unlocked Dynamic Bible')
+        self.assertEqual(tx_manifest.resource_type, 'book')
+        self.assertGreater(len(tx_manifest.manifest), 100)
+
+    @patch('libraries.client.client_webhook.download_file')
+    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookMultipleBooks(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         self.setup_linter()
