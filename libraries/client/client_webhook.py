@@ -401,7 +401,7 @@ class ClientWebhook(object):
         App.logger.debug('finished.')
 
         # Fake job in case tx-manager returns an error, can still build the build_log.json
-        job = TxJob({
+        job = TxJob(**{
             'identifier': identifier,
             'resource_type': rc.resource.identifier,
             'input_format': rc.resource.file_ext,
