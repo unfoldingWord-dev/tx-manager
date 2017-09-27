@@ -81,31 +81,33 @@ class ClientLinterCallback(object):
             msg = "Linter {0} completed with no warnings".format(self.identifier)
             build_log['log'].append(msg)
 
-        ClientLinterCallback.upload_build_log(build_log, 'linter_log.json', self.temp_dir, self.s3_results_key)
+        ClientLinterCallback.upload_build_log(build_log, 'lint_log.json', self.temp_dir, self.s3_results_key)
 
-        ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.identifier, self.temp_dir)
+        results = ClientLinterCallback.deploy_if_conversion_finished(multiple_project, self.s3_results_key, self.identifier, self.temp_dir)
+        if results:
+            build_log = results
 
         remove_tree(self.temp_dir)  # cleanup
-        return
+        return build_log
 
     @staticmethod
     def upload_build_log(build_log, file_name, output_dir, s3_results_key):
         build_log_file = os.path.join(output_dir, file_name)
         write_file(build_log_file, build_log)
-        App.logger.debug('Saving build log to ' + s3_results_key)
-        App.cdn_s3_handler().upload_file(build_log_file, s3_results_key, cache_time=0)
+        upload_key = '{0}/{1}'.format(s3_results_key, file_name)
+        App.logger.debug('Saving build log to ' + upload_key)
+        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
 
     @staticmethod
     def deploy_if_conversion_finished(is_multiple_project, s3_results_key, identifier, output_dir):
         build_log = None
         master_s3_key = s3_results_key
         if not is_multiple_project:
-            master_s3_key = '/'.join(s3_results_key.split('/')[:-1])
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, master_s3_key)
         else:
             job_id_parts = identifier.split('/')
             job_id, part_count = job_id_parts
-            master_s3_key = '/'.join(s3_results_key.split('/')[:-2])
+            master_s3_key = '/'.join(s3_results_key.split('/')[:-1])
             for i in range(0, part_count):
                 part_key = "{0}/{1}".format(master_s3_key, i)
                 build_log = ClientLinterCallback.merge_build_status_for_part(build_log, part_key)
@@ -118,8 +120,7 @@ class ClientLinterCallback(object):
                 build_log['status'] = 'errors'
             elif len(build_log['warnings']):
                 build_log['status'] = 'warnings'
-            file_name = "build_log.json"
-            build_log = ClientLinterCallback.upload_build_log(build_log, file_name, output_dir, master_s3_key + '/' + file_name)
+            ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, master_s3_key)
 
         return build_log
 

@@ -41,14 +41,19 @@ class TestClientLinterCallback(TestCase):
         self.raiseDownloadException = False
         self.source_folder = None
 
-        self.callback_data = {
+        self.callback_data_single = {
             'identifier': 'dummy_id',
-            's3_results_key': 'results/lint_log.json',
+            's3_results_key': 'results',
             'success': True,
             'info': [],
             'warnings': [],
             'errors': []
         }
+        self.expected_error_count = 0
+        self.expected_warning_count = 0
+        self.expected_log_count = 0
+        self.expected_status = "success"
+        self.expected_success = True
 
     def tearDown(self):
         """Runs after each test."""
@@ -58,15 +63,14 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-
-        mock_ccb = self.mock_client_linter_callback()
-        expect_error = False
+        self.expected_log_count = 9
+        linter_cb = self.mock_client_linter_callback()
 
         # when
-        results = mock_ccb.process_callback()
+        results = linter_cb.process_callback()
 
         # then
-        self.validate_results(expect_error, results)
+        self.validate_results(results, linter_cb)
 
     #
     # helpers
@@ -80,21 +84,21 @@ class TestClientLinterCallback(TestCase):
         results_subFolder = os.path.join(self.source_folder, 'results')
         file_utils.copy_tree(source_subfolder, results_subFolder)
 
-    def validate_results(self, expect_error, results):
+    def validate_results(self, results, linter_cb):
         self.assertIsNotNone(results)
-        error_count = len(results['errors'])
-        if expect_error:
-            self.assertGreater(error_count, 0)
-        else:
-            self.assertEquals(error_count, 0)
+        self.assertEqual(len(results['errors']), self.expected_error_count)
+        self.assertEqual(len(results['warnings']), self.expected_warning_count)
+        self.assertEqual(len(results['log']), self.expected_log_count)
+        self.assertEqual(results['status'], self.expected_status)
+        self.assertEqual(results['success'], self.expected_success)
 
     def mock_client_linter_callback(self, error=None):
-        clcb = ClientLinterCallback(identifier=self.callback_data['identifier'],
-                                    success=self.callback_data['success'],
-                                    info=self.callback_data['info'],
-                                    warnings=self.callback_data['warnings'],
-                                    errors=self.callback_data['errors'],
-                                    s3_results_key=self.callback_data['s3_results_key'])
+        clcb = ClientLinterCallback(identifier=self.callback_data_single['identifier'],
+                                    success=self.callback_data_single['success'],
+                                    info=self.callback_data_single['info'],
+                                    warnings=self.callback_data_single['warnings'],
+                                    errors=self.callback_data_single['errors'],
+                                    s3_results_key=self.callback_data_single['s3_results_key'])
         return clcb
 
     def mock_download_file(self, url, target):
@@ -117,8 +121,8 @@ class TestClientLinterCallback(TestCase):
         return
 
     def mock_cdn_get_json(self, s3_key):
-        destination_path = os.path.join(self.source_folder, s3_key)
-        json_data = file_utils.load_json_object(destination_path)
+        source_path = os.path.join(self.source_folder, s3_key)
+        json_data = file_utils.load_json_object(source_path)
         return json_data
 
     def generate_parts_completed(self, start, end):
