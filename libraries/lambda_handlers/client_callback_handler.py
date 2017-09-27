@@ -13,4 +13,4 @@ class ClientCallbackHandler(Handler):
         :return dict:
         """
         # Execute
-        return ClientCallback(App.data).process_callback()
+        return ClientCallback(self.data).process_callback()
