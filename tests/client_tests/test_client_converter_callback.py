@@ -155,7 +155,7 @@ class TestClientConverterCallback(TestCase):
         expect_error = False
 
         # when
-        results = mock_cccb.process_converter_callback()
+        results = mock_cccb.process_callback()
 
         # then
         self.validate_results(expect_error, results)
@@ -170,7 +170,7 @@ class TestClientConverterCallback(TestCase):
         expect_error = False
 
         # when
-        results = mock_cccb.process_converter_callback()
+        results = mock_cccb.process_callback()
 
         # then
         self.validate_results(expect_error, results)
@@ -185,7 +185,7 @@ class TestClientConverterCallback(TestCase):
         expect_error = False
 
         # when
-        results = mock_cccb.process_converter_callback()
+        results = mock_cccb.process_callback()
 
         # then
         self.validate_results(expect_error, results)
@@ -200,7 +200,7 @@ class TestClientConverterCallback(TestCase):
         expect_error = True
 
         # when
-        results = mock_cccb.process_converter_callback()
+        results = mock_cccb.process_callback()
 
         # then
         self.validate_results(expect_error, results)
@@ -215,7 +215,7 @@ class TestClientConverterCallback(TestCase):
         expect_error = False
 
         # when
-        results = mock_cccb.process_converter_callback()
+        results = mock_cccb.process_callback()
 
         # then
         self.validate_results(expect_error, results)
@@ -230,7 +230,7 @@ class TestClientConverterCallback(TestCase):
         expect_error = True
 
         # when
-        results = mock_cccb.process_converter_callback()
+        results = mock_cccb.process_callback()
 
         # then
         self.validate_results(expect_error, results)

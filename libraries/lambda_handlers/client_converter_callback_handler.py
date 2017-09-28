@@ -19,4 +19,4 @@ class ClientConverterCallbackHandler(Handler):
         errors = self.retrieve(self.data, 'errors', 'Payload', required=False, default=[])
 
         # Execute
-        return ClientConverterCallback(identifier, success, info, warnings, errors).process_converter_callback()
+        return ClientConverterCallback(identifier, success, info, warnings, errors).process_callback()
