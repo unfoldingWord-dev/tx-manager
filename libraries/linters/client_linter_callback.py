@@ -1,11 +1,9 @@
 from __future__ import print_function, unicode_literals
-import json
 import os
 import tempfile
 from libraries.app.app import App
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
-from libraries.general_tools.url_utils import download_file
 from libraries.models.job import TxJob
 
 
@@ -50,7 +48,7 @@ class ClientLinterCallback(object):
         id_parts = self.identifier.split('/')
         self.multipart = len(id_parts) > 5
         if self.multipart:
-            user, repo, commit, part_count, part_id, book = id_parts[:6]
+            commit, part_count, part_id, book = id_parts[:6]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
         else:
@@ -101,14 +99,17 @@ class ClientLinterCallback(object):
         App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
 
     @staticmethod
-    def deploy_if_conversion_finished(s3_results_key, identifier, output_dir):
+    def deploy_if_conversion_finished(s3_results_key, identifier):
         """
         check if all parts are finished, and if so then save merged build_log as well as update jobs table
         :param s3_results_key:
-        :param identifier:
-        :param output_dir:
+        :param identifier: either
+                    job_id/part_count/part_id/book if multi-part
+                        or
+                    job_id if single part
         :return:
         """
+        output_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_deploy_")
         build_log = None
         master_s3_key = s3_results_key
         id_parts = identifier.split('/')
@@ -131,14 +132,15 @@ class ClientLinterCallback(object):
                 build_log['status'] = 'errors'
             elif len(build_log['warnings']):
                 build_log['status'] = 'warnings'
-                
+
             ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, master_s3_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
 
+        file_utils.remove_tree(output_dir)
         return build_log
 
     @staticmethod
-    def merge_build_logs(s3_results_key, build_log, output_dir):
+    def update_jobs_table(s3_results_key, build_log, output_dir):
         job_id = build_log['job_id']
         App.logger.debug('merging build_logs for job : ' + job_id)
         job = TxJob.get(job_id)
@@ -159,7 +161,12 @@ class ClientLinterCallback(object):
 
             job.update()
         else:
-            TxJob.get(**build_log).insert()
+            job_data = {}
+            for key in build_log:
+                if hasattr(TxJob, key):
+                    job_data[key] = build_log[key]
+            job = TxJob(**job_data)
+            job.insert()
 
         ClientLinterCallback.upload_build_log(build_log, 'merged.json', output_dir, s3_results_key)
         return
@@ -173,16 +180,20 @@ class ClientLinterCallback(object):
         :return:
         """
         part_build_log = ClientLinterCallback.get_results(s3_results_key, "merged.json")  # see if already merged
-        if part_build_log is None:
+        if not part_build_log:
             part_build_log = ClientLinterCallback.get_results(s3_results_key, "build_log.json")
             if part_build_log:
-                part_build_log2 = ClientLinterCallback.merge_build_status_for_file(part_build_log, s3_results_key,
-                                                                                   "lint_log.json",
-                                                                                   linter_file=True)
-                if part_build_log2:
-                    ClientLinterCallback.merge_results_logs(build_log, part_build_log2, linter_file=False)
-                    ClientLinterCallback.merge_build_logs(s3_results_key, build_log, output_dir)
-                    return part_build_log2
+                part_build_log_combined = ClientLinterCallback.merge_build_status_for_file(part_build_log,
+                                                                                           s3_results_key,
+                                                                                           "lint_log.json",
+                                                                                           linter_file=True)
+                if part_build_log_combined:
+                    if build_log:
+                        ClientLinterCallback.merge_results_logs(build_log, part_build_log_combined, linter_file=False)
+                    else:
+                        build_log = part_build_log_combined
+                    ClientLinterCallback.update_jobs_table(s3_results_key, part_build_log_combined, output_dir)
+                    return build_log
 
             return None
 
@@ -226,13 +237,13 @@ class ClientLinterCallback(object):
     @staticmethod
     def update_project_file(build_log, output_dir):
         commit_id = build_log['commit_id']
-        owner_name = build_log['owner_name']
+        user_name = build_log['repo_owner']
         repo_name = build_log['repo_name']
-        project_json_key = 'u/{0}/{1}/project.json'.format(owner_name, repo_name)
+        project_json_key = 'u/{0}/{1}/project.json'.format(user_name, repo_name)
         project_json = App.cdn_s3_handler().get_json(project_json_key)
-        project_json['user'] = owner_name
+        project_json['user'] = user_name
         project_json['repo'] = repo_name
-        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, owner_name, repo_name)
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, user_name, repo_name)
         commit = {
             'id': commit_id,
             'created_at': build_log['created_at'],

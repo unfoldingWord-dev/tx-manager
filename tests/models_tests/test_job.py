@@ -1,12 +1,10 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from unittest import TestCase
-from moto import mock_dynamodb2
 from datetime import datetime, timedelta
 from libraries.models.job import TxJob
 from libraries.app.app import App
 
 
-@mock_dynamodb2
 class TxJobTests(TestCase):
     def setUp(self):
         """Runs before each test."""

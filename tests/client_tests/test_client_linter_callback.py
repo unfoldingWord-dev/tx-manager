@@ -1,12 +1,9 @@
 from __future__ import absolute_import, unicode_literals, print_function
-import json
 import tempfile
 import os
 import shutil
 from libraries.general_tools import file_utils
-from mock import patch
 from unittest import TestCase
-from libraries.client.client_callback import ClientCallback
 from moto import mock_s3
 from libraries.app.app import App
 from libraries.general_tools.file_utils import unzip
@@ -329,6 +326,8 @@ class TestClientLinterCallback(TestCase):
     def mock_cdn_get_json(self, s3_key):
         source_path = os.path.join(self.source_folder, s3_key)
         json_data = file_utils.load_json_object(source_path)
+        if not json_data:
+            json_data = {}
         return json_data
 
     def generate_parts_completed(self, start, end):
