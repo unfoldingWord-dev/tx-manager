@@ -143,12 +143,10 @@ class TestConverter(unittest.TestCase):
 
     def validate_response(self, results, converter, expected_response_code, valid_identity=True):
         self.assertEquals(converter.callback_status, expected_response_code)
-        self.assertTrue('results' in converter.callback_results)
-        self.assertIsNotNone(converter.callback_results['results'])
         self.assertTrue('identity' in converter.callback_results)
         if valid_identity:
             self.assertIsNotNone(converter.callback_results['identity'])
-        self.assertEquals(results, converter.callback_results['results'])
+        self.assertEquals(results, converter.callback_results)
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):
         in_zip_file = tempfile.mktemp(prefix="test_data", suffix=".zip", dir=self.temp_dir)

@@ -5,7 +5,7 @@ from libraries.lambda_handlers.dashboard_handler import DashboardHandler
 from libraries.manager.manager import TxManager
 
 
-def new_generate_dashboard( max_failures):
+def new_generate_dashboard(max_failures):
     return max_failures  # return the parameter for testing
 
 
