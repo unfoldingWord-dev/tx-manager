@@ -190,11 +190,10 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_LintNotFinished(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        results_path = os.path.join(self.source_folder, 'temp')
         identifier = self.lint_callback_data['identifier']
 
         # when
-        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier, results_path)
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
 
         # then
         self.assertIsNone(results)
@@ -204,7 +203,7 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.unzip_resource_files("en_ulb.zip")
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
-        self.lint_callback_data['identifier'] = 'tx-manager-test-data/en-ulb/22f3d09f7a/4/0/01-GEN.usfm'
+        self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
         self.expected_log_count = 36
         self.expected_multipart = True
         linter_cb = self.mock_client_linter_callback()
@@ -219,7 +218,7 @@ class TestClientLinterCallback(TestCase):
         # given
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/2'
-        self.lint_callback_data['identifier'] = 'tx-manager-test-data/en-ulb/22f3d09f7a/4/2/03-LEV.usfm'
+        self.lint_callback_data['identifier'] = '1234567890/4/2/03-LEV.usfm'
         self.unzip_resource_files("en_ulb.zip")
         build_log_path = self.get_json_log_path()
         build_log = file_utils.load_json_object(build_log_path)
@@ -244,15 +243,14 @@ class TestClientLinterCallback(TestCase):
         # given
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
-        self.lint_callback_data['identifier'] = '"tx-manager-test-data/en-ulb/22f3d09f7a/4/3/05-DEU.usfm'
+        self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
         self.unzip_resource_files("en_ulb.zip")
         lint_log_path = self.get_json_log_path()
         file_utils.remove(lint_log_path)
-        results_path = os.path.join(self.source_folder, 'temp')
         identifier = self.lint_callback_data['identifier']
 
         # when
-        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier, results_path)
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
 
         # then
         self.assertIsNone(results)
