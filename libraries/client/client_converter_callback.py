@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 from libraries.app.app import App
+from libraries.client.client_linter_callback import ClientLinterCallback
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
 from libraries.general_tools.url_utils import download_file
 from libraries.models.job import TxJob
@@ -23,6 +24,7 @@ class ClientConverterCallback(object):
         self.log = info
         self.warnings = warnings
         self.errors = errors
+        self.all_parts_completed = False
 
         if not self.log:
             self.log = []
@@ -69,7 +71,7 @@ class ClientConverterCallback(object):
 
         self.job.update()
 
-        s3_commit_key = 'u/{0}'.format(self.job.identifier)
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.owner_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
         if multiple_project:
             upload_key += "/" + part_id
@@ -105,62 +107,22 @@ class ClientConverterCallback(object):
             # Now download the existing build_log.json file, update it and upload it back to S3
             build_log_json = self.update_build_log(s3_commit_key, part_id + "/")
 
-            # mark part as finished
+            # mark current part as finished
             self.cdn_upload_contents({}, s3_commit_key + '/' + part_id + '/finished')
 
-            # check if all parts are present, if not return
-            missing_parts = []
-            finished_parts = App.cdn_s3_handler().get_objects(prefix=s3_commit_key, suffix='/finished')
-            finished_parts_file_names = ','.join([finished_parts[x].key for x in range(len(finished_parts))])
-            App.logger.debug('found finished files: ' + finished_parts_file_names)
-
-            count = int(part_count)
-            for i in range(0, count):
-                file_name = '{0}/finished'.format(i)
-
-                match_found = False
-                for part in finished_parts:
-                    if file_name in part.key:
-                        match_found = True
-                        App.logger.debug('Found converted part: ' + part.key)
-                        break
-
-                if not match_found:
-                    missing_parts.append(file_name)
-
-            if len(missing_parts) > 0:
-                # build_log_json = self.merge_build_logs(s3_commit_key, count)
-                App.logger.debug('Finished processing part. Other parts not yet completed: ' + ','.join(missing_parts))
-                remove_tree(self.temp_dir)  # cleanup
-                return build_log_json
-
-            App.logger.debug('All parts finished. Merging.')
-
-            # all parts are present
-
-            # update and write final_build_log.json
-            build_log_json = self.merge_build_logs(s3_commit_key, count, 'final_')
-            self.cdn_upload_contents(build_log_json, self.get_build_log_key(s3_commit_key))  # copy to build_log.json
-            App.logger.debug('Updated build_log.json: ' + json.dumps(build_log_json))
-
-            # Download the project.json file for this repo (create it if doesn't exist) and update it
-            project_json = self.update_project_file()
-            App.logger.debug('Updated project.json: ' + json.dumps(project_json))
-
-            App.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
-            remove_tree(self.temp_dir)  # cleanup
-            return build_log_json
-
         else:  # single part conversion
-            # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.update_project_file()
-
             # Now download the existing build_log.json file, update it and upload it back to S3
             build_log_json = self.update_build_log(s3_commit_key)
 
-            App.logger.debug('Finished deploying to cdn_bucket. Done.')
-            remove_tree(self.temp_dir)  # cleanup
-            return build_log_json
+            self.cdn_upload_contents({}, s3_commit_key + '/finished')  # flag finished
+
+        results = ClientLinterCallback.deploy_if_conversion_finished(s3_commit_key, self.identifier)
+        if results:
+            self.all_parts_completed = True
+            build_log_json = results
+            
+        remove_tree(self.temp_dir)  # cleanup
+        return build_log_json
 
     def merge_build_logs(self, s3_commit_key, count, prefix=''):
         master_build_log_json = self.get_build_log(s3_commit_key)

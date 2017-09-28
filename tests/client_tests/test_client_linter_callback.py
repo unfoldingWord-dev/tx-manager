@@ -28,6 +28,7 @@ class TestClientLinterCallback(TestCase):
         App.cdn_s3_handler().get_objects = self.mock_cdn_get_objects
         App.cdn_s3_handler().upload_file = self.mock_cdn_upload_file
         App.cdn_s3_handler().get_json = self.mock_cdn_get_json
+        App.cdn_s3_handler().key_exists = self.mock_cdn_key_exists
 
         try:
             os.makedirs(self.base_temp_dir)
@@ -151,11 +152,27 @@ class TestClientLinterCallback(TestCase):
         # then
         self.validate_results(results, linter_cb)
 
+    def test_callbackSimpleJob_build_log_missing(self):
+        # given
+        self.unzip_resource_files("id_mat_ulb.zip")
+        build_log_path = self.get_source_path()
+        file_utils.remove(build_log_path)
+        self.expected_log_count = 1
+        self.expected_status = None
+        self.expected_all_parts_completed = False
+        linter_cb = self.mock_client_linter_callback()
+
+        # when
+        results = linter_cb.process_callback()
+
+        # then
+        self.validate_results(results, linter_cb)
+
     def test_callbackSimpleJob_build_not_finished(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        build_log_path = self.get_json_log_path()
-        file_utils.remove(build_log_path)
+        finished_path = self.get_source_path('finished')
+        file_utils.remove(finished_path)
         self.expected_log_count = 1
         self.expected_status = None
         self.expected_all_parts_completed = False
@@ -170,7 +187,7 @@ class TestClientLinterCallback(TestCase):
     def test_callbackSimpleJob_build_error(self):
         # given
         self.unzip_resource_files("id_mat_ulb.zip")
-        build_log_path = self.get_json_log_path()
+        build_log_path = self.get_source_path()
         build_log = file_utils.load_json_object(build_log_path)
         build_log['errors'].append('convert error')
         build_log['success'] = False
@@ -221,7 +238,7 @@ class TestClientLinterCallback(TestCase):
         self.lint_callback_data['s3_results_key'] = self.results_key + '/2'
         self.lint_callback_data['identifier'] = '1234567890/4/2/03-LEV.usfm'
         self.unzip_resource_files("en_ulb.zip")
-        build_log_path = self.get_json_log_path()
+        build_log_path = self.get_source_path()
         build_log = file_utils.load_json_object(build_log_path)
         build_log['errors'].append('convert error')
         build_log['success'] = False
@@ -246,7 +263,7 @@ class TestClientLinterCallback(TestCase):
         self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
         self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
         self.unzip_resource_files("en_ulb.zip")
-        lint_log_path = self.get_json_log_path()
+        lint_log_path = self.get_source_path()
         file_utils.remove(lint_log_path)
         identifier = self.lint_callback_data['identifier']
 
@@ -265,7 +282,7 @@ class TestClientLinterCallback(TestCase):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'])
         return build_log_path
 
-    def get_json_log_path(self, file_name='build_log.json'):
+    def get_source_path(self, file_name='build_log.json'):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'],
                                       file_name)
         return build_log_path
@@ -338,6 +355,11 @@ class TestClientLinterCallback(TestCase):
 
     def mock_cdn_get_objects(self, prefix=None, suffix=None):
         return self.parts
+
+    def mock_cdn_key_exists(self, key, bucket_name=None):
+        source_path = os.path.join(self.source_folder, key)
+        exists = os.path.exists(source_path)
+        return exists
 
 
 class Part(object):

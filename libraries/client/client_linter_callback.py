@@ -123,13 +123,16 @@ class ClientLinterCallback(object):
         multiple_project = len(id_parts) > 3
 
         if not multiple_project:
+            App.logger.debug('Single job: checking if convert and lint have complete.')
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, s3_results_key, output_dir)
         else:
+            App.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
             job_id, part_count, part_id, book = id_parts[:4]
             for i in range(0, int(part_count)):
                 part_key = "{0}/{1}".format(s3_results_key, i)
                 build_log = ClientLinterCallback.merge_build_status_for_part(build_log, part_key, output_dir)
                 if build_log is None:
+                    App.logger.debug('Part {0} not complete'.format(part_key))
                     break
 
         if build_log is not None:  # if all parts found, save build log and kick off deploy
@@ -141,6 +144,9 @@ class ClientLinterCallback(object):
 
             ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
+            App.logger.debug('All parts completed, deploying')
+        else:
+            App.logger.debug('Not all parts completed')
 
         file_utils.remove_tree(output_dir)
         return build_log
@@ -188,6 +194,11 @@ class ClientLinterCallback(object):
         """
         part_build_log = ClientLinterCallback.get_results(s3_results_key, "merged.json")  # see if already merged
         if not part_build_log:
+            convert_finished = ClientLinterCallback.is_convert_finished(s3_results_key)
+            if not convert_finished:
+                App.logger.debug('Convert not finished for {0}'.format(s3_results_key))
+                return None
+
             part_build_log = ClientLinterCallback.get_results(s3_results_key, "build_log.json")
             if part_build_log:
                 part_build_log_combined = ClientLinterCallback.merge_build_status_for_file(part_build_log,
@@ -201,12 +212,25 @@ class ClientLinterCallback(object):
                         build_log = part_build_log_combined
                     ClientLinterCallback.update_jobs_table(s3_results_key, part_build_log_combined, output_dir)
                     return build_log
+                else:
+                    App.logger.debug('Lint_log.json not found for {0}'.format(s3_results_key))
+            else:
+                App.logger.debug('Build_log.json not found for {0}'.format(s3_results_key))
 
             return None
 
         else:
             ClientLinterCallback.merge_results_logs(build_log, part_build_log, linter_file=False)
             return build_log
+
+    @staticmethod
+    def is_convert_finished(s3_results_key):
+        key = "{0}/{1}".format(s3_results_key, 'finished')
+        try:
+            convert_finished = App.cdn_s3_handler().key_exists(key)
+        except Exception as e:
+            convert_finished = False
+        return convert_finished
 
     @staticmethod
     def get_results(s3_results_key, file_name):
