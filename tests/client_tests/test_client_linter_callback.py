@@ -1,13 +1,14 @@
 from __future__ import absolute_import, unicode_literals, print_function
-import tempfile
+
 import os
 import shutil
-from libraries.general_tools import file_utils
+import tempfile
 from unittest import TestCase
 from moto import mock_s3
 from libraries.app.app import App
+from libraries.client.client_linter_callback import ClientLinterCallback
+from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip
-from libraries.linters.client_linter_callback import ClientLinterCallback
 
 
 @mock_s3
