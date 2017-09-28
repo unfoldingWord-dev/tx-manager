@@ -131,7 +131,9 @@ class ClientLinterCallback(object):
                 build_log['status'] = 'errors'
             elif len(build_log['warnings']):
                 build_log['status'] = 'warnings'
+                
             ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, master_s3_key)
+            ClientLinterCallback.update_project_file(build_log, output_dir)
 
         return build_log
 
@@ -220,3 +222,38 @@ class ClientLinterCallback(object):
         if key in file_results:
             value = file_results[key]
             build_log[key] += value
+
+    @staticmethod
+    def update_project_file(build_log, output_dir):
+        commit_id = build_log['commit_id']
+        owner_name = build_log['owner_name']
+        repo_name = build_log['repo_name']
+        project_json_key = 'u/{0}/{1}/project.json'.format(owner_name, repo_name)
+        project_json = App.cdn_s3_handler().get_json(project_json_key)
+        project_json['user'] = owner_name
+        project_json['repo'] = repo_name
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, owner_name, repo_name)
+        commit = {
+            'id': commit_id,
+            'created_at': build_log['created_at'],
+            'status': build_log['status'],
+            'success': build_log['success'],
+            'started_at': None,
+            'ended_at': None
+        }
+        if 'started_at' in build_log:
+            commit['started_at'] = build_log['started_at']
+        if 'ended_at' in build_log:
+            commit['ended_at'] = build_log['ended_at']
+        if 'commits' not in project_json:
+            project_json['commits'] = []
+        commits = []
+        for c in project_json['commits']:
+            if c['id'] != commit_id:
+                commits.append(c)
+        commits.append(commit)
+        project_json['commits'] = commits
+        project_file = os.path.join(output_dir, 'project.json')
+        write_file(project_file, project_json)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key, 0)
+        return project_json
