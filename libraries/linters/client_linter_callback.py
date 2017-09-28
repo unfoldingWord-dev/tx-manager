@@ -181,6 +181,7 @@ class ClientLinterCallback(object):
     def merge_build_status_for_part(build_log, s3_results_key, output_dir):
         """
         merges convert and linter status for this part of conversion into build_log.  Returns None if part not finished.
+        :param output_dir:
         :param build_log:
         :param s3_results_key:
         :return:
