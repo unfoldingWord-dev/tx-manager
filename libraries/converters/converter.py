@@ -104,10 +104,8 @@ class Converter(object):
         }
 
         if self.callback is not None:
-            self.callback_results = {
-                'identity': self.identity,
-                'results': result
-            }
+            self.callback_results = result
+            self.callback_results['identity'] = self.identity
             self.do_callback(self.callback, self.callback_results)
 
         App.logger.debug(result)
