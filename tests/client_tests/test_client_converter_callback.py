@@ -8,6 +8,7 @@ from unittest import TestCase
 from moto import mock_s3
 from datetime import datetime, timedelta
 from libraries.app.app import App
+from libraries.general_tools.file_utils import unzip
 from libraries.models.job import TxJob
 from libraries.general_tools import file_utils
 from libraries.client.client_converter_callback import ClientConverterCallback
@@ -27,9 +28,9 @@ class TestClientConverterCallback(TestCase):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         App.cdn_s3_handler().create_bucket()
-        App.cdn_s3_handler().get_objects = self.mock_cdn_get_objects
         App.cdn_s3_handler().upload_file = self.mock_cdn_upload_file
         App.cdn_s3_handler().get_json = self.mock_cdn_get_json
+        App.cdn_s3_handler().key_exists = self.mock_cdn_key_exists
         self.init_items()
         self.populate_table()
 
@@ -41,6 +42,8 @@ class TestClientConverterCallback(TestCase):
         self.temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='callbackTest_')
         self.transferred_files = []
         self.raiseDownloadException = False
+        self.s3_results_key = 'u/results'
+        self.source_folder = tempfile.mkdtemp(dir=self.temp_dir, prefix='sources_')
 
     def tearDown(self):
         """Runs after each test."""
@@ -152,6 +155,7 @@ class TestClientConverterCallback(TestCase):
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job2'
         mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file)
+        self.generate_single_job_completed()
         expect_error = False
 
         # when
@@ -165,8 +169,8 @@ class TestClientConverterCallback(TestCase):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job1/2/1/01-GEN.usfm'
-        self.generate_parts_completed(1, 2)
         mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file)
+        self.generate_parts_completed(1, 2)
         expect_error = False
 
         # when
@@ -180,8 +184,8 @@ class TestClientConverterCallback(TestCase):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job1/2/0/01-GEN.usfm'
-        self.generate_parts_completed(0, 2)
         mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file)
+        self.generate_parts_completed(0, 2)
         expect_error = False
 
         # when
@@ -195,8 +199,12 @@ class TestClientConverterCallback(TestCase):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job1/2/0/01-GEN.usfm'
+        tx_job = TxJob.get('job1')
+        tx_job.errors = ['conversion failed']
+        tx_job.update()
+        self.s3_results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a/0'
+        mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file)
         self.generate_parts_completed(0, 2)
-        mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file, ['conversion failed'])
         expect_error = True
 
         # when
@@ -210,8 +218,8 @@ class TestClientConverterCallback(TestCase):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job1/2/0/01-GEN.usfm'
-        self.generate_parts_completed(0, 0)
         mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file)
+        self.generate_parts_completed(0, 0)
         expect_error = False
 
         # when
@@ -238,6 +246,23 @@ class TestClientConverterCallback(TestCase):
     #
     # helpers
     #
+
+    def get_results_folder(self):
+        build_log_path = os.path.join(self.source_folder, self.s3_results_key)
+        return build_log_path
+
+    def get_source_path(self, file_name='build_log.json'):
+        build_log_path = os.path.join(self.source_folder, self.s3_results_key,
+                                      file_name)
+        return build_log_path
+
+    def unzip_resource_files(self, resource_file_name):
+        self.source_zip = os.path.join(self.resources_dir, "conversion_callback", resource_file_name)
+        self.source_folder = tempfile.mkdtemp(dir=self.temp_dir, prefix='sources_')
+        unzip(self.source_zip, self.source_folder)
+        source_subfolder = os.path.join(self.source_folder, resource_file_name.split('.')[0])
+        results_subfolder = os.path.join(self.source_folder, self.results_key)
+        file_utils.copy_tree(source_subfolder, results_subfolder)
 
     def validate_results(self, expect_error, results):
         self.assertIsNotNone(results)
@@ -285,28 +310,42 @@ class TestClientConverterCallback(TestCase):
             file_utils.write_file(target, self.project_json)
 
     def mock_cdn_upload_file(self, project_file, s3_key, cache_time=600):
-        self.transferred_files.append({'type': 'upload', 'file': project_file, 'key': s3_key})
+        destination_path = os.path.join(self.source_folder, s3_key)
+        destination_folder = os.path.dirname(destination_path)
+        file_utils.make_dir(destination_folder)
+        shutil.copy(project_file, destination_path)
         return
 
     def mock_cdn_get_json(self, s3_key):
-        self.transferred_files.append({'type': 'download', 'file': 'json', 'key': s3_key})
-        if 'build_log.json' in s3_key:
-            return json.loads(self.build_log_json)
-        elif 'project.json' in s3_key:
-            return json.loads(self.project_json)
-        return ''
+        source_path = os.path.join(self.source_folder, s3_key)
+        json_data = file_utils.load_json_object(source_path)
+        if not json_data:
+            json_data = {}
+        return json_data
 
     def generate_parts_completed(self, start, end):
-        self.parts = []
+        data = {}
+        master_key = '/'.join(self.s3_results_key.split('/')[:-1])
         for i in range(start, end):
-            part = Part("{0}/finished".format(i))
-            self.parts.append(part)
-        return self.parts
+            key = "{0}/{1}/finished".format(master_key, i)
+            self.save_data_to_s3(key, data)
+            key = "{0}/{1}/build_log.json".format(master_key, i)
+            self.save_data_to_s3(key, self.build_log_json)
 
-    def mock_cdn_get_objects(self, prefix=None, suffix=None):
-        return self.parts
+    def save_data_to_s3(self, key, data):
+        file_name = key.split('/')[-1:]
+        output_file = tempfile.mktemp(suffix="_" + file_name[0], dir=self.temp_dir)
+        file_utils.write_file(output_file, data)
+        self.mock_cdn_upload_file(output_file, key)
 
+    def generate_single_job_completed(self):
+        data = {}
+        key = "{0}/finished".format(self.s3_results_key)
+        self.save_data_to_s3(key, data)
+        key = "{0}/build_log.json".format(self.s3_results_key)
+        self.save_data_to_s3(key, self.build_log_json)
 
-class Part(object):
-    def __init__(self, key):
-        self.key = key
+    def mock_cdn_key_exists(self, key, bucket_name=None):
+        source_path = os.path.join(self.source_folder, key)
+        exists = os.path.exists(source_path)
+        return exists
