@@ -126,7 +126,7 @@ class ClientLinterCallback(object):
             App.logger.debug('Single job: checking if convert and lint have complete.')
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, s3_results_key, output_dir)
         else:
-            App.logger.debug('Multiple parts: Finished deploying to cdn_bucket. Done.')
+            App.logger.debug('Multiple parts: Checking if all parts completed.')
             job_id, part_count, part_id, book = id_parts[:4]
             for i in range(0, int(part_count)):
                 part_key = "{0}/{1}".format(s3_results_key, i)

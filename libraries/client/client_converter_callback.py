@@ -120,7 +120,7 @@ class ClientConverterCallback(object):
         if results:
             self.all_parts_completed = True
             build_log_json = results
-            
+
         remove_tree(self.temp_dir)  # cleanup
         return build_log_json
 

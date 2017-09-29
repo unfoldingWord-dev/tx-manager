@@ -27,9 +27,9 @@ class TestClientConverterCallback(TestCase):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         App.cdn_s3_handler().create_bucket()
-        App.cdn_s3_handler().get_objects = self.mock_cdn_get_objects
         App.cdn_s3_handler().upload_file = self.mock_cdn_upload_file
         App.cdn_s3_handler().get_json = self.mock_cdn_get_json
+        App.cdn_s3_handler().key_exists = self.mock_cdn_key_exists
         self.init_items()
         self.populate_table()
 
@@ -151,6 +151,7 @@ class TestClientConverterCallback(TestCase):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job2'
+        self.generate_single_job_completed()
         mock_cccb = self.mock_client_converter_callback(identifier, mock_download_file)
         expect_error = False
 
@@ -299,14 +300,18 @@ class TestClientConverterCallback(TestCase):
     def generate_parts_completed(self, start, end):
         self.parts = []
         for i in range(start, end):
-            part = Part("{0}/finished".format(i))
+            part = "{0}/finished".format(i)
             self.parts.append(part)
         return self.parts
 
-    def mock_cdn_get_objects(self, prefix=None, suffix=None):
+    def generate_single_job_completed(self):
+        self.parts = []
+        part = "finished"
+        self.parts.append(part)
         return self.parts
 
-
-class Part(object):
-    def __init__(self, key):
-        self.key = key
+    def mock_cdn_key_exists(self, key, bucket_name=None):
+        subkey = '/'.join(key.split('/')[4:])
+        if subkey in self.parts:
+            return True
+        return False

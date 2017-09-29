@@ -18,14 +18,12 @@ class TestClientLinterCallback(TestCase):
     source_zip = ''
     build_log_json = ''
     project_json = ''
-    transferred_files = []  # for keeping track of file transfers to cdn
     raiseDownloadException = False
 
     def setUp(self):
         """Runs before each test."""
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         App.cdn_s3_handler().create_bucket()
-        App.cdn_s3_handler().get_objects = self.mock_cdn_get_objects
         App.cdn_s3_handler().upload_file = self.mock_cdn_upload_file
         App.cdn_s3_handler().get_json = self.mock_cdn_get_json
         App.cdn_s3_handler().key_exists = self.mock_cdn_key_exists
@@ -346,13 +344,6 @@ class TestClientLinterCallback(TestCase):
             json_data = {}
         return json_data
 
-    def generate_parts_completed(self, start, end):
-        self.parts = []
-        for i in range(start, end):
-            part = Part("{0}/finished".format(i))
-            self.parts.append(part)
-        return self.parts
-
     def mock_cdn_get_objects(self, prefix=None, suffix=None):
         return self.parts
 
@@ -360,8 +351,3 @@ class TestClientLinterCallback(TestCase):
         source_path = os.path.join(self.source_folder, key)
         exists = os.path.exists(source_path)
         return exists
-
-
-class Part(object):
-    def __init__(self, key):
-        self.key = key
