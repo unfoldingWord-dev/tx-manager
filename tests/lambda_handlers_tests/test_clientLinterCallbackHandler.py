@@ -14,7 +14,7 @@ class TestClientLinterCallbackHandler(TestCase):
         App(prefix='{0}-'.format(self._testMethodName), db_connection_string='sqlite:///:memory:')
         App.cdn_s3_handler().create_bucket()
 
-    @mock.patch('libraries.linters.client_linter_callback.ClientLinterCallback.process_callback')
+    @mock.patch('libraries.client.client_linter_callback.ClientLinterCallback.process_callback')
     def test_handle(self, mock_process_callback):
         mock_process_callback.return_value = None
         event = {
@@ -30,7 +30,7 @@ class TestClientLinterCallbackHandler(TestCase):
         handler = ClientLinterCallbackHandler()
         self.assertIsNone(handler.handle(event, None))
 
-    @mock.patch('libraries.linters.client_linter_callback.ClientLinterCallback.process_callback')
+    @mock.patch('libraries.client.client_linter_callback.ClientLinterCallback.process_callback')
     def test_handle_no_id(self, mock_process_callback):
         mock_process_callback.return_value = None
         event = {
