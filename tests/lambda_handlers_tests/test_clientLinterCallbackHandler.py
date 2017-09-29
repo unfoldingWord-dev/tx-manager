@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
 from moto import mock_s3
-
 from libraries.app.app import App
 from libraries.lambda_handlers.client_linter_callback_handler import ClientLinterCallbackHandler
 
