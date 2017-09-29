@@ -290,8 +290,8 @@ class TestClientLinterCallback(TestCase):
         self.source_folder = tempfile.mkdtemp(dir=self.temp_dir, prefix='sources_')
         unzip(self.source_zip, self.source_folder)
         source_subfolder = os.path.join(self.source_folder, resource_file_name.split('.')[0])
-        results_subFolder = os.path.join(self.source_folder, self.results_key)
-        file_utils.copy_tree(source_subfolder, results_subFolder)
+        results_subfolder = os.path.join(self.source_folder, self.results_key)
+        file_utils.copy_tree(source_subfolder, results_subfolder)
 
     def validate_results(self, results, linter_cb):
         self.assertIsNotNone(results)
@@ -317,18 +317,6 @@ class TestClientLinterCallback(TestCase):
                                     errors=self.lint_callback_data['errors'],
                                     s3_results_key=self.lint_callback_data['s3_results_key'])
         return clcb
-
-    def mock_download_file(self, url, target):
-        if self.raiseDownloadException:
-            raise Exception
-
-        file_name = os.path.basename(url)
-        if '.zip' in file_name:
-            shutil.copyfile(self.source_zip, target)
-        elif file_name == 'build_log.json':
-            file_utils.write_file(target, self.build_log_json)
-        elif file_name == 'project.json':
-            file_utils.write_file(target, self.project_json)
 
     def mock_cdn_upload_file(self, project_file, s3_key, cache_time=600):
         destination_path = os.path.join(self.source_folder, s3_key)
