@@ -25,6 +25,7 @@ class ClientConverterCallback(object):
         self.warnings = warnings
         self.errors = errors
         self.all_parts_completed = False
+        self.multipart = False
 
         if not self.log:
             self.log = []
@@ -46,14 +47,14 @@ class ClientConverterCallback(object):
             raise Exception(error)
 
         if len(job_id_parts) == 4:
+            self.multipart = True
             part_count, part_id, book = job_id_parts[1:]
             App.logger.debug('Multiple project, part {0} of {1}, converting book {2}'.
                              format(part_id, part_count, book))
-            multiple_project = True
         else:
             part_count = None
             part_id = None
-            multiple_project = False
+            App.logger.debug('Single project')
 
         self.job.success = self.success
         for message in self.log:
@@ -73,7 +74,7 @@ class ClientConverterCallback(object):
 
         s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.owner_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
-        if multiple_project:
+        if self.multipart:
             upload_key += "/" + part_id
 
         App.logger.debug('Callback for commit {0}...'.format(s3_commit_key))
@@ -88,7 +89,7 @@ class ClientConverterCallback(object):
             download_file(converted_zip_url, converted_zip_file)
         except:
             download_success = False  # if multiple project we note fail and move on
-            if not multiple_project:
+            if not self.multipart:
                 remove_tree(self.temp_dir)  # cleanup
             if self.job.errors is None:
                 self.job.errors = []
@@ -103,7 +104,7 @@ class ClientConverterCallback(object):
             # Upload all files to the cdn_bucket with the key of <user>/<repo_name>/<commit> of the repo
             self.upload_converted_files(upload_key, unzip_dir)
 
-        if multiple_project:
+        if self.multipart:
             # Now download the existing build_log.json file, update it and upload it back to S3
             build_log_json = self.update_build_log(s3_commit_key, part_id + "/")
 

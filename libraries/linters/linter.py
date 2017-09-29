@@ -15,20 +15,20 @@ class Linter(object):
     __metaclass__ = ABCMeta
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
-                 lint_callback=None, identity=None, s3_results_key=None, **kwargs):
+    def __init__(self, source_url=None, source_file=None, source_dir=None, commit_data=None,
+                 lint_callback=None, identity=None, cdn_file=None, **kwargs):
         """
-        :param string source_zip_url: The main way to give Linter the files
-        :param string source_zip_file: If set, will just unzip this local file
+        :param string source_url: The main way to give Linter the files via a zip file online
+        :param string source_file: If set, will just unzip the local source file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
         :param string lint_callback: If set, will do callback
         :param string identity: 
-        :param string s3_results_key:
+        :param string cdn_file:
         :params dict kwargs:
         """
-        self.source_zip_url = source_zip_url
-        self.source_zip_file = source_zip_file
+        self.source_url = source_url
+        self.source_file = source_file
         self.source_dir = source_dir
         self.commit_data = commit_data
 
@@ -49,8 +49,8 @@ class Linter(object):
         self.identity = identity
         if self.callback and not identity:
             App.logger.error("Identity not given for callback")
-        self.s3_results_key = s3_results_key
-        if self.callback and not s3_results_key:
+        self.s3_results_key = cdn_file
+        if self.callback and not cdn_file:
             App.logger.error("s3_results_key not given for callback")
 
     def close(self):
@@ -77,12 +77,12 @@ class Linter(object):
         success = False
         try:
             # Download file if a source_zip_url was given
-            if self.source_zip_url:
-                App.logger.debug("Linting url: " + self.source_zip_url)
+            if self.source_url:
+                App.logger.debug("Linting url: " + self.source_url)
                 self.download_archive()
             # unzip the input archive if a source_zip_file exists
-            if self.source_zip_file:
-                App.logger.debug("Linting zip: " + self.source_zip_file)
+            if self.source_file:
+                App.logger.debug("Linting zip: " + self.source_file)
                 self.unzip_archive()
             # lint files
             if self.source_dir:
@@ -95,36 +95,33 @@ class Linter(object):
             App.logger.error(message)
             self.log.warnings.append(message)
             App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
-        result = {
+        results = {
+            'identity': self.identity,
             'success': success,
             'warnings': self.log.warnings,
         }
 
         if self.callback is not None:
-            self.callback_results = {
-                'identity': self.identity,
-                's3_results_key': self.s3_results_key,
-                'results': result
-            }
+            self.callback_results = results
             self.do_callback(self.callback, self.callback_results)
 
-        App.logger.debug("Linter results: " + str(result))
-        return result
+        App.logger.debug("Linter results: " + str(results))
+        return results
 
     def download_archive(self):
-        filename = self.source_zip_url.rpartition('/')[2]
-        self.source_zip_file = os.path.join(self.temp_dir, filename)
-        App.logger.debug("Downloading {0} to {1}".format(self.source_zip_url, self.source_zip_file))
-        if not os.path.isfile(self.source_zip_file):
+        filename = self.source_url.rpartition('/')[2]
+        self.source_file = os.path.join(self.temp_dir, filename)
+        App.logger.debug("Downloading {0} to {1}".format(self.source_url, self.source_file))
+        if not os.path.isfile(self.source_file):
             try:
-                download_file(self.source_zip_url, self.source_zip_file)
+                download_file(self.source_url, self.source_file)
             finally:
-                if not os.path.isfile(self.source_zip_file):
-                    raise Exception("Failed to download {0}".format(self.source_zip_url))
+                if not os.path.isfile(self.source_file):
+                    raise Exception("Failed to download {0}".format(self.source_url))
 
     def unzip_archive(self):
-        App.logger.debug("Unzipping {0} to {1}".format(self.source_zip_file, self.temp_dir))
-        unzip(self.source_zip_file, self.temp_dir)
+        App.logger.debug("Unzipping {0} to {1}".format(self.source_file, self.temp_dir))
+        unzip(self.source_file, self.temp_dir)
         dirs = [d for d in os.listdir(self.temp_dir) if os.path.isdir(os.path.join(self.temp_dir, d))]
         if len(dirs):
             self.source_dir = os.path.join(self.temp_dir, dirs[0])

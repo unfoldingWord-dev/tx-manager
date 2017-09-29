@@ -17,7 +17,7 @@ class TxJob(App.Base, TxModel):
     commit_id = Column(String(255), nullable=True)
     status = Column(String(255), nullable=True)
     success = Column(Boolean, nullable=True, default=False)
-    user = Column(String(255), nullable=True)
+    user = Column(String(255), nullable=True)  # Username of the token, not necessarily the repo's owner
     convert_module = Column(String(255), nullable=True)
     resource_type = Column(String(255), nullable=True)
     input_format = Column(String(255), nullable=True)

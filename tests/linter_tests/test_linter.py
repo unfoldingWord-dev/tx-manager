@@ -9,9 +9,9 @@ from libraries.linters.linter import Linter
 
 
 class MyLinter(Linter):
-    def __init__(self, source_zip_url=None, source_zip_file=None, source_dir=None, commit_data=None,
+    def __init__(self, source_url=None, source_file=None, source_dir=None, commit_data=None,
                  lint_callback=None, identity=None, **kwargs):
-        super(MyLinter, self).__init__(source_zip_url=source_zip_url, source_zip_file=source_zip_file,
+        super(MyLinter, self).__init__(source_url=source_url, source_file=source_file,
                                        source_dir=source_dir, commit_data=commit_data,
                                        lint_callback=lint_callback, identity=identity, **kwargs)
         self.lint_warning_count = 1
@@ -37,16 +37,16 @@ class TestLinter(LinterTestCase):
         self.assertRaises(TypeError, Linter, None)
 
     def test_run(self):
-        linter = MyLinter(source_zip_file=os.path.join(self.resources_dir, 'linter', 'files.zip'))
-        result = linter.run()
-        self.assertEqual(len(result['warnings']), 1)
-        self.assertEqual(result['warnings'][0], 'warning')
+        linter = MyLinter(source_file=os.path.join(self.resources_dir, 'linter', 'files.zip'))
+        results = linter.run()
+        self.assertEqual(len(results['warnings']), 1)
+        self.assertEqual(results['warnings'][0], 'warning')
 
     def test_runException(self):
-        linter = MyLinter(source_zip_url='#broken')
-        result = linter.run()
-        self.assertFalse(result['success'])
-        self.assertEqual(len(result['warnings']), 1)
+        linter = MyLinter(source_url='#broken')
+        results = linter.run()
+        self.assertFalse(results['success'])
+        self.assertEqual(len(results['warnings']), 1)
 
     @mock.patch('requests.post')
     def test_callback(self, mock_request_post):
@@ -55,11 +55,11 @@ class TestLinter(LinterTestCase):
         self.set_mock_response(mock_request_post, expected_response_code, response_string)
         lint_callback = 'http://dummy.org'
         identity = "my_stuff"
-        linter = MyLinter(source_zip_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
+        linter = MyLinter(source_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
                           identity=identity)
         linter.mock_download = True
-        result = linter.run()
-        self.validate_response(result, linter, expected_response_code, valid_identity=True)
+        results = linter.run()
+        self.validate_response(results, linter, expected_response_code, valid_identity=True)
 
     @mock.patch('requests.post')
     def test_callback_failure(self, mock_request_post):
@@ -68,10 +68,10 @@ class TestLinter(LinterTestCase):
         self.set_mock_response(mock_request_post, expected_response_code, response_string)
         lint_callback = 'http://dummy.org'
         identity = "my_stuff"
-        linter = MyLinter(source_zip_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
+        linter = MyLinter(source_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
                           identity=identity)
-        result = linter.run()
-        self.validate_response(result, linter, expected_response_code, valid_identity=True)
+        results = linter.run()
+        self.validate_response(results, linter, expected_response_code, valid_identity=True)
 
     @mock.patch('requests.post')
     def test_callback_invalid_url(self, mock_request_post):
@@ -80,10 +80,10 @@ class TestLinter(LinterTestCase):
         self.set_mock_response(mock_request_post, expected_response_code, response_string)
         lint_callback = 'dummy.org'
         identity = "my_stuff"
-        linter = MyLinter(source_zip_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
+        linter = MyLinter(source_url='#broken', source_dir='source_dir', lint_callback=lint_callback,
                           identity=identity)
-        result = linter.run()
-        self.validate_response(result, linter, expected_response_code, valid_identity=True)
+        results = linter.run()
+        self.validate_response(results, linter, expected_response_code, valid_identity=True)
 
     @mock.patch('requests.post')
     def test_callback_missing_identity(self, mock_request_post):
@@ -92,10 +92,10 @@ class TestLinter(LinterTestCase):
         self.set_mock_response(mock_request_post, expected_response_code, response_string)
         lint_callback = 'http://dummy.org'
         identity = "my_stuff"
-        linter = MyLinter(source_zip_url='#broken', source_dir='source_dir', lint_callback=lint_callback)
+        linter = MyLinter(source_url='#broken', source_dir='source_dir', lint_callback=lint_callback)
         linter.mock_download = True
-        result = linter.run()
-        self.validate_response(result, linter, expected_response_code, valid_identity=False)
+        results = linter.run()
+        self.validate_response(results, linter, expected_response_code, valid_identity=False)
 
     #
     # helpers
@@ -103,12 +103,11 @@ class TestLinter(LinterTestCase):
 
     def validate_response(self, results, linter, expected_response_code, valid_identity=True):
         self.assertEquals(linter.callback_status, expected_response_code)
-        self.assertTrue('results' in linter.callback_results)
-        self.assertIsNotNone(linter.callback_results['results'])
+        self.assertIsNotNone(linter.callback_results)
         self.assertTrue('identity' in linter.callback_results)
         if valid_identity:
             self.assertIsNotNone(linter.callback_results['identity'])
-        self.assertEquals(results, linter.callback_results['results'])
+        self.assertEquals(results, linter.callback_results)
 
     def set_mock_response(self, mock_request_post, expected_response_code, response_string):
         mock_response = Response()

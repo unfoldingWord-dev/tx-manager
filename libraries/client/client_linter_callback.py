@@ -3,7 +3,7 @@ import os
 import tempfile
 from libraries.app.app import App
 from libraries.general_tools import file_utils
-from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
+from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.models.job import TxJob
 
 

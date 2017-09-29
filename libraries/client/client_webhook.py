@@ -4,6 +4,7 @@ import copy
 import os
 import tempfile
 import json
+import hashlib
 from datetime import datetime
 from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import unzip, write_file, add_contents_to_zip, remove_tree
@@ -13,7 +14,6 @@ from libraries.client.preprocessors import do_preprocess
 from libraries.models.manifest import TxManifest
 from libraries.app.app import App
 from libraries.models.job import TxJob
-from libraries.general_tools.data_utils import mask_fields
 
 
 class ClientWebhook(object):
@@ -24,20 +24,30 @@ class ClientWebhook(object):
         """
         self.commit_data = commit_data
         if App.pre_convert_bucket:
-            # we use us-west-2 for our s3 buckets
-            self.source_url_base = 'https://s3-us-west-2.amazonaws.com/{0}'.format(App.pre_convert_bucket)
+            self.source_url_base = 'https://s3-{0}.amazonaws.com/{1}'.format(App.aws_region_name, App.pre_convert_bucket)
         else:
             self.source_url_base = None
         # move everything down one directory level for simple delete
-        self.intermediate_dir = 'tx-manager'
+        self.intermediate_dir = 'converter_webhook'
         self.base_temp_dir = os.path.join(tempfile.gettempdir(), self.intermediate_dir)
-
-    def process_webhook(self):
         try:
             os.makedirs(self.base_temp_dir)
         except:
             pass
 
+    def process_webhook(self):
+        # Check that we got commit data
+        if not self.commit_data:
+            raise Exception('No commit data from DCS was found in the payload')
+
+        # Check that the user token is valid
+        if not App.gogs_user_token:
+            raise Exception('"DSC user token" not given.')
+        user = App.gogs_handler().get_user(App.gogs_user_token)
+        if not user:
+            raise Exception('Invalid DCS user token given')
+
+        # Get the commit_id, and see if there are multiple commits to this webhook payload
         commit_id = self.commit_data['after']
         commit = None
         for commit in self.commit_data['commits']:
@@ -45,15 +55,16 @@ class ClientWebhook(object):
                 break
         commit_id = commit_id[:10]  # Only use the short form
 
+        # Check that the URL to the DCS repo is valid
         commit_url = commit['url']
-        commit_message = commit['message']
-
-        if App.gogs_url not in commit_url:
+        if not commit_url.startswith(App.gogs_url):
             raise Exception('Repos can only belong to {0} to use this webhook client.'.format(App.gogs_url))
 
+        # Gather other details from the commit that we will note for the job(s)
+        owner_name = self.commit_data['repository']['owner']['username']
         repo_name = self.commit_data['repository']['name']
-        repo_owner = self.commit_data['repository']['owner']['username']
         compare_url = self.commit_data['compare_url']
+        commit_message = commit['message']
 
         if 'pusher' in self.commit_data:
             pusher = self.commit_data['pusher']
@@ -61,7 +72,7 @@ class ClientWebhook(object):
             pusher = {'username': commit['author']['username']}
         pusher_username = pusher['username']
 
-        # 1) Download and unzip the repo files
+        # Download and unzip the repo files
         repo_dir = self.get_repo_files(commit_url, repo_name)
 
         # Get the resource container
@@ -70,7 +81,7 @@ class ClientWebhook(object):
         # Save manifest to manifest table
         manifest_data = {
             'repo_name': repo_name,
-            'user_name': repo_owner,
+            'user_name': owner_name,
             'lang_code': rc.resource.language.identifier,
             'resource_id': rc.resource.identifier,
             'resource_type': rc.resource.type,
@@ -78,7 +89,7 @@ class ClientWebhook(object):
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is
-        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=repo_owner)
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=owner_name)
         if tx_manifest:
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
@@ -93,34 +104,31 @@ class ClientWebhook(object):
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
         results, preprocessor = do_preprocess(rc, repo_dir, output_dir)
 
-        # 3) Zip up the massaged files
-        # commit_id is a unique ID for this lambda call, so using it to not conflict with other requests
+        # Zip up the massaged files
         zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
         App.logger.debug('Zipping files from {0} to {1}...'.format(output_dir, zip_filepath))
         add_contents_to_zip(zip_filepath, output_dir)
         App.logger.debug('finished.')
 
-        # 4) Upload zipped file to the S3 bucket
+        # Upload zipped file to the S3 bucket
         file_key = self.upload_zip_file(commit_id, zip_filepath)
 
-        if not preprocessor.is_multiple_jobs():
-            # Send job request to tx-manager
-            identifier, job = self.send_job_request_to_request_job(commit_id, file_key, rc, repo_name, repo_owner)
+        job = TxJob()
+        job.owner_name = owner_name
+        job.repo_name = repo_name
+        job.commit_id = commit_id
+        job.user = user.username  # Username of the token, not necessarily the repo's owner
 
-            # Send lint request
-            if job.status != 'failed':
-                linter_payload = {
-                    'linter_messaging_name': '',  # disable messaging
-                    's3_results_key': identifier
-                }
-                lint_results = self.send_lint_request_to_run_linter(job, rc, commit_url, extra_data=linter_payload)
-                if 'success' in lint_results and lint_results['success']:
-                    job.warnings += lint_results['warnings']
-                    job.update()
+        if not preprocessor.is_multiple_jobs():
+
+            job.identifier = '{0}/{1}/{2}'.format(owner_name, repo_name, commit)
+            job.job_id = self.get_unique_job_id(job.identifier)
+
+            self.send_lint_request_to_run_linter(job, rc, commit_url)
 
             # Compile data for build_log.json
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
-                                                   pusher_username, repo_name, repo_owner)
+                                                   pusher_username, repo_name, owner_name)
 
             # Upload build_log.json to S3:
             s3_commit_key = 'u/{0}'.format(identifier)
@@ -128,7 +136,7 @@ class ClientWebhook(object):
             self.upload_build_log_to_s3(build_log_json, s3_commit_key)
 
             # Download the project.json file for this repo (create it if doesn't exist) and update it
-            self.update_project_json(commit_id, job, repo_name, repo_owner)
+            self.update_project_json(commit_id, job, repo_name, owner_name)
 
             remove_tree(self.base_temp_dir)  # cleanup
 
@@ -148,7 +156,7 @@ class ClientWebhook(object):
         jobs = []
         job = None
 
-        master_identifier = self.create_new_identifier(repo_owner, repo_name, commit_id)
+        master_identifier = self.create_new_identifier(owner_name, repo_name, commit_id)
         master_s3_commit_key = 'u/{0}'.format(master_identifier)
         self.clear_commit_directory_in_cdn(master_s3_commit_key)
 
@@ -170,19 +178,18 @@ class ClientWebhook(object):
 
             # Send job request to tx-manager
             file_key_multi = self.build_multipart_source(file_key, book)
-            identifier, job = self.send_job_request_to_request_job(commit_id, file_key_multi, rc, repo_name, repo_owner,
+            identifier, job = self.send_job_request_to_request_job(commit_id, file_key_multi, rc, repo_name, owner_name,
                                                                    count=book_count, part=i, book=book)
 
             # Send lint request
             linter_payload['single_file'] = book
             linter_payload['s3_results_key'] = "{0}/{1}".format(master_s3_commit_key, i)
-            lint_results = self.send_lint_request_to_run_linter(job, rc, file_key_multi, extra_data=linter_payload,
-                                                                async=True)
+            lint_results = self.send_lint_request_to_run_linter(job, rc, file_key_multi)
             jobs.append(job)
             last_job_id = job.job_id
 
             build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
-                                                   pusher_username, repo_name, repo_owner)
+                                                   pusher_username, repo_name, owner_name)
             part = str(i)
             if len(book) > 0:
                 build_log_json['book'] = book
@@ -195,7 +202,7 @@ class ClientWebhook(object):
             build_logs.append(build_log_json)
 
         # Download the project.json file for this repo (create it if doesn't exist) and update it
-        self.update_project_json(commit_id, jobs[0], repo_name, repo_owner)
+        self.update_project_json(commit_id, jobs[0], repo_name, owner_name)
 
         source_url = self.source_url_base + "/preconvert/" + commit_id + '.zip'
         build_logs_json = copy.copy(build_log_json)
@@ -436,30 +443,26 @@ class ClientWebhook(object):
 
         return identifier, job
 
-    def send_lint_request_to_run_linter(self, job, rc, commit_url, extra_data=None, async=False):
-        job_data = {
-            'job_id': job.job_id,
-            'resource_id': rc.resource.identifier,
-            'commit_data': self.commit_data,
-        }
-        if extra_data:
-            for k in extra_data:
-                job_data[k] = extra_data[k]
+    def send_lint_request_to_run_linter(self, job, rc, commit_url):
         payload = {
-            'data': job_data,
+            'data': {
+                'identity': job.identity,
+                'resource_id': rc.resource.identifier,
+                'cdn_file': job.cdn_file,
+                'options': job.options
+            },
             'vars': {
-                'prefix': App.prefix,
+                'prefix': App.prefix
             }
         }
-
         if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
             payload['data']['source_url'] = job.source
         else:
             payload['data']['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
-        return self.send_payload_to_run_linter(payload, async=async)
+        return self.send_payload_to_run_linter(payload)
 
-    def send_payload_to_run_linter(self, payload, async=False):
+    def send_payload_to_run_linter(self, payload):
         App.logger.debug('Invoking the run_linter lambda function with payload:')
         App.logger.debug(payload)
         run_linter_function = '{0}tx_run_linter'.format(App.prefix)
@@ -504,3 +507,12 @@ class ClientWebhook(object):
         # clean up the downloaded zip file
         if os.path.isfile(repo_zip_file):
             os.remove(repo_zip_file)
+
+    @staticmethod
+    def get_unique_job_id(seed):
+        job_id = hashlib.sha256(seed).hexdigest()
+        while TxJob.get(job_id):
+            job_id = hashlib.sha256(
+                '{0}-{1}'.format(seed, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f"))).hexdigest()
+        return job_id
+

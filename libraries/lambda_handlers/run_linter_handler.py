@@ -19,26 +19,26 @@ class RunLinterHandler(Handler):
         :return dict:
         """
         # Gather arguments
-        source_zip_url = self.retrieve(self.data, 'source_url', 'payload')
-        commit_data = self.retrieve(self.data, 'commit_data', 'payload', required=False)
-        resource_id = self.retrieve(self.data, 'resource_id', 'payload', required=False)
-        single_file = self.retrieve(self.data, 'single_file', 'payload', required=False, default=None)
-        lint_callback = self.retrieve(self.data, 'lint_callback', 'payload', required=False, default=None)
-        identity = self.retrieve(self.data, 'identity', 'payload', required=False, default=None)
-        s3_results_key = self.retrieve(self.data, 's3_results_key', 'payload', required=False, default=None)
+        identity = self.retrieve(self.data, 'identity', 'Payload', required=False, default=None)
+        source_url = self.retrieve(self.data, 'source_url', 'Payload')
+        commit_data = self.retrieve(self.data, 'commit_data', 'Payload', required=False)
+        resource_id = self.retrieve(self.data, 'resource_id', 'Payload', required=False)
+        single_file = self.retrieve(self.data, 'single_file', 'Payload', required=False, default=None)
+        lint_callback = self.retrieve(self.data, 'lint_callback', 'Payload', required=False, default=None)
+        cdn_file = self.retrieve(self.data, 'cdn_file', 'Payload', required=False, default=None)
 
         # Execute
         linter_class = LinterHandler.get_linter_class(resource_id)
-        linter = linter_class(source_zip_url=source_zip_url, commit_data=commit_data, resource_id=resource_id,
+        linter = linter_class(source_url=source_url, commit_data=commit_data, resource_id=resource_id,
                               single_file=single_file, lint_callback=lint_callback, identity=identity,
-                              s3_commit_key=s3_results_key)
+                              cdn_file=cdn_file)
         ret_value = linter.run()
         if len(App.linter_messaging_name):
             message_queue = LinterMessaging(App.linter_messaging_name)
             while True:
                 self.message_attempt_count += 1
                 self.message_success = message_queue.notify_lint_job_complete(source_zip_url, ret_value['success'],
-                                                                              payload=ret_value)
+                                                                              Payload=ret_value)
                 if self.message_success:
                     break
 
