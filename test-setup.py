@@ -72,7 +72,7 @@ setup(
         'markdown2==2.3.4',
         'future==0.16.0',
         'pyparsing==2.1.10',
-        'usfm-tools==0.0.12',
+        'usfm-tools==0.0.14',
         'mock',  # travis reports syntax error in mock setup.cfg if we give version
         'moto==1.0.1',
         'PyYAML==3.12',

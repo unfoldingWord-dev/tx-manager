@@ -64,8 +64,11 @@ class Usfm2HtmlConverter(Converter):
                 converted_soup = BeautifulSoup(converted_html, 'html.parser')
                 content_div = template_soup.find('div', id='content')
                 content_div.clear()
-                content_div.append(converted_soup.body)
-                content_div.body.unwrap()
+                if converted_soup and converted_soup.body:
+                    content_div.append(converted_soup.body)
+                    content_div.body.unwrap()
+                else:
+                    converted_div.append('<div class="error">ERROR! NOT CONVERTED!</div>')
                 output_file = os.path.join(self.output_dir, html_filename)
                 write_file(output_file, template_soup.prettify())
                 self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
