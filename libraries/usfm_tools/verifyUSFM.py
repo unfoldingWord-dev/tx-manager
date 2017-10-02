@@ -47,6 +47,7 @@ class State:
     chapter_label = ""
     chapter = 0
     nParagraphs = 0
+    nMargin = 0
     nQuotes = 0
     verse = 0
     lastVerse = 0
@@ -84,6 +85,7 @@ class State:
         State.textOkayHere = False
         State.chapters = set()
         State.nParagraphs = 0
+        State.nMargin = 0
         State.nQuotes = 0
 
     def setLanguageCode(self, code):
@@ -129,6 +131,7 @@ class State:
         State.chapters.add(State.chapter)
         State.lastVerse = 0
         State.nParagraphs = 0
+        State.nMargin = 0
         State.nQuotes = 0
         State.verse = 0
         State.needVerseText = False
@@ -138,6 +141,10 @@ class State:
 
     def addParagraph(self):
         State.nParagraphs += State.nParagraphs + 1
+        State.textOkayHere = True
+
+    def addMargin(self):
+        State.nMargin += State.nMargin + 1
         State.textOkayHere = True
 
     # supports a span of verses, e.g. 3-4, if needed. Passes the verse(s) on to addVerse()
@@ -425,6 +432,10 @@ def takeP():
     state = State()
     state.addParagraph()
 
+def takeM():
+    state = State()
+    state.addMargin()
+
 def takeV(v):
     state = State()
     state.addVerses(v)
@@ -433,8 +444,8 @@ def takeV(v):
             report_error(state.reference + " " + v + " - Missing ID before verse" + '\n')
         if state.chapter == 0:
             report_error(state.reference + " - Missing chapter tag" + '\n')
-        if (state.nParagraphs == 0) and (state.nQuotes == 0):
-            report_error(state.reference + " - Missing paragraph marker (\\p) or quote (\\q) before: " +  '\n')
+        if (state.nParagraphs == 0) and (state.nQuotes == 0) and (state.nMargin == 0):
+            report_error(state.reference + " - Missing paragraph marker (\\p), margin (\\m) or quote (\\q) before: " + '\n')
 
     if state.verse < state.lastVerse and state.addError(state.lastRef):
         report_error(state.reference + " - Verse out of order: after " + state.lastRef + '\n')
@@ -490,7 +501,7 @@ def isCrossRef(token):
 def take(token):
     state = State()
     if state.needText() and not token.isTEXT() and not isFootnoted(token) and not isCrossRef(token):
-        report_error( state.reference + " - Empty verse" +'\n')
+        report_error(state.reference + " - Empty verse" + '\n')
     if token.isID():
         takeID(token.value)
     elif token.isIDE():
@@ -518,6 +529,8 @@ def take(token):
         takeText(token.value)
     elif token.isQ() or token.isQ1() or token.isQ2() or token.isQ3():
         state.addQuote()
+    elif token.isM() or token.isMI():
+        state.addMargin()
     elif token.isUnknown():
         takeUnknown(state, token)
     global lastToken

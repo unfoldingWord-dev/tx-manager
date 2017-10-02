@@ -226,6 +226,13 @@ class TestUsfmLinter(LinterTestCase):
         linter = self.run_linter(out_dir)
         self.verify_results(expected_warnings, linter)
 
+    def test_PhpMarginBeforeChapter(self):
+        out_dir = self.copy_resource(self.php_repo_path)
+        self.replace_tag(out_dir, self.php_file_name, tag='p', replace='\m\n')  # replace p with m
+        expected_warnings = False
+        linter = self.run_linter(out_dir)
+        self.verify_results(expected_warnings, linter)
+
     def test_PhpMissingV1(self):
         out_dir = self.copy_resource(self.php_repo_path)
         self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='')  # remove v1
