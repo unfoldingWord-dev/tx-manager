@@ -261,6 +261,13 @@ class TestUsfmLinter(LinterTestCase):
         linter = self.run_linter(out_dir)
         self.verify_results(expected_warnings, linter)
 
+    def test_PhpNoSpace3V3(self):
+        out_dir = self.copy_resource(self.php_repo_path)
+        self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=3, end_vs=4, replace='\\v 3"stuff\n')  # replace v3
+        expected_warnings = True
+        linter = self.run_linter(out_dir)
+        self.verify_results(expected_warnings, linter)
+
     def test_PhpInvalidV1(self):
         out_dir = self.copy_resource(self.php_repo_path)
         self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v b ')  # replace v1

@@ -24,14 +24,13 @@ lastToken = None
 vv_re = re.compile(r'([0-9]+)-([0-9]+)')
 error_log = None
 
-# chapter or verse missing number or space before
-missing_num_re = re.compile(r'(\\[cv][^\u00A0 \na-z]+)|(\\[cv][\u00A0 ][^0-9\n]+)', re.UNICODE)
+# chapter marker
+chapter_marker_re = re.compile(r'\\c', re.UNICODE)
 
-# chapter with missing missing space after number
-chapter_missing_space_re = re.compile(r'(\\c[\u00A0 ][0-9]+[\u00A0 ]*[^^0-9\n\u00A0 ])', re.UNICODE)
+# verse marker
+verse_marker_re = re.compile(r'\\v', re.UNICODE)
 
-#  verse with missing missing space after number
-verse_missing_space_re = re.compile(r'(\\v[\u00A0 ][0-9]+[^0-9\n -])|(\\v[\u00A0 ](?:[0-9]+[-\u2013\u2014])[0-9]+[^0-9\n ])', re.UNICODE)
+WHITE_SPACE = [' ', '\u00A0', '\r', '\n', '\t']
 
 
 class State:
@@ -137,7 +136,7 @@ class State:
         State.needVerseText = False
         State.textOkayHere = False
         State.lastRef = State.reference
-        State.reference = State.ID + " " + c
+        State.reference = State.ID + " " + str(State.chapter)
 
     def addParagraph(self):
         State.nParagraphs += State.nParagraphs + 1
@@ -259,9 +258,9 @@ def verifyNotEmpty(filename):
 def verifyIdentification(book_code):
     state = State()
     if not state.ID:
-        report_error( book_code + " - Missing \\id tag")
+        report_error(book_code + " - Missing \\id tag")
     elif (book_code is not None) and (book_code != state.ID):
-        report_error( state.ID + " - Found in \\id tag does not match code '" + book_code + "'' found in file name")
+        report_error(state.ID + " - Found in \\id tag does not match code '" + book_code + "'' found in file name")
 
     if not state.IDE:
         report_error(book_code + " - Missing \\ide tag")
@@ -282,24 +281,82 @@ def verifyIdentification(book_code):
         report_error(book_code + " - Missing \\mt tag")
 
 def verifyChapterAndVerseMarkers(text, book_code):
-    # check for chapter or verse tags without numbers
-    for no_num in missing_num_re.finditer(text):
-        report_error(book_code + ' - Chapter or verse tag invalid: "{0}"'.format(getNotEmptyGroup(no_num)))
+    pos = 0
+    last_ch = 0
+    for chapter_current in chapter_marker_re.finditer(text):
+        start = chapter_current.start()
+        end = chapter_current.end()
+        char = text[end]
+        if (char >= 'a') and (char <= 'z'):
+            continue  #  skip non-chapter markers
+        has_space = (char == ' ') or (char == '\u00A0')
+        if has_space:
+            end += 1
+        char = text[start - 1]
+        if (char != '\n') and (char != '\r'):
+            # missing new line before chapter marker
+            pass
+        ch_num, has_space_after = get_number(text, end)
+        if ch_num >= 0:
+            if not has_space_after:
+                # missing new line after chapter number
+                pass
 
-    # check for chapter tags missing space after number
-    for space in chapter_missing_space_re.finditer(text):
-        report_error(book_code + ' - Chapter tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+            check_chapter(text, book_code, last_ch, pos, start)
+            last_ch = ch_num
+            pos = end
+        else:
+            if ch_num == 0:
+                # invalid chapter number 0
+                continue
+            else:
+                # missing chapter number
+                continue
 
-    # check for verse tags missing space after number
-    for space in verse_missing_space_re.finditer(text):
-        report_error(book_code + ' - Verse tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+    check_chapter(text, book_code, last_ch, pos, len(text))  # check last chapter
 
-def getNotEmptyGroup(match):
-    for i in range(1, len(match.groups()) + 1):
-        value = match.group(i)
-        if value is not None:
-            return value
-    return None
+def check_chapter(text, book_code, chapter_num, start, end):
+    last_vs = 0
+    for verse_current in verse_marker_re.finditer(text, start, end):
+        start = verse_current.start()
+        end = verse_current.end()
+        char = text[end]
+        has_space = (char == ' ') or (char == '\u00A0')
+        if has_space:
+            end += 1
+        char = text[start - 1]
+        if (char not in WHITE_SPACE):
+            # missing white space before verse marker
+            pass
+        vs_num, has_space_after = get_number(text, end)
+        if vs_num >= 0:
+            if not has_space_after:
+                # missing white space after verse number
+                pass
+            last_ch = vs_num
+            pos = end
+            continue
+        else:
+            if vs_num == 0:
+                # invalid verse number 0
+                continue
+            else:
+                # missing verse number
+                continue
+
+def get_number(text, start):
+    digits = ''
+    has_white_space = False
+    for pos in range(start, len(text)):
+        c = text[pos]
+        if (c >= '0') and (c <= '9'):
+            digits += c
+            continue
+        has_white_space = (c in WHITE_SPACE)
+        break
+    if len(digits) > 0:
+        return int(digits), has_white_space
+    return -1, has_white_space
 
 def verifyChapterCount():
     state = State()
@@ -420,9 +477,9 @@ def takeC(c):
     if len(state.IDs) == 0:
         report_error(state.reference + " - Missing ID before chapter: " + c + '\n')
     if state.chapter < state.lastChapter:
-        report_error(state.reference +" - Chapter out of order" +  '\n')
+        report_error(state.reference + " - Chapter out of order" + '\n')
     elif state.chapter == state.lastChapter:
-        report_error(state.reference + " - Duplicate chapter" +  '\n')
+        report_error(state.reference + " - Duplicate chapter" + '\n')
     elif state.chapter > state.lastChapter + 2:
         report_error(state.lastRef + " - Missing chapters between this and: " + state.reference + '\n')
     elif state.chapter > state.lastChapter + 1:
@@ -445,7 +502,8 @@ def takeV(v):
         if state.chapter == 0:
             report_error(state.reference + " - Missing chapter tag" + '\n')
         if (state.nParagraphs == 0) and (state.nQuotes == 0) and (state.nMargin == 0):
-            report_error(state.reference + " - Missing paragraph marker (\\p), margin (\\m) or quote (\\q) before: " + '\n')
+            report_error(state.reference + " - Missing paragraph marker (\\p), margin (\\m) or quote (\\q) before: "
+                         + '\n')
 
     if state.verse < state.lastVerse and state.addError(state.lastRef):
         report_error(state.reference + " - Verse out of order: after " + state.lastRef + '\n')
