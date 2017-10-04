@@ -14,6 +14,7 @@ from glob import glob
 from libraries.app.app import App
 from libraries.general_tools.file_utils import json_serial
 from libraries.manager.manager import TxManager
+from libraries.models.job import TxJob
 from tests.client_tests import mock_utils
 
 
@@ -190,6 +191,20 @@ class ClientWebhookTest(unittest.TestCase):
 
         # then
         self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
+
+    def test_get_converter_module(self):
+        job = TxJob(**self.job_data)
+        cw = ClientWebhook()
+        converter = cw.get_converter_module(job)
+        self.assertIsNotNone(converter)
+        self.assertEqual(converter.name, 'md2html')
+
+    def test_get_linter_module(self):
+        job = TxJob(**self.job_data)
+        cw = ClientWebhook()
+        linter = cw.get_linter_module(job)
+        self.assertIsNotNone(linter)
+        self.assertEqual(linter.name, 'obs')
 
     #
     # helpers
