@@ -12,8 +12,16 @@ from functions.register_module.main import handle
 from functions.request_job.main import handle
 from functions.start_job.main import handle
 from functions.door43_print.main import handle
-from functions.run_linter.main import handle
 from functions.search_projects.main import handle
+from functions.lint_markdown.main import handle
+from functions.lint_obs.main import handle
+from functions.lint_ta.main import handle
+from functions.lint_tn.main import handle
+from functions.lint_tq.main import handle
+from functions.lint_tw.main import handle
+from functions.lint_udb.main import handle
+from functions.lint_ulb.main import handle
+from functions.lint_usfm.main import handle
 from unittest import TestCase
 
 
@@ -33,5 +41,13 @@ class TestHandlers(TestCase):
         self.assertIsNone(functions.request_job.main.handle({}, {}))
         self.assertIsNone(functions.start_job.main.handle({}, {}))
         self.assertIsNone(functions.door43_print.main.handle({}, {}))
-        self.assertIsNone(functions.run_linter.main.handle({}, {}))
         self.assertIsNone(functions.search_projects.main.handle({}, {}))
+        self.assertIsNone(functions.lint_markdown.main.handle({}, {}))
+        self.assertIsNone(functions.lint_obs.main.handle({}, {}))
+        self.assertIsNone(functions.lint_ta.main.handle({}, {}))
+        self.assertIsNone(functions.lint_tn.main.handle({}, {}))
+        self.assertIsNone(functions.lint_tq.main.handle({}, {}))
+        self.assertIsNone(functions.lint_tw.main.handle({}, {}))
+        self.assertIsNone(functions.lint_udb.main.handle({}, {}))
+        self.assertIsNone(functions.lint_ulb.main.handle({}, {}))
+        self.assertIsNone(functions.lint_usfm.main.handle({}, {}))

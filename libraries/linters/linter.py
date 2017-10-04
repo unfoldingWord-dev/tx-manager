@@ -5,6 +5,7 @@ import traceback
 import requests
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, remove_tree
+from libraries.door43_tools.linter_messaging import LinterMessaging
 from lint_logger import LintLogger
 from libraries.resource_container.ResourceContainer import RC
 from libraries.app.app import App
@@ -16,14 +17,14 @@ class Linter(object):
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source_url=None, source_file=None, source_dir=None, commit_data=None,
-                 lint_callback=None, identity=None, cdn_file=None, **kwargs):
+                 lint_callback=None, identifier=None, cdn_file=None, **kwargs):
         """
         :param string source_url: The main way to give Linter the files via a zip file online
         :param string source_file: If set, will just unzip the local source file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
         :param string lint_callback: If set, will do callback
-        :param string identity: 
+        :param string identifier: 
         :param string cdn_file:
         :params dict kwargs:
         """
@@ -46,8 +47,8 @@ class Linter(object):
         self.callback = lint_callback
         self.callback_status = 0
         self.callback_results = None
-        self.identity = identity
-        if self.callback and not identity:
+        self.identifier = identifier
+        if self.callback and not identifier:
             App.logger.error("Identity not given for callback")
         self.s3_results_key = cdn_file
         if self.callback and not cdn_file:
@@ -96,7 +97,7 @@ class Linter(object):
             self.log.warnings.append(message)
             App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
         results = {
-            'identity': self.identity,
+            'identifier': self.identifier,
             'success': success,
             'warnings': self.log.warnings,
         }
@@ -106,6 +107,29 @@ class Linter(object):
             self.do_callback(self.callback, self.callback_results)
 
         App.logger.debug("Linter results: " + str(results))
+
+        if len(App.linter_messaging_name):
+            message_queue = LinterMessaging(App.linter_messaging_name)
+            message_attempt_count = 0
+            while True:
+                message_attempt_count += 1
+                message_success = message_queue.notify_lint_job_complete(self.source_url, results['success'],
+                                                                         payload=results)
+                if message_success:
+                    break
+
+                if not message_queue.is_oversize():  # if other than oversize error
+                    App.logger.error("Message failure: {0}".format(message_queue.error))
+                    break
+
+                # trim warnings list in half and try again
+                warnings = results['warnings']
+                warnings_len = len(warnings)
+                new_len = warnings_len / 2
+                results['warnings'] = warnings[:new_len]
+                App.logger.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
+                                                                                                 new_len))
+
         return results
 
     def download_archive(self):

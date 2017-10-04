@@ -16,14 +16,14 @@ class Converter(object):
 
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source_url, resource_id, cdn_file=None, options=None, convert_callback=None, identity=None):
+    def __init__(self, source_url, resource_id, cdn_file=None, options=None, convert_callback=None, identifier=None):
         """
         :param string source_url:
         :param string resource_id:
         :param string cdn_file:
         :param dict options:
         :param string convert_callback:
-        :param string identity:
+        :param string identifier:
         """
         self.options = {}
         self.source_url = source_url
@@ -40,8 +40,8 @@ class Converter(object):
         self.callback = convert_callback
         self.callback_status = 0
         self.callback_results = None
-        self.identity = identity
-        if self.callback and not identity:
+        self.identifier = identifier
+        if self.callback and not identifier:
             App.logger.error("Identity not given for callback")
 
     def close(self):
@@ -96,7 +96,8 @@ class Converter(object):
             self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
             App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
 
-        result = {
+        results = {
+            'identifier': self.identifier,
             'success': success and len(self.log.logs['error']) == 0,
             'info': self.log.logs['info'],
             'warnings': self.log.logs['warning'],
@@ -104,12 +105,11 @@ class Converter(object):
         }
 
         if self.callback is not None:
-            self.callback_results = result
-            self.callback_results['identity'] = self.identity
-            self.do_callback(self.callback, self.callback_results)
+            self.callback_results = results
+            self.do_callback(self.callback, results)
 
-        App.logger.debug(result)
-        return result
+        App.logger.debug(results)
+        return results
 
     def download_archive(self):
         archive_url = self.source_url

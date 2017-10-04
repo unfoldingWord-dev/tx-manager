@@ -4,27 +4,37 @@ import os
 import shutil
 import tempfile
 import unittest
-import hashlib
 import boto3
-from mock import patch
+import mock
 from datetime import datetime
 from libraries.client.client_webhook import ClientWebhook
-from libraries.door43_tools.linter_messaging import LinterMessaging
 from libraries.general_tools.file_utils import read_file
 from libraries.models.manifest import TxManifest
-from libraries.models.job import TxJob
-from moto import mock_s3, mock_dynamodb2, mock_sqs
+from moto import mock_s3
 from libraries.app.app import App
 from libraries.general_tools.file_utils import json_serial
+from tests.client_tests import mock_utils
 
 
 @mock_s3
-@mock_dynamodb2
-@mock_sqs
-class TestClientWebhook(unittest.TestCase):
+class ClientWebhookTest(unittest.TestCase):
     parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
     resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
+    mock_gogs = None
+
+    @classmethod
+    def setUpClass(cls):
+        ClientWebhookTest.patches = (
+            mock.patch('libraries.gogs_tools.gogs_handler.GogsHandler.get_user', mock_utils.get_user),
+        )
+        for patch in ClientWebhookTest.patches:
+            patch.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        for patch in ClientWebhookTest.patches:
+            patch.stop()
 
     def setUp(self):
         """Runs before each test."""
@@ -36,15 +46,13 @@ class TestClientWebhook(unittest.TestCase):
         App.pre_convert_s3_handler().upload_file = self.mock_s3_upload_file
 
         try:
-            os.makedirs(TestClientWebhook.base_temp_dir)
+            os.makedirs(ClientWebhookTest.base_temp_dir)
         except:
             pass
 
         self.temp_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='webhookTest_')
-        self.job_request_count = 0
-        self.linter_success = True
-        self.linter_warnings = []
-
+        self.job_converter_count = 0
+        self.job_linter_count = 0
         self.uploaded_files = []
 
         self.job_data = {
@@ -62,23 +70,21 @@ class TestClientWebhook(unittest.TestCase):
     def tearDown(self):
         """Runs after each test."""
         App.db_close()
-        shutil.rmtree(TestClientWebhook.base_temp_dir, ignore_errors=True)
+        shutil.rmtree(ClientWebhookTest.base_temp_dir, ignore_errors=True)
 
-    @patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
-        mock_download_file.side_effect = self.mock_download_repo
+        mock_download_file.side_effect = self.mock_download_file
         cwh = ClientWebhook()
         try:
             os.makedirs(cwh.base_temp_dir)
         except:
             pass
-        cwh.download_repo('bible_bundle_master', TestClientWebhook.base_temp_dir)
+        cwh.download_repo('bible_bundle_master', ClientWebhookTest.base_temp_dir)
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhook(self, mock_send_payload_to_run_linter, mock_download_file):
+    @mock.patch('libraries.client.client_webhook.download_file')
+    def test_process_webhook(self, mock_download_file):
         # given
-        mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
         client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
                                                          mock_download_file)
         expected_job_count = 1
@@ -98,8 +104,8 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    @mock.patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookError(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
@@ -118,9 +124,9 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults(self.get_build_log_json(), expected_job_count, expected_error_count)
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhook_update_manifest_table(self, mock_send_payload_to_run_linter, mock_download_file):
+    @mock.patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    def test_process_webhook_update_manifest_table(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         manifest_data = {
             'resource_id': ' ',
@@ -155,8 +161,8 @@ class TestClientWebhook(unittest.TestCase):
         self.assertEqual(tx_manifest.resource_type, 'book')
         self.assertGreater(len(tx_manifest.manifest), 100)
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    @mock.patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookMultipleBooks(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         self.setup_linter()
@@ -175,8 +181,8 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    @mock.patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookMultipleBooksWarnings(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         self.setup_linter()
@@ -195,8 +201,8 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    @mock.patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookMultipleBooksLinterFail(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         self.setup_linter()
@@ -215,8 +221,8 @@ class TestClientWebhook(unittest.TestCase):
         # then
         self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
 
-    @patch('libraries.client.client_webhook.download_file')
-    @patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
+    @mock.patch('libraries.client.client_webhook.download_file')
+    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
     def test_processWebhookMultipleBooksErrors(self, mock_send_payload_to_run_linter, mock_download_file):
         # given
         client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir,
@@ -254,7 +260,7 @@ class TestClientWebhook(unittest.TestCase):
 
     def validateResults(self, results, expected_job_count, expected_error_count):
         multiple_job = expected_job_count > 1
-        self.assertEqual(self.job_request_count, expected_job_count)
+        self.assertEqual(self.job_converter_count, expected_job_count)
         self.assertTrue(len(results['job_id']) > 16)
         self.assertTrue(len(results['commit_id']) > 8)
         self.assertTrue(len(results['repo_owner']) > 1)
@@ -295,39 +301,26 @@ class TestClientWebhook(unittest.TestCase):
 
     def setup_client_webhook_mock(self, repo_name, base_path, mock_download_file):
         App.gogs_url = base_path
-        mock_download_file.side_effect = self.mock_download_repo
+        App.gogs_user_token = mock_utils.valid_token
+        mock_download_file.side_effect = self.mock_download_file
         source = os.path.join(base_path, repo_name)
         commit_data = self.get_commit_data(source)
         self.cwh = ClientWebhook(commit_data)
-        self.cwh.send_payload_to_request_job = self.mock_send_payload_to_request_job
+        self.cwh.send_payload_to_converter = self.mock_send_payload_to_converter
         self.cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
         return self.cwh
 
-    def mock_download_repo(self, source, target):
+    def mock_download_file(self, source, target):
         if source != target:
-            shutil.copyfile(os.path.join(TestClientWebhook.parent_resources_dir, source), target)
+            shutil.copyfile(os.path.join(ClientWebhookTest.parent_resources_dir, source), target)
 
-    def mock_send_payload_to_request_job(self, callback_url, identifier, payload, rc, source_url, tx_manager_job_url):
-        self.job_request_count += 1
-        # Make a job and save it to the DB like tx-manager would
-        mock_job = TxJob(**self.job_data)
-        mock_job.source = payload['data']['source']
-        mock_job.job_id = hashlib.sha256(os.urandom(8)).hexdigest()
-        mock_job.insert()
-        return identifier, mock_job
+    def mock_send_payload_to_converter(self, payload, converter):
+        self.job_converter_count += 1
+        return True
 
-    def mock_send_payload_to_run_linter(self, payload, async=False):
-        data = payload['data']
-        source_url = data['source_url']
-        ret_value = {
-            'success': self.linter_success,
-            'warnings': self.linter_warnings
-        }
-        if 'linter_messaging_name' in data:
-            message_queue = LinterMessaging(data['linter_messaging_name'])
-            message_queue.notify_lint_job_complete(source_url, self.linter_success, payload=ret_value)
-
-        return ret_value
+    def mock_send_payload_to_run_linter(self, payload, linter):
+        self.job_linter_count += 1
+        return True
 
     def mock_cdn_upload_file(self, project_file, s3_key):
         bucket_name = App.pre_convert_s3_handler().bucket.name
@@ -338,7 +331,7 @@ class TestClientWebhook(unittest.TestCase):
         return self.upload_file(bucket_name, project_file, s3_key)
 
     def upload_file(self, bucket_name, project_file, s3_key):
-        filename = tempfile.mktemp(dir=TestClientWebhook.base_temp_dir)
+        filename = tempfile.mktemp(dir=ClientWebhookTest.base_temp_dir)
         shutil.copyfile(project_file, filename)
         self.uploaded_files.append({'file': filename, 'key': bucket_name + '/' + s3_key})
         return

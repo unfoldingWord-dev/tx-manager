@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
-from libraries.lambda_handlers.run_linter_handler import RunLinterHandler
+from libraries.lambda_handlers.lint_handler import LintHandler
+from libraries.linters.tn_linter import TnLinter
 
 
 def handle(event, context):
@@ -9,4 +10,4 @@ def handle(event, context):
     :param context:
     :return dict:
     """
-    return RunLinterHandler().handle(event, context)
+    return LintHandler(TnLinter).handle(event, context)

@@ -4,7 +4,7 @@ from mock import patch
 from moto import mock_sqs
 from libraries.app.app import App
 from libraries.door43_tools.linter_messaging import LinterMessaging
-from libraries.lambda_handlers.run_linter_handler import RunLinterHandler
+from libraries.lambda_handlers.lint_handler import RunLinterHandler
 from libraries.linters.linter_handler import LinterHandler
 
 

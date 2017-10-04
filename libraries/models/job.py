@@ -19,6 +19,7 @@ class TxJob(App.Base, TxModel):
     success = Column(Boolean, nullable=True, default=False)
     user = Column(String(255), nullable=True)  # Username of the token, not necessarily the repo's owner
     convert_module = Column(String(255), nullable=True)
+    lint_module = Column(String(255), nullable=True)
     resource_type = Column(String(255), nullable=True)
     input_format = Column(String(255), nullable=True)
     output_format = Column(String(255), nullable=True)
@@ -35,6 +36,7 @@ class TxJob(App.Base, TxModel):
     eta = Column(DateTime, nullable=True)
     message = Column(String(255), nullable=True)
     links = Column(TextPickleType(), nullable=True, default=[])
+    options = Column(TextPickleType(), nullable=True, default={})
     log = Column(TextPickleType(), nullable=True, default=[])
     warnings = Column(TextPickleType(), nullable=True, default=[])
     errors = Column(TextPickleType(), nullable=True, default=[])
@@ -43,6 +45,7 @@ class TxJob(App.Base, TxModel):
         # Init attributes
         self.success = False
         self.links = []
+        self.options = {}
         self.log = []
         self.warnings = []
         self.errors = []
@@ -61,11 +64,14 @@ class TxJob(App.Base, TxModel):
     def log_message(self, message):
         self.log.append(message)
         flag_modified(self, 'log')
+        App.logger.info(message)
 
     def error_message(self, message):
         self.errors.append(message)
         flag_modified(self, 'errors')
+        App.logger.error(message)
 
     def warning_message(self, message):
         self.warnings.append(message)
         flag_modified(self, 'warnings')
+        App.logger.warning(message)

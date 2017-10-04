@@ -24,7 +24,7 @@ class ConvertHandler(Handler):
         :return dict:
         """
         # Gather arguments
-        identity = self.retrieve(self.data, 'identity', 'identity', required=False)
+        identifier = self.retrieve(self.data, 'identifier', 'identifier', required=False)
         source_url = self.retrieve(self.data, 'source_url', 'source')
         resource_id = self.retrieve(self.data, 'resource_id', 'resource_type')
         cdn_file = self.retrieve(self.data, 'cdn_file', 'cdn_file')
@@ -33,7 +33,7 @@ class ConvertHandler(Handler):
 
         # Execute
         converter = self.converter_class(source=source_url, resource=resource_id, cdn_file=cdn_file, options=options,
-                                         convert_callback=convert_callback, identity=identity)
+                                         convert_callback=convert_callback, identifier=identifier)
         results = converter.run()
         converter.close()  # do cleanup after run
         return results

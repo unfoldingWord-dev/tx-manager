@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 from sqlalchemy import inspect
 from datetime import datetime, date
+from copy import deepcopy
 from libraries.app.app import App
 
 
@@ -40,3 +41,6 @@ class TxModel(object):
             if isinstance(value, (datetime, date)):
                 value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
             yield (c.key, value)
+
+    def clone(self):
+        return deepcopy(self)

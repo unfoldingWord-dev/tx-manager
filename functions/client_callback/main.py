@@ -4,7 +4,7 @@ from libraries.lambda_handlers.client_callback_handler import ClientCallbackHand
 
 def handle(event, context):
     """
-    Called by API Gateway when the tx-manager is notified of a finished or failed conversion
+    Called by API Gateway when the tx-manager is notified of a finished or failed converter
     :param dict event:
     :param context:
     :return dict:

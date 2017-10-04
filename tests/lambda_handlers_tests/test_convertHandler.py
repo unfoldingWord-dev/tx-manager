@@ -86,7 +86,7 @@ class TestConvertHandler(TestCase):
             'data': {
                 'convert_callback': 'http://callback.org',
                 'cdn_file': 'tx/job/1234567890.zip',
-                'identity': 'richmahn/en-obs/705948ab00',
+                'identifier': 'richmahn/en-obs/705948ab00',
                 'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
                 'resource_type': 'obs',
                 'options': {'pageSize': 'A4'}
