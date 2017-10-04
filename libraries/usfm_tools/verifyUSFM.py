@@ -31,6 +31,7 @@ chapter_marker_re = re.compile(r'\\c', re.UNICODE)
 verse_marker_re = re.compile(r'\\v', re.UNICODE)
 
 WHITE_SPACE = [' ', '\u00A0', '\r', '\n', '\t']
+SPACE = [' ', '\u00A0']
 
 
 class State:
@@ -280,69 +281,69 @@ def verifyIdentification(book_code):
     if not state.mt:
         report_error(book_code + " - Missing \\mt tag")
 
-def verifyChapterAndVerseMarkers(text, book_code):
+def get_reference(book, chapter, verse=None):
+    ref = book + " " + str(chapter)
+    if verse is not None:
+          ref += ":" + str(verse)
+    return ref
+
+def verifyChapterAndVerseMarkers(text, book):
     pos = 0
-    last_ch = 0
+    last_ch = 1
     for chapter_current in chapter_marker_re.finditer(text):
         start = chapter_current.start()
         end = chapter_current.end()
         char = text[end]
         if (char >= 'a') and (char <= 'z'):
             continue  #  skip non-chapter markers
-        has_space = (char == ' ') or (char == '\u00A0')
+        has_space = char in SPACE
         if has_space:
             end += 1
         char = text[start - 1]
-        if (char != '\n') and (char != '\r'):
-            # missing new line before chapter marker
-            pass
+        nl_before = (char == '\n') or (char == '\r')
         ch_num, has_space_after = get_number(text, end)
         if ch_num >= 0:
-            if not has_space_after:
-                # missing new line after chapter number
-                pass
-
-            check_chapter(text, book_code, last_ch, pos, start)
+            if not has_space:
+                add_error(text, book, "Missing space before chapter number: '{0}'", start, last_ch)
+            elif not has_space_after:
+                add_error(text, book, "Missing new line after chapter marker: '{0}'", start, last_ch)
+            elif not nl_before:
+                add_error(text, book, "Missing new line before chapter marker: '{0}'", start-4, last_ch)
+            check_chapter(text, book, last_ch, pos, start)
             last_ch = ch_num
             pos = end
         else:
-            if ch_num == 0:
-                # invalid chapter number 0
-                continue
-            else:
-                # missing chapter number
-                continue
+            add_error(text, book, "Invalid chapter number: '{0}'", start, last_ch)
 
-    check_chapter(text, book_code, last_ch, pos, len(text))  # check last chapter
+    check_chapter(text, book, last_ch, pos, len(text))  # check last chapter
 
-def check_chapter(text, book_code, chapter_num, start, end):
-    last_vs = 0
+def add_error(text, book, message, pos, chapter, verse=None):
+    length = 13
+    example = text[pos: pos + length]
+    report_error(get_reference(book, chapter, verse) + " - " + message.format(example))
+
+def check_chapter(text, book, chapter_num, start, end):
+    last_vs = 1
     for verse_current in verse_marker_re.finditer(text, start, end):
         start = verse_current.start()
         end = verse_current.end()
         char = text[end]
-        has_space = (char == ' ') or (char == '\u00A0')
+        has_space = char in SPACE
         if has_space:
             end += 1
         char = text[start - 1]
-        if (char not in WHITE_SPACE):
-            # missing white space before verse marker
-            pass
+        space_before = char in WHITE_SPACE
         vs_num, has_space_after = get_number(text, end)
         if vs_num >= 0:
-            if not has_space_after:
-                # missing white space after verse number
-                pass
-            last_ch = vs_num
-            pos = end
-            continue
+            if not has_space:
+                add_error(text, book, "Missing space before verse number: '{0}'", start, chapter_num, last_vs)
+            elif not has_space_after:
+                add_error(text, book, "Missing space after verse number: '{0}'", start, chapter_num, last_vs)
+            elif not space_before:
+                add_error(text, book, "Missing space before verse marker: '{0}'", start-4, chapter_num, last_vs)
+            last_vs = vs_num
         else:
-            if vs_num == 0:
-                # invalid verse number 0
-                continue
-            else:
-                # missing verse number
-                continue
+            add_error(text, book, "Invalid verse number: '{0}'", start, chapter_num, last_vs)
 
 def get_number(text, start):
     digits = ''
