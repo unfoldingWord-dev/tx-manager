@@ -542,6 +542,22 @@ def takeV(v):
         elif state.lastRef == 'MAT 18:10' and state.reference == 'MAT 18:12':
             exception = 'MAT 18:11'
         else:
+            if error_log:  # see if already warned for missing verses
+                gaps = False
+                for i in range(state.lastVerse+1, state.verse):
+                    ref = state.ID + ' ' + str(state.chapter) + ':' + str(i)
+                    ref_len = len(ref)
+                    verse_warning_found = False
+                    for error in error_log:
+                        if error[:ref_len] == ref:
+                            verse_warning_found = True
+                            break
+
+                    if not verse_warning_found:
+                        gaps = True
+                if not gaps:
+                    return
+
             report_error(state.lastRef + " - Missing verse(s) between this and: " + state.reference + '\n')
 
 def takeText(t):
