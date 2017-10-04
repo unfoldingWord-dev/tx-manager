@@ -60,12 +60,11 @@ class State:
     errorRefs = set()
     englishWords = []
     lang_code = None
+    book_code = None
 
     def reset_all(self):
         self.reset_book()
         State.IDs = []
-        State.lastRef = ""
-        State.reference = ""
         State.errorRefs = set()
 
     def reset_book(self):
@@ -87,6 +86,13 @@ class State:
         State.nParagraphs = 0
         State.nMargin = 0
         State.nQuotes = 0
+        State.lastRef = ""
+        State.reference = ""
+        State.book_code = None
+
+    def set_book_code(self, book):
+        State.book_code = book
+        State.reference = book  # default
 
     def setLanguageCode(self, code):
         State.lang_code = code
@@ -137,7 +143,13 @@ class State:
         State.needVerseText = False
         State.textOkayHere = False
         State.lastRef = State.reference
-        State.reference = State.ID + " " + str(State.chapter)
+        State.reference = self.get_id() + " " + str(State.chapter)
+
+    def get_id(self):
+        id = State.ID
+        if not State.ID:
+            id = State.book_code  # use book code if no ID given
+        return id
 
     def addParagraph(self):
         State.nParagraphs += State.nParagraphs + 1
@@ -169,7 +181,7 @@ class State:
         State.needVerseText = True
         State.textOkayHere = True
         State.lastRef = State.reference
-        State.reference = State.ID + " " + str(State.chapter) + ":" + v
+        State.reference = self.get_id() + " " + str(State.chapter) + ":" + v
 
     def textOkay(self):
         return State.textOkayHere
@@ -261,7 +273,7 @@ def verifyIdentification(book_code):
     if not state.ID:
         report_error(book_code + " - Missing \\id tag")
     elif (book_code is not None) and (book_code != state.ID):
-        report_error(state.ID + " - Found in \\id tag does not match code '" + book_code + "'' found in file name")
+        report_error(state.ID + " - Found in \\id tag does not match code '" + book_code + "' found in file name")
 
     if not state.IDE:
         report_error(book_code + " - Missing \\ide tag")
@@ -340,7 +352,7 @@ def check_chapter(text, book, chapter_num, start, end):
             elif not has_space_after:
                 add_error(text, book, "Missing space after verse number: '{0}'", start, chapter_num, vs_range)
             elif not space_before:
-                add_error(text, book, "Missing space before verse marker: '{0}'", start-4, chapter_num, vs_range)
+                add_error(text, book, "Missing space before verse marker: '{0}'", start-1, chapter_num, vs_range)
             last_vs_range = vs_range
         else:
             add_error(text, book, "Invalid verse number: '{0}'", start, chapter_num, last_vs_range)
@@ -485,7 +497,7 @@ def takeID(id):
     state = State()
     code = '' if not id else id.split(' ')[0]
     if len(code) < 3:
-        report_error(state.reference + " - Invalid ID: " + id + '\n')
+        report_error(state.reference + " - Invalid ID: '" + id + "'\n")
         return
     if code in state.getIDs():
         report_error(state.reference + " - Duplicate ID: " + id + '\n')
@@ -501,7 +513,7 @@ def takeC(c):
     state = State()
     state.addChapter(c)
     if len(state.IDs) == 0:
-        report_error(state.reference + " - Missing ID before chapter: " + c + '\n')
+        report_error(state.reference + " - Missing ID before chapter" + '\n')
     if state.chapter < state.lastChapter:
         report_error(state.reference + " - Chapter out of order" + '\n')
     elif state.chapter == state.lastChapter:
@@ -665,6 +677,7 @@ def verify_contents_quiet(unicodestring, filename, book_code, lang_code):
     error_log = []  # enable error logging
     state = State()
     state.reset_all()  # clear out previous values
+    state.set_book_code(book_code)
     state.setLanguageCode(lang_code)
     verifyChapterAndVerseMarkers(unicodestring, book_code)
     for token in parseUsfm.parse_string(unicodestring):
