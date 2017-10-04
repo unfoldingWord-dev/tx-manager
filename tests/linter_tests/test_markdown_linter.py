@@ -66,9 +66,10 @@ class TestMarkdownLinter(LinterTestCase):
             }
         }
         zip_file = os.path.join(self.resources_dir, 'ta_linter', 'en_ta.zip')
-        linter = MarkdownLinter(source_zip_file=zip_file, commit_data=commit_data)
+        linter = MarkdownLinter(source_file=zip_file, commit_data=commit_data, identifier='test')
         results = linter.run()
         expected = {
+            'identifier': 'test',
             'success': True,
             'warnings': [
                 '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\finding-answers\\01.md" target="_blank">intro\\finding-answers\\01.md</a> - Line1: First line in file should be a top level header. See "Text on first line"',
@@ -76,6 +77,7 @@ class TestMarkdownLinter(LinterTestCase):
                 '<a href="https://git.door43.org/Door43/en_ta/src/master/intro\\uw-intro\\01.md" target="_blank">intro\\uw-intro\\01.md</a> - Line29: Unordered list indentation. ',
             ]
         }
+        print(results)
         self.assertEqual(len(results['warnings']), len(expected['warnings']))
         self.assertDictEqual(results, expected)
 

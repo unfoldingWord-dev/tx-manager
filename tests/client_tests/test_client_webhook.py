@@ -57,9 +57,9 @@ class ClientWebhookTest(unittest.TestCase):
         self.uploaded_files = []
 
         self.job_data = {
-            'job_id': '0',
+            'job_id': '123456890',
             'status': 'started',
-            'success': 'success',
+            'success': False,
             'resource_type': 'obs',
             'input_format': 'md',
             'output_format': 'html',

@@ -9,37 +9,23 @@ from libraries.models.job import TxJob
 
 class ClientLinterCallback(object):
 
-    def __init__(self, identifier, success, info, warnings, errors, s3_results_key):
+    def __init__(self, identifier, success, warnings):
         """
         :param identifier: either
                     job_id/part_count/part_id/book if multi-part job
                         or
                     job_id if single job
         :param bool success:
-        :param list info:
         :param list warnings:
-        :param list errors:
-        :param s3_results_key: format
-                    u/user/repo/commid_id if single part
-                        or
-                    u/user/repo/commid_id/part_id if multi-part job
         """
         self.identifier = identifier
         self.success = success
-        self.log = info
         self.warnings = warnings
-        self.errors = errors
         self.all_parts_completed = False
         self.multipart = False
-
-        if not self.log:
-            self.log = []
         if not self.warnings:
             self.warnings = []
-        if not self.errors:
-            self.errors = []
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
-        self.s3_results_key = s3_results_key
 
     def process_callback(self):
         if not self.identifier:
@@ -47,31 +33,27 @@ class ClientLinterCallback(object):
             App.logger.error(error)
             raise Exception(error)
 
-        if not self.s3_results_key:
-            error = 'No s3_results_key found for identifier = {0}'.format(self.identifier)
-            App.logger.error(error)
-            raise Exception(error)
-
         id_parts = self.identifier.split('/')
+        job_id = id_parts[0]
+        job = TxJob.get(job_id)
+
+        if not job:
+            return
+
+        s3_master_results_key = '{0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id)
         self.multipart = len(id_parts) > 3
         if self.multipart:
-            job_id, part_count, part_id, book = id_parts[:4]
+            part_count, part_id, book = id_parts[1:4]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
-            s3__master_results_key = '/'.join(self.s3_results_key.split('/')[:-1])
+            s3_results_key = '{0}/{1}'.format(s3_master_results_key, part_id)
         else:
             App.logger.debug('Single project')
-            s3__master_results_key = self.s3_results_key
+            s3_results_key = s3_master_results_key
 
-        build_log = {
-            'identifier': self.identifier,
-            'success': self.success,
-            'multipart_project': self.multipart,
-            'log': self.log,
-            'warnings': self.warnings,
-            'errors': self.errors,
-            's3_commit_key': self.s3_results_key
-        }
+        build_log = dict(job)
+        build_log['success'] = self.success
+        build_log['warnings'] = self.warnings
 
         if not self.success:
             msg = "Linter failed for identifier: " + self.identifier
@@ -88,9 +70,9 @@ class ClientLinterCallback(object):
             msg = "Linter {0} completed with no warnings".format(self.identifier)
             build_log['log'].append(msg)
 
-        ClientLinterCallback.upload_build_log(build_log, 'lint_log.json', self.temp_dir, self.s3_results_key)
+        ClientLinterCallback.upload_build_log(build_log, 'lint_log.json', self.temp_dir, s3_results_key)
 
-        results = ClientLinterCallback.deploy_if_conversion_finished(s3__master_results_key, self.identifier)
+        results = ClientLinterCallback.deploy_if_conversion_finished(s3_master_results_key, self.identifier)
         if results:
             self.all_parts_completed = True
             build_log = results
@@ -137,9 +119,7 @@ class ClientLinterCallback(object):
 
         if build_log is not None:  # if all parts found, save build log and kick off deploy
             # set overall status
-            if len(build_log['errors']):
-                build_log['status'] = 'errors'
-            elif len(build_log['warnings']):
+            if len(build_log['warnings']):
                 build_log['status'] = 'warnings'
 
             ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key)

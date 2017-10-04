@@ -1,7 +1,6 @@
 from __future__ import unicode_literals, print_function
 from sqlalchemy import inspect
 from datetime import datetime, date
-from copy import deepcopy
 from libraries.app.app import App
 
 
@@ -27,6 +26,11 @@ class TxModel(object):
 
     @classmethod
     def get(cls, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs:
+        :return TxModel:
+        """
         if args:
             kwargs[inspect(cls).primary_key[0].name] = args[0]
         item = cls.query(**kwargs).first()
