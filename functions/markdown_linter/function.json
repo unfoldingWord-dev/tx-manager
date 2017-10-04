@@ -1,8 +1,0 @@
-{
-  "description": "Markdown linter in node.js. This is called in checkers/markdown_checker.py by lambda invoke",
-  "runtime": "nodejs6.10",
-  "hooks": {
-    "build": "npm install",
-    "clean": "rm -rf node_modules"
-  }
-}
