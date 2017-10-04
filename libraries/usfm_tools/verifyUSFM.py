@@ -284,7 +284,7 @@ def verifyIdentification(book_code):
 def get_reference(book, chapter, verse=None):
     ref = book + " " + str(chapter)
     if verse is not None:
-          ref += ":" + str(verse)
+          ref += ":" + verse
     return ref
 
 def verifyChapterAndVerseMarkers(text, book):
@@ -300,14 +300,14 @@ def verifyChapterAndVerseMarkers(text, book):
         if has_space:
             end += 1
         char = text[start - 1]
-        nl_before = (char == '\n') or (char == '\r')
-        ch_num, has_space_after = get_number(text, end)
+        newline_before = (char == '\n') or (char == '\r')
+        ch_num, has_space_after = get_chapter_number(text, end)
         if ch_num >= 0:
             if not has_space:
                 add_error(text, book, "Missing space before chapter number: '{0}'", start, last_ch)
             elif not has_space_after:
-                add_error(text, book, "Missing new line after chapter marker: '{0}'", start, last_ch)
-            elif not nl_before:
+                add_error(text, book, "Missing new line after chapter number: '{0}'", start, last_ch)
+            elif not newline_before:
                 add_error(text, book, "Missing new line before chapter marker: '{0}'", start-4, last_ch)
             check_chapter(text, book, last_ch, pos, start)
             last_ch = ch_num
@@ -318,12 +318,12 @@ def verifyChapterAndVerseMarkers(text, book):
     check_chapter(text, book, last_ch, pos, len(text))  # check last chapter
 
 def add_error(text, book, message, pos, chapter, verse=None):
-    length = 13
+    length = 8
     example = text[pos: pos + length]
     report_error(get_reference(book, chapter, verse) + " - " + message.format(example))
 
 def check_chapter(text, book, chapter_num, start, end):
-    last_vs = 1
+    last_vs_range = '1'
     for verse_current in verse_marker_re.finditer(text, start, end):
         start = verse_current.start()
         end = verse_current.end()
@@ -333,31 +333,56 @@ def check_chapter(text, book, chapter_num, start, end):
             end += 1
         char = text[start - 1]
         space_before = char in WHITE_SPACE
-        vs_num, has_space_after = get_number(text, end)
-        if vs_num >= 0:
+        vs_range, has_space_after = get_verse_range(text, end)
+        if vs_range != '':
             if not has_space:
-                add_error(text, book, "Missing space before verse number: '{0}'", start, chapter_num, last_vs)
+                add_error(text, book, "Missing space before verse number: '{0}'", start, chapter_num, vs_range)
             elif not has_space_after:
-                add_error(text, book, "Missing space after verse number: '{0}'", start, chapter_num, last_vs)
+                add_error(text, book, "Missing space after verse number: '{0}'", start, chapter_num, vs_range)
             elif not space_before:
-                add_error(text, book, "Missing space before verse marker: '{0}'", start-4, chapter_num, last_vs)
-            last_vs = vs_num
+                add_error(text, book, "Missing space before verse marker: '{0}'", start-4, chapter_num, vs_range)
+            last_vs_range = vs_range
         else:
-            add_error(text, book, "Invalid verse number: '{0}'", start, chapter_num, last_vs)
+            add_error(text, book, "Invalid verse number: '{0}'", start, chapter_num, last_vs_range)
+
+def get_verse_range(text, start):
+    pos = start
+    verse, c, end = get_number(text, pos)
+    if verse == '':
+        return verse, False
+
+    if c != '-':  # not verse range
+        has_white_space = (c in WHITE_SPACE)
+        return verse, has_white_space
+
+    second_vs, c, end = get_number(text, end+1)
+    if second_vs == '':
+        return '', False
+
+    verse += '-' + second_vs
+    has_white_space = (c in WHITE_SPACE)
+    return verse, has_white_space
+
+def get_chapter_number(text, start):
+    pos = start
+    digits, c, end = get_number(text, pos)
+    has_white_space = (c in WHITE_SPACE)
+    if len(digits) > 0:
+        return int(digits), has_white_space
+    return -1, has_white_space
 
 def get_number(text, start):
     digits = ''
-    has_white_space = False
+    end = start
+    c = ''
     for pos in range(start, len(text)):
         c = text[pos]
         if (c >= '0') and (c <= '9'):
             digits += c
             continue
-        has_white_space = (c in WHITE_SPACE)
+        end = pos
         break
-    if len(digits) > 0:
-        return int(digits), has_white_space
-    return -1, has_white_space
+    return digits, c, end
 
 def verifyChapterCount():
     state = State()
@@ -538,7 +563,9 @@ def takeText(t):
 
 def takeUnknown(state, token):
     value = token.getValue()
-    report_error( state.reference + " - Unknown Token: '\\" + value + '\n')
+    if (value == 'v') or (value == 'c'):
+        return  # skip malformed chapter and verses - will be caught later
+    report_error( state.reference + " - Unknown Token: '\\" + value + "'")
 
 # Returns True if token is the start of a footnote - note that verse can contain footnote for more reasons than just
 #       does not appear in some manuscripts.
