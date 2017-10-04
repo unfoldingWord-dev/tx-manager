@@ -1,12 +1,10 @@
 from __future__ import print_function, unicode_literals
 import urllib
-import copy
 import os
 import tempfile
 import json
 import hashlib
-from datetime import datetime
-from libraries.door43_tools.linter_messaging import LinterMessaging
+from datetime import datetime, timedelta
 from libraries.general_tools.file_utils import unzip, write_file, add_contents_to_zip, remove_tree
 from libraries.general_tools.url_utils import download_file
 from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TYPES
@@ -124,7 +122,6 @@ class ClientWebhook(object):
         job.repo_name = repo_name
         job.commit_id = commit_id
         job.created_at = datetime.utcnow()
-        job.started_at = datetime.utcnow()
         job.user = user.username  # Username of the token, not necessarily the repo's owner
         job.input_format = rc.resource.file_ext
         job.resource_type = rc.resource.identifier
@@ -133,22 +130,26 @@ class ClientWebhook(object):
         job.cdn_file = 'tx/job/{0}.zip'.format(job.job_id)
         job.callback = App.api_url + '/client/callback'
         job.output_format = 'html'
-        job.status = 'started'
         job.success = False
-        job.message = 'Started'
-        job.log_message('Started job for {0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id))
 
         converter = self.get_converter_module(job)
         linter = self.get_linter_module(job)
 
         if converter:
             job.convert_module = converter.name
+            job.started_at = datetime.utcnow()
+            job.expires_at = job.started_at + timedelta(days=1)
+            job.eta = job.started_at + timedelta(minutes=5)
+            job.status = 'started'
+            job.message = 'Started'
+            job.log_message('Started job for {0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id))
         else:
             job.error_message('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
                                                                                              job.input_format,
                                                                                              job.output_format))
             job.message = 'No converter found'
             job.status = 'failed'
+
         if linter:
             job.lint_module = linter.name
         else:
@@ -156,16 +157,15 @@ class ClientWebhook(object):
 
         job.insert()
 
-        master_s3_commit_key = 'u/{0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id)
-        self.clear_commit_directory_in_cdn(master_s3_commit_key)
+        # Get S3 bucket/dir ready
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id)
+        self.clear_commit_directory_in_cdn(s3_commit_key)
 
-        # Upload an initial build_log
-        build_log_json = self.upload_build_log(commit_id, commit_message, commit_url, compare_url, job,
+        # Create a build log
+        build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                pusher_username, repo_name, owner_name)
 
-        # Update the project.json file
-        self.update_project_json(commit_id, job, repo_name, owner_name)
-
+        # Convert and lint
         if converter:
             if not preprocessor.is_multiple_jobs():
                 self.send_request_to_converter(job, converter)
@@ -178,21 +178,38 @@ class ClientWebhook(object):
                 books = preprocessor.get_book_list()
                 App.logger.debug('Splitting job into separate parts for books: ' + ','.join(books))
                 book_count = len(books)
-                for i, book in books.iteritems():
+                build_log_json['multiple'] = True
+                build_log_json['build_logs'] = []
+                for i in range(0, len(books)):
+                    book = books[i]
                     App.logger.debug('Adding job for {0}, part {1} of {2}'.format(book, i, book_count))
                     # Send job request to tx-manager
-                    book_job = TxJob(**dict(job))
+                    if i == 0:
+                        book_job = job  # use the original job created above for the first book
+                    else:
+                        book_job = job.clone()  # copy the original job for this book's job
                     book_job.job_id = self.get_unique_job_id()
                     book_job.identifier = '{0}/{1}/{2}/{3}'.format(job.job_id, book_count, i, book)
                     book_job.source = self.build_multipart_source(file_key, book)
                     book_job.insert()
+                    book_build_log = self.create_build_log(commit_id, commit_message, commit_url, compare_url, book_job,
+                                                      pusher_username, repo_name, owner_name)
+                    build_log_json['build_logs'].append(book_build_log)
+                    self.upload_build_log_to_s3(book_build_log, s3_commit_key, str(i) + "/")
                     self.send_request_to_converter(job, converter)
                     if linter:
                         extra_payload = {
                             'single_file': book,
-                            's3_results_key': '{0}/{1}'.format(master_s3_commit_key, i)
+                            's3_results_key': '{0}/{1}'.format(s3_commit_key, i)
                         }
                         self.send_request_to_linter(job, linter, commit_url, extra_payload)
+
+        # Upload an initial build_log
+        self.upload_build_log_to_s3(build_log_json, s3_commit_key)
+
+        # Update the project.json file
+        self.update_project_json(commit_id, job, repo_name, owner_name)
+
 
         remove_tree(self.base_temp_dir)  # cleanup
         return build_log_json
@@ -208,21 +225,21 @@ class ClientWebhook(object):
             App.logger.debug('Removing file: ' + obj.key)
             App.cdn_s3_handler().delete_file(obj.key)
 
-    def upload_build_log_to_s3(self, build_log_json, s3_commit_key):
+    def upload_build_log_to_s3(self, build_log, s3_commit_key, part=''):
         """
-        :param dict build_log_json:
+        :param dict build_log:
         :param string s3_commit_key:
         :return:
         """
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
-        write_file(build_log_file, build_log_json)
-        upload_key = '{0}/build_log.json'.format(s3_commit_key)
+        write_file(build_log_file, build_log)
+        upload_key = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         App.logger.debug('Saving build log to ' + upload_key)
         App.cdn_s3_handler().upload_file(build_log_file, upload_key)
         # App.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
-    def upload_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
-                            repo_owner):
+    def create_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
+                         repo_owner):
         """
         :param string commit_id: 
         :param string commit_message: 
@@ -243,11 +260,6 @@ class ClientWebhook(object):
         build_log_json['compare_url'] = compare_url
         build_log_json['commit_message'] = commit_message
 
-        # Upload build_log.json to S3:
-        s3_commit_key = 'u/{0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id)
-        self.clear_commit_directory_in_cdn(s3_commit_key)
-        self.upload_build_log_to_s3(build_log_json, s3_commit_key)
-        
         return build_log_json
 
     def update_project_json(self, commit_id, job, repo_name, repo_owner):
@@ -355,7 +367,7 @@ class ClientWebhook(object):
             'cdn_bucket': job.cdn_bucket,
             'cdn_file': job.cdn_file,
             'options': job.options,
-            'convert_callback': self.linter_callback,
+            'lint_callback': self.linter_callback,
             'commit_data': self.commit_data
         }
         if extra_payload:
@@ -365,7 +377,7 @@ class ClientWebhook(object):
             payload['source_url'] = job.source
         else:
             payload['source_url'] = commit_url.replace('commit', 'archive') + '.zip'
-        return self.send_payload_to_converter(payload, linter)
+        return self.send_payload_to_linter(payload, linter)
 
     def send_payload_to_linter(self, payload, linter):
         """
@@ -429,14 +441,24 @@ class ClientWebhook(object):
         return job_id
 
     def get_converter_module(self, job):
-        return TxModule.query().filter(TxModule.type=='conveter')\
+        """
+        :param TxJob job:
+        :return TxModule:
+        """
+        return TxModule.query().filter(TxModule.type=='converter')\
             .filter(TxModule.input_format.contains(job.input_format))\
             .filter(TxModule.output_format.contains(job.output_format))\
             .filter(TxModule.resource_types.contains(job.resource_type))\
             .first()
 
     def get_linter_module(self, job):
-        return TxModule.query().filter(TxModule.type=='linter')\
-            .filter(TxModule.input_format.contains(job.input_format))\
-            .filter(TxModule.resource_types.contains(job.resource_type))\
-            .first()
+        """
+        :param TxJob job:
+        :return TxModule:
+        """
+        linters = TxModule.query().filter(TxModule.type=='linter')\
+            .filter(TxModule.input_format.contains(job.input_format))
+        linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
+        if not linter:
+            linter = linters.filter(TxModule.resource_types.contains('other')).first()
+        return linter

@@ -4,22 +4,22 @@ import os
 import shutil
 import tempfile
 import unittest
-import boto3
 import mock
 from datetime import datetime
 from libraries.client.client_webhook import ClientWebhook
-from libraries.general_tools.file_utils import read_file
+from libraries.general_tools.file_utils import read_file, load_json_object
 from libraries.models.manifest import TxManifest
 from moto import mock_s3
+from glob import glob
 from libraries.app.app import App
 from libraries.general_tools.file_utils import json_serial
+from libraries.manager.manager import TxManager
 from tests.client_tests import mock_utils
 
 
 @mock_s3
 class ClientWebhookTest(unittest.TestCase):
-    parent_resources_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'resources')
-    resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources')
+    resources_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'raw_sources')
     base_temp_dir = os.path.join(tempfile.gettempdir(), 'test-tx-manager')
     mock_gogs = None
 
@@ -66,11 +66,21 @@ class ClientWebhookTest(unittest.TestCase):
             'created_at': datetime.utcnow(),
             'errors': []
         }
+        self.register_modules()
 
     def tearDown(self):
         """Runs after each test."""
         App.db_close()
         shutil.rmtree(ClientWebhookTest.base_temp_dir, ignore_errors=True)
+
+    def register_modules(self):
+        script_dir = os.path.dirname(__file__)
+        module_jsons_path = os.path.join(script_dir, '..', '..', 'functions', '*', 'module.json')
+        module_jsons = glob(module_jsons_path)
+        manager = TxManager()
+        for module_json_file in module_jsons:
+            module_json = load_json_object(module_json_file)
+            manager.register_module(module_json)
 
     @mock.patch('libraries.client.client_webhook.download_file')
     def test_download_repo(self, mock_download_file):
@@ -85,8 +95,7 @@ class ClientWebhookTest(unittest.TestCase):
     @mock.patch('libraries.client.client_webhook.download_file')
     def test_process_webhook(self, mock_download_file):
         # given
-        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
-                                                         mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', mock_download_file)
         expected_job_count = 1
         expected_error_count = 0
 
@@ -105,28 +114,23 @@ class ClientWebhookTest(unittest.TestCase):
         self.assertEqual(tx_manifest.lang_code, 'kpb')
 
     @mock.patch('libraries.client.client_webhook.download_file')
-    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhookError(self, mock_send_payload_to_run_linter, mock_download_file):
+    def test_process_webhook_no_converter_error(self, mock_download_file):
         # given
-        mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
-        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
-                                                         mock_download_file)
-        self.job_data['errors'] = ['error 1', 'error 2']
-        expected_job_count = 1
-        expected_error_count = 2
+        client_web_hook = self.setup_client_webhook_mock('unknown_resource', mock_download_file)
+        expected_job_count = 0
+        expected_error_count = 1
 
         # when
         try:
             client_web_hook.process_webhook()
-        except:
+        except Exception as e:
             pass
 
         # then
         self.validateResults(self.get_build_log_json(), expected_job_count, expected_error_count)
 
     @mock.patch('libraries.client.client_webhook.download_file')
-    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_process_webhook_update_manifest_table(self, mock_send_payload_to_run_linter, mock_download_file):
+    def test_process_webhook_update_manifest_table(self, mock_download_file):
         # given
         manifest_data = {
             'resource_id': ' ',
@@ -138,9 +142,7 @@ class ClientWebhookTest(unittest.TestCase):
             'repo_name': 'en-ulb'}
         tx_manifest = TxManifest(**manifest_data)
         tx_manifest.insert()  # preload table with empty data
-        mock_send_payload_to_run_linter.return_value = {'success': True, 'warnings': []}
-        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', self.parent_resources_dir,
-                                                         mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock('kpb_mat_text_udb_repo', mock_download_file)
         expected_job_count = 1
         expected_error_count = 0
 
@@ -162,18 +164,12 @@ class ClientWebhookTest(unittest.TestCase):
         self.assertGreater(len(tx_manifest.manifest), 100)
 
     @mock.patch('libraries.client.client_webhook.download_file')
-    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhookMultipleBooks(self, mock_send_payload_to_run_linter, mock_download_file):
+    def test_process_webhook_multiple_books(self, mock_download_file):
         # given
-        self.setup_linter()
-        self.linter_success = True
-        self.linter_warnings = []
-        mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'),
-                                                         self.resources_dir, mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock('en-ulb', mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
-        expected_warnings_count = expected_job_count * len(self.linter_warnings)
+        expected_warnings_count = 0
 
         # when
         results = client_web_hook.process_webhook()
@@ -182,73 +178,18 @@ class ClientWebhookTest(unittest.TestCase):
         self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
 
     @mock.patch('libraries.client.client_webhook.download_file')
-    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhookMultipleBooksWarnings(self, mock_send_payload_to_run_linter, mock_download_file):
+    def test_process_webhook_multiple_books_warnings(self, mock_download_file):
         # given
-        self.setup_linter()
-        self.linter_success = True
-        self.linter_warnings = ["warning!!"]
-        mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'),
-                                                         self.resources_dir, mock_download_file)
+        client_web_hook = self.setup_client_webhook_mock('en-ulb', mock_download_file)
         expected_job_count = 4
         expected_error_count = 0
-        expected_warnings_count = expected_job_count * len(self.linter_warnings)
+        expected_warnings_count = 0
 
         # when
         results = client_web_hook.process_webhook()
 
         # then
         self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
-
-    @mock.patch('libraries.client.client_webhook.download_file')
-    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhookMultipleBooksLinterFail(self, mock_send_payload_to_run_linter, mock_download_file):
-        # given
-        self.setup_linter()
-        self.linter_success = False
-        self.linter_warnings = []
-        mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'),
-                                                         self.resources_dir, mock_download_file)
-        expected_job_count = 4
-        expected_error_count = 0
-        expected_warnings_count = expected_job_count
-
-        # when
-        results = client_web_hook.process_webhook()
-
-        # then
-        self.validateResults2(results, expected_job_count, expected_error_count, expected_warnings_count)
-
-    @mock.patch('libraries.client.client_webhook.download_file')
-    @mock.patch('libraries.client.client_webhook.ClientWebhook.send_payload_to_run_linter')
-    def test_processWebhookMultipleBooksErrors(self, mock_send_payload_to_run_linter, mock_download_file):
-        # given
-        client_web_hook = self.setup_client_webhook_mock(os.path.join('raw_sources', 'en-ulb'), self.resources_dir,
-                                                         mock_download_file)
-        self.setup_linter()
-        self.linter_success = True
-        self.linter_warnings = ["warning!!"]
-        mock_send_payload_to_run_linter.side_effect = self.mock_send_payload_to_run_linter
-        self.job_data['errors'] = ['error 1', 'error 2']
-        expected_job_count = 4
-        expected_error_count = 2 * expected_job_count
-        expected_warnings_count = expected_job_count * len(self.linter_warnings)
-
-        # when
-        try:
-            client_web_hook.process_webhook()
-            captured_error = False
-        except:
-            captured_error = True
-
-        print(self.get_build_log_json())
-
-        # then
-        self.assertTrue(captured_error)
-        self.validateResults2(self.get_build_log_json(), expected_job_count, expected_error_count,
-                              expected_warnings_count)
 
     #
     # helpers
@@ -270,7 +211,6 @@ class ClientWebhookTest(unittest.TestCase):
             self.assertTrue(len(results['source']) > 1)
         self.assertEqual(len(results['errors']), expected_error_count)
         self.assertEqual(multiple_job, 'multiple' in results)
-        self.maxDiff = None
         self.assertDictEqual(json.loads(json.dumps(results, default=json_serial)), self.get_build_log_json())
         self.assertTrue(len(self.get_project_json()) >= 4)
 
@@ -299,26 +239,27 @@ class ClientWebhookTest(unittest.TestCase):
                 return upload['file']
         return None
 
-    def setup_client_webhook_mock(self, repo_name, base_path, mock_download_file):
-        App.gogs_url = base_path
+    def setup_client_webhook_mock(self, repo_name, mock_download_file):
+        App.gogs_url = self.resources_dir
         App.gogs_user_token = mock_utils.valid_token
         mock_download_file.side_effect = self.mock_download_file
-        source = os.path.join(base_path, repo_name)
+        source = os.path.join(self.resources_dir, repo_name)
         commit_data = self.get_commit_data(source)
         self.cwh = ClientWebhook(commit_data)
         self.cwh.send_payload_to_converter = self.mock_send_payload_to_converter
+        self.cwh.send_payload_to_linter = self.mock_send_payload_to_linter
         self.cwh.clear_commit_directory_in_cdn = self.mock_clear_commit_directory_in_cdn
         return self.cwh
 
     def mock_download_file(self, source, target):
         if source != target:
-            shutil.copyfile(os.path.join(ClientWebhookTest.parent_resources_dir, source), target)
+            shutil.copyfile(os.path.join(ClientWebhookTest.resources_dir, source), target)
 
     def mock_send_payload_to_converter(self, payload, converter):
         self.job_converter_count += 1
         return True
 
-    def mock_send_payload_to_run_linter(self, payload, linter):
+    def mock_send_payload_to_linter(self, payload, linter):
         self.job_linter_count += 1
         return True
 
@@ -341,14 +282,6 @@ class ClientWebhookTest(unittest.TestCase):
 
     def mock_clear_commit_directory_in_cdn(self, s3_results_key):
         return
-
-    def setup_linter(self):
-        try:
-            #setup linter messaging
-            sqs = boto3.resource('sqs')
-            sqs.create_queue(QueueName=App.linter_messaging_name, Attributes={'DelaySeconds': '5'})
-        except:
-            pass
 
     def get_commit_data(self, source_path):
         base_url = 'https://git.door43.org'

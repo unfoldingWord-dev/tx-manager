@@ -301,8 +301,6 @@ class TxManager(object):
             raise Exception('"type" not given.')
         if not tx_module.input_format:
             raise Exception('"input_format" not given.')
-        if not tx_module.output_format:
-            raise Exception('"output_format" not given.')
         if not tx_module.resource_types:
             raise Exception('"resource_types" not given.')
 

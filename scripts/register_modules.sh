@@ -10,9 +10,8 @@ API_URL=$1
 
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 
-#register md2html
-curl --header "Content-Type: application/json" -X POST --data @functions/convert_md2html/module.json "${API_URL}/tx/module"
-
-#register usfm2html
-curl --header "Content-Type: application/json" -X POST --data @functions/convert_usfm2html/module.json "${API_URL}/tx/module"
+for f in functions/*/module.json; do
+    echo "Registering $f"
+    curl --header "Content-Type: application/json" -X POST --data @$f "${API_URL}/tx/module"
+done
 

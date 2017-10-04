@@ -7,6 +7,9 @@ from libraries.app.app import App
 
 class TxModel(object):
 
+    def __init__(self, **kwargs):
+        pass
+
     def insert(self):
         App.db().add(self)
         App.db().commit()
@@ -43,4 +46,4 @@ class TxModel(object):
             yield (c.key, value)
 
     def clone(self):
-        return deepcopy(self)
+        return self.__class__(**dict(self))

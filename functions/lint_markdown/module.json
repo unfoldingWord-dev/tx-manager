@@ -2,7 +2,7 @@
     "name": "markdown",
     "version": "2",
     "type": "linter",
-    "resource_types": [],
+    "resource_types": ["other"],
     "input_format": ["md"],
     "options": [],
     "private_links": [],
