@@ -128,8 +128,14 @@ class ClientWebhook(object):
         job.source = self.source_url_base + "/" + file_key
         job.cdn_bucket = App.cdn_bucket
         job.cdn_file = 'tx/job/{0}.zip'.format(job.job_id)
+        job.output = 'https://{0}/{1}'.format(App.cdn_bucket, job.cdn_file)
         job.callback = App.api_url + '/client/callback'
         job.output_format = 'html'
+        job.links = {
+            "href": "{0}/tx/job/{1}".format(App.api_url, job.job_id),
+            "rel": "self",
+            "method": "GET"
+        }
         job.success = False
 
         converter = self.get_converter_module(job)
