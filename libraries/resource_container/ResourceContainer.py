@@ -35,6 +35,16 @@ resource_map = {
         'type': 'book',
         'format': 'text/markdown'
     },
+    'obs-tn': {
+        'title': 'OBS TranslationNotes',
+        'type': 'help',
+        'format': 'text/markdown'
+    },
+    'obs-tq': {
+        'title': 'OBS TranslationQuestions',
+        'type': 'help',
+        'format': 'text/markdown'
+    },
     'tn': {
         'title': 'translationNotes',
         'type': 'help',
