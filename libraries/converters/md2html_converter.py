@@ -13,7 +13,7 @@ from converter import Converter
 class Md2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource_id == "obs":
+        if self.resource == "obs":
             self.convert_obs()
             return True
         else:
@@ -38,7 +38,7 @@ class Md2HtmlConverter(Converter):
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
                 html = markdown.markdown(md)
-                html = html_template.safe_substitute(title=self.resource_id.upper(), content=html)
+                html = html_template.safe_substitute(title=self.source.upper(), content=html)
                 base_name = os.path.splitext(os.path.basename(filename))[0]
                 found_chapters[base_name] = True
                 html_filename = base_name + ".html"
@@ -73,11 +73,11 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                if self.resource_id == 'ta':
+                if self.resource == 'ta':
                     html = markdown2.markdown(md, extras=['markdown-in-html', 'tables'])
                 else:
                     html = markdown.markdown(md)
-                html = html_template.safe_substitute(title=self.resource_id.upper(), content=html)
+                html = html_template.safe_substitute(title=self.resource.upper(), content=html)
 
                 # Change headers like <h1><a id="verbs"/>Verbs</h1> to <h1 id="verbs">Verbs</h1>
                 soup = BeautifulSoup(html, 'html.parser')

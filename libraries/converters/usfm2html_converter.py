@@ -14,7 +14,7 @@ from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 class Usfm2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource_id in BIBLE_RESOURCE_TYPES:
+        if self.resource in BIBLE_RESOURCE_TYPES:
             self.convert_bible()
             return True
         else:
@@ -60,7 +60,7 @@ class Usfm2HtmlConverter(Converter):
                 with codecs.open(os.path.join(scratch_dir, html_filename), 'r', 'utf-8-sig') as html_file:
                     converted_html = html_file.read()
                 template_soup = BeautifulSoup(template_html, 'html.parser')
-                template_soup.head.title.string = self.resource_id.upper()
+                template_soup.head.title.string = self.resource.upper()
                 converted_soup = BeautifulSoup(converted_html, 'html.parser')
                 content_div = template_soup.find('div', id='content')
                 content_div.clear()

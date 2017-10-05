@@ -16,18 +16,18 @@ class Converter(object):
 
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source_url, resource_id, cdn_file=None, options=None, convert_callback=None, identifier=None):
+    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identifier=None):
         """
-        :param string source_url:
-        :param string resource_id:
+        :param string source:
+        :param string resource:
         :param string cdn_file:
         :param dict options:
         :param string convert_callback:
         :param string identifier:
         """
         self.options = {}
-        self.source_url = source_url
-        self.resource_id = resource_id
+        self.source = source
+        self.resource = resource
         self.cdn_file = cdn_file
         self.options = {} if not options else options
 
@@ -36,7 +36,7 @@ class Converter(object):
         self.files_dir = tempfile.mkdtemp(prefix='files_')
         self.input_zip_file = None  # If set, won't download the repo archive. Used for testing
         self.output_dir = tempfile.mkdtemp(prefix='output_')
-        self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource_id), suffix='.zip')
+        self.output_zip_file = tempfile.mktemp(prefix="{0}_".format(resource), suffix='.zip')
         self.callback = convert_callback
         self.callback_status = 0
         self.callback_results = None
@@ -79,7 +79,7 @@ class Converter(object):
             # convert method called
             App.logger.debug("Converting files...")
             if self.convert():
-                App.logger.debug("Was able to convert {0}".format(self.resource_id))
+                App.logger.debug("Was able to convert {0}".format(self.resource))
                 # zip the output dir to the output archive
                 App.logger.debug("Adding files in {0} to {1}".format(self.output_dir, self.output_zip_file))
                 add_contents_to_zip(self.output_zip_file, self.output_dir)
@@ -91,7 +91,7 @@ class Converter(object):
                 App.logger.debug("Uploaded")
                 success = True
             else:
-                self.log.error('Resource {0} currently not supported.'.format(self.resource_id))
+                self.log.error('Resource {0} currently not supported.'.format(self.resource))
         except Exception as e:
             self.log.error('Conversion process ended abnormally: {0}'.format(e.message))
             App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
@@ -106,14 +106,14 @@ class Converter(object):
 
         if self.callback is not None:
             self.callback_results = results
-            self.do_callback(self.callback, results)
+            self.do_callback(self.callback, self.callback_results)
 
         App.logger.debug(results)
         return results
 
     def download_archive(self):
-        archive_url = self.source_url
-        filename = self.source_url.rpartition('/')[2]
+        archive_url = self.source
+        filename = self.source.rpartition('/')[2]
         self.input_zip_file = os.path.join(self.download_dir, filename)
         if not os.path.isfile(self.input_zip_file):
             try:

@@ -5,7 +5,6 @@ import traceback
 import requests
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, remove_tree
-from libraries.door43_tools.linter_messaging import LinterMessaging
 from lint_logger import LintLogger
 from libraries.resource_container.ResourceContainer import RC
 from libraries.app.app import App
@@ -17,19 +16,19 @@ class Linter(object):
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source_url=None, source_file=None, source_dir=None, commit_data=None,
-                 lint_callback=None, identifier=None, cdn_file=None, **kwargs):
+                 lint_callback=None, identifier=None, s3_results_key=None, **kwargs):
         """
-        :param string source_url: The main way to give Linter the files via a zip file online
-        :param string source_file: If set, will just unzip the local source file
+        :param string source_url: The main way to give Linter the files
+        :param string source_file: If set, will just unzip this local file
         :param string source_dir: If set, wil just use this directory
         :param dict commit_data: Can get the changes, commit_url, etc from this
         :param string lint_callback: If set, will do callback
         :param string identifier: 
-        :param string cdn_file:
+        :param string s3_results_key:
         :params dict kwargs:
         """
-        self.source_url = source_url
-        self.source_file = source_file
+        self.source_zip_url = source_url
+        self.source_zip_file = source_file
         self.source_dir = source_dir
         self.commit_data = commit_data
 
@@ -50,8 +49,8 @@ class Linter(object):
         self.identifier = identifier
         if self.callback and not identifier:
             App.logger.error("Identity not given for callback")
-        self.s3_results_key = cdn_file
-        if self.callback and not cdn_file:
+        self.s3_results_key = s3_results_key
+        if self.callback and not s3_results_key:
             App.logger.error("s3_results_key not given for callback")
 
     def close(self):
@@ -78,12 +77,12 @@ class Linter(object):
         success = False
         try:
             # Download file if a source_zip_url was given
-            if self.source_url:
-                App.logger.debug("Linting url: " + self.source_url)
+            if self.source_zip_url:
+                App.logger.debug("Linting url: " + self.source_zip_url)
                 self.download_archive()
             # unzip the input archive if a source_zip_file exists
-            if self.source_file:
-                App.logger.debug("Linting zip: " + self.source_file)
+            if self.source_zip_file:
+                App.logger.debug("Linting zip: " + self.source_zip_file)
                 self.unzip_archive()
             # lint files
             if self.source_dir:
@@ -100,6 +99,7 @@ class Linter(object):
             'identifier': self.identifier,
             'success': success,
             'warnings': self.log.warnings,
+            's3_results_key': self.s3_results_key
         }
 
         if self.callback is not None:
@@ -107,45 +107,22 @@ class Linter(object):
             self.do_callback(self.callback, self.callback_results)
 
         App.logger.debug("Linter results: " + str(results))
-
-        if len(App.linter_messaging_name):
-            message_queue = LinterMessaging(App.linter_messaging_name)
-            message_attempt_count = 0
-            while True:
-                message_attempt_count += 1
-                message_success = message_queue.notify_lint_job_complete(self.source_url, results['success'],
-                                                                         payload=results)
-                if message_success:
-                    break
-
-                if not message_queue.is_oversize():  # if other than oversize error
-                    App.logger.error("Message failure: {0}".format(message_queue.error))
-                    break
-
-                # trim warnings list in half and try again
-                warnings = results['warnings']
-                warnings_len = len(warnings)
-                new_len = warnings_len / 2
-                results['warnings'] = warnings[:new_len]
-                App.logger.warning("Message oversize, cut warnings from {0} to {1} lines".format(warnings_len,
-                                                                                                 new_len))
-
         return results
 
     def download_archive(self):
-        filename = self.source_url.rpartition('/')[2]
-        self.source_file = os.path.join(self.temp_dir, filename)
-        App.logger.debug("Downloading {0} to {1}".format(self.source_url, self.source_file))
-        if not os.path.isfile(self.source_file):
+        filename = self.source_zip_url.rpartition('/')[2]
+        self.source_zip_file = os.path.join(self.temp_dir, filename)
+        App.logger.debug("Downloading {0} to {1}".format(self.source_zip_url, self.source_zip_file))
+        if not os.path.isfile(self.source_zip_file):
             try:
-                download_file(self.source_url, self.source_file)
+                download_file(self.source_zip_url, self.source_zip_file)
             finally:
-                if not os.path.isfile(self.source_file):
-                    raise Exception("Failed to download {0}".format(self.source_url))
+                if not os.path.isfile(self.source_zip_file):
+                    raise Exception("Failed to download {0}".format(self.source_zip_url))
 
     def unzip_archive(self):
-        App.logger.debug("Unzipping {0} to {1}".format(self.source_file, self.temp_dir))
-        unzip(self.source_file, self.temp_dir)
+        App.logger.debug("Unzipping {0} to {1}".format(self.source_zip_file, self.temp_dir))
+        unzip(self.source_zip_file, self.temp_dir)
         dirs = [d for d in os.listdir(self.temp_dir) if os.path.isdir(os.path.join(self.temp_dir, d))]
         if len(dirs):
             self.source_dir = os.path.join(self.temp_dir, dirs[0])

@@ -63,7 +63,7 @@ class ClientWebhook(object):
             raise Exception('Repos can only belong to {0} to use this webhook client.'.format(App.gogs_url))
 
         # Gather other details from the commit that we will note for the job(s)
-        owner_name = self.commit_data['repository']['owner']['username']
+        user_name = self.commit_data['repository']['owner']['username']
         repo_name = self.commit_data['repository']['name']
         compare_url = self.commit_data['compare_url']
         commit_message = commit['message']
@@ -83,7 +83,7 @@ class ClientWebhook(object):
         # Save manifest to manifest table
         manifest_data = {
             'repo_name': repo_name,
-            'user_name': owner_name,
+            'user_name': user_name,
             'lang_code': rc.resource.language.identifier,
             'resource_id': rc.resource.identifier,
             'resource_type': rc.resource.type,
@@ -91,7 +91,7 @@ class ClientWebhook(object):
             'manifest': json.dumps(rc.as_dict()),
         }
         # First see if manifest already exists in DB and update it if it is
-        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=owner_name)
+        tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
         if tx_manifest:
             for key, value in manifest_data.iteritems():
                 setattr(tx_manifest, key, value)
@@ -118,7 +118,7 @@ class ClientWebhook(object):
         job = TxJob()
         job.job_id = self.get_unique_job_id()
         job.identifier = job.job_id
-        job.owner_name = owner_name
+        job.user_name = user_name
         job.repo_name = repo_name
         job.commit_id = commit_id
         job.created_at = datetime.utcnow()
@@ -142,7 +142,7 @@ class ClientWebhook(object):
             job.eta = job.started_at + timedelta(minutes=5)
             job.status = 'started'
             job.message = 'Started'
-            job.log_message('Started job for {0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id))
+            job.log_message('Started job for {0}/{1}/{2}'.format(job.user_name, job.repo_name, job.commit_id))
         else:
             job.error_message('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
                                                                                              job.input_format,
@@ -158,12 +158,12 @@ class ClientWebhook(object):
         job.insert()
 
         # Get S3 bucket/dir ready
-        s3_commit_key = 'u/{0}/{1}/{2}'.format(job.owner_name, job.repo_name, job.commit_id)
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(job.user_name, job.repo_name, job.commit_id)
         self.clear_commit_directory_in_cdn(s3_commit_key)
 
         # Create a build log
         build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
-                                               pusher_username, repo_name, owner_name)
+                                               pusher_username, repo_name, user_name)
 
         # Convert and lint
         if converter:
@@ -193,7 +193,7 @@ class ClientWebhook(object):
                     book_job.source = self.build_multipart_source(file_key, book)
                     book_job.insert()
                     book_build_log = self.create_build_log(commit_id, commit_message, commit_url, compare_url, book_job,
-                                                      pusher_username, repo_name, owner_name)
+                                                      pusher_username, repo_name, user_name)
                     build_log_json['build_logs'].append(book_build_log)
                     self.upload_build_log_to_s3(book_build_log, s3_commit_key, str(i) + "/")
                     self.send_request_to_converter(job, converter)
@@ -208,7 +208,7 @@ class ClientWebhook(object):
         self.upload_build_log_to_s3(build_log_json, s3_commit_key)
 
         # Update the project.json file
-        self.update_project_json(commit_id, job, repo_name, owner_name)
+        self.update_project_json(commit_id, job, repo_name, user_name)
 
 
         remove_tree(self.base_temp_dir)  # cleanup

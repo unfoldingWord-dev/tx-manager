@@ -25,14 +25,14 @@ class ConvertHandler(Handler):
         """
         # Gather arguments
         identifier = self.retrieve(self.data, 'identifier', 'identifier', required=False)
-        source_url = self.retrieve(self.data, 'source_url', 'source')
-        resource_id = self.retrieve(self.data, 'resource_id', 'resource_type')
+        source = self.retrieve(self.data, 'source_url', 'source')
+        resource = self.retrieve(self.data, 'resource_type', 'resource_type')
         cdn_file = self.retrieve(self.data, 'cdn_file', 'cdn_file')
         options = self.retrieve(self.data, 'options', 'options', required=False, default={})
         convert_callback = self.retrieve(self.data, 'convert_callback', 'convert_callback', required=False)
 
         # Execute
-        converter = self.converter_class(source=source_url, resource=resource_id, cdn_file=cdn_file, options=options,
+        converter = self.converter_class(source=source, resource=resource, cdn_file=cdn_file, options=options,
                                          convert_callback=convert_callback, identifier=identifier)
         results = converter.run()
         converter.close()  # do cleanup after run
