@@ -121,6 +121,7 @@ class ClientWebhook(object):
         job.user_name = user_name
         job.repo_name = repo_name
         job.commit_id = commit_id
+        job.manifests_id = tx_manifest.id
         job.created_at = datetime.utcnow()
         job.user = user.username  # Username of the token, not necessarily the repo's owner
         job.input_format = rc.resource.file_ext

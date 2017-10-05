@@ -110,9 +110,11 @@ class ClientWebhookTest(unittest.TestCase):
         repo_name = client_web_hook.commit_data['repository']['name']
         user_name = client_web_hook.commit_data['repository']['owner']['username']
         tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
+        tx_job = TxJob.get(results['job_id'])
         self.assertEqual(tx_manifest.repo_name, client_web_hook.commit_data['repository']['name'])
         self.assertEqual(tx_manifest.resource_id, 'udb')
         self.assertEqual(tx_manifest.lang_code, 'kpb')
+        self.assertEqual(tx_manifest.id, tx_job.manifests_id)
 
     @mock.patch('libraries.client.client_webhook.download_file')
     def test_process_webhook_no_converter_error(self, mock_download_file):
