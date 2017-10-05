@@ -2,13 +2,13 @@ from __future__ import absolute_import, unicode_literals, print_function
 import mock
 from unittest import TestCase
 from moto import mock_s3
-from libraries.lambda_handlers.client_linter_callback_handler import ClientLinterCallbackHandler
+from libraries.lambda_handlers.client_converter_callback_handler import ClientConverterCallbackHandler
 
 
 @mock_s3
-class TestClientLinterCallbackHandler(TestCase):
+class TestClientConverterCallbackHandler(TestCase):
 
-    @mock.patch('libraries.client.client_linter_callback.ClientLinterCallback.process_callback')
+    @mock.patch('libraries.client.client_converter_callback.ClientConverterCallback.process_callback')
     def test_handle(self, mock_process_callback):
         mock_process_callback.return_value = None
         event = {
@@ -21,7 +21,7 @@ class TestClientLinterCallbackHandler(TestCase):
                 'errors': []
             },
         }
-        handler = ClientLinterCallbackHandler()
+        handler = ClientConverterCallbackHandler()
         self.assertIsNone(handler.handle(event, None))
 
     @mock.patch('libraries.client.client_linter_callback.ClientLinterCallback.process_callback')
@@ -36,7 +36,7 @@ class TestClientLinterCallbackHandler(TestCase):
                 'errors': []
             },
         }
-        handler = ClientLinterCallbackHandler()
+        handler = ClientConverterCallbackHandler()
         had_exception = False
         try:
             results = handler.handle(event, None)
