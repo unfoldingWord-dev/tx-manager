@@ -17,9 +17,6 @@ from libraries.models.job import TxJob
 
 class ClientWebhook(object):
 
-    converter_callback = '{0}/client/callback/converter'.format(App.api_url)
-    linter_callback = '{0}/client/callback/linter'.format(App.api_url)
-
     def __init__(self, commit_data=None):
         """
         :param dict commit_data:
@@ -36,6 +33,8 @@ class ClientWebhook(object):
             os.makedirs(self.base_temp_dir)
         except:
             pass
+        self.converter_callback = '{0}/client/callback/converter'.format(App.api_url)
+        self.linter_callback = '{0}/client/callback/linter'.format(App.api_url)
 
     def process_webhook(self):
         # Check that we got commit data
