@@ -51,7 +51,7 @@ class ClientConverterCallback(object):
                              format(part_id, part_count, book))
             multiple_project = True
         else:
-            part_count = None
+            App.logger.debug('Single project')
             part_id = None
             multiple_project = False
 

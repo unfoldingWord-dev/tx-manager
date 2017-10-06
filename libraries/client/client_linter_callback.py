@@ -40,6 +40,7 @@ class ClientLinterCallback(object):
             self.errors = []
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
         self.s3_results_key = s3_results_key
+        self.job = None
 
     def process_callback(self):
         if not self.identifier:
@@ -53,9 +54,17 @@ class ClientLinterCallback(object):
             raise Exception(error)
 
         id_parts = self.identifier.split('/')
+        job_id = id_parts[0]
+        self.job = TxJob.get(job_id)
+
+        if not self.job:
+            error = 'No job found for job_id = {0}, identifier = {0}'.format(job_id, self.identifier)
+            App.logger.error(error)
+            raise Exception(error)
+
         self.multipart = len(id_parts) > 3
         if self.multipart:
-            job_id, part_count, part_id, book = id_parts[:4]
+            part_count, part_id, book = id_parts[1:4]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
             s3__master_results_key = '/'.join(self.s3_results_key.split('/')[:-1])
