@@ -28,9 +28,10 @@ class TestTwPreprocessor(unittest.TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_tw_preprocessor(self):
-        file_name = os.path.join('raw_sources', 'en_tw.zip')
         repo_name = 'en_tw'
+        file_name = os.path.join('raw_sources', repo_name + '.zip')
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
+        repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
