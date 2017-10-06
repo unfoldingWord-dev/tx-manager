@@ -34,20 +34,26 @@ class TestTwPreprocessor(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'names.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'other.md')))
         kt = read_file(os.path.join(self.out_dir, 'kt.md'))
+        names = read_file(os.path.join(self.out_dir, 'names.md'))
         other = read_file(os.path.join(self.out_dir, 'other.md'))
         soup = BeautifulSoup(markdown2.markdown(kt, extras=['markdown-in-html', 'tables']), 'html.parser')
         self.assertEqual(soup.h1.text, "translationWords")
         self.assertEqual(soup.h2.text, "Key Terms")
         self.assertIsNotNone(soup.find("a", {"id": "adoption"}))
-        self.assertEqual(len(soup.find_all('li')), 4160)
+        self.assertEqual(len(soup.find_all('li')), 4009)
         # Test links have been converted
         # self.assertIsNotNone(soup.find("a", {"href": "#accuracy-check"}))
         # self.assertIsNotNone(soup.find("a", {"href": "03-translate.html#figs-explicit"}))
         # make sure no old links exist
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'manifest.yaml')))
+        self.assertTrue('(rc:' not in kt)
+        self.assertTrue('(rc:' not in names)
+        self.assertTrue('(rc:' not in other)
         self.assertTrue('../' not in kt)
+        self.assertTrue('../' not in names)
         self.assertTrue('../' not in other)
 
     def test_fix_links(self):

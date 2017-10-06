@@ -539,7 +539,7 @@ class TwPreprocessor(Preprocessor):
 
     def fix_links(self, content, section_link):
         # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
-        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
                          r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content, flags=re.IGNORECASE)
         # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
         # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
@@ -549,7 +549,7 @@ class TwPreprocessor(Preprocessor):
         # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
         for section in TwPreprocessor.sections:
             link_ = section['link']
-            pattern = re.compile(r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(link_))
+            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link_))
             replace = r']({0}.html#\1)'.format(link_)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
