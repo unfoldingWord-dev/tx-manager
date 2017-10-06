@@ -229,7 +229,10 @@ class ClientLinterCallback(object):
             return None
 
         else:
-            ClientLinterCallback.merge_results_logs(build_log, part_build_log, linter_file=False)
+            if build_log:
+                ClientLinterCallback.merge_results_logs(build_log, part_build_log, linter_file=False)
+            else:
+                build_log = part_build_log
             return build_log
 
     @staticmethod
