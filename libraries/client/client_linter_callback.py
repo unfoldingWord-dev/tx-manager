@@ -58,10 +58,10 @@ class ClientLinterCallback(object):
             job_id, part_count, part_id, book = id_parts[:4]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
-            s3_master_results_key = '/'.join(self.s3_results_key.split('/')[:-1])
+            s3__master_results_key = '/'.join(self.s3_results_key.split('/')[:-1])
         else:
             App.logger.debug('Single project')
-            s3_master_results_key = self.s3_results_key
+            s3__master_results_key = self.s3_results_key
 
         build_log = {
             'identifier': self.identifier,
@@ -90,7 +90,7 @@ class ClientLinterCallback(object):
 
         ClientLinterCallback.upload_build_log(build_log, 'lint_log.json', self.temp_dir, self.s3_results_key)
 
-        results = ClientLinterCallback.deploy_if_conversion_finished(s3_master_results_key, self.identifier)
+        results = ClientLinterCallback.deploy_if_conversion_finished(s3__master_results_key, self.identifier)
         if results:
             self.all_parts_completed = True
             build_log = results
