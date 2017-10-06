@@ -16,6 +16,8 @@ def do_preprocess(rc, repo_dir, output_dir):
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'ta':
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
+    elif rc.resource.identifier == 'tw':
+        preprocessor = TwPreprocessor(rc, repo_dir, output_dir)
     else:
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
@@ -376,6 +378,147 @@ class TaPreprocessor(Preprocessor):
             markdown = '# {0}\n\n'.format(title)
             for section in toc['sections']:
                 markdown += self.compile_section(project, section, 2)
+            markdown = self.fix_links(markdown)
+            output_file = os.path.join(self.output_dir, '{0}-{1}.md'.format(str(idx+1).zfill(2), project.identifier))
+            write_file(output_file, markdown)
+
+            # Copy the toc and config.yaml file to the output dir so they can be used to
+            # generate the ToC on live.door43.org
+            toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
+            if os.path.isfile(toc_file):
+                copy(toc_file, os.path.join(self.output_dir, '{0}-{1}-toc.yaml'.format(str(idx+1).zfill(2),
+                                                                                       project.identifier)))
+            config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+            if os.path.isfile(config_file):
+                copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(str(idx+1).zfill(2),
+                                                                                             project.identifier)))
+        return True
+
+    def fix_links(self, content):
+        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content, flags=re.IGNORECASE)
+        # fix links to other sections within the same manual (only one ../ and a section name)
+        # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
+        content = re.sub(r'\]\(\.\./([^/)]+)/01.md\)', r'](#\1)', content)
+        # fix links to other manuals (two ../ and a manual name and a section name)
+        # e.g. [how to translate](../../translate/accurate/01.md) => [how to translate](translate.html#accurate)
+        for idx, project in enumerate(self.rc.projects):
+            pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project.identifier))
+            replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
+            content = re.sub(pattern, replace, content)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
+        return content
+
+
+class TwPreprocessor(Preprocessor):
+    sections = [
+        ['kt', 'Key Terms'],
+        ['names', 'Names'],
+        ['others', 'Others']
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(TwPreprocessor, self).__init__(*args, **kwargs)
+        self.section_container_id = 1
+
+    def get_title(self, project, link, alt_title=None):
+        proj = None
+        if link in project.config():
+            proj = project
+        else:
+            for p in self.rc.projects:
+                if link in p.config():
+                    proj = p
+        if proj:
+            title_file = os.path.join(self.source_dir, proj.path, link, 'title.md')
+            if os.path.isfile(title_file):
+                return read_file(title_file)
+        if alt_title:
+            return alt_title
+        else:
+            return link.replace('-', ' ').title()
+
+    def get_ref(self, project, link):
+        if link in project.config():
+            return '#{0}'.format(link)
+        for p in self.rc.projects:
+            if link in p.config():
+                return '{0}.html#{1}'.format(p.identifier, link)
+        return '#{0}'.format(link)
+
+    def get_question(self, project, slug):
+        subtitle_file = os.path.join(self.source_dir, project.path, slug, 'sub-title.md')
+        if os.path.isfile(subtitle_file):
+            return read_file(subtitle_file)
+
+    def get_content(self, project, slug):
+        content_file = os.path.join(self.source_dir, project.path, slug, '01.md')
+        if os.path.isfile(content_file):
+            return read_file(content_file)
+
+    def compile_section(self, project, section, level):
+        """
+        Recursive section markdown creator
+
+        :param project:
+        :param dict section:
+        :param int level:
+        :return:
+        """
+        if 'link' in section:
+            link = section['link']
+        else:
+            link = 'section-container-{0}'.format(self.section_container_id)
+            self.section_container_id = self.section_container_id + 1
+        markdown = '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, self.get_title(project, link, section['title']))
+        if 'link' in section:
+            top_box = ""
+            bottom_box = ""
+            question = self.get_question(project, link)
+            if question:
+                top_box += 'This page answers the question: *{0}*\n\n'.format(question)
+            config = project.config()
+            if link in config:
+                if 'dependencies' in config[link] and config[link]['dependencies']:
+                    top_box += 'In order to understand this topic, it would be good to read:\n\n'
+                    for dependency in config[link]['dependencies']:
+                        top_box += '  * *[{0}]({1})*\n'. \
+                            format(self.get_title(project, dependency), self.get_ref(project, dependency))
+                if 'recommended' in config[link] and config[link]['recommended']:
+                    bottom_box += 'Next we recommend you learn about:\n\n'
+                    for recommended in config[link]['recommended']:
+                        bottom_box += '  * *[{0}]({1})*\n'. \
+                            format(self.get_title(project, recommended), self.get_ref(project, recommended))
+            if top_box:
+                markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
+            content = self.get_content(project, link)
+            if content:
+                markdown += '{0}\n\n'.format(content)
+            if bottom_box:
+                markdown += '<div class="bottom-box box" markdown="1">\n{0}\n</div>\n\n'.format(bottom_box)
+            markdown += '---\n\n'  # horizontal rule
+        if 'sections' in section:
+            for subsection in section['sections']:
+                markdown += self.compile_section(project, subsection, level + 1)
+        return markdown
+
+    def run(self):
+        for idx, project in enumerate(self.rc.projects):
+            self.section_container_id = 1
+            title = project.title
+            markdown = '# {0}\n\n'.format(title)
+            for section in TwPreprocessor.sections:
+                markdown += '## {0}\n\n'.format(section[1])
+                markdown += self.compile_section(project, section[0], 2)
             markdown = self.fix_links(markdown)
             output_file = os.path.join(self.output_dir, '{0}-{1}.md'.format(str(idx+1).zfill(2), project.identifier))
             write_file(output_file, markdown)

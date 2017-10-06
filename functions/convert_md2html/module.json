@@ -2,7 +2,7 @@
     "name": "md2html",
     "version": "2",
     "type": "conversion",
-    "resource_types": ["obs", "ta"],
+    "resource_types": ["obs", "ta", "tw"],
     "input_format": ["md"],
     "output_format": ["html"],
     "options": {},
