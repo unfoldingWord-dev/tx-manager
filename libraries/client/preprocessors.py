@@ -421,9 +421,9 @@ class TaPreprocessor(Preprocessor):
 
 class TwPreprocessor(Preprocessor):
     sections = [
-        ['kt', 'Key Terms'],
-        ['names', 'Names'],
-        ['others', 'Others']
+        {'link': 'kt', 'title': 'Key Terms'},
+        {'link': 'names', 'title': 'Names'},
+        {'link': 'other', 'title': 'Other'}
     ]
 
     def __init__(self, *args, **kwargs):
@@ -432,7 +432,11 @@ class TwPreprocessor(Preprocessor):
 
     def get_title(self, project, link, alt_title=None):
         proj = None
-        if link in project.config():
+        config = project.config()
+        if not config:
+            return alt_title
+
+        if link in config:
             proj = project
         else:
             for p in self.rc.projects:
@@ -455,13 +459,7 @@ class TwPreprocessor(Preprocessor):
                 return '{0}.html#{1}'.format(p.identifier, link)
         return '#{0}'.format(link)
 
-    def get_question(self, project, slug):
-        subtitle_file = os.path.join(self.source_dir, project.path, slug, 'sub-title.md')
-        if os.path.isfile(subtitle_file):
-            return read_file(subtitle_file)
-
-    def get_content(self, project, slug):
-        content_file = os.path.join(self.source_dir, project.path, slug, '01.md')
+    def get_content(self, content_file):
         if os.path.isfile(content_file):
             return read_file(content_file)
 
@@ -479,33 +477,35 @@ class TwPreprocessor(Preprocessor):
         else:
             link = 'section-container-{0}'.format(self.section_container_id)
             self.section_container_id = self.section_container_id + 1
-        markdown = '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, self.get_title(project, link, section['title']))
+        title = self.get_title(project, link, section['title'])
+        markdown = ''
         if 'link' in section:
-            top_box = ""
-            bottom_box = ""
-            question = self.get_question(project, link)
-            if question:
-                top_box += 'This page answers the question: *{0}*\n\n'.format(question)
-            config = project.config()
-            if link in config:
-                if 'dependencies' in config[link] and config[link]['dependencies']:
-                    top_box += 'In order to understand this topic, it would be good to read:\n\n'
-                    for dependency in config[link]['dependencies']:
-                        top_box += '  * *[{0}]({1})*\n'. \
-                            format(self.get_title(project, dependency), self.get_ref(project, dependency))
-                if 'recommended' in config[link] and config[link]['recommended']:
-                    bottom_box += 'Next we recommend you learn about:\n\n'
-                    for recommended in config[link]['recommended']:
-                        bottom_box += '  * *[{0}]({1})*\n'. \
-                            format(self.get_title(project, recommended), self.get_ref(project, recommended))
-            if top_box:
-                markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
-            content = self.get_content(project, link)
-            if content:
-                markdown += '{0}\n\n'.format(content)
-            if bottom_box:
-                markdown += '<div class="bottom-box box" markdown="1">\n{0}\n</div>\n\n'.format(bottom_box)
-            markdown += '---\n\n'  # horizontal rule
+            level_increase = ('#' * level)
+            files = glob(os.path.join(self.source_dir, project.path, link, '*.md'))
+            if files:
+                markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
+                for file in files:
+                    top_box = ""
+                    bottom_box = ""
+                    if top_box:
+                        markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
+                    content = self.get_content(file)
+                    content = content.replace('\r', '')
+                    lines = content.split('\n')
+                    for i in range(0, len(lines)):
+                        line = lines[i]
+                        if line and (line[0] == '#'):
+                            line = level_increase + line.rstrip() + level_increase
+                            lines[i] = line
+                    content = '\n'.join(lines)
+                    if content:
+                        file_name = os.path.basename(file)
+                        anchor = os.path.splitext(file_name)[0]
+                        markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
+                    if bottom_box:
+                        markdown += '<div class="bottom-box box" markdown="1">\n{0}\n</div>\n\n'.format(bottom_box)
+                    markdown += '---\n\n'  # horizontal rule
+
         if 'sections' in section:
             for subsection in section['sections']:
                 markdown += self.compile_section(project, subsection, level + 1)
@@ -515,13 +515,15 @@ class TwPreprocessor(Preprocessor):
         for idx, project in enumerate(self.rc.projects):
             self.section_container_id = 1
             title = project.title
-            markdown = '# {0}\n\n'.format(title)
             for section in TwPreprocessor.sections:
-                markdown += '## {0}\n\n'.format(section[1])
-                markdown += self.compile_section(project, section[0], 2)
-            markdown = self.fix_links(markdown)
-            output_file = os.path.join(self.output_dir, '{0}-{1}.md'.format(str(idx+1).zfill(2), project.identifier))
-            write_file(output_file, markdown)
+                markdown = '# {0}\n\n'.format(title)
+                section_md = self.compile_section(project, section, 2)
+                if not section_md:
+                    continue
+                markdown += section_md
+                markdown = self.fix_links(markdown)
+                output_file = os.path.join(self.output_dir, '{0}.md'.format(section['link']))
+                write_file(output_file, markdown)
 
             # Copy the toc and config.yaml file to the output dir so they can be used to
             # generate the ToC on live.door43.org
