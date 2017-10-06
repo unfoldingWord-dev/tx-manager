@@ -529,12 +529,10 @@ class TwPreprocessor(Preprocessor):
             # generate the ToC on live.door43.org
             toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
             if os.path.isfile(toc_file):
-                copy(toc_file, os.path.join(self.output_dir, '{0}-{1}-toc.yaml'.format(str(idx+1).zfill(2),
-                                                                                       project.identifier)))
+                copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
             config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
             if os.path.isfile(config_file):
-                copy(config_file, os.path.join(self.output_dir, '{0}-{1}-config.yaml'.format(str(idx+1).zfill(2),
-                                                                                             project.identifier)))
+                copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
         return True
 
     def fix_links(self, content, section_link):

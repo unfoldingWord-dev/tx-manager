@@ -132,7 +132,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         remove(self.out_zip_file)
 
         # TODO blm: new list
-        files_to_verify = ['license.html']
+        files_to_verify = ['kt.html','names.html','other.html','config.yaml','manifest.yaml', ]
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
