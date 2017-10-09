@@ -433,34 +433,9 @@ class TwPreprocessor(Preprocessor):
         self.index = ''
         self.repo_name = ''
 
-    def get_title(self, project, link, alt_title=None):
-        proj = None
-        config = project.config()
-        if not config:
-            return alt_title
-
-        if link in config:
-            proj = project
-        else:
-            for p in self.rc.projects:
-                if link in p.config():
-                    proj = p
-        if proj:
-            title_file = os.path.join(self.source_dir, proj.path, link, 'title.md')
-            if os.path.isfile(title_file):
-                return read_file(title_file)
-        if alt_title:
-            return alt_title
-        else:
-            return link.replace('-', ' ').title()
-
-    def get_ref(self, project, link):
-        if link in project.config():
-            return '#{0}'.format(link)
-        for p in self.rc.projects:
-            if link in p.config():
-                return '{0}.html#{1}'.format(p.identifier, link)
-        return '#{0}'.format(link)
+    def get_title(self, project, alt_title=None):
+        title = alt_title
+        return title.title()
 
     def get_content(self, content_file):
         if os.path.isfile(content_file):
@@ -478,9 +453,8 @@ class TwPreprocessor(Preprocessor):
         if 'link' in section:
             link = section['link']
         else:
-            link = 'section-container-{0}'.format(self.section_container_id)
-            self.section_container_id = self.section_container_id + 1
-        title = self.get_title(project, link, section['title'])
+            return ''
+        title = self.get_title(project, section['title'])
         markdown = ''
         if 'link' in section:
             level_increase = ('#' * level)
@@ -507,13 +481,9 @@ class TwPreprocessor(Preprocessor):
                         anchor = os.path.splitext(file_name)[0]
                         markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
                         self.index += '* [{1}]({0}.html#{1})\n\n'.format(link, anchor)
-                    if bottom_box:
-                        markdown += '<div class="bottom-box box" markdown="1">\n{0}\n</div>\n\n'.format(bottom_box)
+
                     markdown += '---\n\n'  # horizontal rule
 
-        if 'sections' in section:
-            for subsection in section['sections']:
-                markdown += self.compile_section(project, subsection, level + 1)
         return markdown
 
     def run(self):
