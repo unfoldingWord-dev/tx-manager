@@ -17,8 +17,8 @@ class TxManifest(App.Base, TxModel):
     resource_type = Column(String(32), nullable=False)
     title = Column(String(500), nullable=False)
     views = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, timezone=True, nullable=False)
-    last_updated = Column(DateTime, default=datetime.utcnow, timezone=True, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     manifest = Column(TextPickleType, default={}, nullable=True)
     __table_args__ = (
         UniqueConstraint('repo_name', 'user_name'),

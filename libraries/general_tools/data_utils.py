@@ -42,12 +42,12 @@ def json_serial(obj):
     raise TypeError("Type %s not serializable" % type(obj))
 
 
-def convert_string_to_date(date_str):
+def convert_string_to_date(date_str,ignoretz=True):
     """
     :param string date_str:
     :return datetime:
     """
     if isinstance(date_str, basestring):
-        return parse(date_str)
+        return parse(date_str, ignoretz=ignoretz)
     else:
         return date_str
