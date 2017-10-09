@@ -19,8 +19,8 @@ class TxModule(App.Base, TxModel):
     options = Column(TextPickleType, default=[], nullable=False)
     public_links = Column(TextPickleType, default=[], nullable=False)
     private_links = Column(TextPickleType, default=[], nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, timezone=True, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, timezone=True, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     def __init__(self, **kwargs):
         """Init attributes"""
