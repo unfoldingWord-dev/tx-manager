@@ -79,23 +79,6 @@ class TestConversions(TestCase):
         if hasattr(self, 'temp_dir') and os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_usfm_door43_en_udb_bundle_conversion(self):
-        # given
-        if not self.is_testing_enabled():
-            return  # skip test if integration test not enabled
-        git_url = "https://git.door43.org/Door43/en_udb.git"
-        base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_names = FULL_BIBLE_LIST
-
-        # when
-        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
-                                                                                                       repo)
-
-        # then
-        self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
-                                 expected_output_names, job)
-
-
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_en_udb_bundle_conversion(self):
         # given
@@ -658,13 +641,13 @@ class TestConversions(TestCase):
         self.assertTrue(len(build_log) > 0, "missing build_log file ")
         return build_log
 
-    def do_conversion_for_repo(self, base_url, user, repo, match_commit=None):
+    def do_conversion_for_repo(self, base_url, user, repo):
         build_log_json = None
         job = None
         success = False
         self.cdn_handler = App.cdn_s3_handler()
         # TODO: change this to use gogs API when finished
-        commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user, match_commit=match_commit)
+        commit_id, commit_path, commit_sha = self.fetch_commit_data_for_repo(base_url, repo, user)
         commit_len = len(commit_id)
         if commit_len == COMMIT_LENGTH:
             self.delete_preconvert_zip_file(commit_sha)
@@ -848,16 +831,16 @@ class TestConversions(TestCase):
         text = App.cdn_s3_handler().get_json(key)
         return text
 
-    def fetch_commit_data_for_repo(self, base_url, repo, user, match_commit=None):
+    def fetch_commit_data_for_repo(self, base_url, repo, user):
         commit_id = None
         commit_sha = None
         commit_path = None
         data = self.read_contents_of_repo(base_url, user, repo)
         if len(data) > 10:
-            commit_id, commit_sha, commit_path = self.find_lasted_commit_from_page(data, match_commit=match_commit)
+            commit_id, commit_sha, commit_path = self.find_lasted_commit_from_page(data)
         return commit_id, commit_path, commit_sha
 
-    def find_lasted_commit_from_page(self, text, match_commit=None):
+    def find_lasted_commit_from_page(self, text):
         soup = BeautifulSoup(text, 'html.parser')
         table = soup.find('table')
         commit_id = None
@@ -875,9 +858,6 @@ class TestConversions(TestCase):
                             commit_sha = self.get_contents(commit_link)
                             parts = commit_path.split('/')
                             commit_id = parts[4]
-                            if match_commit:
-                                if (match_commit != commit_id) and (match_commit != commit_sha):
-                                    continue
                             break
 
         return commit_id, commit_sha, commit_path

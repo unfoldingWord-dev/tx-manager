@@ -51,7 +51,12 @@ class TxManager(object):
         del job_data['gogs_user_token']
         job_data['user'] = user.username
 
+        user_name, repo_name = job_data['identifier'].split('/')[:2]
+
         job = TxJob(**job_data)
+
+        job.user_name = user_name
+        job.repo_name = repo_name
 
         if not job.cdn_bucket:
             if not App.cdn_bucket:
@@ -92,6 +97,7 @@ class TxManager(object):
             "rel": "self",
             "method": "GET"
         }
+        job.user_name
         job.insert()
         if len(job.errors):
             job.status = 'failed'

@@ -71,7 +71,7 @@ class ClientConverterCallback(object):
 
         self.job.update()
 
-        s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.user_name, self.job.repo_name, self.job.commit_id)
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.owner_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
         if multiple_project:
             upload_key += "/" + part_id
@@ -228,11 +228,11 @@ class ClientConverterCallback(object):
                 App.cdn_s3_handler().upload_file(path, key)
 
     def update_project_file(self):
-        project_json_key = 'u/{0}/{1}/project.json'.format(self.job.user_name, self.job.repo_name)
+        project_json_key = 'u/{0}/{1}/project.json'.format(self.job.owner_name, self.job.repo_name)
         project_json = App.cdn_s3_handler().get_json(project_json_key)
-        project_json['user'] = self.job.user_name
+        project_json['user'] = self.job.owner_name
         project_json['repo'] = self.job.repo_name
-        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, self.job.user_name, self.job.repo_name)
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, self.job.owner_name, self.job.repo_name)
         commit = {
             'id': self.job.commit_id,
             'created_at': self.job.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),

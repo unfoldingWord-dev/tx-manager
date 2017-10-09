@@ -55,7 +55,7 @@ class TestClientConverterCallback(TestCase):
             'job1': {
                 'job_id': 'job1',
                 'identifier': 'tx-manager-test-data/en-ulb/22f3d09f7a',
-                'user_name': 'tx-manager-test-data',
+                'owner_name': 'tx-manager-test-data',
                 'repo_name': 'en-ulb',
                 'commit_id': '22f3d09f7a',
                 'user': 'user1',
@@ -85,7 +85,7 @@ class TestClientConverterCallback(TestCase):
             'job2': {
                 'job_id': 'job2',
                 'identifier': 'tx-manager-test-data/en-ulb-jud/22f3d09f7a',
-                'user_name': 'tx-manager-test-data',
+                'owner_name': 'tx-manager-test-data',
                 'repo_name': 'en-ulb-jud',
                 'commit_id': '22f3d09f7a',
                 'user': 'user1',
@@ -115,7 +115,7 @@ class TestClientConverterCallback(TestCase):
             'job3': {
                 'job_id': 'job3',
                 'identifier': 'user1/repo1/commit1',
-                'user_name': 'user1',
+                'owner_name': 'user1',
                 'repo_name': 'repo1',
                 'commit_id': 'commit1',
                 'user': 'user1',
