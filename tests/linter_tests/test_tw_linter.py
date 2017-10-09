@@ -50,18 +50,49 @@ class TestTwLinter(LinterTestCase):
         linter.run()
         self.verify_results(expected_warnings, linter)
 
-    def verify_results(self, expected_warnings, linter):
-        self.assertEqual(len(linter.log.warnings) > 0, expected_warnings)
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
+    def test_lint_broken_links_invalid(self, mock_invoke_markdown_linter):
+        mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tw linting
+        expected_warnings = True
+        zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
+        new_zip = self.replace_text(zip_file, 'en_tw', 'names.md', '[Moses](#moses)', '[Moses]\n(../moses.md)')
+        linter = TwLinter(source_zip_file=new_zip)
+        linter.run()
+        self.verify_results(expected_warnings, linter)
+
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
+    def test_lint_broken_links_invalid2(self, mock_invoke_markdown_linter):
+        mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tw linting
+        expected_warnings = True
+        zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
+        new_zip = self.prepend_text(zip_file, 'en_tw', 'names.md', 'Moses]\n(../moses.md)')
+        linter = TwLinter(source_zip_file=new_zip)
+        linter.run()
+        self.verify_results(expected_warnings, linter)
 
     #
     # helpers
     #
+
+    def verify_results(self, expected_warnings, linter):
+        self.assertEqual(len(linter.log.warnings) > 0, expected_warnings)
 
     def replace_text(self, zip_name, sub_folder, file_name, match, replace):
         out_dir = self.unzip_resource(zip_name)
         file_path = os.path.join(out_dir, sub_folder, file_name)
         text = read_file(file_path)
         new_text = text.replace(match, replace)
+        write_file(file_path, new_text)
+
+        new_zip = tempfile.mktemp(prefix="linter", suffix='.zip', dir=self.temp_dir)
+        add_contents_to_zip(new_zip, out_dir)
+        return new_zip
+
+    def prepend_text(self, zip_name, sub_folder, file_name, prefix):
+        out_dir = self.unzip_resource(zip_name)
+        file_path = os.path.join(out_dir, sub_folder, file_name)
+        text = read_file(file_path)
+        new_text = prefix + text
         write_file(file_path, new_text)
 
         new_zip = tempfile.mktemp(prefix="linter", suffix='.zip', dir=self.temp_dir)
