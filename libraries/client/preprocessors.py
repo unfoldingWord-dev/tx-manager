@@ -9,7 +9,7 @@ from libraries.resource_container.ResourceContainer import RC
 from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
-def do_preprocess(rc, repo_dir, output_dir):
+def do_preprocess(rc, repo_dir, output_dir, repo_name=None):
     if rc.resource.identifier == 'obs':
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
@@ -18,6 +18,7 @@ def do_preprocess(rc, repo_dir, output_dir):
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'tw':
         preprocessor = TwPreprocessor(rc, repo_dir, output_dir)
+        preprocessor.repo_name = repo_name
     else:
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
@@ -430,6 +431,7 @@ class TwPreprocessor(Preprocessor):
         super(TwPreprocessor, self).__init__(*args, **kwargs)
         self.section_container_id = 1
         self.index = ''
+        self.repo_name = ''
 
     def get_title(self, project, link, alt_title=None):
         proj = None
@@ -547,7 +549,8 @@ class TwPreprocessor(Preprocessor):
     def fix_links(self, content, section_link):
         # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content, flags=re.IGNORECASE)
+                         r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.repo_name), content,
+                         flags=re.IGNORECASE)
         # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
         # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
         pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section_link)

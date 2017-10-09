@@ -91,7 +91,7 @@ class ClientWebhook(object):
 
         # Preprocess the files
         output_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='output_')
-        results, preprocessor = do_preprocess(rc, repo_dir, output_dir)
+        results, preprocessor = do_preprocess(rc, repo_dir, output_dir, repo_name)
 
         # 3) Zip up the massaged files
         # commit_id is a unique ID for this lambda call, so using it to not conflict with other requests
@@ -452,7 +452,7 @@ class ClientWebhook(object):
             }
         }
 
-        if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
+        if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs' or job.resource_type == 'tw':
             # Need to give the massaged source since it maybe was in chunks originally
             payload['data']['source_url'] = job.source
         else:
