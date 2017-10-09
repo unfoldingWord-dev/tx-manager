@@ -18,9 +18,11 @@ class TestTwPreprocessor(unittest.TestCase):
         """Runs before each test."""
         self.out_dir = ''
         self.temp_dir = ""
+        self.save_sections = TwPreprocessor.sections
 
     def tearDown(self):
         """Runs after each test."""
+        TwPreprocessor.sections = self.save_sections
         # delete temp files
         if os.path.isdir(self.out_dir):
             shutil.rmtree(self.out_dir, ignore_errors=True)
@@ -62,6 +64,21 @@ class TestTwPreprocessor(unittest.TestCase):
         self.assertTrue('../' not in kt)
         self.assertTrue('../' not in names)
         self.assertTrue('../' not in other)
+
+    def test_tw_preprocessor_extra_section(self):
+        TwPreprocessor.sections.insert(0, {'link': 'dumy', 'title': 'dumy'})
+        repo_name = 'en_tw'
+        file_name = os.path.join('raw_sources', repo_name + '.zip')
+        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
+        repo_dir = os.path.join(repo_dir)
+        self.out_dir = tempfile.mkdtemp(prefix='output_')
+        repo_name = 'dummy_repo'
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+        self.assertEquals(preproc.repo_name, repo_name)
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'names.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'other.md')))
 
     def test_fix_links(self):
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'tw'))
