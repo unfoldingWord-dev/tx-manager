@@ -12,7 +12,7 @@ class TxJob(App.Base, TxModel):
     __tablename__ = App.job_table_name
     job_id = Column(String(100), primary_key=True)
     identifier = Column(String(255), nullable=True)
-    owner_name = Column(String(255), nullable=True)
+    user_name = Column(String(255), nullable=True)
     repo_name = Column(String(255), nullable=True)
     commit_id = Column(String(255), nullable=True)
     status = Column(String(255), nullable=True)
