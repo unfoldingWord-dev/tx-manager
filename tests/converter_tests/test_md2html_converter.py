@@ -113,7 +113,34 @@ class TestMd2HtmlConverter(unittest.TestCase):
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
                             .format(file_to_verify))
 
+    def test_tq(self):
+        """
+        Runs the converter and verifies the output
+        """
+
+        # given
+        file_name = 'en_tq.zip'
+
+        # when
+        self.doTransformTq(file_name)
+
+        # then
+        self.assertTrue(os.path.isfile(self.out_zip_file), "There was no output zip file produced.")
+        self.assertIsNotNone(self.return_val, "There was no return value.")
+        self.out_dir = tempfile.mkdtemp(prefix='tw_')
+        unzip(self.out_zip_file, self.out_dir)
+        remove(self.out_zip_file)
+
+        # TODO blm: new list
+        files_to_verify = ['index.html','kt.html','names.html','other.html','config.yaml','manifest.yaml']
+        for file_to_verify in files_to_verify:
+            file_path = os.path.join(self.out_dir, file_to_verify)
+            self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
+                            .format(file_to_verify))
+
+    #
     # helpers
+    #
 
     def doTransformObs(self, file_name):
         zip_file_path = os.path.join(self.resources_dir, file_name)
@@ -131,6 +158,16 @@ class TestMd2HtmlConverter(unittest.TestCase):
         self.out_zip_file = tempfile.mktemp(prefix="en_ta", suffix=".zip")
         self.return_val = None
         with closing(Md2HtmlConverter('', 'ta', self.out_zip_file)) as tx:
+            tx.input_zip_file = zip_file_path
+            self.return_val = tx.run()
+        return tx
+
+    def doTransformTq(self, file_name):
+        zip_file_path = os.path.join(self.resources_dir, file_name)
+        zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
+        self.out_zip_file = tempfile.mktemp(prefix="en_tq", suffix=".zip")
+        self.return_val = None
+        with closing(Md2HtmlConverter('', 'tq', self.out_zip_file)) as tx:
             tx.input_zip_file = zip_file_path
             self.return_val = tx.run()
         return tx
