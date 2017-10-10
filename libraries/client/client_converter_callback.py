@@ -84,7 +84,7 @@ class ClientConverterCallback(object):
         converted_zip_file = os.path.join(self.temp_dir, converted_zip_url.rpartition('/')[2])
         remove(converted_zip_file)  # make sure old file not present
         download_success = True
-        App.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
+        App.logger.debug('Downloading converted zip file from {0}...'.format(self.job.cdn_file))
         try:
             # download_file(converted_zip_url, converted_zip_file)
             file_utils.remove(self.job.cdn_file)
