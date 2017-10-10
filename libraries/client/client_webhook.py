@@ -195,7 +195,15 @@ class ClientWebhook(object):
                     else:
                         book_job = job.clone()  # copy the original job for this book's job
                         book_job.job_id = self.get_unique_job_id()
+                        book_job.cdn_file = 'tx/job/{0}.zip'.format(book_job.job_id)
+                        book_job.output = 'https://{0}/{1}'.format(App.cdn_bucket, book_job.cdn_file)
+                        book_job.links = {
+                            "href": "{0}/tx/job/{1}".format(App.api_url, book_job.job_id),
+                            "rel": "self",
+                            "method": "GET"
+                        }
                         book_job.insert()
+
                     book_job.identifier = '{0}/{1}/{2}/{3}'.format(job.job_id, book_count, i, book)
                     book_job.source = self.build_multipart_source(file_key, book)
                     book_job.update()
