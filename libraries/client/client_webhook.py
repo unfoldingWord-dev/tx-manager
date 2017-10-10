@@ -176,7 +176,10 @@ class ClientWebhook(object):
             if not preprocessor.is_multiple_jobs():
                 self.send_request_to_converter(job, converter)
                 if linter:
-                    self.send_request_to_linter(job, linter, commit_url)
+                    extra_payload = {
+                        's3_results_key': s3_commit_key
+                    }
+                    self.send_request_to_linter(job, linter, commit_url, extra_payload=extra_payload)
             else:
                 # -----------------------------
                 # multiple Bible book project
