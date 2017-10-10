@@ -98,6 +98,7 @@ class ClientLinterCallback(object):
             build_log = results
 
         remove_tree(self.temp_dir)  # cleanup
+        App.db_close()
         return build_log
 
     @staticmethod

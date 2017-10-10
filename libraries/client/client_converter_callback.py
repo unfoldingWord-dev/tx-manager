@@ -69,8 +69,6 @@ class ClientConverterCallback(object):
         else:
             self.job.log_message('{0} function returned successfully.'.format(self.job.convert_module))
 
-        self.job.update()
-
         s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.user_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
         if multiple_project:
@@ -95,6 +93,9 @@ class ClientConverterCallback(object):
             self.job.errors.append("Missing converted file: " + converted_zip_url)
         finally:
             App.logger.debug('download finished, success={0}'.format(str(download_success)))
+
+        self.job.update()
+        App.db_close()
 
         if download_success:
             # Unzip the archive
