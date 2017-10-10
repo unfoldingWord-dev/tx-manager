@@ -3,6 +3,7 @@ import os
 import re
 from glob import glob
 from shutil import copy
+from libraries.app.app import App
 from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
@@ -422,72 +423,72 @@ class TaPreprocessor(Preprocessor):
 
 class TqPreprocessor(Preprocessor):
     sections = [
-        {'link': "01-GEN", 'title': 'Genesis'},
-        {'link': "02-EXO", 'title': 'Exodus'},
-        {'link': "03-LEV", 'title': 'Leviticus'},
-        {'link': "04-NUM", 'title': 'Numbers'},
-        {'link': "05-DEU", 'title': 'Deuteronomy'},
-        {'link': "06-JOS", 'title': 'Joshua'},
-        {'link': "07-JDG", 'title': 'Judges'},
-        {'link': "08-RUT", 'title': 'Ruth'},
-        {'link': "09-1SA", 'title': '1 Samuel'},
-        {'link': "10-2SA", 'title': '2 Samuel'},
-        {'link': "11-1KI", 'title': '1 Kings'},
-        {'link': "12-2KI", 'title': '2 Kings'},
-        {'link': "13-1CH", 'title': '1 Chronicles'},
-        {'link': "14-2CH", 'title': '2 Chronicles'},
-        {'link': "15-EZR", 'title': 'Ezra'},
-        {'link': "16-NEH", 'title': 'Nehemiah'},
-        {'link': "17-EST", 'title': 'Esther'},
-        {'link': "18-JOB", 'title': 'Job'},
-        {'link': "19-PSA", 'title': 'Psalms'},
-        {'link': "20-PRO", 'title': 'Proverbs'},
-        {'link': "21-ECC", 'title': 'Ecclesiastes'},
-        {'link': "22-SNG", 'title': 'Song of Solomon'},
-        {'link': "23-ISA", 'title': 'Isaiah'},
-        {'link': "24-JER", 'title': 'Jeremiah'},
-        {'link': "25-LAM", 'title': 'Lamentations'},
-        {'link': "26-EZK", 'title': 'Ezekiel'},
-        {'link': "27-DAN", 'title': 'Daniel'},
-        {'link': "28-HOS", 'title': 'Hosea'},
-        {'link': "29-JOL", 'title': 'Joel'},
-        {'link': "30-AMO", 'title': 'Amos'},
-        {'link': "31-OBA", 'title': 'Obadiah'},
-        {'link': "32-JON", 'title': 'Jonah'},
-        {'link': "33-MIC", 'title': 'Micah'},
-        {'link': "34-NAM", 'title': 'Nahum'},
-        {'link': "35-HAB", 'title': 'Habakkuk'},
-        {'link': "36-ZEP", 'title': 'Zephaniah'},
-        {'link': "37-HAG", 'title': 'Haggai'},
-        {'link': "38-ZEC", 'title': 'Zechariah'},
-        {'link': "39-MAL", 'title': 'Malachi'},
-        {'link': "41-MAT", 'title': 'Matthew'},
-        {'link': "42-MRK", 'title': 'Mark'},
-        {'link': "43-LUK", 'title': 'Luke'},
-        {'link': "44-JHN", 'title': 'John'},
-        {'link': "45-ACT", 'title': 'Acts'},
-        {'link': "46-ROM", 'title': 'Romans'},
-        {'link': "47-1CO", 'title': '1 Corinthians'},
-        {'link': "48-2CO", 'title': '2 Corinthians'},
-        {'link': "49-GAL", 'title': 'Galatians'},
-        {'link': "50-EPH", 'title': 'Ephesians'},
-        {'link': "51-PHP", 'title': 'Philippians'},
-        {'link': "52-COL", 'title': 'Colossians'},
-        {'link': "53-1TH", 'title': '1 Thessalonians'},
-        {'link': "54-2TH", 'title': '2 Thessalonians'},
-        {'link': "55-1TI", 'title': '1 Timothy'},
-        {'link': "56-2TI", 'title': '2 Timothy'},
-        {'link': "57-TIT", 'title': 'Titus'},
-        {'link': "58-PHM", 'title': 'Philemon'},
-        {'link': "59-HEB", 'title': 'Hebrews'},
-        {'link': "60-JAS", 'title': 'James'},
-        {'link': "61-1PE", 'title': '1 Peter'},
-        {'link': "62-2PE", 'title': '2 Peter'},
-        {'link': "63-1JN", 'title': '1 John'},
-        {'link': "64-2JN", 'title': '2 John'},
-        {'link': "65-3JN", 'title': '3 John'},
-        {'link': "66-JUD", 'title': 'Jude'},
-        {'link': "67-REV", 'title': 'Revelation'},
+        {'book': "01-GEN", 'title': 'Genesis'},
+        {'book': "02-EXO", 'title': 'Exodus'},
+        {'book': "03-LEV", 'title': 'Leviticus'},
+        {'book': "04-NUM", 'title': 'Numbers'},
+        {'book': "05-DEU", 'title': 'Deuteronomy'},
+        {'book': "06-JOS", 'title': 'Joshua'},
+        {'book': "07-JDG", 'title': 'Judges'},
+        {'book': "08-RUT", 'title': 'Ruth'},
+        {'book': "09-1SA", 'title': '1 Samuel'},
+        {'book': "10-2SA", 'title': '2 Samuel'},
+        {'book': "11-1KI", 'title': '1 Kings'},
+        {'book': "12-2KI", 'title': '2 Kings'},
+        {'book': "13-1CH", 'title': '1 Chronicles'},
+        {'book': "14-2CH", 'title': '2 Chronicles'},
+        {'book': "15-EZR", 'title': 'Ezra'},
+        {'book': "16-NEH", 'title': 'Nehemiah'},
+        {'book': "17-EST", 'title': 'Esther'},
+        {'book': "18-JOB", 'title': 'Job'},
+        {'book': "19-PSA", 'title': 'Psalms'},
+        {'book': "20-PRO", 'title': 'Proverbs'},
+        {'book': "21-ECC", 'title': 'Ecclesiastes'},
+        {'book': "22-SNG", 'title': 'Song of Solomon'},
+        {'book': "23-ISA", 'title': 'Isaiah'},
+        {'book': "24-JER", 'title': 'Jeremiah'},
+        {'book': "25-LAM", 'title': 'Lamentations'},
+        {'book': "26-EZK", 'title': 'Ezekiel'},
+        {'book': "27-DAN", 'title': 'Daniel'},
+        {'book': "28-HOS", 'title': 'Hosea'},
+        {'book': "29-JOL", 'title': 'Joel'},
+        {'book': "30-AMO", 'title': 'Amos'},
+        {'book': "31-OBA", 'title': 'Obadiah'},
+        {'book': "32-JON", 'title': 'Jonah'},
+        {'book': "33-MIC", 'title': 'Micah'},
+        {'book': "34-NAM", 'title': 'Nahum'},
+        {'book': "35-HAB", 'title': 'Habakkuk'},
+        {'book': "36-ZEP", 'title': 'Zephaniah'},
+        {'book': "37-HAG", 'title': 'Haggai'},
+        {'book': "38-ZEC", 'title': 'Zechariah'},
+        {'book': "39-MAL", 'title': 'Malachi'},
+        {'book': "41-MAT", 'title': 'Matthew'},
+        {'book': "42-MRK", 'title': 'Mark'},
+        {'book': "43-LUK", 'title': 'Luke'},
+        {'book': "44-JHN", 'title': 'John'},
+        {'book': "45-ACT", 'title': 'Acts'},
+        {'book': "46-ROM", 'title': 'Romans'},
+        {'book': "47-1CO", 'title': '1 Corinthians'},
+        {'book': "48-2CO", 'title': '2 Corinthians'},
+        {'book': "49-GAL", 'title': 'Galatians'},
+        {'book': "50-EPH", 'title': 'Ephesians'},
+        {'book': "51-PHP", 'title': 'Philippians'},
+        {'book': "52-COL", 'title': 'Colossians'},
+        {'book': "53-1TH", 'title': '1 Thessalonians'},
+        {'book': "54-2TH", 'title': '2 Thessalonians'},
+        {'book': "55-1TI", 'title': '1 Timothy'},
+        {'book': "56-2TI", 'title': '2 Timothy'},
+        {'book': "57-TIT", 'title': 'Titus'},
+        {'book': "58-PHM", 'title': 'Philemon'},
+        {'book': "59-HEB", 'title': 'Hebrews'},
+        {'book': "60-JAS", 'title': 'James'},
+        {'book': "61-1PE", 'title': '1 Peter'},
+        {'book': "62-2PE", 'title': '2 Peter'},
+        {'book': "63-1JN", 'title': '1 John'},
+        {'book': "64-2JN", 'title': '2 John'},
+        {'book': "65-3JN", 'title': '3 John'},
+        {'book': "66-JUD", 'title': 'Jude'},
+        {'book': "67-REV", 'title': 'Revelation'},
     ]
 
     def __init__(self, *args, **kwargs):
@@ -496,90 +497,52 @@ class TqPreprocessor(Preprocessor):
         self.index = ''
         self.repo_name = ''
 
-    def get_title(self, project, alt_title=None):
-        title = alt_title
-        return title.title()
-
-    def get_content(self, content_file):
-        if os.path.isfile(content_file):
-            return read_file(content_file)
-
-    def compile_section(self, project, section, level):
-        """
-        Recursive section markdown creator
-
-        :param project:
-        :param dict section:
-        :param int level:
-        :return:
-        """
-        if 'link' in section:
-            link = section['link']
-        else:
-            return ''
-        title = self.get_title(project, section['title'])
-        markdown = ''
-        if 'link' in section:
-            level_increase = ('#' * level)
-            files = glob(os.path.join(self.source_dir, project.path, link, '*.md'))
-            if files:
-                markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
-                self.index += '### {0}:\n\n'.format(title)
-                for file in files:
-                    top_box = ""
-                    bottom_box = ""
-                    if top_box:
-                        markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
-                    content = self.get_content(file)
-                    content = content.replace('\r', '')
-                    lines = content.split('\n')
-                    for i in range(0, len(lines)):
-                        line = lines[i]
-                        if line and (line[0] == '#'):
-                            line = level_increase + line.rstrip() + level_increase
-                            lines[i] = line
-                    content = '\n'.join(lines)
-                    if content:
-                        file_name = os.path.basename(file)
-                        anchor = os.path.splitext(file_name)[0]
-                        markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
-                        self.index += '* [{1}]({0}.html#{1})\n\n'.format(link, anchor)
-
-                    markdown += '---\n\n'  # horizontal rule
-
-        return markdown
-
     def run(self):
+        super(TqPreprocessor, self).run()
+        self.index = None
+        projects = {}
         for idx, project in enumerate(self.rc.projects):
-            self.section_container_id = 1
-            title = project.title
-            self.index = '# {0}\n\n'.format(title)
-            self.index += '## Table of Contents:\n\n'
-            for section in TqPreprocessor.sections:
-                markdown = '# {0}\n\n'.format(title)
-                section_md = self.compile_section(project, section, 2)
-                if not section_md:
-                    continue
-                markdown += section_md
-                markdown = self.fix_links(markdown, section['link'])
-                output_file = os.path.join(self.output_dir, '{0}.md'.format(section['link']))
-                write_file(output_file, markdown)
+            section = self.get_section_for_file(project.identifier)
+            if section:
+                link = self.get_link_for_section(section)
+                book = section['book']
+                if not self.index:
+                    self.index = '# {0}\n\n'.format(project.title)
+                    self.index += '## Table of Contents:\n\n'
+                projects[book] = {
+                    'link': link,
+                }
+            else:
+                App.logger.debug('TqPreprocessor: extra project found: {0}'.format(project.identifier))
 
-            self.index = self.fix_links(self.index, '-')
-            output_file = os.path.join(self.output_dir, 'index.md')
-            write_file(output_file, self.index)
+        for section in TqPreprocessor.sections:  # index by book order
+            book = section['book']
+            if book in projects:
+                file = os.path.join(self.output_dir, book + '.md')
+                initial_markdown = read_file(file)
+                markdown = self.fix_links(initial_markdown, book)
+                if initial_markdown != markdown:
+                    write_file(file, markdown)
+                self.index += '* [{1}]({0}.html)\n\n'.format(section['book'], section['title'])
 
-            # Copy the toc and config.yaml file to the output dir so they can be used to
-            # generate the ToC on live.door43.org
-            toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
-            if os.path.isfile(toc_file):
-                copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
-            config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
-            if os.path.isfile(config_file):
-                copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
+        self.index = self.fix_links(self.index, '-')
+        output_file = os.path.join(self.output_dir, 'index.md')
+        write_file(output_file, self.index)
+
+        # Copy the toc and config.yaml file to the output dir so they can be used to
+        # generate the ToC on live.door43.org
+        toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
+        if os.path.isfile(toc_file):
+            copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
+        config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+        if os.path.isfile(config_file):
+            copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
         return True
 
     def fix_links(self, content, section_link):
+        if not content:
+            return content
+
         # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
                          r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.repo_name), content,
@@ -591,9 +554,9 @@ class TqPreprocessor(Preprocessor):
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
         for section in TqPreprocessor.sections:
-            link_ = section['link']
-            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link_))
-            replace = r']({0}.html#\1)'.format(link_)
+            link = self.get_link_for_section(section)
+            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link))
+            replace = r']({0}.html#\1)'.format(link)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
@@ -605,3 +568,17 @@ class TqPreprocessor(Preprocessor):
         content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
                          content, flags=re.IGNORECASE)
         return content
+
+    def get_section_for_file(self, id):
+        id = id.lower()
+        for section in TqPreprocessor.sections:
+            if (id == section['book'].lower()) or (id == self.get_link_for_section(section)):
+                return section
+        return None
+
+    def get_link_for_section(self, section):
+        link = section['book']
+        parts = link.split('-')
+        if len(parts) > 1:
+            link = parts[1].lower()
+        return link
