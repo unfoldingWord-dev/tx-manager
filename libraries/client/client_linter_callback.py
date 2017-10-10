@@ -143,6 +143,7 @@ class ClientLinterCallback(object):
                 build_log['status'] = 'errors'
             elif len(build_log['warnings']):
                 build_log['status'] = 'warnings'
+            build_log['ended_at'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
             ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
