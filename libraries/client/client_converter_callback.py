@@ -4,6 +4,7 @@ import os
 import tempfile
 from libraries.app.app import App
 from libraries.client.client_linter_callback import ClientLinterCallback
+from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
 from libraries.general_tools.url_utils import download_file
 from libraries.models.job import TxJob
@@ -85,7 +86,10 @@ class ClientConverterCallback(object):
         download_success = True
         App.logger.debug('Downloading converted zip file from {0}...'.format(converted_zip_url))
         try:
-            download_file(converted_zip_url, converted_zip_file)
+            # download_file(converted_zip_url, converted_zip_file)
+            file_utils.remove(self.job.cdn_file)
+            App.cdn_s3_handler().download_file(converted_zip_file, self.job.cdn_file)
+            download_success = os.path.exists(self.job.cdn_file)
         except:
             download_success = False  # if multiple project we note fail and move on
             if not multiple_project:
