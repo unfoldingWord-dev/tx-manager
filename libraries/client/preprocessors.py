@@ -9,13 +9,16 @@ from libraries.resource_container.ResourceContainer import RC
 from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
-def do_preprocess(rc, repo_dir, output_dir):
+def do_preprocess(rc, repo_dir, output_dir, repo_name=None):
     if rc.resource.identifier == 'obs':
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'ta':
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
+    elif rc.resource.identifier == 'tq':
+        preprocessor = TqPreprocessor(rc, repo_dir, output_dir)
+        preprocessor.repo_name = repo_name
     else:
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
@@ -404,6 +407,193 @@ class TaPreprocessor(Preprocessor):
         for idx, project in enumerate(self.rc.projects):
             pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project.identifier))
             replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
+            content = re.sub(pattern, replace, content)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
+        return content
+
+
+class TqPreprocessor(Preprocessor):
+    sections = [
+        {'link': "01-GEN", 'title': 'Genesis'},
+        {'link': "02-EXO", 'title': 'Exodus'},
+        {'link': "03-LEV", 'title': 'Leviticus'},
+        {'link': "04-NUM", 'title': 'Numbers'},
+        {'link': "05-DEU", 'title': 'Deuteronomy'},
+        {'link': "06-JOS", 'title': 'Joshua'},
+        {'link': "07-JDG", 'title': 'Judges'},
+        {'link': "08-RUT", 'title': 'Ruth'},
+        {'link': "09-1SA", 'title': '1 Samuel'},
+        {'link': "10-2SA", 'title': '2 Samuel'},
+        {'link': "11-1KI", 'title': '1 Kings'},
+        {'link': "12-2KI", 'title': '2 Kings'},
+        {'link': "13-1CH", 'title': '1 Chronicles'},
+        {'link': "14-2CH", 'title': '2 Chronicles'},
+        {'link': "15-EZR", 'title': 'Ezra'},
+        {'link': "16-NEH", 'title': 'Nehemiah'},
+        {'link': "17-EST", 'title': 'Esther'},
+        {'link': "18-JOB", 'title': 'Job'},
+        {'link': "19-PSA", 'title': 'Psalms'},
+        {'link': "20-PRO", 'title': 'Proverbs'},
+        {'link': "21-ECC", 'title': 'Ecclesiastes'},
+        {'link': "22-SNG", 'title': 'Song of Solomon'},
+        {'link': "23-ISA", 'title': 'Isaiah'},
+        {'link': "24-JER", 'title': 'Jeremiah'},
+        {'link': "25-LAM", 'title': 'Lamentations'},
+        {'link': "26-EZK", 'title': 'Ezekiel'},
+        {'link': "27-DAN", 'title': 'Daniel'},
+        {'link': "28-HOS", 'title': 'Hosea'},
+        {'link': "29-JOL", 'title': 'Joel'},
+        {'link': "30-AMO", 'title': 'Amos'},
+        {'link': "31-OBA", 'title': 'Obadiah'},
+        {'link': "32-JON", 'title': 'Jonah'},
+        {'link': "33-MIC", 'title': 'Micah'},
+        {'link': "34-NAM", 'title': 'Nahum'},
+        {'link': "35-HAB", 'title': 'Habakkuk'},
+        {'link': "36-ZEP", 'title': 'Zephaniah'},
+        {'link': "37-HAG", 'title': 'Haggai'},
+        {'link': "38-ZEC", 'title': 'Zechariah'},
+        {'link': "39-MAL", 'title': 'Malachi'},
+        {'link': "41-MAT", 'title': 'Matthew'},
+        {'link': "42-MRK", 'title': 'Mark'},
+        {'link': "43-LUK", 'title': 'Luke'},
+        {'link': "44-JHN", 'title': 'John'},
+        {'link': "45-ACT", 'title': 'Acts'},
+        {'link': "46-ROM", 'title': 'Romans'},
+        {'link': "47-1CO", 'title': '1 Corinthians'},
+        {'link': "48-2CO", 'title': '2 Corinthians'},
+        {'link': "49-GAL", 'title': 'Galatians'},
+        {'link': "50-EPH", 'title': 'Ephesians'},
+        {'link': "51-PHP", 'title': 'Philippians'},
+        {'link': "52-COL", 'title': 'Colossians'},
+        {'link': "53-1TH", 'title': '1 Thessalonians'},
+        {'link': "54-2TH", 'title': '2 Thessalonians'},
+        {'link': "55-1TI", 'title': '1 Timothy'},
+        {'link': "56-2TI", 'title': '2 Timothy'},
+        {'link': "57-TIT", 'title': 'Titus'},
+        {'link': "58-PHM", 'title': 'Philemon'},
+        {'link': "59-HEB", 'title': 'Hebrews'},
+        {'link': "60-JAS", 'title': 'James'},
+        {'link': "61-1PE", 'title': '1 Peter'},
+        {'link': "62-2PE", 'title': '2 Peter'},
+        {'link': "63-1JN", 'title': '1 John'},
+        {'link': "64-2JN", 'title': '2 John'},
+        {'link': "65-3JN", 'title': '3 John'},
+        {'link': "66-JUD", 'title': 'Jude'},
+        {'link': "67-REV", 'title': 'Revelation'},
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(TqPreprocessor, self).__init__(*args, **kwargs)
+        self.section_container_id = 1
+        self.index = ''
+        self.repo_name = ''
+
+    def get_title(self, project, alt_title=None):
+        title = alt_title
+        return title.title()
+
+    def get_content(self, content_file):
+        if os.path.isfile(content_file):
+            return read_file(content_file)
+
+    def compile_section(self, project, section, level):
+        """
+        Recursive section markdown creator
+
+        :param project:
+        :param dict section:
+        :param int level:
+        :return:
+        """
+        if 'link' in section:
+            link = section['link']
+        else:
+            return ''
+        title = self.get_title(project, section['title'])
+        markdown = ''
+        if 'link' in section:
+            level_increase = ('#' * level)
+            files = glob(os.path.join(self.source_dir, project.path, link, '*.md'))
+            if files:
+                markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
+                self.index += '### {0}:\n\n'.format(title)
+                for file in files:
+                    top_box = ""
+                    bottom_box = ""
+                    if top_box:
+                        markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
+                    content = self.get_content(file)
+                    content = content.replace('\r', '')
+                    lines = content.split('\n')
+                    for i in range(0, len(lines)):
+                        line = lines[i]
+                        if line and (line[0] == '#'):
+                            line = level_increase + line.rstrip() + level_increase
+                            lines[i] = line
+                    content = '\n'.join(lines)
+                    if content:
+                        file_name = os.path.basename(file)
+                        anchor = os.path.splitext(file_name)[0]
+                        markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
+                        self.index += '* [{1}]({0}.html#{1})\n\n'.format(link, anchor)
+
+                    markdown += '---\n\n'  # horizontal rule
+
+        return markdown
+
+    def run(self):
+        for idx, project in enumerate(self.rc.projects):
+            self.section_container_id = 1
+            title = project.title
+            self.index = '# {0}\n\n'.format(title)
+            self.index += '## Table of Contents:\n\n'
+            for section in TqPreprocessor.sections:
+                markdown = '# {0}\n\n'.format(title)
+                section_md = self.compile_section(project, section, 2)
+                if not section_md:
+                    continue
+                markdown += section_md
+                markdown = self.fix_links(markdown, section['link'])
+                output_file = os.path.join(self.output_dir, '{0}.md'.format(section['link']))
+                write_file(output_file, markdown)
+
+            self.index = self.fix_links(self.index, '-')
+            output_file = os.path.join(self.output_dir, 'index.md')
+            write_file(output_file, self.index)
+
+            # Copy the toc and config.yaml file to the output dir so they can be used to
+            # generate the ToC on live.door43.org
+            toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
+            if os.path.isfile(toc_file):
+                copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
+            config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+            if os.path.isfile(config_file):
+                copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
+        return True
+
+    def fix_links(self, content, section_link):
+        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.repo_name), content,
+                         flags=re.IGNORECASE)
+        # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
+        # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
+        pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section_link)
+        content = re.sub(pattern, r'](#\1)', content)
+        # fix links to other sections within the same manual (only one ../ and a section name)
+        # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
+        for section in TqPreprocessor.sections:
+            link_ = section['link']
+            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link_))
+            replace = r']({0}.html#\1)'.format(link_)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
