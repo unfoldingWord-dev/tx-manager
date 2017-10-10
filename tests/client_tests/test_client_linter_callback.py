@@ -229,6 +229,31 @@ class TestClientLinterCallback(TestCase):
         # then
         self.validate_results(results, linter_cb)
 
+    def test_callbackMultpleJob_first_merged(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.unzip_resource_files("en_ulb.zip")
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
+        self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
+
+        build_log_path = self.get_source_path()
+        build_log = file_utils.load_json_object(build_log_path)
+        lint_log_path = self.get_source_path(file_name='lint_log.json')
+        lint_log = file_utils.load_json_object(lint_log_path)
+        build_log['log'] += lint_log['log']
+        merged_log_path = self.get_source_path(file_name='merged.json')
+        file_utils.write_file(merged_log_path, build_log)
+
+        self.expected_log_count = 36
+        self.expected_multipart = True
+        linter_cb = self.mock_client_linter_callback()
+
+        # when
+        results = linter_cb.process_callback()
+
+        # then
+        self.validate_results(results, linter_cb)
+
     def test_callbackMultpleJob_build_error(self):
         # given
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
@@ -254,13 +279,93 @@ class TestClientLinterCallback(TestCase):
         # then
         self.validate_results(results, linter_cb)
 
-    def test_callbackMultpleJob_LintNotFinished(self):
+    def test_callbackMultpleJob_first_job_BuildLogMissing(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
+        self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        build_log_path = self.get_source_path()
+        file_utils.remove(build_log_path)
+        identifier = self.lint_callback_data['identifier']
+
+        # when
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
+
+        # then
+        self.assertIsNone(results)
+
+    def test_callbackMultpleJob_first_job_BuildNotFinished(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
+        self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        finished_path = self.get_source_path(file_name='finished')
+        file_utils.remove(finished_path)
+        identifier = self.lint_callback_data['identifier']
+
+        # when
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
+
+        # then
+        self.assertIsNone(results)
+
+    def test_callbackMultpleJob_first_job_LintNotFinished(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
+        self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        lint_log_path = self.get_source_path(file_name='lint_log.json')
+        file_utils.remove(lint_log_path)
+        identifier = self.lint_callback_data['identifier']
+
+        # when
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
+
+        # then
+        self.assertIsNone(results)
+
+    def test_callbackMultpleJob_last_job_BuildLogMissing(self):
         # given
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
         self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
         self.unzip_resource_files("en_ulb.zip")
-        lint_log_path = self.get_source_path()
+        build_log_path = self.get_source_path()
+        file_utils.remove(build_log_path)
+        identifier = self.lint_callback_data['identifier']
+
+        # when
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
+
+        # then
+        self.assertIsNone(results)
+
+    def test_callbackMultpleJob_last_job_BuildNotFinished(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
+        self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        finished_path = self.get_source_path(file_name='finished')
+        file_utils.remove(finished_path)
+        identifier = self.lint_callback_data['identifier']
+
+        # when
+        results = ClientLinterCallback.deploy_if_conversion_finished(self.results_key, identifier)
+
+        # then
+        self.assertIsNone(results)
+
+    def test_callbackMultpleJob_last_job_LintNotFinished(self):
+        # given
+        self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
+        self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
+        self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
+        self.unzip_resource_files("en_ulb.zip")
+        lint_log_path = self.get_source_path(file_name='lint_log.json')
         file_utils.remove(lint_log_path)
         identifier = self.lint_callback_data['identifier']
 
