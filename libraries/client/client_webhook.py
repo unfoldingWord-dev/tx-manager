@@ -192,9 +192,11 @@ class ClientWebhook(object):
                     # Send job request to tx-manager
                     if i == 0:
                         book_job = job  # use the original job created above for the first book
+                        book_job.identifier = '{0}/{1}/{2}/{3}'.format(job.job_id, book_count, i, book)
                     else:
                         book_job = job.clone()  # copy the original job for this book's job
                         book_job.job_id = self.get_unique_job_id()
+                        book_job.identifier = '{0}/{1}/{2}/{3}'.format(book_job.job_id, book_count, i, book)
                         book_job.cdn_file = 'tx/job/{0}.zip'.format(book_job.job_id)
                         book_job.output = 'https://{0}/{1}'.format(App.cdn_bucket, book_job.cdn_file)
                         book_job.links = {
@@ -204,7 +206,6 @@ class ClientWebhook(object):
                         }
                         book_job.insert()
 
-                    book_job.identifier = '{0}/{1}/{2}/{3}'.format(job.job_id, book_count, i, book)
                     book_job.source = self.build_multipart_source(file_key, book)
                     book_job.update()
                     book_build_log = self.create_build_log(commit_id, commit_message, commit_url, compare_url, book_job,
