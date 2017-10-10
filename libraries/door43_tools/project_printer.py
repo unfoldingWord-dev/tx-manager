@@ -24,7 +24,7 @@ class ProjectPrinter(object):
         """
         if len(project_id.split('/')) != 3:
             raise Exception('Project not found.')
-        owner_name, repo_name, commit_id = project_id.split('/')
+        user_name, repo_name, commit_id = project_id.split('/')
         source_path = 'u/{0}'.format(project_id)
         print_all_key = '{0}/print_all.html'.format(source_path)
         print_all_file = tempfile.mktemp(prefix='print_all_')

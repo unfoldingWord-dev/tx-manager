@@ -1,0 +1,3 @@
+{
+  "description": "Runs the tN linter to check files for problems. Called by https://api.door43.org/tx/lint/tn"
+}

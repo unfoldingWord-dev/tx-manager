@@ -1,0 +1,10 @@
+{
+    "name": "usfm",
+    "version": "2",
+    "type": "linter",
+    "resource_types": ["bible", "reg", "other"],
+    "input_format": ["usfm"],
+    "options": [],
+    "private_links": [],
+    "public_links": []
+}

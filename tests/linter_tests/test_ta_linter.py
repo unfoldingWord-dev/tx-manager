@@ -24,7 +24,7 @@ class TestTaLinter(LinterTestCase):
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific ta linting
         expected_warnings = False
         zip_file = os.path.join(self.resources_dir, 'ta_linter', 'en_ta.zip')
-        linter = TaLinter(source_zip_file=zip_file)
+        linter = TaLinter(source_file=zip_file)
         linter.run()
         self.verify_results(expected_warnings, linter)
 

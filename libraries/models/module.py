@@ -16,7 +16,7 @@ class TxModule(App.Base, TxModel):
     input_format = Column(TextPickleType, nullable=False)
     output_format = Column(TextPickleType, nullable=False)
     resource_types = Column(TextPickleType, nullable=False)
-    options = Column(TextPickleType, default={}, nullable=False)
+    options = Column(TextPickleType, default=[], nullable=False)
     public_links = Column(TextPickleType, default=[], nullable=False)
     private_links = Column(TextPickleType, default=[], nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -27,7 +27,7 @@ class TxModule(App.Base, TxModel):
         self.resource_types = []
         self.input_format = []
         self.output_format = []
-        self.options = {}
+        self.options = []
         self.private_links = []
         self.public_links = []
         self.resource_types = []
