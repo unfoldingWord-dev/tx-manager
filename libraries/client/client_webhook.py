@@ -200,16 +200,16 @@ class ClientWebhook(object):
                     book_job.source = self.build_multipart_source(file_key, book)
                     book_job.update()
                     book_build_log = self.create_build_log(commit_id, commit_message, commit_url, compare_url, book_job,
-                                                      pusher_username, repo_name, user_name)
+                                                           pusher_username, repo_name, user_name)
                     build_log_json['build_logs'].append(book_build_log)
                     self.upload_build_log_to_s3(book_build_log, s3_commit_key, str(i) + "/")
-                    self.send_request_to_converter(job, converter)
+                    self.send_request_to_converter(book_job, converter)
                     if linter:
                         extra_payload = {
                             'single_file': book,
                             's3_results_key': '{0}/{1}'.format(s3_commit_key, i)
                         }
-                        self.send_request_to_linter(job, linter, commit_url, extra_payload)
+                        self.send_request_to_linter(book_job, linter, commit_url, extra_payload)
 
         # Upload an initial build_log
         self.upload_build_log_to_s3(build_log_json, s3_commit_key)
