@@ -157,6 +157,7 @@ class ClientLinterCallback(object):
     def update_jobs_table(s3_results_key, build_log, output_dir):
         job_id = build_log['job_id']
         App.logger.debug('merging build_logs for job : ' + job_id)
+        build_log['ended_at'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         job = TxJob.get(job_id)
         if job:
             job.status = build_log['status']
@@ -165,8 +166,7 @@ class ClientLinterCallback(object):
             job.errors = build_log['errors']
             job.message = build_log['message']
             job.success = build_log['success']
-            job.ended_at = datetime.utcnow()
-            build_log['ended_at'] = job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            job.ended_at = build_log['ended_at']
 
             # set overall status
             if len(job.errors):
