@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+from datetime import datetime
 from libraries.app.app import App
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
@@ -164,6 +165,8 @@ class ClientLinterCallback(object):
             job.errors = build_log['errors']
             job.message = build_log['message']
             job.success = build_log['success']
+            job.ended_at = datetime.utcnow()
+            build_log['ended_at'] = job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
 
             # set overall status
             if len(job.errors):
