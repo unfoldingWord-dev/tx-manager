@@ -16,7 +16,8 @@ setup(
     name='tx-manager',
     version='0.3.0',
     package_dir={
-        'client_callback': 'functions/client_callback',
+        'client_converter_callback': 'functions/client_converter_callback',
+        'client_linter_callback': 'functions/client_linter_callback',
         'client_webhook': 'functions/client_webhook',
         'convert_md2html': 'functions/convert_md2html',
         'convert_usfm2html': 'functions/convert_usfm2html',
@@ -36,7 +37,8 @@ setup(
         'resource_container': 'libraries/resource_container'
     },
     packages=[
-        'client_callback',
+        'client_converter_callback',
+        'client_linter_callback',
         'client_webhook',
         'convert_md2html',
         'convert_usfm2html',
