@@ -64,7 +64,7 @@ class ProjectPrinter(object):
     </body>
 </html>
 """)
-                App.cdn_s3_handler().upload_file(print_all_file, print_all_key)
+                App.cdn_s3_handler().upload_file(print_all_file, print_all_key, cache_time=0)
             html = read_file(print_all_file)
         else:
             html = App.cdn_s3_handler().get_file_contents(print_all_key)

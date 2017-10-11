@@ -176,7 +176,10 @@ class ClientWebhook(object):
             if not preprocessor.is_multiple_jobs():
                 self.send_request_to_converter(job, converter)
                 if linter:
-                    self.send_request_to_linter(job, linter, commit_url)
+                    extra_payload = {
+                        's3_results_key': s3_commit_key
+                    }
+                    self.send_request_to_linter(job, linter, commit_url, extra_payload=extra_payload)
             else:
                 # -----------------------------
                 # multiple Bible book project
@@ -192,24 +195,37 @@ class ClientWebhook(object):
                     # Send job request to tx-manager
                     if i == 0:
                         book_job = job  # use the original job created above for the first book
+                        book_job.identifier = '{0}/{1}/{2}/{3}'.format(job.job_id, book_count, i, book)
                     else:
                         book_job = job.clone()  # copy the original job for this book's job
                         book_job.job_id = self.get_unique_job_id()
+                        book_job.identifier = '{0}/{1}/{2}/{3}'.format(book_job.job_id, book_count, i, book)
+                        book_job.cdn_file = 'tx/job/{0}.zip'.format(book_job.job_id)
+                        book_job.output = 'https://{0}/{1}'.format(App.cdn_bucket, book_job.cdn_file)
+                        book_job.links = {
+                            "href": "{0}/tx/job/{1}".format(App.api_url, book_job.job_id),
+                            "rel": "self",
+                            "method": "GET"
+                        }
                         book_job.insert()
-                    book_job.identifier = '{0}/{1}/{2}/{3}'.format(job.job_id, book_count, i, book)
+
                     book_job.source = self.build_multipart_source(file_key, book)
                     book_job.update()
                     book_build_log = self.create_build_log(commit_id, commit_message, commit_url, compare_url, book_job,
-                                                      pusher_username, repo_name, user_name)
+                                                           pusher_username, repo_name, user_name)
+                    if len(book) > 0:
+                        part = str(i)
+                        book_build_log['book'] = book
+                        book_build_log['part'] = part
                     build_log_json['build_logs'].append(book_build_log)
                     self.upload_build_log_to_s3(book_build_log, s3_commit_key, str(i) + "/")
-                    self.send_request_to_converter(job, converter)
+                    self.send_request_to_converter(book_job, converter)
                     if linter:
                         extra_payload = {
                             'single_file': book,
                             's3_results_key': '{0}/{1}'.format(s3_commit_key, i)
                         }
-                        self.send_request_to_linter(job, linter, commit_url, extra_payload)
+                        self.send_request_to_linter(book_job, linter, commit_url, extra_payload)
 
         # Upload an initial build_log
         self.upload_build_log_to_s3(build_log_json, s3_commit_key)
@@ -242,7 +258,7 @@ class ClientWebhook(object):
         write_file(build_log_file, build_log)
         upload_key = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         App.logger.debug('Saving build log to ' + upload_key)
-        App.cdn_s3_handler().upload_file(build_log_file, upload_key)
+        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
         # App.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
     def create_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
@@ -306,7 +322,7 @@ class ClientWebhook(object):
         file_key = 'preconvert/{0}.zip'.format(commit_id)
         App.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, App.pre_convert_bucket, file_key))
         try:
-            App.pre_convert_s3_handler().upload_file(zip_filepath, file_key)
+            App.pre_convert_s3_handler().upload_file(zip_filepath, file_key, cache_time=0)
         except Exception as e:
             App.logger.error('Failed to upload zipped repo up to server')
             App.logger.exception(e)

@@ -43,7 +43,8 @@ class TxJobTests(TestCase):
                 'message': 'Started',
                 'log': ['Started job'],
                 'warnings': ['Linter warning'],
-                'errors': []
+                'errors': [],
+                'manifests_id': 1
             },
             'job2': {
                 'job_id': 'job2',
@@ -73,7 +74,8 @@ class TxJobTests(TestCase):
                 'message': 'Requested',
                 'log': ['Requestedjob'],
                 'warnings': ['Linter warning'],
-                'errors': ['error']
+                'errors': ['error'],
+                'manifests_id': 2
             },
             'job3': {
                 'job_id': 'job3',
@@ -103,7 +105,8 @@ class TxJobTests(TestCase):
                 'message': 'Requested',
                 'log': ['Requested job'],
                 'warnings': [],
-                'errors': []
+                'errors': [],
+                'manifests_id': 3
             },
         }
 

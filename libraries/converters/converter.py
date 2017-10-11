@@ -126,7 +126,7 @@ class Converter(object):
         if self.cdn_file and os.path.isdir(os.path.dirname(self.cdn_file)):
             copy(self.output_zip_file, self.cdn_file)
         elif App.cdn_s3_handler():
-            App.cdn_s3_handler().upload_file(self.output_zip_file, self.cdn_file)
+            App.cdn_s3_handler().upload_file(self.output_zip_file, self.cdn_file, cache_time=0)
 
     def do_callback(self, url, payload):
         if url.startswith('http'):

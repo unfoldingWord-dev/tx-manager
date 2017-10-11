@@ -17,7 +17,7 @@ class TestConvertHandler(TestCase):
                 'cdn_file': 'tx/job/1234567890.zip',
                 'callback': 'https://api.example.com/client/callback',
                 'identifier': 'richmahn/en-obs/705948ab00',
-                'resource_type': 'obs',
+                'resource_id': 'obs',
                 'options': {'pageSize': 'A4'}
             }
         }
@@ -32,7 +32,7 @@ class TestConvertHandler(TestCase):
                 'source_url': 'https://cdn.example.com/preconvert/705948ab00.zip',
                 'cdn_bucket': 'test_cdn_bucket',
                 'cdn_file': 'tx/job/1234567890.zip',
-                'resource_type': 'obs',
+                'resource_id': 'obs',
                 'options': {'pageSize': 'A4'}
             }
         }
@@ -47,7 +47,7 @@ class TestConvertHandler(TestCase):
                 'convert_callback': 'http://callback.org',
                 'cdn_file': 'tx/job/1234567890.zip',
                 'source_url': 'https://cdn.example.com/preconvert/705948ab00.zip',
-                'resource_type': 'obs',
+                'resource_id': 'obs',
                 'options': {'pageSize': 'A4'}
             }
         }

@@ -80,7 +80,8 @@ class TestClientConverterCallback(TestCase):
                 'message': 'Started',
                 'log': ['Started job'],
                 'warnings': ['warning'],
-                'errors': []
+                'errors': [],
+                'manifests_id': 1
             },
             'job2': {
                 'job_id': 'job2',
@@ -110,7 +111,8 @@ class TestClientConverterCallback(TestCase):
                 'message': 'Started',
                 'log': ['Started job'],
                 'warnings': ['warning'],
-                'errors': []
+                'errors': [],
+                'manifests_id': 2
             },
             'job3': {
                 'job_id': 'job3',
@@ -140,7 +142,8 @@ class TestClientConverterCallback(TestCase):
                 'message': 'Requested',
                 'log': ['Requested job'],
                 'warnings': ['warning'],
-                'errors': ['error']
+                'errors': ['error'],
+                'manifests_id': 3
             },
         }
 

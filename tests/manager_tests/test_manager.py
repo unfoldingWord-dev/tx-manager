@@ -63,6 +63,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 1
             },
             'job2': {
                 'job_id': 'job2',
@@ -75,6 +76,7 @@ class ManagerTest(unittest.TestCase):
                 'identifier': 'tx-manager-test-data/en-ulb-jud/6778aa89bd',
                 'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip',
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip',
+                'manifests_id': 2
             },
             'job3': {
                 'job_id': 'job3',
@@ -89,6 +91,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
                 'warnings': [],
+                'manifests_id': 3
             },
             'job4': {
                 'job_id': 'job4',
@@ -101,6 +104,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 4
             },
             'job5': {
                 'job_id': 'job5',
@@ -113,6 +117,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 5
             },
             'job7': {
                 'job_id': 'job7',
@@ -125,6 +130,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 7
             },
             'job8': {
                 'job_id': 'job8',
@@ -137,6 +143,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 8
             },
             'job9': {
                 'job_id': 'job9',
@@ -149,6 +156,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 9
             },
             'job10': {
                 'job_id': 'job10',
@@ -162,6 +170,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZ.zip',
                 'errors': ['error1', 'error2'],
                 'cdn_bucket': 'cdn.door43.org',
+                'manifests_id': 10
             },
             'job11': {
                 'job_id': 'job11',
@@ -175,6 +184,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip',
                 'errors': ['error1', 'error2', 'error3'],
                 'cdn_bucket': 'cdn.door43.org',
+                'manifests_id': 11
             }
         }
         self.module_items = {
