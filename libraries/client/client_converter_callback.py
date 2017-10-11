@@ -69,6 +69,20 @@ class ClientConverterCallback(object):
         else:
             self.job.log_message('{0} function returned successfully.'.format(self.job.convert_module))
 
+        if not self.success or len(self.job.errors):
+            self.job.success = False
+            self.job.status = "failed"
+            message = "Conversion failed"
+            App.logger.debug("Conversion failed, success: {0}, errors: {1}".format(self.success, self.job.errors))
+        elif len(self.job.warnings) > 0:
+            self.job.success = True
+            self.job.status = "warnings"
+            message = "Conversion successful with warnings"
+        else:
+            self.job.success = True
+            self.job.status = "success"
+            message = "Conversion successful"
+
         s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.user_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
         if multiple_project:
