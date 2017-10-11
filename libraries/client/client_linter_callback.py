@@ -80,7 +80,7 @@ class ClientLinterCallback(object):
             build_log['warnings'].append(msg)
             App.logger.error(msg)
         else:
-            App.logger.debug("Linter {0} warnings:\n{1}".format(self.identifier, '\n'.join(self.warnings)))
+            App.logger.debug("Linter {0} {1} warnings:\n{1}".format(self.identifier, len(self.warnings), '\n'.join(self.warnings[:5])))
 
         has_warnings = len(build_log['warnings']) > 0
         if has_warnings:
