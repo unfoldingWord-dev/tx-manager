@@ -72,7 +72,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
             file_name = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))
 
-    def test_convertOnlyJas(self):
+    def test_convert_only_jas(self):
         """Runs the converter and verifies the output."""
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
@@ -98,7 +98,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
             self.assertFalse(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))
         self.assertEqual(tx.source, source_url.split('?')[0])
 
-    def test_convertOnlyJasAndJud(self):
+    def test_convert_only_jas_and_jud(self):
         """Runs the converter and verifies the output."""
         # test with the English OBS
         zip_file = os.path.join(self.resources_dir, 'eight_bible_books.zip')
@@ -124,7 +124,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
             self.assertFalse(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))
         self.assertEqual(tx.source, source_url.split('?')[0])
 
-    def test_PhpComplete(self):
+    def test_php_complete(self):
         """
         Runs the converter and verifies the output
         """
@@ -141,9 +141,9 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
         files_to_verify = ['51-PHP.html']
-        self.verifyFiles(files_to_verify)
+        self.verify_files(files_to_verify)
 
-    def test_PhpIllegalUrl(self):
+    def test_php_illegal_url(self):
         """
         Runs the converter and verifies the output
         """
@@ -160,9 +160,9 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
         files_to_verify = ['51-PHP.html']
-        self.verifyFiles(files_to_verify)
+        self.verify_files(files_to_verify)
 
-    def test_MattCompleteWithBackslash(self):
+    def test_matt_complete_with_backslash(self):
         """
         Runs the converter and verifies the output
         """
@@ -178,7 +178,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp(prefix='udb_', dir=self.temp_dir)
         unzip(out_zip_file, self.out_dir)
         files_to_verify = ['41-MAT.html']
-        self.verifyFiles(files_to_verify)
+        self.verify_files(files_to_verify)
 
     def test_bad_source(self):
         """This tests giving a bad source to the converter"""
@@ -201,7 +201,7 @@ class TestUsfmHtmlConverter(unittest.TestCase):
     # helpers
     #
 
-    def verifyFiles(self, files_to_verify):
+    def verify_files(self, files_to_verify):
         for file_to_verify in files_to_verify:
             file_name = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_name), 'UDB HTML file not found: {0}'.format(file_name))

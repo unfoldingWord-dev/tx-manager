@@ -35,7 +35,7 @@ class UsfmLinter(Linter):
                 if self.single_file and (f != self.single_file):
                     continue
 
-                App.logger.debug("checking: " + f)
+                App.logger.debug("linting: " + f)
                 file_path = os.path.join(root, f)
                 sub_path = '.' + file_path[len(self.source_dir):]
                 self.parse_file(file_path, sub_path, f)
