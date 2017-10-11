@@ -799,7 +799,7 @@ class TestConversions(TestCase):
             for build_log in build_logs:  # check for completion of each part
                 job_id = build_log['job_id']
                 if job_id not in finished:
-                    self.warn("Timeout watiting for start on job: " + job_id)
+                    self.warn("Timeout waiting for start on job: " + job_id)
 
         return done, job
 
