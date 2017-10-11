@@ -36,12 +36,12 @@ resource_map = {
         'format': 'text/markdown'
     },
     'obs-tn': {
-        'title': 'OBS TranslationNotes',
+        'title': 'OBS translationNotes',
         'type': 'help',
         'format': 'text/markdown'
     },
     'obs-tq': {
-        'title': 'OBS TranslationQuestions',
+        'title': 'OBS translationQuestions',
         'type': 'help',
         'format': 'text/markdown'
     },
