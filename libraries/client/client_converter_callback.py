@@ -95,7 +95,6 @@ class ClientConverterCallback(object):
             App.logger.debug('download finished, success={0}'.format(str(download_success)))
 
         self.job.update()
-        App.db_close()
 
         if download_success:
             # Unzip the archive

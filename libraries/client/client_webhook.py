@@ -213,6 +213,10 @@ class ClientWebhook(object):
                     book_job.update()
                     book_build_log = self.create_build_log(commit_id, commit_message, commit_url, compare_url, book_job,
                                                            pusher_username, repo_name, user_name)
+                    if len(book) > 0:
+                        part = str(i)
+                        book_build_log['book'] = book
+                        book_build_log['part'] = part
                     build_log_json['build_logs'].append(book_build_log)
                     self.upload_build_log_to_s3(book_build_log, s3_commit_key, str(i) + "/")
                     self.send_request_to_converter(book_job, converter)
