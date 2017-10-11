@@ -51,7 +51,7 @@ class ClientConverterCallback(object):
                              format(part_id, part_count, book))
             multiple_project = True
         else:
-            part_count = None
+            App.logger.debug('Single project')
             part_id = None
             multiple_project = False
 
@@ -69,9 +69,7 @@ class ClientConverterCallback(object):
         else:
             self.job.log_message('{0} function returned successfully.'.format(self.job.convert_module))
 
-        self.job.update()
-
-        s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.owner_name, self.job.repo_name, self.job.commit_id)
+        s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.user_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
         if multiple_project:
             upload_key += "/" + part_id
@@ -95,6 +93,8 @@ class ClientConverterCallback(object):
             self.job.errors.append("Missing converted file: " + converted_zip_url)
         finally:
             App.logger.debug('download finished, success={0}'.format(str(download_success)))
+
+        self.job.update()
 
         if download_success:
             # Unzip the archive
@@ -225,14 +225,14 @@ class ClientConverterCallback(object):
                 path = os.path.join(root, f)
                 key = s3_commit_key + path.replace(unzip_dir, '')
                 App.logger.debug('Uploading {0} to {1}'.format(f, key))
-                App.cdn_s3_handler().upload_file(path, key)
+                App.cdn_s3_handler().upload_file(path, key, cache_time=0)
 
     def update_project_file(self):
-        project_json_key = 'u/{0}/{1}/project.json'.format(self.job.owner_name, self.job.repo_name)
+        project_json_key = 'u/{0}/{1}/project.json'.format(self.job.user_name, self.job.repo_name)
         project_json = App.cdn_s3_handler().get_json(project_json_key)
-        project_json['user'] = self.job.owner_name
+        project_json['user'] = self.job.user_name
         project_json['repo'] = self.job.repo_name
-        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, self.job.owner_name, self.job.repo_name)
+        project_json['repo_url'] = 'https://{0}/{1}/{2}'.format(App.gogs_url, self.job.user_name, self.job.repo_name)
         commit = {
             'id': self.job.commit_id,
             'created_at': self.job.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -255,7 +255,7 @@ class ClientConverterCallback(object):
         project_json['commits'] = commits
         project_file = os.path.join(self.temp_dir, 'project.json')
         write_file(project_file, project_json)
-        App.cdn_s3_handler().upload_file(project_file, project_json_key, 0)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key, cache_time=0)
         return project_json
 
     def update_build_log(self, s3_base_key, part=''):
@@ -297,7 +297,7 @@ class ClientConverterCallback(object):
         file_name = os.path.join(self.temp_dir, 'contents.json')
         write_file(file_name, contents)
         App.logger.debug('Writing file to ' + key)
-        App.cdn_s3_handler().upload_file(file_name, key, 0)
+        App.cdn_s3_handler().upload_file(file_name, key, cache_time=0)
 
     def get_build_log(self, s3_base_key, part=''):
         build_log_key = self.get_build_log_key(s3_base_key, part)

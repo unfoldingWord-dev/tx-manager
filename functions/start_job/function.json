@@ -1,3 +1,0 @@
-{
-  "description": "Starts a job, triggered when a row to the DynamoDB tx-job table is inserted"
-}
