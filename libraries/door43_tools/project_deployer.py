@@ -191,7 +191,7 @@ class ProjectDeployer(object):
 
             if partial:  # move files to common area
                 basename = os.path.basename(filename)
-                if basename not in ['finished', 'build_log', 'index.html', 'merged.json', 'lint_log.json']:
+                if basename not in ['finished', 'build_log.json', 'index.html', 'merged.json', 'lint_log.json']:
                     App.logger.debug("Moving {0} to common area".format(basename))
                     App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, cache_time=0)
                     App.cdn_s3_handler().delete_file(download_key + '/' + basename)
