@@ -12,20 +12,20 @@ from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 def do_preprocess(rc, repo_dir, output_dir, repo_name=None):
     if rc.resource.identifier == 'obs':
-        App.logger.info("do_preprocess: using ObsPreprocessor")
+        App.logger.debug("do_preprocess: using ObsPreprocessor")
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
-        App.logger.info("do_preprocess: using BiblePreprocessor")
+        App.logger.debug("do_preprocess: using BiblePreprocessor")
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'ta':
-        App.logger.info("do_preprocess: using TaPreprocessor")
+        App.logger.debug("do_preprocess: using TaPreprocessor")
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'tw':
-        App.logger.info("do_preprocess: using TwPreprocessor")
+        App.logger.debug("do_preprocess: using TwPreprocessor")
         preprocessor = TwPreprocessor(rc, repo_dir, output_dir)
         preprocessor.repo_name = repo_name
     else:
-        App.logger.info("do_preprocess: using Preprocessor")
+        App.logger.debug("do_preprocess: using Preprocessor")
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
 
