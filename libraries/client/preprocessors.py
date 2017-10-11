@@ -464,13 +464,12 @@ class TwPreprocessor(Preprocessor):
         markdown = ''
         if 'link' in section:
             level_increase = ('#' * level)
-            files = glob(os.path.join(self.source_dir, project.path, link, '*.md'))
+            files = sorted(glob(os.path.join(self.source_dir, project.path, link, '*.md')))
             if files:
                 markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
                 self.index += '### {0}:\n\n'.format(title)
                 for file in files:
                     top_box = ""
-                    bottom_box = ""
                     if top_box:
                         markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
                     content = self.get_content(file)
@@ -486,7 +485,7 @@ class TwPreprocessor(Preprocessor):
                         file_name = os.path.basename(file)
                         anchor = os.path.splitext(file_name)[0]
                         markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
-                        self.index += '* [{1}]({0}.html#{1})\n\n'.format(link, anchor)
+                        self.index += '* [{1}]({0}.html#{1})\n'.format(link, anchor)
 
                     markdown += '---\n\n'  # horizontal rule
 
