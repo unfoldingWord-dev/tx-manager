@@ -63,6 +63,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 1
             },
             'job2': {
                 'job_id': 'job2',
@@ -75,6 +76,7 @@ class ManagerTest(unittest.TestCase):
                 'identifier': 'tx-manager-test-data/en-ulb-jud/6778aa89bd',
                 'output': 'https://test-cdn.door43.org/tx-manager-test-data/en-ulb-jud/6778aa89bd.zip',
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750d.zip',
+                'manifests_id': 2
             },
             'job3': {
                 'job_id': 'job3',
@@ -89,6 +91,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
                 'warnings': [],
+                'manifests_id': 3
             },
             'job4': {
                 'job_id': 'job4',
@@ -101,6 +104,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 4
             },
             'job5': {
                 'job_id': 'job5',
@@ -113,6 +117,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 5
             },
             'job7': {
                 'job_id': 'job7',
@@ -125,6 +130,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 7
             },
             'job8': {
                 'job_id': 'job8',
@@ -137,6 +143,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 8
             },
             'job9': {
                 'job_id': 'job9',
@@ -149,6 +156,7 @@ class ManagerTest(unittest.TestCase):
                 'cdn_bucket': 'cdn.door43.org',
                 'source': 'https://door43.org/dummy_source',
                 'output': 'https://door43.org/dummy_output',
+                'manifests_id': 9
             },
             'job10': {
                 'job_id': 'job10',
@@ -162,6 +170,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZ.zip',
                 'errors': ['error1', 'error2'],
                 'cdn_bucket': 'cdn.door43.org',
+                'manifests_id': 10
             },
             'job11': {
                 'job_id': 'job11',
@@ -175,6 +184,7 @@ class ManagerTest(unittest.TestCase):
                 'source': 'https://s3-us-west-2.amazonaws.com/tx-webhook-client/preconvert/e8eb91750dZZ.zip',
                 'errors': ['error1', 'error2', 'error3'],
                 'cdn_bucket': 'cdn.door43.org',
+                'manifests_id': 11
             }
         }
         self.module_items = {
@@ -222,286 +232,6 @@ class ManagerTest(unittest.TestCase):
             tx_module = TxModule(**self.module_items[idx])
             tx_module.insert()
 
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
-    def test_request_job(self, mock_invoke):
-        """Successful call of request_job."""
-        data = {
-            'gogs_user_token': 'token1',
-            'cdn_bucket':  'test_cdn_bucket',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        ret = self.tx_manager.request_job(data)
-        print(ret)
-        # assert an entry was added to job database
-        job = TxJob.get(ret['job']['job_id'])
-        self.assertEqual(job.convert_module, 'module1')
-        self.assertEqual(job.resource_type, 'obs')
-        self.assertEqual(job.cdn_bucket, 'test_cdn_bucket')
-
-    def test_request_job_bad_requests(self):
-        """Tests bad calls of request_job due to missing or bad input."""
-        # Missing gogs_user_token
-        data = {
-            'cdn_bucket':  'test_cdn_bucket',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-        # Bad gogs_user_token
-        data = {
-            'gogs_user_token': 'bad_token',
-            'cdn_bucket':  'test_cdn_bucket',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-        # Missing cdn_bucket
-        data = {
-            'gogs_user_token': 'token1',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        App.cdn_bucket = None
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-        # Missing source
-        data = {
-            'gogs_user_token': 'token1',
-            'cdn_bucket':  'test_cdn_bucket',
-            'resource_type': 'obs',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-        # Missing resource_type
-        self.tx_manager = TxManager()
-        data = {
-            'gogs_user_token': 'token1',
-            'cdn_bucket':  'test_cdn_bucket',
-            'source': 'test_source',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-        # Missing input_format
-        data = {
-            'gogs_user_token': 'token1',
-            'cdn_bucket':  'test_cdn_bucket',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'output_format': 'html'
-        }
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-        # Missing output_format
-        data = {
-            'gogs_user_token': 'token1',
-            'cdn_bucket':  'test_cdn_bucket',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'input_format': 'md'
-        }
-        self.assertRaises(Exception, self.tx_manager.request_job, data)
-
-    def test_request_job_malformed_input(self):
-        """Call request_job with malformed data arguments."""
-        tx_manager = TxManager()
-        data = {
-            'gogs_user_token': 'token1',
-            'source': 'test_source',
-            'resource_type': 'obs',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        for key in data:
-            # should raise an exception if data is missing a required field
-            missing = data.copy()
-            del missing[key]
-            self.assertRaises(Exception, tx_manager.request_job, missing)
-        # should raise an exception if called with an invalid user_token
-        bad_token = data.copy()
-        bad_token['gogs_user_token'] = 'bad_token'
-        self.assertRaises(Exception, tx_manager.request_job, bad_token)
-
-    def test_request_job_no_converter(self):
-        """Call request_job when there is no applicable converter."""
-        tx_manager = TxManager()
-        data = {
-            'gogs_user_token': 'token1',
-            'cdn_bucket': 'test_cdn_bucket',
-            'source': 'test_source',
-            'resource_type': 'unrecognized_resource_type',
-            'input_format': 'md',
-            'output_format': 'html'
-        }
-        self.assertRaises(Exception, tx_manager.request_job, data)
-
-    # noinspection PyUnusedLocal
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
-    @mock.patch('requests.post')
-    def test_start_job1(self, mock_request_post, mock_invoke):
-        """
-        Call start job in job 2 from mock data.
-
-        Should be a successful invocation with warnings.
-        """
-        payload = {
-            'info': ['Converted!'],
-            'warnings': ['Missing something'],
-            'errors': [],
-            'success': True,
-            'message': 'Has some warnings'
-        }
-        mock_invoke.return_value = self.create_mock_payload(payload)
-
-        mock_request_post.return_value = None
-
-        self.tx_manager.start_job('job2')
-
-        # job1's entry in database should have been updated
-        job = TxJob.get('job2')
-        self.assertEqual(job.job_id, 'job2')
-        self.assertEqual(len(job.errors), 0)
-        self.assertEqual(len(job.warnings), 1)
-
-    # noinspection PyUnusedLocal
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
-    @mock.patch('requests.post')
-    def test_start_job2(self, mock_request_post, mock_invoke):
-        """
-        Call start_job in job 3 from mock data.
-
-        Should be a successful invocation without warnings.
-        """
-        payload = {
-            'info': ['Converted!'],
-            'warnings': [],
-            'errors': [],
-            'success': True,
-            'message': 'All good'
-        }
-        mock_invoke.return_value = self.create_mock_payload(payload)
-        mock_request_post.return_value = None
-
-        self.tx_manager.start_job('job3')
-
-        # job2's entry in database should have been updated
-        job = TxJob.get('job3')
-        self.assertEqual(job.job_id, 'job3')
-        self.assertEqual(len(job.errors), 0)
-
-    # noinspection PyUnusedLocal
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
-    @mock.patch('requests.post')
-    def test_start_job3(self, mock_request_post, mock_invoke):
-        """
-        Call start_job on job 4 from mock data.
-
-        Invocation should result in an error
-
-        :param mock_requests_post mock.MagicMock:
-        :return:
-        """
-        payload = {
-            'info': ['Conversion failed!'],
-            'warnings': [],
-            'errors': ['Some error'],
-            'success': False,
-            'message': 'Has errors, failed'
-        }
-        mock_invoke.return_value = self.create_mock_payload(payload)
-
-        mock_request_post.return_value = None
-
-        self.tx_manager.start_job('job4')
-
-        # job3's entry in database should have been updated
-        job = TxJob.get('job4')
-        self.assertEqual(job.job_id, 'job4')
-        self.assertGreater(len(job.errors), 0)
-
-    def test_start_job_failure(self):
-        """Call start_job with non-runnable/non-existent jobs."""
-        tx_manager = TxManager()
-        ret0 = tx_manager.start_job('job1')
-        ret4 = tx_manager.start_job('job5')
-        ret5 = tx_manager.start_job('job6')
-
-        self.assertEqual(ret0.job_id, 'job1')
-        self.assertEqual(ret4.job_id, 'job5')
-        self.assertEqual(ret5.job_id, 'job6')
-        self.assertFalse(ret5.success)
-        self.assertEqual(ret5.message, 'No job with ID job6 has been requested')
-
-        # last existent job (5) should be updated in database to include error
-        # messages
-        job = TxJob.get('job5')
-        self.assertEqual(job.job_id, 'job5')
-        self.assertTrue(len(job.errors) > 0)
-
-    # noinspection PyUnusedLocal
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
-    @mock.patch('requests.post')
-    def test_start_job_bad_error(self, mock_requests_post, mock_invoke):
-        """
-        Call start_job in job 7 from mock data.
-
-        Should fail due to the response having an errorMessage
-        """
-        job = TxJob.get('job7')
-        error_to_check = 'something bad happened!'
-        mock_invoke.return_value = {'errorMessage': 'Bad Request: {0}'.format(error_to_check)}
-        mock_requests_post.return_value = None
-        self.tx_manager.start_job('job7')
-        # job 6's entry in database should have been updated
-        job = TxJob.get('job7')
-        self.assertEqual(job.job_id, 'job7')
-        self.assertEqual(len(job.errors), 1)
-        self.assertEqual(job.errors[0], error_to_check)
-
-    # noinspection PyUnusedLocal
-    @mock.patch('libraries.aws_tools.lambda_handler.LambdaHandler.invoke')
-    @mock.patch('requests.post')
-    def test_start_job_with_errors(self, mock_requests_post, mock_invoke):
-        """
-        Call start_job on job 7 from mock data.
-
-        Invocation should result in an errors
-
-        :param mock_requests_post mock.MagicMock:
-        :return:
-        """
-        payload = {
-            'info': ['Conversion failed!'],
-            'warnings': [],
-            'errors': ['Some error', 'another error'],
-            'success': False,
-            'message': 'Has errors, failed'
-        }
-        mock_invoke.return_value = self.create_mock_payload(payload)
-
-        mock_requests_post.return_value = None
-
-        self.tx_manager.start_job('job7')
-
-        # job 7's entry in database should have been updated
-        job = TxJob.get('job7')
-        self.assertEqual(job.job_id, 'job7')
-        self.assertEqual(len(job.errors), 2)
-
     def test_list_jobs(self):
         """Test list_jobs and list_endpoint methods."""
         tx_manager = TxManager()
@@ -546,7 +276,7 @@ class ManagerTest(unittest.TestCase):
         self.assertEqual(tx_module.updated_at.year, datetime.utcnow().year)
         self.assertEqual(tx_module.public_links, ['{0}/tx/convert/{1}'.format(App.api_url, data['name'])])
 
-        test_missing_keys = ['name', 'type', 'input_format', 'output_format', 'resource_types']
+        test_missing_keys = ['name', 'type', 'input_format', 'resource_types']
         for key in test_missing_keys:
             # should raise an exception if data is missing a required field
             missing = data.copy()
@@ -655,13 +385,6 @@ class ManagerTest(unittest.TestCase):
         failure_table = soup.find('table', id='failed')
         expected_failure_count = expected_max_failures
         self.validateFailureTable(failure_table, expected_failure_count)
-
-    def test_get_converter_module(self):
-        manager = TxManager()
-        job = TxJob.get('job1')
-        converter = manager.get_converter_module(job)
-        self.assertIsNotNone(converter)
-        self.assertEqual(converter.name, 'module1')
 
     # helper methods #
 

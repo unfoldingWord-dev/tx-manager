@@ -642,6 +642,7 @@ class TestConversions(TestCase):
         return build_log
 
     def do_conversion_for_repo(self, base_url, user, repo):
+        start = time.time()
         build_log_json = None
         job = None
         success = False
@@ -656,6 +657,7 @@ class TestConversions(TestCase):
             build_log_json, success, job = self.do_conversion_job(base_url, commit_id, commit_path, commit_sha, repo,
                                                                   user)
 
+        App.logger.debug("\nConversion completed in " + str(elapsed_time(start)) + " seconds\n")
         return build_log_json, commit_id, commit_path, commit_sha, success, job
 
     def empty_destination_folder(self, commit_sha, repo, user):
@@ -799,7 +801,7 @@ class TestConversions(TestCase):
             for build_log in build_logs:  # check for completion of each part
                 job_id = build_log['job_id']
                 if job_id not in finished:
-                    self.warn("Timeout watiting for start on job: " + job_id)
+                    self.warn("Timeout waiting for start on job: " + job_id)
 
         return done, job
 
