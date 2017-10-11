@@ -71,8 +71,7 @@ class TestClientLinterCallback(TestCase):
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
-        self.validate_build_log(expected_status, expected_success)
+        self.validate_results_and_log(results, linter_cb, expected_success, expected_status)
 
     def test_callbackSimpleJob_missing_id(self):
         # given
@@ -136,8 +135,7 @@ class TestClientLinterCallback(TestCase):
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
-        self.validate_build_log(self.expected_status, expected_success)
+        self.validate_results_and_log(results, linter_cb, expected_success, self.expected_status)
 
     def test_callbackSimpleJob_lint_warning(self):
         # given
@@ -153,8 +151,7 @@ class TestClientLinterCallback(TestCase):
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
-        self.validate_build_log(self.expected_status, expected_success)
+        self.validate_results_and_log(results, linter_cb, expected_success, self.expected_status)
 
     def test_callbackSimpleJob_build_log_missing(self):
         # given
@@ -207,7 +204,7 @@ class TestClientLinterCallback(TestCase):
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
+        self.validate_results_and_log(results, linter_cb, self.expected_success, self.expected_status)
 
     def test_callbackSimpleJob_LintNotFinished(self):
         # given
@@ -230,14 +227,13 @@ class TestClientLinterCallback(TestCase):
         self.expected_multipart = True
         linter_cb = self.mock_client_linter_callback()
         expected_success = True
-        expected_status = 'expected_status'
+        expected_status = 'success'
 
         # when
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
-        self.validate_build_log(expected_status, expected_success)
+        self.validate_results_and_log(results, linter_cb, expected_success, expected_status)
 
     def test_callbackMultpleJob_first_merged(self):
         # given
@@ -389,6 +385,10 @@ class TestClientLinterCallback(TestCase):
     #
     # helpers
     #
+
+    def validate_results_and_log(self, results, linter_cb, expected_success, expected_status):
+        self.validate_results(results, linter_cb)
+        self.validate_build_log(expected_status, expected_success)
 
     def validate_build_log(self, expected_status, expected_success):
         key = "{0}/{1}".format(self.lint_callback_data['s3_results_key'], 'build_log.json')
