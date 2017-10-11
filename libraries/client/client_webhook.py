@@ -258,7 +258,7 @@ class ClientWebhook(object):
         write_file(build_log_file, build_log)
         upload_key = '{0}/{1}build_log.json'.format(s3_commit_key, part)
         App.logger.debug('Saving build log to ' + upload_key)
-        App.cdn_s3_handler().upload_file(build_log_file, upload_key)
+        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
         # App.logger.debug('build log contains: ' + json.dumps(build_log_json))
 
     def create_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
@@ -322,7 +322,7 @@ class ClientWebhook(object):
         file_key = 'preconvert/{0}.zip'.format(commit_id)
         App.logger.debug('Uploading {0} to {1}/{2}...'.format(zip_filepath, App.pre_convert_bucket, file_key))
         try:
-            App.pre_convert_s3_handler().upload_file(zip_filepath, file_key)
+            App.pre_convert_s3_handler().upload_file(zip_filepath, file_key, cache_time=0)
         except Exception as e:
             App.logger.error('Failed to upload zipped repo up to server')
             App.logger.exception(e)

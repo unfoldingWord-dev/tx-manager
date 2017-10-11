@@ -225,7 +225,7 @@ class ClientConverterCallback(object):
                 path = os.path.join(root, f)
                 key = s3_commit_key + path.replace(unzip_dir, '')
                 App.logger.debug('Uploading {0} to {1}'.format(f, key))
-                App.cdn_s3_handler().upload_file(path, key)
+                App.cdn_s3_handler().upload_file(path, key, cache_time=0)
 
     def update_project_file(self):
         project_json_key = 'u/{0}/{1}/project.json'.format(self.job.user_name, self.job.repo_name)
@@ -255,7 +255,7 @@ class ClientConverterCallback(object):
         project_json['commits'] = commits
         project_file = os.path.join(self.temp_dir, 'project.json')
         write_file(project_file, project_json)
-        App.cdn_s3_handler().upload_file(project_file, project_json_key, 0)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key, cache_time=0)
         return project_json
 
     def update_build_log(self, s3_base_key, part=''):
@@ -297,7 +297,7 @@ class ClientConverterCallback(object):
         file_name = os.path.join(self.temp_dir, 'contents.json')
         write_file(file_name, contents)
         App.logger.debug('Writing file to ' + key)
-        App.cdn_s3_handler().upload_file(file_name, key, 0)
+        App.cdn_s3_handler().upload_file(file_name, key, cache_time=0)
 
     def get_build_log(self, s3_base_key, part=''):
         build_log_key = self.get_build_log_key(s3_base_key, part)

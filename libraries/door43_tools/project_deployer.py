@@ -193,7 +193,7 @@ class ProjectDeployer(object):
                 basename = os.path.basename(filename)
                 if ('finished' not in basename) and ('build_log' not in basename) and ('index.html' not in basename):
                     App.logger.debug("Moving {0} to common area".format(basename))
-                    App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, 0)
+                    App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, cache_time=0)
                     App.cdn_s3_handler().delete_file(download_key + '/' + basename)
 
         # save master build_log.json
@@ -208,7 +208,7 @@ class ProjectDeployer(object):
                     continue
                 key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
                 App.logger.debug("Uploading {0} to {1}".format(path, key))
-                App.door43_s3_handler().upload_file(path, key, 0)
+                App.door43_s3_handler().upload_file(path, key, cache_time=0)
 
         if not partial:
             # Now we place json files and make an index.html file for the whole repo

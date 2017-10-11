@@ -306,5 +306,5 @@ class ClientLinterCallback(object):
         project_json['commits'] = commits
         project_file = os.path.join(output_dir, 'project.json')
         write_file(project_file, project_json)
-        App.cdn_s3_handler().upload_file(project_file, project_json_key, 0)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key, cache_time=0)
         return project_json
