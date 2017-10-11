@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 import json
 import os
 import tempfile
+from datetime import datetime
 from libraries.app.app import App
 from libraries.client.client_linter_callback import ClientLinterCallback
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
@@ -55,6 +56,7 @@ class ClientConverterCallback(object):
             part_id = None
             multiple_project = False
 
+        self.job.ended_at = datetime.utcnow()
         self.job.success = self.success
         for message in self.log:
             self.job.log_message(message)
@@ -82,6 +84,10 @@ class ClientConverterCallback(object):
             self.job.success = True
             self.job.status = "success"
             message = "Conversion successful"
+
+        self.job.message = message
+        self.job.log_message(message)
+        self.job.log_message('Finished job {0} at {1}'.format(self.job.job_id, self.job.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")))
 
         s3_commit_key = 'u/{0}/{1}/{2}'.format(self.job.user_name, self.job.repo_name, self.job.commit_id)
         upload_key = s3_commit_key
