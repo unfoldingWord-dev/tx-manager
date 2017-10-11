@@ -280,11 +280,11 @@ class ClientWebhookTest(unittest.TestCase):
         self.job_linter_count += 1
         return True
 
-    def mock_cdn_upload_file(self, project_file, s3_key):
+    def mock_cdn_upload_file(self, project_file, s3_key, cache_time=0):
         bucket_name = App.pre_convert_s3_handler().bucket.name
         return self.upload_file(bucket_name, project_file, s3_key)
 
-    def mock_s3_upload_file(self, project_file, s3_key):
+    def mock_s3_upload_file(self, project_file, s3_key, cache_time=0):
         bucket_name = App.cdn_s3_handler().bucket.name
         return self.upload_file(bucket_name, project_file, s3_key)
 
