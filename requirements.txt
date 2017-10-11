@@ -9,7 +9,7 @@ markdown==2.6.8
 markdown2==2.3.4
 future==0.16.0
 pyparsing==2.1.10
-usfm-tools==0.0.12
+usfm-tools==0.0.15
 mock==2.0.0
 sphinx==1.5.2
 sphinx-autobuild==0.6.0

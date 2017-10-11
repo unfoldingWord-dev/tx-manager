@@ -84,7 +84,7 @@ setup(
         'markdown2==2.3.4',
         'future==0.16.0',
         'pyparsing==2.1.10',
-        'usfm-tools==0.0.12',
+        'usfm-tools==0.0.15',
         'PyYAML==3.12',
         'pymysql==0.7.11',
         'sqlalchemy==1.2.0b2',
