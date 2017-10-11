@@ -38,7 +38,7 @@ class Md2HtmlConverter(Converter):
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
                 html = markdown.markdown(md)
-                html = html_template.safe_substitute(title=self.resource.upper(), content=html)
+                html = html_template.safe_substitute(title=self.source.upper(), content=html)
                 base_name = os.path.splitext(os.path.basename(filename))[0]
                 found_chapters[base_name] = True
                 html_filename = base_name + ".html"

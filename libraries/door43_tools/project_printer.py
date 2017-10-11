@@ -24,7 +24,7 @@ class ProjectPrinter(object):
         """
         if len(project_id.split('/')) != 3:
             raise Exception('Project not found.')
-        owner_name, repo_name, commit_id = project_id.split('/')
+        user_name, repo_name, commit_id = project_id.split('/')
         source_path = 'u/{0}'.format(project_id)
         print_all_key = '{0}/print_all.html'.format(source_path)
         print_all_file = tempfile.mktemp(prefix='print_all_')
@@ -64,7 +64,7 @@ class ProjectPrinter(object):
     </body>
 </html>
 """)
-                App.cdn_s3_handler().upload_file(print_all_file, print_all_key)
+                App.cdn_s3_handler().upload_file(print_all_file, print_all_key, cache_time=0)
             html = read_file(print_all_file)
         else:
             html = App.cdn_s3_handler().get_file_contents(print_all_key)
