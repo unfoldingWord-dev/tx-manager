@@ -64,12 +64,15 @@ class TestClientLinterCallback(TestCase):
         self.unzip_resource_files("id_mat_ulb.zip")
         self.expected_log_count = 9
         linter_cb = self.mock_client_linter_callback()
+        expected_status = 'success'
+        expected_success = True
 
         # when
         results = linter_cb.process_callback()
 
         # then
         self.validate_results(results, linter_cb)
+        self.validate_build_log(expected_status, expected_success)
 
     def test_callbackSimpleJob_missing_id(self):
         # given
@@ -127,12 +130,14 @@ class TestClientLinterCallback(TestCase):
         self.expected_warning_count = 1
         self.expected_status = "warnings"
         linter_cb = self.mock_client_linter_callback()
+        expected_success = True
 
         # when
         results = linter_cb.process_callback()
 
         # then
         self.validate_results(results, linter_cb)
+        self.validate_build_log(self.expected_status, expected_success)
 
     def test_callbackSimpleJob_lint_warning(self):
         # given
@@ -142,12 +147,14 @@ class TestClientLinterCallback(TestCase):
         self.expected_warning_count = 1
         self.expected_status = "warnings"
         linter_cb = self.mock_client_linter_callback()
+        expected_success = True
 
         # when
         results = linter_cb.process_callback()
 
         # then
         self.validate_results(results, linter_cb)
+        self.validate_build_log(self.expected_status, expected_success)
 
     def test_callbackSimpleJob_build_log_missing(self):
         # given
@@ -222,12 +229,15 @@ class TestClientLinterCallback(TestCase):
         self.expected_log_count = 36
         self.expected_multipart = True
         linter_cb = self.mock_client_linter_callback()
+        expected_success = True
+        expected_status = 'expected_status'
 
         # when
         results = linter_cb.process_callback()
 
         # then
         self.validate_results(results, linter_cb)
+        self.validate_build_log(expected_status, expected_success)
 
     def test_callbackMultpleJob_first_merged(self):
         # given
@@ -379,6 +389,12 @@ class TestClientLinterCallback(TestCase):
     #
     # helpers
     #
+
+    def validate_build_log(self, expected_status, expected_success):
+        key = "{0}/{1}".format(self.lint_callback_data['s3_results_key'], 'build_log.json')
+        build_log = App.cdn_s3_handler().get_json(key)
+        self.assertEquals(build_log['success'], expected_success)
+        self.assertEquals(build_log['status'], expected_status)
 
     def get_results_folder(self):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'])
