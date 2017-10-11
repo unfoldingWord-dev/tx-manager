@@ -59,6 +59,14 @@ class ProjectDeployerTests(unittest.TestCase):
         ret = self.deployer.deploy_revision_to_door43(bad_key)
         self.assertFalse(ret)
 
+    def test_tw_deploy_revision_to_door43(self):
+        self.mock_s3_tw_project()
+        build_log_key = '{0}/build_log.json'.format(self.project_key)
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+        self.assertTrue(ret)
+        self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
+        self.assertTrue(App.door43_s3_handler().key_exists('{0}/50.html'.format(self.project_key)))
+
     def test_bible_deploy_part_revision_to_door43(self):
         # given
         test_repo_name = 'en-ulb-4-books-multipart.zip'
@@ -170,6 +178,21 @@ class ProjectDeployerTests(unittest.TestCase):
     def mock_run_templater_exception(self):
         raise NotImplementedError("Test Exception")
 
+    def mock_s3_tw_project(self):
+        zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en_tw_converted.zip')
+        out_dir = os.path.join(self.temp_dir, 'en_tw_converted')
+        unzip(zip_file, out_dir)
+        src_dir = os.path.join(out_dir, 'en_tw_converted')
+        self.project_files = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+        self.project_key = 'u/door43/en-tw/12345678'
+        for filename in self.project_files:
+            App.cdn_s3_handler().upload_file(os.path.join(src_dir, filename), '{0}/{1}'.format(self.project_key,
+                                                                                                   filename))
+        App.cdn_s3_handler().upload_file(os.path.join(src_dir, 'project.json'),
+                                         'u/door43/en-tw/project.json')
+        App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+                                            'templates/project-page.html')
+
     def mock_s3_obs_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en-obs-complete.zip')
         out_dir = os.path.join(self.temp_dir, 'en-obs-complete')
@@ -179,11 +202,11 @@ class ProjectDeployerTests(unittest.TestCase):
         self.project_key = 'u/door43/en-obs/12345678'
         for filename in self.project_files:
             App.cdn_s3_handler().upload_file(os.path.join(project_dir, filename), '{0}/{1}'.format(self.project_key,
-                                                                                                 filename))
+                                                                                                   filename))
         App.cdn_s3_handler().upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'),
-                                       'u/door43/en-obs/project.json')
+                                         'u/door43/en-obs/project.json')
         App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
-                                          'templates/project-page.html')
+                                            'templates/project-page.html')
 
     def mock_s3_bible_project(self, test_file_name, project_key, multi_part=False):
         converted_proj_dir = os.path.join(self.resources_dir, 'converted_projects')
