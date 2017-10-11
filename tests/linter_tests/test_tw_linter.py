@@ -36,7 +36,7 @@ class TestTwLinter(LinterTestCase):
         expected_warnings = True
         zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
         new_zip = self.replace_text(zip_file, 'en_tw', 'names.md', '(#moses)', '(../moses.md)')
-        linter = TwLinter(source_zip_file=new_zip)
+        linter = TwLinter(source_file=new_zip)
         linter.run()
         self.verify_results(expected_warnings, linter)
 
@@ -46,7 +46,7 @@ class TestTwLinter(LinterTestCase):
         expected_warnings = True
         zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
         new_zip = self.replace_text(zip_file, 'en_tw', 'names.md', '(#moses)', '(./moses.md)')
-        linter = TwLinter(source_zip_file=new_zip)
+        linter = TwLinter(source_file=new_zip)
         linter.run()
         self.verify_results(expected_warnings, linter)
 
@@ -56,7 +56,7 @@ class TestTwLinter(LinterTestCase):
         expected_warnings = True
         zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
         new_zip = self.replace_text(zip_file, 'en_tw', 'names.md', '[Moses](#moses)', '[Moses]\n(../moses.md)')
-        linter = TwLinter(source_zip_file=new_zip)
+        linter = TwLinter(source_file=new_zip)
         linter.run()
         self.verify_results(expected_warnings, linter)
 
@@ -66,7 +66,7 @@ class TestTwLinter(LinterTestCase):
         expected_warnings = True
         zip_file = os.path.join(self.resources_dir, 'tw_linter', 'en_tw.zip')
         new_zip = self.prepend_text(zip_file, 'en_tw', 'names.md', 'Moses]\n(../moses.md)')
-        linter = TwLinter(source_zip_file=new_zip)
+        linter = TwLinter(source_file=new_zip)
         linter.run()
         self.verify_results(expected_warnings, linter)
 
