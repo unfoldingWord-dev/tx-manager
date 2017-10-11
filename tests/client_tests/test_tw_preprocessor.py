@@ -40,6 +40,7 @@ class TestTwPreprocessor(unittest.TestCase):
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
         self.assertEquals(preproc.repo_name, repo_name)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'names.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'other.md')))

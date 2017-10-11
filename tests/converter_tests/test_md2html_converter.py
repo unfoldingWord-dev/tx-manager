@@ -131,7 +131,6 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        # TODO blm: new list
         files_to_verify = ['index.html','kt.html','names.html','other.html','config.yaml','manifest.yaml']
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
