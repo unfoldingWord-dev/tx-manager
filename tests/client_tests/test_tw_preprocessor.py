@@ -80,7 +80,7 @@ class TestTwPreprocessor(unittest.TestCase):
         repo_name = 'dummy_repo'
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
         self.assertEquals(preproc.repo_name, repo_name)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
 
     def test_fix_links(self):
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'tw'))
