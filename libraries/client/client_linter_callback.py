@@ -191,7 +191,7 @@ class ClientLinterCallback(object):
 
         # flag this part as done
         ClientLinterCallback.upload_build_log(build_log, 'merged.json', output_dir, s3_results_key)
-        # trigger deployer to start templating this file
+        # trigger deployer to start templating this part of the conversion
         ClientLinterCallback.upload_build_log(build_log, 'build_log.json', output_dir, s3_results_key)
         return
 
