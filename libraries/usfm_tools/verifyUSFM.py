@@ -24,14 +24,14 @@ lastToken = None
 vv_re = re.compile(r'([0-9]+)-([0-9]+)')
 error_log = None
 
-# chapter or verse missing number or space before
-missing_num_re = re.compile(r'(\\[cv][^\u00A0 \na-z]+)|(\\[cv][\u00A0 ][^0-9\n]+)', re.UNICODE)
+# chapter marker
+chapter_marker_re = re.compile(r'\\c', re.UNICODE)
 
-# chapter with missing missing space after number
-chapter_missing_space_re = re.compile(r'(\\c[\u00A0 ][0-9]+[\u00A0 ]*[^^0-9\n\u00A0 ])', re.UNICODE)
+# verse marker
+verse_marker_re = re.compile(r'\\v', re.UNICODE)
 
-#  verse with missing missing space after number
-verse_missing_space_re = re.compile(r'(\\v[\u00A0 ][0-9]+[^0-9\n -])|(\\v[\u00A0 ](?:[0-9]+[-\u2013\u2014])[0-9]+[^0-9\n ])', re.UNICODE)
+WHITE_SPACE = [' ', '\u00A0', '\r', '\n', '\t']
+SPACE = [' ', '\u00A0']
 
 
 class State:
@@ -47,6 +47,7 @@ class State:
     chapter_label = ""
     chapter = 0
     nParagraphs = 0
+    nMargin = 0
     nQuotes = 0
     verse = 0
     lastVerse = 0
@@ -59,12 +60,11 @@ class State:
     errorRefs = set()
     englishWords = []
     lang_code = None
+    book_code = None
 
     def reset_all(self):
         self.reset_book()
         State.IDs = []
-        State.lastRef = ""
-        State.reference = ""
         State.errorRefs = set()
 
     def reset_book(self):
@@ -84,7 +84,15 @@ class State:
         State.textOkayHere = False
         State.chapters = set()
         State.nParagraphs = 0
+        State.nMargin = 0
         State.nQuotes = 0
+        State.lastRef = ""
+        State.reference = ""
+        State.book_code = None
+
+    def set_book_code(self, book):
+        State.book_code = book
+        State.reference = book  # default
 
     def setLanguageCode(self, code):
         State.lang_code = code
@@ -129,15 +137,26 @@ class State:
         State.chapters.add(State.chapter)
         State.lastVerse = 0
         State.nParagraphs = 0
+        State.nMargin = 0
         State.nQuotes = 0
         State.verse = 0
         State.needVerseText = False
         State.textOkayHere = False
         State.lastRef = State.reference
-        State.reference = State.ID + " " + c
+        State.reference = self.get_id() + " " + str(State.chapter)
+
+    def get_id(self):
+        id = State.ID
+        if not State.ID:
+            id = State.book_code  # use book code if no ID given
+        return id
 
     def addParagraph(self):
         State.nParagraphs += State.nParagraphs + 1
+        State.textOkayHere = True
+
+    def addMargin(self):
+        State.nMargin += State.nMargin + 1
         State.textOkayHere = True
 
     # supports a span of verses, e.g. 3-4, if needed. Passes the verse(s) on to addVerse()
@@ -162,7 +181,7 @@ class State:
         State.needVerseText = True
         State.textOkayHere = True
         State.lastRef = State.reference
-        State.reference = State.ID + " " + str(State.chapter) + ":" + v
+        State.reference = self.get_id() + " " + str(State.chapter) + ":" + v
 
     def textOkay(self):
         return State.textOkayHere
@@ -252,9 +271,9 @@ def verifyNotEmpty(filename):
 def verifyIdentification(book_code):
     state = State()
     if not state.ID:
-        report_error( book_code + " - Missing \\id tag")
+        report_error(book_code + " - Missing \\id tag")
     elif (book_code is not None) and (book_code != state.ID):
-        report_error( state.ID + " - Found in \\id tag does not match code '" + book_code + "'' found in file name")
+        report_error(state.ID + " - Found in \\id tag does not match code '" + book_code + "' found in file name")
 
     if not state.IDE:
         report_error(book_code + " - Missing \\ide tag")
@@ -274,25 +293,108 @@ def verifyIdentification(book_code):
     if not state.mt:
         report_error(book_code + " - Missing \\mt tag")
 
-def verifyChapterAndVerseMarkers(text, book_code):
-    # check for chapter or verse tags without numbers
-    for no_num in missing_num_re.finditer(text):
-        report_error(book_code + ' - Chapter or verse tag invalid: "{0}"'.format(getNotEmptyGroup(no_num)))
+def get_reference(book, chapter, verse=None):
+    ref = book + " " + str(chapter)
+    if verse is not None:
+          ref += ":" + verse
+    return ref
 
-    # check for chapter tags missing space after number
-    for space in chapter_missing_space_re.finditer(text):
-        report_error(book_code + ' - Chapter tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+def verifyChapterAndVerseMarkers(text, book):
+    pos = 0
+    last_ch = 1
+    for chapter_current in chapter_marker_re.finditer(text):
+        start = chapter_current.start()
+        end = chapter_current.end()
+        char = text[end]
+        if (char >= 'a') and (char <= 'z'):
+            continue  #  skip non-chapter markers
+        has_space = char in SPACE
+        if has_space:
+            end += 1
+        char = text[start - 1]
+        newline_before = (char == '\n') or (char == '\r')
+        ch_num, has_space_after = get_chapter_number(text, end)
+        if ch_num >= 0:
+            if not has_space:
+                add_error(text, book, "Missing space before chapter number: '{0}'", start, last_ch)
+            elif not has_space_after:
+                add_error(text, book, "Missing new line after chapter number: '{0}'", start, last_ch)
+            elif not newline_before:
+                add_error(text, book, "Missing new line before chapter marker: '{0}'", start-4, last_ch)
+            check_chapter(text, book, last_ch, pos, start)
+            last_ch = ch_num
+            pos = end
+        else:
+            add_error(text, book, "Invalid chapter number: '{0}'", start, last_ch)
 
-    # check for verse tags missing space after number
-    for space in verse_missing_space_re.finditer(text):
-        report_error(book_code + ' - Verse tag invalid: "{0}"'.format(getNotEmptyGroup(space)))
+    check_chapter(text, book, last_ch, pos, len(text))  # check last chapter
 
-def getNotEmptyGroup(match):
-    for i in range(1, len(match.groups()) + 1):
-        value = match.group(i)
-        if value is not None:
-            return value
-    return None
+def add_error(text, book, message, pos, chapter, verse=None):
+    length = 8
+    example = text[pos: pos + length]
+    report_error(get_reference(book, chapter, verse) + " - " + message.format(example))
+
+def check_chapter(text, book, chapter_num, start, end):
+    last_vs_range = '1'
+    for verse_current in verse_marker_re.finditer(text, start, end):
+        start = verse_current.start()
+        end = verse_current.end()
+        char = text[end]
+        has_space = char in SPACE
+        if has_space:
+            end += 1
+        char = text[start - 1]
+        space_before = char in WHITE_SPACE
+        vs_range, has_space_after = get_verse_range(text, end)
+        if vs_range != '':
+            if not has_space:
+                add_error(text, book, "Missing space before verse number: '{0}'", start, chapter_num, vs_range)
+            elif not has_space_after:
+                add_error(text, book, "Missing space after verse number: '{0}'", start, chapter_num, vs_range)
+            elif not space_before:
+                add_error(text, book, "Missing space before verse marker: '{0}'", start-1, chapter_num, vs_range)
+            last_vs_range = vs_range
+        else:
+            add_error(text, book, "Invalid verse number: '{0}'", start, chapter_num, last_vs_range)
+
+def get_verse_range(text, start):
+    pos = start
+    verse, c, end = get_number(text, pos)
+    if verse == '':
+        return verse, False
+
+    if c != '-':  # not verse range
+        has_white_space = (c in WHITE_SPACE)
+        return verse, has_white_space
+
+    second_vs, c, end = get_number(text, end+1)
+    if second_vs == '':
+        return '', False
+
+    verse += '-' + second_vs
+    has_white_space = (c in WHITE_SPACE)
+    return verse, has_white_space
+
+def get_chapter_number(text, start):
+    pos = start
+    digits, c, end = get_number(text, pos)
+    has_white_space = (c in WHITE_SPACE)
+    if len(digits) > 0:
+        return int(digits), has_white_space
+    return -1, has_white_space
+
+def get_number(text, start):
+    digits = ''
+    end = start
+    c = ''
+    for pos in range(start, len(text)):
+        c = text[pos]
+        if (c >= '0') and (c <= '9'):
+            digits += c
+            continue
+        end = pos
+        break
+    return digits, c, end
 
 def verifyChapterCount():
     state = State()
@@ -395,7 +497,7 @@ def takeID(id):
     state = State()
     code = '' if not id else id.split(' ')[0]
     if len(code) < 3:
-        report_error(state.reference + " - Invalid ID: " + id + '\n')
+        report_error(state.reference + " - Invalid ID: '" + id + "'\n")
         return
     if code in state.getIDs():
         report_error(state.reference + " - Duplicate ID: " + id + '\n')
@@ -411,11 +513,11 @@ def takeC(c):
     state = State()
     state.addChapter(c)
     if len(state.IDs) == 0:
-        report_error(state.reference + " - Missing ID before chapter: " + c + '\n')
+        report_error(state.reference + " - Missing ID before chapter" + '\n')
     if state.chapter < state.lastChapter:
-        report_error(state.reference +" - Chapter out of order" +  '\n')
+        report_error(state.reference + " - Chapter out of order" + '\n')
     elif state.chapter == state.lastChapter:
-        report_error(state.reference + " - Duplicate chapter" +  '\n')
+        report_error(state.reference + " - Duplicate chapter" + '\n')
     elif state.chapter > state.lastChapter + 2:
         report_error(state.lastRef + " - Missing chapters between this and: " + state.reference + '\n')
     elif state.chapter > state.lastChapter + 1:
@@ -425,6 +527,10 @@ def takeP():
     state = State()
     state.addParagraph()
 
+def takeM():
+    state = State()
+    state.addMargin()
+
 def takeV(v):
     state = State()
     state.addVerses(v)
@@ -433,8 +539,9 @@ def takeV(v):
             report_error(state.reference + " " + v + " - Missing ID before verse" + '\n')
         if state.chapter == 0:
             report_error(state.reference + " - Missing chapter tag" + '\n')
-        if (state.nParagraphs == 0) and (state.nQuotes == 0):
-            report_error(state.reference + " - Missing paragraph marker (\\p) or quote (\\q) before: " +  '\n')
+        if (state.nParagraphs == 0) and (state.nQuotes == 0) and (state.nMargin == 0):
+            report_error(state.reference + " - Missing paragraph marker (\\p), margin (\\m) or quote (\\q) before: "
+                         + '\n')
 
     if state.verse < state.lastVerse and state.addError(state.lastRef):
         report_error(state.reference + " - Verse out of order: after " + state.lastRef + '\n')
@@ -447,6 +554,22 @@ def takeV(v):
         elif state.lastRef == 'MAT 18:10' and state.reference == 'MAT 18:12':
             exception = 'MAT 18:11'
         else:
+            if error_log:  # see if already warned for missing verses
+                gaps = False
+                for i in range(state.lastVerse+1, state.verse):
+                    ref = state.ID + ' ' + str(state.chapter) + ':' + str(i)
+                    ref_len = len(ref)
+                    verse_warning_found = False
+                    for error in error_log:
+                        if error[:ref_len] == ref:
+                            verse_warning_found = True
+                            break
+
+                    if not verse_warning_found:
+                        gaps = True
+                if not gaps:
+                    return
+
             report_error(state.lastRef + " - Missing verse(s) between this and: " + state.reference + '\n')
 
 def takeText(t):
@@ -468,7 +591,9 @@ def takeText(t):
 
 def takeUnknown(state, token):
     value = token.getValue()
-    report_error( state.reference + " - Unknown Token: '\\" + value + '\n')
+    if (value == 'v') or (value == 'c'):
+        return  # skip malformed chapter and verses - will be caught later
+    report_error( state.reference + " - Unknown Token: '\\" + value + "'")
 
 # Returns True if token is the start of a footnote - note that verse can contain footnote for more reasons than just
 #       does not appear in some manuscripts.
@@ -490,7 +615,7 @@ def isCrossRef(token):
 def take(token):
     state = State()
     if state.needText() and not token.isTEXT() and not isFootnoted(token) and not isCrossRef(token):
-        report_error( state.reference + " - Empty verse" +'\n')
+        report_error(state.reference + " - Empty verse" + '\n')
     if token.isID():
         takeID(token.value)
     elif token.isIDE():
@@ -518,6 +643,8 @@ def take(token):
         takeText(token.value)
     elif token.isQ() or token.isQ1() or token.isQ2() or token.isQ3():
         state.addQuote()
+    elif token.isM() or token.isMI():
+        state.addMargin()
     elif token.isUnknown():
         takeUnknown(state, token)
     global lastToken
@@ -550,6 +677,7 @@ def verify_contents_quiet(unicodestring, filename, book_code, lang_code):
     error_log = []  # enable error logging
     state = State()
     state.reset_all()  # clear out previous values
+    state.set_book_code(book_code)
     state.setLanguageCode(lang_code)
     verifyChapterAndVerseMarkers(unicodestring, book_code)
     for token in parseUsfm.parse_string(unicodestring):
