@@ -516,9 +516,9 @@ class TwPreprocessor(Preprocessor):
                 self.index_json['titles'][section['link'] + '.html'] = section['title']
 
             self.index_html = self.fix_links(self.index_html, '-')
-            output_file = os.path.join(self.output_dir, 'index.md')
+            output_file = os.path.join(self.output_dir, '0toc.md')
             write_file(output_file, self.index_html)
-            self.index_json['titles']['index.html'] = 'Table of Contents'
+            self.index_json['titles']['0toc.html'] = 'Table of Contents'
             output_file = os.path.join(self.output_dir, 'index.json')
             write_file(output_file, self.index_json)
 

@@ -65,7 +65,7 @@ class ProjectDeployerTests(unittest.TestCase):
         ret = self.deployer.deploy_revision_to_door43(build_log_key)
         self.assertTrue(ret)
         self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
-        for file_name in ['index.html','kt.html','names.html','other.html','build_log.json','manifest.yaml']:
+        for file_name in ['index.html','0toc.html','kt.html','names.html','other.html','build_log.json','manifest.yaml']:
             key = '{0}/{1}'.format(self.project_key, file_name)
             self.assertTrue(App.door43_s3_handler().key_exists(key), "Key not found: {0}".format(key))
         parent_key = '/'.join(self.project_key.split('/')[:-1])
