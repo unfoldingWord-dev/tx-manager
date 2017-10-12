@@ -45,7 +45,7 @@ class TestUsfmLinter(LinterTestCase):
     def test_PhpValidWithFormattingTags(self):
         out_dir = self.copy_resource(self.php_repo_path)
         replace = read_file(os.path.join(self.resources_dir, 'formatting_example.txt'))
-        self.replace_verse(out_dir, self.php_file_name, chapter=2, start_vs=1, end_vs=13, replace=replace)  # replace v1
+        self.replace_verse(out_dir, self.php_file_name, chapter=2, start_vs=1, end_vs=13, replace=replace + ' ')  # replace v1
         expected_warnings = 0
         linter = self.run_linter(out_dir)
         self.verify_results_counts(expected_warnings, linter)
@@ -55,7 +55,7 @@ class TestUsfmLinter(LinterTestCase):
         os.rename(os.path.join(out_dir, self.php_file_name), os.path.join(out_dir, '51-PHs.usfm'))
         expected_warnings = 1
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0],'Failed to verify book \'51-PHs.usfm\', exception: \'list\' object has no attribute \'push\'')
+        self.assertEqual(linter.log.warnings[0], 'PHP - Found in \id tag does not match code \'PHS\' found in file name')
         self.verify_results_counts(expected_warnings, linter)
 
     def test_PhpMissingUsfmFileName(self):
@@ -86,9 +86,8 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_tag(out_dir, self.php_file_name, 'id', '\id')
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP  \'\\id -  - Unknown Token')
-        self.assertEqual(linter.log.warnings[1], 'PHP  01 -  01 - Missing ID before chapter')
-        self.assertEqual(linter.log.warnings[5], 'Failed to verify book \'51-PHP.usfm\', exception: \'list\' object has no attribute \'push\'')
+        self.assertEqual(linter.log.warnings[0], 'PHP - Unknown Token: \'\\id\'')
+        self.assertEqual(linter.log.warnings[1], 'PHP 1 - Missing ID before chapter')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpMissingIDAndC1(self):
@@ -104,9 +103,8 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_tag(out_dir, self.php_file_name, 'id', '\id PH Unlocked Literal Bible')
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP  PH Unlocked Literal Bible -  - Invalid ID')
-        self.assertEqual(linter.log.warnings[4], 'PHP  04 -  04 - Missing ID before chapter')
-        self.assertEqual(linter.log.warnings[5], 'Failed to verify book \'51-PHP.usfm\', exception: \'list\' object has no attribute \'push\'')
+        self.assertEqual(linter.log.warnings[0], 'PHP - Invalid ID: \'PH Unlocked Literal Bible\'')
+        self.assertEqual(linter.log.warnings[1], 'PHP 1 - Missing ID before chapter')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpInvalidIdLength(self):
@@ -114,9 +112,8 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_tag(out_dir, self.php_file_name, 'id', '\id PH')
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP  PH -  - Invalid ID')
-        self.assertEqual(linter.log.warnings[2], 'PHP  02 -  02 - Missing ID before chapter')
-        self.assertEqual(linter.log.warnings[5], 'Failed to verify book \'51-PHP.usfm\', exception: \'list\' object has no attribute \'push\'')
+        self.assertEqual(linter.log.warnings[0], 'PHP - Invalid ID: \'PH\'')
+        self.assertEqual(linter.log.warnings[1], 'PHP 1 - Missing ID before chapter')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpDuplicateID(self):
@@ -124,7 +121,7 @@ class TestUsfmLinter(LinterTestCase):
         self.append_text(out_dir, self.php_file_name, '\id  PHP Unlocked Literal Bible')
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP 23 - Duplicate ID  PHP Unlocked Literal Bible - PHP 4')
+        self.assertEqual(linter.log.warnings[0], 'PHP 4:23 - Duplicate ID: PHP Unlocked Literal Bible')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpMissingHeading(self):
@@ -226,6 +223,13 @@ class TestUsfmLinter(LinterTestCase):
         linter = self.run_linter(out_dir)
         self.verify_results(expected_warnings, linter)
 
+    def test_PhpMarginBeforeChapter(self):
+        out_dir = self.copy_resource(self.php_repo_path)
+        self.replace_tag(out_dir, self.php_file_name, tag='p', replace='\m\n')  # replace p with m
+        expected_warnings = False
+        linter = self.run_linter(out_dir)
+        self.verify_results(expected_warnings, linter)
+
     def test_PhpMissingV1(self):
         out_dir = self.copy_resource(self.php_repo_path)
         self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='')  # remove v1
@@ -254,6 +258,13 @@ class TestUsfmLinter(LinterTestCase):
         linter = self.run_linter(out_dir)
         self.verify_results(expected_warnings, linter)
 
+    def test_PhpNoSpace3V3(self):
+        out_dir = self.copy_resource(self.php_repo_path)
+        self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=3, end_vs=4, replace='\\v 3"stuff\n')  # replace v3
+        expected_warnings = 1
+        linter = self.run_linter(out_dir)
+        self.verify_results_counts(expected_warnings, linter)
+
     def test_PhpInvalidV1(self):
         out_dir = self.copy_resource(self.php_repo_path)
         self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v b ')  # replace v1
@@ -266,7 +277,7 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v 1 ')  # replace v1
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP 1 - Empty verse - PHP 1')
+        self.assertEqual(linter.log.warnings[0], 'PHP 1:1 - Empty verse')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpEmptyV1V4(self):
@@ -274,7 +285,7 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_verse(out_dir, self.php_file_name, chapter=3, start_vs=1, end_vs=5, replace='\\v 1-4 ')  # replace v1-4
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP 4 - Empty verse - PHP 3')
+        self.assertEqual(linter.log.warnings[0], 'PHP 3:4 - Empty verse')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpEmptyV1V4NoSpace(self):
@@ -296,7 +307,7 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_verse(out_dir, self.php_file_name, chapter=1, start_vs=1, end_vs=2, replace='\\v 1 stuff \\v 1 more stuff ')  # replace v1
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'PHP 1 - Duplicated verse - PHP 1')
+        self.assertEqual(linter.log.warnings[0], 'PHP 1:1 - Duplicated verse')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpV2beforeV1(self):
@@ -360,7 +371,7 @@ class TestUsfmLinter(LinterTestCase):
         self.replace_chapter(out_dir, self.php_file_name, start_ch=1, end_ch=2, replace='\\c 01\n')  # replace c1
         expected_warnings = True
         linter = self.run_linter(out_dir)
-        self.assertEqual(linter.log.warnings[0], 'Failed to verify book \'51-PHP.usfm\', exception: \'list\' object has no attribute \'push\'')
+        self.assertEqual(linter.log.warnings[0], 'PHP 1 - Should have 30 verses')
         self.verify_results(expected_warnings, linter)
 
     def test_PhpMissingC4(self):

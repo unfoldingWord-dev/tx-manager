@@ -571,7 +571,7 @@ class TestConversions(TestCase):
         check_list.append("index.html")
 
         start_time = time.time()
-        time_out = 60
+        time_out = 180
         found = []
         while len(found) < len(check_list):
             elapsed_seconds = elapsed_time(start_time)
@@ -585,7 +585,7 @@ class TestConversions(TestCase):
                     continue
 
                 path = os.path.join(key, file_name)
-                App.logger.debug("checking destination folder for: " + path)
+                App.logger.debug("checking deployed folder for: " + path)
                 output = handler.get_file_contents(path)
                 if output:
                     found.append(file_name)
@@ -595,7 +595,7 @@ class TestConversions(TestCase):
         if len(found) < len(check_list):
             for file_name in check_list:
                 if file_name not in found:
-                    self.assertTrue(False, "missing file: " + file_name)
+                    self.assertTrue(False, "missing deployed file: " + file_name)
 
         build_log = handler.get_file_contents(os.path.join(key, "build_log.json"))
         manifest = handler.get_file_contents(os.path.join(key, "manifest.json"))
@@ -615,10 +615,10 @@ class TestConversions(TestCase):
             # checkList.append("index.html")
 
         start_time = time.time()
-        time_out = 60
+        time_out = 120
         for file_name in check_list:
             path = os.path.join(key, file_name)
-            App.logger.debug("checking destination folder for: " + path)
+            App.logger.debug("checking conversion destination folder for: " + path)
             output = handler.get_file_contents(path)
             while output is None:  # try again in a moment since upload files may not be finished
                 elapsed_seconds = elapsed_time(start_time)
@@ -631,7 +631,7 @@ class TestConversions(TestCase):
                 if output is None:
                     time.sleep(5)
 
-            self.assertIsNotNone(output, "missing file: " + path)
+            self.assertIsNotNone(output, "missing converted file: " + path)
 
         build_log = handler.get_file_contents(os.path.join(key, "build_log.json"))
         manifest = handler.get_file_contents(os.path.join(key, "manifest.json"))
