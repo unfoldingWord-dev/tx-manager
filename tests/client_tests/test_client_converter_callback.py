@@ -217,7 +217,7 @@ class TestClientConverterCallback(TestCase):
         self.validate_results(expect_error, results)
 
     @patch('libraries.client.client_converter_callback.download_file')
-    def test_client_converter_callback_multiple_noo_jobs_complete(self, mock_download_file):
+    def test_client_converter_callback_multiple_not_jobs_complete(self, mock_download_file):
         # given
         self.source_zip = os.path.join(self.resources_dir, "raw_sources/en-ulb.zip")
         identifier = 'job1/2/0/01-GEN.usfm'
