@@ -395,7 +395,7 @@ class ClientWebhook(object):
         }
         if extra_payload:
             payload.update(extra_payload)
-        if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs' or job.resource_type == 'tw':
+        if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
             payload['source_url'] = job.source
         else:
