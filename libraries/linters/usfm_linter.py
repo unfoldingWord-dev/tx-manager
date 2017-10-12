@@ -86,7 +86,7 @@ class UsfmLinter(Linter):
                     parts = error.split( ":" )
 
                     if( len( parts ) < 2 ):
-                        parts.push( "")
+                        parts.append( "")
 
                     self.log.warning( "{0} {1} - {2}".format(book_code, " ".join( parts[1:] ), parts[0] ))
         except Exception as e:
