@@ -44,7 +44,7 @@ class TwLinter(MarkdownLinter):
                 file_path_abs = os.path.abspath(file_path)
                 exists = os.path.exists(file_path_abs)
                 if not exists:
-                    url = "https://git.door43.org/{0}/{1}/src/master/{2}".format(self.repo_owner, self.repo_name, path)
+                    # url = "https://git.door43.org/{0}/{1}/src/master/{2}".format(self.repo_owner, self.repo_name, path)
                     msg = "{0}: contains invalid link: ({1})".format(f, link)
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
