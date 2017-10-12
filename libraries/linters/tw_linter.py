@@ -18,6 +18,8 @@ class TwLinter(MarkdownLinter):
         self.source_dir is the directory of source files (.md)
         :return bool:
         """
+        App.logger.debug("TwLinter: s3 key: {0}".format(self.s3_results_key))
+        user, repo = self.s3_results_key.split('/')[1:3]
         for root, dirs, files in os.walk(self.source_dir):
             for f in files:
                 file_path = os.path.join(root, f)
@@ -29,6 +31,7 @@ class TwLinter(MarkdownLinter):
         return super(TwLinter, self).lint()  # Runs checks on Markdown, using the markdown linter
 
     def find_invalid_links(self, folder, f, contents):
+        folder_abs = os.path.abspath(folder)
         for link_match in TwLinter.link_marker_re.finditer(contents):
             link = link_match.group(1)
             if link:
@@ -41,6 +44,7 @@ class TwLinter(MarkdownLinter):
                 file_path_abs = os.path.abspath(file_path)
                 exists = os.path.exists(file_path_abs)
                 if not exists:
+                    url = "https://git.door43.org/{0}/{1}/src/master/{2}".format(self.repo_owner, self.repo_name, path)
                     msg = "{0}: contains invalid link: ({1})".format(f, link)
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
