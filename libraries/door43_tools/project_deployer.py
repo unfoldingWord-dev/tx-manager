@@ -198,7 +198,7 @@ class ProjectDeployer(object):
 
         # save master build_log.json
         file_utils.write_file(os.path.join(output_dir, 'build_log.json'), build_log)
-        App.logger.debug("Final build_log.json:\n" + json.dumps(build_log))
+        App.logger.debug("Final build_log.json:\n" + json.dumps(build_log)[:256])
 
         # Upload all files to the door43.org bucket
         for root, dirs, files in os.walk(output_dir):
