@@ -61,15 +61,17 @@ class TestClientLinterCallback(TestCase):
 
     def test_callbackSimpleJob(self):
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
+        self.unzip_resource_files("id_mat_ulb.zip", convert_finished=True)
         self.expected_log_count = 9
         linter_cb = self.mock_client_linter_callback()
+        expected_status = 'success'
+        expected_success = True
 
         # when
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
+        self.validate_results_and_log(results, linter_cb, expected_success, expected_status)
 
     def test_callbackSimpleJob_missing_id(self):
         # given
@@ -121,38 +123,40 @@ class TestClientLinterCallback(TestCase):
 
     def test_callbackSimpleJob_lint_error(self):  # lint error treated as build warning
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
+        self.unzip_resource_files("id_mat_ulb.zip", convert_finished=True)
         self.lint_callback_data['success'] = False
         self.expected_log_count = 9
         self.expected_warning_count = 1
         self.expected_status = "warnings"
         linter_cb = self.mock_client_linter_callback()
+        expected_success = True
 
         # when
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
+        self.validate_results_and_log(results, linter_cb, expected_success, self.expected_status)
 
     def test_callbackSimpleJob_lint_warning(self):
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
+        self.unzip_resource_files("id_mat_ulb.zip", convert_finished=True)
         self.lint_callback_data['warnings'].append("lint warning")
         self.expected_log_count = 9
         self.expected_warning_count = 1
         self.expected_status = "warnings"
         linter_cb = self.mock_client_linter_callback()
+        expected_success = True
 
         # when
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
+        self.validate_results_and_log(results, linter_cb, expected_success, self.expected_status)
 
     def test_callbackSimpleJob_build_log_missing(self):
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
-        build_log_path = self.get_source_path()
+        self.unzip_resource_files("id_mat_ulb.zip", convert_finished=False)
+        build_log_path = self.get_source_path('build_log.json')
         file_utils.remove(build_log_path)
         self.expected_log_count = 1
         self.expected_status = None
@@ -165,9 +169,9 @@ class TestClientLinterCallback(TestCase):
         # then
         self.validate_results(results, linter_cb)
 
-    def test_callbackSimpleJob_build_not_finished(self):
+    def test_callbackSimpleJob_convert_not_finished(self):
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
+        self.unzip_resource_files("id_mat_ulb.zip", convert_finished=True)
         finished_path = self.get_source_path('finished')
         file_utils.remove(finished_path)
         self.expected_log_count = 1
@@ -183,13 +187,14 @@ class TestClientLinterCallback(TestCase):
 
     def test_callbackSimpleJob_build_error(self):
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
-        build_log_path = self.get_source_path()
+        self.unzip_resource_files("id_mat_ulb.zip",convert_finished=False)
+        build_log_path = self.get_source_path('build_log.json')
         build_log = file_utils.load_json_object(build_log_path)
         build_log['errors'].append('convert error')
         build_log['success'] = False
         build_log['status'] = 'errors'
         file_utils.write_file(build_log_path, build_log)
+        self.finish_convert(self.source_folder)
         self.expected_log_count = 9
         self.expected_error_count = 1
         self.expected_success = False
@@ -200,11 +205,11 @@ class TestClientLinterCallback(TestCase):
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
+        self.validate_results_and_log(results, linter_cb, self.expected_success, self.expected_status)
 
     def test_callbackSimpleJob_LintNotFinished(self):
         # given
-        self.unzip_resource_files("id_mat_ulb.zip")
+        self.unzip_resource_files("id_mat_ulb.zip", convert_finished=True)
         identifier = self.lint_callback_data['identifier']
 
         # when
@@ -216,27 +221,29 @@ class TestClientLinterCallback(TestCase):
     def test_callbackMultpleJob(self):
         # given
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
-        self.unzip_resource_files("en_ulb.zip")
+        self.unzip_resource_files("en_ulb.zip", convert_finished=True)
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
         self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
         self.expected_log_count = 36
         self.expected_multipart = True
         linter_cb = self.mock_client_linter_callback()
+        expected_success = True
+        expected_status = 'success'
 
         # when
         results = linter_cb.process_callback()
 
         # then
-        self.validate_results(results, linter_cb)
+        self.validate_results_and_log(results, linter_cb, expected_success, expected_status)
 
     def test_callbackMultpleJob_first_merged(self):
         # given
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
-        self.unzip_resource_files("en_ulb.zip")
+        self.unzip_resource_files("en_ulb.zip", convert_finished=True)
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
         self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
 
-        build_log_path = self.get_source_path()
+        build_log_path = self.get_source_path('build_log.json')
         build_log = file_utils.load_json_object(build_log_path)
         lint_log_path = self.get_source_path(file_name='lint_log.json')
         lint_log = file_utils.load_json_object(lint_log_path)
@@ -259,13 +266,14 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/2'
         self.lint_callback_data['identifier'] = '1234567890/4/2/03-LEV.usfm'
-        self.unzip_resource_files("en_ulb.zip")
-        build_log_path = self.get_source_path()
+        self.unzip_resource_files("en_ulb.zip", convert_finished=False)
+        build_log_path = self.get_source_path('build_log.json')
         build_log = file_utils.load_json_object(build_log_path)
         build_log['errors'].append('convert error')
         build_log['success'] = False
         build_log['status'] = 'errors'
         file_utils.write_file(build_log_path, build_log)
+        self.finish_convert(self.source_folder)
         self.expected_error_count = 1
         self.expected_success = False
         self.expected_status = "errors"
@@ -284,9 +292,10 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
         self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
-        self.unzip_resource_files("en_ulb.zip")
-        build_log_path = self.get_source_path()
+        self.unzip_resource_files("en_ulb.zip", convert_finished=False)
+        build_log_path = self.get_source_path('build_log.json')
         file_utils.remove(build_log_path)
+        self.finish_convert(self.source_folder)
         identifier = self.lint_callback_data['identifier']
 
         # when
@@ -300,7 +309,7 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
         self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
-        self.unzip_resource_files("en_ulb.zip")
+        self.unzip_resource_files("en_ulb.zip", convert_finished=True)
         finished_path = self.get_source_path(file_name='finished')
         file_utils.remove(finished_path)
         identifier = self.lint_callback_data['identifier']
@@ -316,7 +325,7 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/0'
         self.lint_callback_data['identifier'] = '1234567890/4/0/01-GEN.usfm'
-        self.unzip_resource_files("en_ulb.zip")
+        self.unzip_resource_files("en_ulb.zip", convert_finished=True)
         lint_log_path = self.get_source_path(file_name='lint_log.json')
         file_utils.remove(lint_log_path)
         identifier = self.lint_callback_data['identifier']
@@ -332,9 +341,10 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
         self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
-        self.unzip_resource_files("en_ulb.zip")
-        build_log_path = self.get_source_path()
+        self.unzip_resource_files("en_ulb.zip", convert_finished=False)
+        build_log_path = self.get_source_path('build_log.json')
         file_utils.remove(build_log_path)
+        self.finish_convert(self.source_folder)
         identifier = self.lint_callback_data['identifier']
 
         # when
@@ -348,7 +358,7 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
         self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
-        self.unzip_resource_files("en_ulb.zip")
+        self.unzip_resource_files("en_ulb.zip", convert_finished=True)
         finished_path = self.get_source_path(file_name='finished')
         file_utils.remove(finished_path)
         identifier = self.lint_callback_data['identifier']
@@ -364,7 +374,7 @@ class TestClientLinterCallback(TestCase):
         self.results_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.lint_callback_data['s3_results_key'] = self.results_key + '/3'
         self.lint_callback_data['identifier'] = '1234567890/4/3/05-DEU.usfm'
-        self.unzip_resource_files("en_ulb.zip")
+        self.unzip_resource_files("en_ulb.zip", convert_finished=True)
         lint_log_path = self.get_source_path(file_name='lint_log.json')
         file_utils.remove(lint_log_path)
         identifier = self.lint_callback_data['identifier']
@@ -380,22 +390,41 @@ class TestClientLinterCallback(TestCase):
     # helpers
     #
 
+    def validate_results_and_log(self, results, linter_cb, expected_success, expected_status):
+        self.validate_results(results, linter_cb)
+        self.validate_build_log(expected_status, expected_success)
+
+    def validate_build_log(self, expected_status, expected_success):
+        key = "{0}/{1}".format(self.lint_callback_data['s3_results_key'], 'build_log.json')
+        build_log = App.cdn_s3_handler().get_json(key)
+        self.assertEquals(build_log['success'], expected_success)
+        self.assertEquals(build_log['status'], expected_status)
+
     def get_results_folder(self):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'])
         return build_log_path
 
-    def get_source_path(self, file_name='build_log.json'):
+    def get_source_path(self, file_name):
         build_log_path = os.path.join(self.source_folder, self.lint_callback_data['s3_results_key'],
                                       file_name)
         return build_log_path
 
-    def unzip_resource_files(self, resource_file_name):
+    def unzip_resource_files(self, resource_file_name, convert_finished):
         self.source_zip = os.path.join(self.resources_dir, "conversion_callback", resource_file_name)
         self.source_folder = tempfile.mkdtemp(dir=self.temp_dir, prefix='sources_')
         unzip(self.source_zip, self.source_folder)
         source_subfolder = os.path.join(self.source_folder, resource_file_name.split('.')[0])
         results_subfolder = os.path.join(self.source_folder, self.results_key)
         file_utils.copy_tree(source_subfolder, results_subfolder)
+        if convert_finished:
+            self.finish_convert(results_subfolder)
+
+    def finish_convert(self, results_subfolder):
+        for root, dirs, files in os.walk(results_subfolder):
+            for f in sorted(files):
+                if f == 'build_log.json':
+                    shutil.copy(os.path.join(root, 'build_log.json'),
+                                os.path.join(root, 'convert_log.json'))
 
     def validate_results(self, results, linter_cb):
         self.assertIsNotNone(results)

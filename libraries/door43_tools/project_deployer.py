@@ -49,7 +49,7 @@ class ProjectDeployer(object):
             return False
 
         start = time.time()
-        App.logger.debug("Deploying, build log: " + json.dumps(build_log))
+        App.logger.debug("Deploying, build log: " + json.dumps(build_log)[:256])
 
         user = build_log['repo_owner']
         repo_name = build_log['repo_name']
@@ -134,11 +134,11 @@ class ProjectDeployer(object):
             # update index of templated files
             index_json_fname = 'index.json'
             index_json = self.get_templater_index(s3_commit_key, index_json_fname)
-            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:120])
+            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:256])
             self.update_index_key(index_json, templater, 'titles')
             self.update_index_key(index_json, templater, 'chapters')
             self.update_index_key(index_json, templater, 'book_codes')
-            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:120])
+            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:256])
             out_file = os.path.join(output_dir, index_json_fname)
             write_file(out_file, index_json)
             App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + index_json_fname)
