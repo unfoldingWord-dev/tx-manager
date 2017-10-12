@@ -1,11 +1,14 @@
 from __future__ import print_function, unicode_literals
 import os
+import re
 from libraries.app.app import App
 from libraries.general_tools import file_utils
 from libraries.linters.markdown_linter import MarkdownLinter
 
 
 class TwLinter(MarkdownLinter):
+
+    link_marker_re = re.compile(r'\]\(([^\n()]+)\)', re.UNICODE)
 
     def lint(self):
         """
@@ -18,27 +21,26 @@ class TwLinter(MarkdownLinter):
         for root, dirs, files in os.walk(self.source_dir):
             for f in files:
                 file_path = os.path.join(root, f)
-                parts = os.path.splitext(file_path)
+                parts = os.path.splitext(f)
                 if parts[1] == '.md':
-                    App.logger.debug("Processing: " + f)
                     contents = file_utils.read_file(file_path)
-
-                    # find uncoverted links
-                    self.find_unconverted_link(f, contents, '(../')
-                    self.find_unconverted_link(f, contents, '(./')
+                    self.find_invalid_links(root, f, contents)
 
         return super(TwLinter, self).lint()  # Runs checks on Markdown, using the markdown linter
 
-    def find_unconverted_link(self, f, contents, link):
-        pos = contents.find(link)
-        while pos >= 0:
-            link_start = contents.rfind('[', 0, pos)
-            if link_start < 0:
-                link_start = 0
-            line_start = contents.rfind('\n', 0, pos)
-            if line_start > link_start:
-                link_start = line_start + 1
-            end = contents.find(')', pos + 1)
-            invalid_link = contents[link_start:end + 1]
-            self.log.warning("{0} - Invalid link: {1}".format(f, invalid_link))
-            pos = contents.find(link, end)
+    def find_invalid_links(self, folder, f, contents):
+        for link_match in TwLinter.link_marker_re.finditer(contents):
+            link = link_match.group(1)
+            if link:
+                if link[:4] == 'http':
+                    continue
+                if link.find('.md') < 0:
+                    continue
+
+                file_path = os.path.join(folder, link)
+                file_path_abs = os.path.abspath(file_path)
+                exists = os.path.exists(file_path_abs)
+                if not exists:
+                    msg = "{0}: contains invalid link: ({1})".format(f, link)
+                    self.log.warnings.append(msg)
+                    App.logger.debug(msg)
