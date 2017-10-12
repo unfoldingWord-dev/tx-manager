@@ -207,7 +207,7 @@ class ClientLinterCallback(object):
                 App.logger.debug('Convert not finished for {0}'.format(s3_results_key))
                 return None
 
-            part_build_log = ClientLinterCallback.get_results(s3_results_key, "build_log.json")
+            part_build_log = ClientLinterCallback.get_results(s3_results_key, "convert_log.json")
             if part_build_log:
                 part_build_log_combined = ClientLinterCallback.merge_build_status_for_file(part_build_log,
                                                                                            s3_results_key,
@@ -221,7 +221,7 @@ class ClientLinterCallback(object):
                 else:
                     App.logger.debug('Lint_log.json not found for {0}'.format(s3_results_key))
             else:
-                App.logger.debug('Build_log.json not found for {0}'.format(s3_results_key))
+                App.logger.debug('convert_log.json not found for {0}'.format(s3_results_key))
 
             return None
 

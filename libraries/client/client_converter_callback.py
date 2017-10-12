@@ -124,15 +124,15 @@ class ClientConverterCallback(object):
             self.upload_converted_files(upload_key, unzip_dir)
 
         if multiple_project:
-            # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = self.update_build_log(s3_commit_key, part_id + "/")
+            # Now download the existing build_log.json file, update it and upload it back to S3 as convert_log
+            build_log_json = self.update_convert_log(s3_commit_key, part_id + "/")
 
             # mark current part as finished
             self.cdn_upload_contents({}, s3_commit_key + '/' + part_id + '/finished')
 
         else:  # single part conversion
-            # Now download the existing build_log.json file, update it and upload it back to S3
-            build_log_json = self.update_build_log(s3_commit_key)
+            # Now download the existing build_log.json file, update it and upload it back to S3 as convert_log
+            build_log_json = self.update_convert_log(s3_commit_key)
 
             self.cdn_upload_contents({}, s3_commit_key + '/finished')  # flag finished
 
@@ -163,12 +163,12 @@ class ClientConverterCallback(object):
                 App.logger.debug('Uploading {0} to {1}'.format(f, key))
                 App.cdn_s3_handler().upload_file(path, key, cache_time=0)
 
-    def update_build_log(self, s3_base_key, part=''):
+    def update_convert_log(self, s3_base_key, part=''):
         build_log_json = self.get_build_log(s3_base_key, part)
-        self.upload_build_log(build_log_json, s3_base_key, part)
+        self.upload_convert_log(build_log_json, s3_base_key, part)
         return build_log_json
 
-    def upload_build_log(self, build_log_json, s3_base_key, part=''):
+    def upload_convert_log(self, build_log_json, s3_base_key, part=''):
         if self.job.started_at:
             build_log_json['started_at'] = self.job.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
@@ -192,7 +192,7 @@ class ClientConverterCallback(object):
             build_log_json['errors'] = self.job.errors
         else:
             build_log_json['errors'] = []
-        build_log_key = self.get_build_log_key(s3_base_key, part)
+        build_log_key = self.get_build_log_key(s3_base_key, part, name='convert_log.json')
         App.logger.debug('Writing build log to ' + build_log_key)
         # App.logger.debug('build_log contents: ' + json.dumps(build_log_json))
         self.cdn_upload_contents(build_log_json, build_log_key)
@@ -212,6 +212,6 @@ class ClientConverterCallback(object):
         return build_log_json
 
     @staticmethod
-    def get_build_log_key(s3_base_key, part=''):
-        upload_key = '{0}/{1}build_log.json'.format(s3_base_key, part)
+    def get_build_log_key(s3_base_key, part='', name='build_log.json'):
+        upload_key = '{0}/{1}{2}'.format(s3_base_key, part, name)
         return upload_key
