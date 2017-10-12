@@ -127,7 +127,7 @@ class ClientLinterCallback(object):
         multiple_project = len(id_parts) > 3
 
         if not multiple_project:
-            App.logger.debug('Single job: checking if convert and lint have complete.')
+            App.logger.debug('Single job: checking if convert and lint have completed.')
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, s3_results_key, output_dir)
         else:
             App.logger.debug('Multiple parts: Checking if all parts completed.')
