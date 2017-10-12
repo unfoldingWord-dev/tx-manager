@@ -145,7 +145,7 @@ class ProjectDeployer(object):
 
         else:
             # merge multi-part project
-            App.cdn_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
+            App.door43_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
             source_dir = os.path.join(source_dir, download_key)
             files = sorted(glob(os.path.join(source_dir, '*.*')))
             for f in files:
