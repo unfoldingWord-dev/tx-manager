@@ -5,6 +5,7 @@ import unittest
 import codecs
 import shutil
 from contextlib import closing
+from libraries.client.preprocessors import TqPreprocessor
 from libraries.converters.md2html_converter import Md2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree, unzip, remove
 from bs4 import BeautifulSoup
@@ -131,8 +132,12 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        # TODO blm: new list
-        files_to_verify = ['index.html','kt.html','names.html','other.html','config.yaml','manifest.yaml']
+        files_to_verify = ['00-toc.html','manifest.yaml']
+        for section in TqPreprocessor.sections:
+            book = section['book']
+            file = '{0}.html'.format(book)
+            files_to_verify.append(file)
+
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'

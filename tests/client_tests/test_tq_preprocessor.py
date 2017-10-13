@@ -28,21 +28,27 @@ class TestTqPreprocessor(unittest.TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_tq_preprocessor(self):
+        # given
         repo_name = 'en_tq'
         file_name = os.path.join('raw_sources', repo_name + '.zip')
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         repo_name = 'dummy_repo'
+
+        # when
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+
+        # then
         self.assertEquals(preproc.repo_name, repo_name)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
-        index = read_file(os.path.join(self.out_dir, '0toc.md'))
+        index = read_file(os.path.join(self.out_dir, '00-toc.md'))
         gen = read_file(os.path.join(self.out_dir, '01-GEN.md'))
 
     def test_tq_preprocessor_dummy_section(self):
+        # given
         TqPreprocessor.sections = [{'book': "dummy", 'title': 'dummy'}]
         repo_name = 'en_tq'
         file_name = os.path.join('raw_sources', 'en_tq_two_books.zip')
@@ -50,9 +56,13 @@ class TestTqPreprocessor(unittest.TestCase):
         repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         repo_name = 'dummy_repo'
+
+        # when
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+
+        # then
         self.assertEquals(preproc.repo_name, repo_name)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
 
     @classmethod
     def extractFiles(cls, file_name, repo_name):

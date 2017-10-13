@@ -531,7 +531,7 @@ class TqPreprocessor(Preprocessor):
                 self.toc += '* [{1}]({0}.html)\n\n'.format(section['book'], section['title'])
 
         self.toc = self.fix_links(self.toc, '-')
-        output_file = os.path.join(self.output_dir, '0toc.md')
+        output_file = os.path.join(self.output_dir, '00-toc.md')
         write_file(output_file, self.toc)
 
         # Copy the toc and config.yaml file to the output dir so they can be used to
