@@ -5,6 +5,7 @@ import json
 import time
 from glob import glob
 from shutil import copyfile
+
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
@@ -86,94 +87,17 @@ class ProjectDeployer(object):
         App.door43_s3_handler().download_file(template_key, template_file)
 
         if not multi_merge:
-            App.cdn_s3_handler().download_dir(download_key + '/', source_dir)
-            source_dir = os.path.join(source_dir, download_key)
-
-            elapsed_seconds = int(time.time() - start)
-            App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
-
-            html_files = sorted(glob(os.path.join(source_dir, '*.html')))
-            if len(html_files) < 1:
-                content = ''
-                if len(build_log['errors']) > 0:
-                    content += """
-                        <div style="text-align:center;margin-bottom:20px">
-                            <i class="fa fa-times-circle-o" style="font-size: 250px;font-weight: 300;color: red"></i>
-                            <br/>
-                            <h2>Critical!</h2>
-                            <h3>Here is what went wrong with this build:</h3>
-                        </div>
-                    """
-                    content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
-                else:
-                    content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
-                    content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
-                html = """
-                    <html lang="en">
-                        <head>
-                            <title>{0}</title>
-                        </head>
-                        <body>
-                            <div id="content">{1}</div>
-                        </body>
-                    </html>""".format(repo_name, content)
-                repo_index_file = os.path.join(source_dir, 'index.html')
-                write_file(repo_index_file, html)
-
-            # merge the source files with the template
-            templater = init_template(resource_type, source_dir, output_dir, template_file)
-
-            try:
-                self.run_templater(templater)
-            except Exception as e:
-                App.logger.error("Error applying template {0} to resource type {1}".format(template_file,
-                                                                                           resource_type))
-                self.close()
-                return False
-
-            # update index of templated files
-            index_json_fname = 'index.json'
-            index_json = self.get_templater_index(s3_commit_key, index_json_fname)
-            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:256])
-            self.update_index_key(index_json, templater, 'titles')
-            self.update_index_key(index_json, templater, 'chapters')
-            self.update_index_key(index_json, templater, 'book_codes')
-            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:256])
-            out_file = os.path.join(output_dir, index_json_fname)
-            write_file(out_file, index_json)
-            App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + index_json_fname)
+            source_dir, success = self.deploy_single_conversion(build_log, download_key, output_dir, repo_name,
+                                                                resource_type, s3_commit_key, source_dir, start,
+                                                                template_file)
+            if not success:
+                return
 
         else:
             # merge multi-part project
-            App.door43_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
-            source_dir = os.path.join(source_dir, download_key)
-            files = sorted(glob(os.path.join(source_dir, '*.*')))
-            for f in files:
-                App.logger.debug("Downloaded: " + f)
-
-            fname = os.path.join(source_dir, 'index.html')
-            if os.path.isfile(fname):
-                os.remove(fname)  # remove index if already exists
-
-            elapsed_seconds = int(time.time() - start)
-            App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
-
-            templater = init_template(resource_type, source_dir, output_dir, template_file)
-
-            # restore index from previous passes
-            index_json = self.get_templater_index(s3_commit_key, 'index.json')
-            templater.titles = index_json['titles']
-            templater.chapters = index_json['chapters']
-            templater.book_codes = index_json['book_codes']
-            templater.already_converted = templater.files  # do not reconvert files
-
-            # merge the source files with the template
-            try:
-                self.run_templater(templater)
-            except Exception as e:
-                App.logger.error("Error multi-part applying template {0} to resource type {1}".format(template_file,
-                                                                                                      resource_type))
-                self.close()
+            source_dir, success = self.deploy_multipart_master(s3_commit_key, resource_type, download_key, output_dir,
+                                                               source_dir, start, template_file)
+            if not success:
                 return False
 
         # Copy first HTML file to index.html if index.html doesn't exist
@@ -198,7 +122,7 @@ class ProjectDeployer(object):
 
         # save master build_log.json
         file_utils.write_file(os.path.join(output_dir, 'build_log.json'), build_log)
-        App.logger.debug("Final build_log.json:\n" + json.dumps(build_log))
+        App.logger.debug("Final build_log.json:\n" + json.dumps(build_log)[:256])
 
         # Upload all files to the door43.org bucket
         for root, dirs, files in os.walk(output_dir):
@@ -218,19 +142,137 @@ class ProjectDeployer(object):
                                              to_key='{0}/manifest.json'.format(s3_repo_key))
                 App.door43_s3_handler().redirect(s3_repo_key, '/' + s3_commit_key)
                 App.door43_s3_handler().redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
+                self.write_data_to_file(output_dir, s3_commit_key, 'deployed', ' ')  # flag that deploy has finished
             except:
                 pass
 
-        else:
+        else:  # if processing part
             if App.cdn_s3_handler().key_exists(s3_commit_key + '/final_build_log.json'):
+                App.logger.debug("final build detected")
                 App.logger.debug("conversions all finished, trigger final merge")
                 App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
                                           to_key=s3_commit_key + '/build_log.json')
 
+            self.write_data_to_file(output_dir, download_key, 'deployed', ' ')  # flag that deploy has finished
+
         elapsed_seconds = int(time.time() - start)
-        App.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("deploy type partial={0}, multi_merge={1}".format(partial, multi_merge))
+        App.logger.debug("deploy completed in {0} seconds".format(elapsed_seconds))
         self.close()
         return True
+
+    def deploy_multipart_master(self, s3_commit_key, resource_type, download_key, output_dir, source_dir, start,
+                                template_file):
+        prefix = download_key + '/'
+        undeployed = self.get_undeployed_parts(prefix)
+        if len(undeployed) > 0:
+            App.logger.debug("Parts not deployed: {0}".format(undeployed))
+
+        App.door43_s3_handler().download_dir(prefix, source_dir)  # get previous templated files
+        source_dir = os.path.join(source_dir, download_key)
+        files = sorted(glob(os.path.join(source_dir, '*.*')))
+        for f in files:
+            App.logger.debug("Downloaded: " + f)
+        fname = os.path.join(source_dir, 'index.html')
+        if os.path.isfile(fname):
+            os.remove(fname)  # remove index if already exists
+        elapsed_seconds = int(time.time() - start)
+        App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
+        templater = init_template(resource_type, source_dir, output_dir, template_file)
+        # restore index from previous passes
+        index_json = self.get_templater_index(s3_commit_key, 'index.json')
+        templater.titles = index_json['titles']
+        templater.chapters = index_json['chapters']
+        templater.book_codes = index_json['book_codes']
+        templater.already_converted = templater.files  # do not reconvert files
+        # merge the source files with the template
+        try:
+            self.run_templater(templater)
+            success = True
+        except Exception as e:
+            App.logger.error("Error multi-part applying template {0} to resource type {1}".format(template_file,
+                                                                                                  resource_type))
+            self.close()
+            success = False
+        return source_dir, success
+
+    def get_undeployed_parts(self, prefix):
+        unfinished = []
+        for o in App.cdn_s3_handler().get_objects(prefix=prefix, suffix='/build_log.json'):
+            parts = o.key.split(prefix)
+            if len(parts) == 2:
+                parts = parts[1].split('/')
+                if len(parts) > 1:
+                    part_num = parts[0]
+                    deployed_key = prefix + part_num + '/deployed'
+                    if not App.cdn_s3_handler().key_exists(deployed_key):
+                        App.logger.debug("Part {0} unfinished".format(part_num))
+                        unfinished.append(part_num)
+        return unfinished
+
+    def deploy_single_conversion(self, build_log, download_key, output_dir, repo_name, resource_type, s3_commit_key,
+                                 source_dir, start, template_file):
+        App.cdn_s3_handler().download_dir(download_key + '/', source_dir)
+        source_dir = os.path.join(source_dir, download_key)
+        elapsed_seconds = int(time.time() - start)
+        App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
+        html_files = sorted(glob(os.path.join(source_dir, '*.html')))
+        if len(html_files) < 1:
+            content = ''
+            if len(build_log['errors']) > 0:
+                content += """
+                        <div style="text-align:center;margin-bottom:20px">
+                            <i class="fa fa-times-circle-o" style="font-size: 250px;font-weight: 300;color: red"></i>
+                            <br/>
+                            <h2>Critical!</h2>
+                            <h3>Here is what went wrong with this build:</h3>
+                        </div>
+                    """
+                content += '<div><ul><li>' + '</li><li>'.join(build_log['errors']) + '</li></ul></div>'
+            else:
+                content += '<h1 class="conversion-requested">{0}</h1>'.format(build_log['message'])
+                content += '<p><i>No content is available to show for {0} yet.</i></p>'.format(repo_name)
+            html = """
+                    <html lang="en">
+                        <head>
+                            <title>{0}</title>
+                        </head>
+                        <body>
+                            <div id="content">{1}</div>
+                        </body>
+                    </html>""".format(repo_name, content)
+            repo_index_file = os.path.join(source_dir, 'index.html')
+            write_file(repo_index_file, html)
+
+        # merge the source files with the template
+        templater = init_template(resource_type, source_dir, output_dir, template_file)
+        try:
+            self.run_templater(templater)
+            success = True
+        except Exception as e:
+            App.logger.error("Error applying template {0} to resource type {1}".format(template_file,
+                                                                                       resource_type))
+            self.close()
+            success = False
+
+        if success:
+            # update index of templated files
+            index_json_fname = 'index.json'
+            index_json = self.get_templater_index(s3_commit_key, index_json_fname)
+            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:256])
+            self.update_index_key(index_json, templater, 'titles')
+            self.update_index_key(index_json, templater, 'chapters')
+            self.update_index_key(index_json, templater, 'book_codes')
+            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:256])
+            self.write_data_to_file(output_dir, s3_commit_key, index_json_fname, index_json)
+        return source_dir, success
+
+    def write_data_to_file(self, output_dir, s3_commit_key, fname, data):
+        out_file = os.path.join(output_dir, fname)
+        write_file(out_file, data)
+        key = s3_commit_key + '/' + fname
+        App.logger.debug("Writing {0} to {1}': ".format(fname, key))
+        App.cdn_s3_handler().upload_file(out_file, key, cache_time=0)
 
     def run_templater(self, templater):  # for test purposes
         templater.run()
