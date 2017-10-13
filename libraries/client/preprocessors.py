@@ -528,7 +528,7 @@ class TqPreprocessor(Preprocessor):
                 markdown = self.fix_links(initial_markdown, book)
                 if initial_markdown != markdown:
                     write_file(file, markdown)
-                self.toc += '* [{1}]({0}.html)\n\n'.format(section['book'], section['title'])
+                self.toc += '* [{1}](./{0}.html)\n'.format(section['book'], section['title'])
 
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')
