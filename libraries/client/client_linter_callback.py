@@ -103,12 +103,12 @@ class ClientLinterCallback(object):
         return build_log
 
     @staticmethod
-    def upload_build_log(build_log, file_name, output_dir, s3_results_key):
+    def upload_build_log(build_log, file_name, output_dir, s3_results_key, cache_time=0):
         build_log_file = os.path.join(output_dir, file_name)
         write_file(build_log_file, build_log)
         upload_key = '{0}/{1}'.format(s3_results_key, file_name)
         App.logger.debug('Saving build log to ' + upload_key)
-        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=0)
+        App.cdn_s3_handler().upload_file(build_log_file, upload_key, cache_time=cache_time)
 
     @staticmethod
     def deploy_if_conversion_finished(s3_results_key, identifier):
@@ -125,6 +125,7 @@ class ClientLinterCallback(object):
         build_log = None
         id_parts = identifier.split('/')
         multiple_project = len(id_parts) > 3
+        all_parts_completed = True
 
         if not multiple_project:
             App.logger.debug('Single job: checking if convert and lint have completed.')
@@ -137,9 +138,9 @@ class ClientLinterCallback(object):
                 build_log = ClientLinterCallback.merge_build_status_for_part(build_log, part_key, output_dir)
                 if build_log is None:
                     App.logger.debug('Part {0} not complete'.format(part_key))
-                    break
+                    all_parts_completed = False
 
-        if build_log is not None:  # if all parts found, save build log and kick off deploy
+        if all_parts_completed and (build_log is not None):  # if all parts found, save build log and kick off deploy
             # set overall status
             if len(build_log['errors']):
                 build_log['status'] = 'errors'
@@ -149,7 +150,8 @@ class ClientLinterCallback(object):
             if multiple_project:
                 build_log['multiple'] = True
 
-            ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key)
+            ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key,
+                                                  cache_time=600)
             ClientLinterCallback.update_project_file(build_log, output_dir)
             App.logger.debug('All parts completed, deploying')
         else:
