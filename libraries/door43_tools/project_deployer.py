@@ -5,6 +5,8 @@ import json
 import time
 from glob import glob
 from shutil import copyfile
+
+from libraries.client.client_linter_callback import ClientLinterCallback
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
@@ -162,15 +164,10 @@ class ProjectDeployer(object):
         unfinished = self.get_undeployed_parts(prefix)
         if len(unfinished) > 0:
             App.logger.debug("Parts not finished: {0}".format(unfinished))
-            for part in unfinished:
-                build_log_key = prefix + part + '/build_log.json'
-                try:
-                    build_log = App.cdn_s3_handler().get_json(build_log_key, catch_exception=False)
-                except Exception as e:
-                    App.logger.debug("Deploying error could not access {0}: {1}".format(build_log_key, str(e)))
-                self.retrigger_deploy(s3_commit_key)
-
-            App.logger.debug("multipart merge not completed")
+            # results = ClientLinterCallback.deploy_if_conversion_finished(s3_commit_key, identifier)
+            # if results:
+            #     self.all_parts_completed = True
+            #     build_log_json = results
             return None, False
 
         App.door43_s3_handler().download_dir(prefix, source_dir)  # get previous templated files
