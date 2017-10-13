@@ -73,7 +73,6 @@ class ProjectDeployer(object):
 
             if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
                 App.logger.debug("Not ready to process partial")
-                self.retrigger_deploy(download_key)
                 return False
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
