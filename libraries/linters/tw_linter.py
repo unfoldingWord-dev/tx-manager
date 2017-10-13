@@ -8,6 +8,7 @@ from libraries.linters.markdown_linter import MarkdownLinter
 
 class TwLinter(MarkdownLinter):
 
+    # match links of form '](link)'
     link_marker_re = re.compile(r'\]\(([^\n()]+)\)', re.UNICODE)
 
     def lint(self):
