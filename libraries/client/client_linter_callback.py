@@ -193,6 +193,8 @@ class ClientLinterCallback(object):
             job.insert()
 
         ClientLinterCallback.upload_build_log(build_log, 'merged.json', output_dir, s3_results_key)
+        # update build_log to start deploy of part
+        ClientLinterCallback.upload_build_log(build_log, 'build_log.json', output_dir, s3_results_key)
         return
 
     @staticmethod
