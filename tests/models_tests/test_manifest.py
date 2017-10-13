@@ -115,3 +115,28 @@ class TxManifestTests(TestCase):
         self.assertIsNotNone(tx_manifest)
         tx_manifest.delete()
         self.assertEqual(TxManifest.query(repo_name=repo_name, user_name=user_name).count(), 0)
+
+    def test_manifest_last_modified_not_auto_updating(self):
+        sometime = datetime.strptime('2017-02-11T15:43:11Z', '%Y-%m-%dT%H:%M:%SZ')
+        manifest = TxManifest(**{
+            'repo_name': 'es_ulb',
+            'user_name': 'franco',
+            'lang_code': 'es',
+            'resource_id': 'ulb',
+            'resource_type': 'bundle',
+            'title': 'Unlocked Literal Bible',
+            'views': 12,
+            'last_updated': sometime,
+            #'manifest': read_file(os.path.join(self.resources_dir, 'obs_manifest.yaml'))
+        })
+        manifest.insert()
+        manifest_from_db = TxManifest.get(manifest.id)
+        self.assertEqual(manifest_from_db.last_updated, sometime)
+        manifest.views = manifest.views + 1
+        manifest.update()
+        manifest_from_db = TxManifest.get(manifest.id)
+        self.assertEqual(manifest_from_db.last_updated, sometime)
+        manifest.last_updated = datetime.strptime('2018-03-12T15:43:11Z', '%Y-%m-%dT%H:%M:%SZ')
+        manifest.update()
+        manifest_from_db = TxManifest.get(manifest.id)
+        self.assertNotEqual(manifest_from_db.last_updated, sometime)
