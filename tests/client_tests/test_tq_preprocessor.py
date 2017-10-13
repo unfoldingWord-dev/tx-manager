@@ -36,10 +36,10 @@ class TestTqPreprocessor(unittest.TestCase):
         repo_name = 'dummy_repo'
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
         self.assertEquals(preproc.repo_name, repo_name)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
-        index = read_file(os.path.join(self.out_dir, 'index.md'))
+        index = read_file(os.path.join(self.out_dir, '0toc.md'))
         gen = read_file(os.path.join(self.out_dir, '01-GEN.md'))
 
     def test_tq_preprocessor_dummy_section(self):
@@ -52,7 +52,7 @@ class TestTqPreprocessor(unittest.TestCase):
         repo_name = 'dummy_repo'
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
         self.assertEquals(preproc.repo_name, repo_name)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
 
     @classmethod
     def extractFiles(cls, file_name, repo_name):

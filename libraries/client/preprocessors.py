@@ -499,21 +499,21 @@ class TqPreprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(TqPreprocessor, self).__init__(*args, **kwargs)
         self.section_container_id = 1
-        self.index = ''
+        self.toc = ''
         self.repo_name = ''
 
     def run(self):
         super(TqPreprocessor, self).run()
-        self.index = None
+        self.toc = None
         projects = {}
         for idx, project in enumerate(self.rc.projects):
             section = self.get_section_for_file(project.identifier)
             if section:
                 link = self.get_link_for_section(section)
                 book = section['book']
-                if not self.index:
-                    self.index = '# {0}\n\n'.format(project.title)
-                    self.index += '## Table of Contents:\n\n'
+                if not self.toc:
+                    self.toc = '# {0}\n\n'.format(project.title)
+                    self.toc += '## Table of Contents:\n\n'
                 projects[book] = {
                     'link': link,
                 }
@@ -528,11 +528,11 @@ class TqPreprocessor(Preprocessor):
                 markdown = self.fix_links(initial_markdown, book)
                 if initial_markdown != markdown:
                     write_file(file, markdown)
-                self.index += '* [{1}]({0}.html)\n\n'.format(section['book'], section['title'])
+                self.toc += '* [{1}]({0}.html)\n\n'.format(section['book'], section['title'])
 
-        self.index = self.fix_links(self.index, '-')
-        output_file = os.path.join(self.output_dir, 'index.md')
-        write_file(output_file, self.index)
+        self.toc = self.fix_links(self.toc, '-')
+        output_file = os.path.join(self.output_dir, '0toc.md')
+        write_file(output_file, self.toc)
 
         # Copy the toc and config.yaml file to the output dir so they can be used to
         # generate the ToC on live.door43.org
