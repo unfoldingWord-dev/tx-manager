@@ -143,16 +143,19 @@ class ProjectDeployer(object):
                                              to_key='{0}/manifest.json'.format(s3_repo_key))
                 App.door43_s3_handler().redirect(s3_repo_key, '/' + s3_commit_key)
                 App.door43_s3_handler().redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
+                self.write_data_to_file(output_dir, s3_commit_key, 'deployed', ' ')  # flag that deploy has finished
             except:
                 pass
 
         else:  # if processing part
             if App.cdn_s3_handler().key_exists(s3_commit_key + '/final_build_log.json'):
+                App.logger.debug("final build detected")
                 App.logger.debug("conversions all finished, trigger final merge")
                 App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
                                           to_key=s3_commit_key + '/build_log.json')
 
-        self.upload_file(output_dir, s3_commit_key, 'deployed', ' ')  # flag that deploy has finished
+                self.write_data_to_file(output_dir, download_key, 'deployed', ' ')  # flag that deploy has finished
+
         elapsed_seconds = int(time.time() - start)
         App.logger.debug("deploy type partial={0}, multi_merge={1}".format(partial, multi_merge))
         App.logger.debug("deploy completed in {0} seconds".format(elapsed_seconds))
@@ -267,10 +270,10 @@ class ProjectDeployer(object):
             self.update_index_key(index_json, templater, 'chapters')
             self.update_index_key(index_json, templater, 'book_codes')
             App.logger.debug("final 'index.json': " + json.dumps(index_json)[:256])
-            self.upload_file(output_dir, s3_commit_key, index_json_fname, index_json)
+            self.write_data_to_file(output_dir, s3_commit_key, index_json_fname, index_json)
         return source_dir, success
 
-    def upload_file(self, output_dir, s3_commit_key, fname, data):
+    def write_data_to_file(self, output_dir, s3_commit_key, fname, data):
         out_file = os.path.join(output_dir, fname)
         write_file(out_file, data)
         App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + fname, cache_time=0)
