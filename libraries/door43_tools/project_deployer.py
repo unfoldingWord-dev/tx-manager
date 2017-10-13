@@ -276,7 +276,9 @@ class ProjectDeployer(object):
     def write_data_to_file(self, output_dir, s3_commit_key, fname, data):
         out_file = os.path.join(output_dir, fname)
         write_file(out_file, data)
-        App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + fname, cache_time=0)
+        key = s3_commit_key + '/' + fname
+        App.logger.debug("Writing {0} to {1}': ".format(fname,))
+        App.cdn_s3_handler().upload_file(out_file, key, cache_time=0)
 
     def run_templater(self, templater):  # for test purposes
         templater.run()
