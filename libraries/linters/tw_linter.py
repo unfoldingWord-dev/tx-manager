@@ -42,16 +42,17 @@ class TwLinter(MarkdownLinter):
                 file_path_abs = os.path.abspath(file_path)
                 exists = os.path.exists(file_path_abs)
                 if not exists:
-                    url = self.get_file_url(f, folder)
-                    msg = "{0}: contains invalid link: ({1})".format(url, link)
+                    a = self.get_file_link(f, folder)
+                    msg = "{0}: contains invalid link: ({1})".format(a, link)
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
 
-    def get_file_url(self, f, folder):
+    def get_file_link(self, f, folder):
         parts = folder.split(self.source_dir)
         sub_path = self.source_dir  # default
         if len(parts) == 2:
             sub_path = parts[1][1:]
         url = "https://git.door43.org/{0}/{1}/src/master/{2}/{3}".format(self.repo_owner, self.repo_name,
                                                                          sub_path, f)
-        return url
+        a = '<a href="{0}">{1}/{2}</a>'.format(url, sub_path, f)
+        return a
