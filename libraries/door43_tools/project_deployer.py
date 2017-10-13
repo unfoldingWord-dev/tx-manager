@@ -154,7 +154,7 @@ class ProjectDeployer(object):
                 App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
                                           to_key=s3_commit_key + '/build_log.json')
 
-                self.write_data_to_file(output_dir, download_key, 'deployed', ' ')  # flag that deploy has finished
+            self.write_data_to_file(output_dir, download_key, 'deployed', ' ')  # flag that deploy has finished
 
         elapsed_seconds = int(time.time() - start)
         App.logger.debug("deploy type partial={0}, multi_merge={1}".format(partial, multi_merge))
@@ -165,9 +165,9 @@ class ProjectDeployer(object):
     def deploy_multipart_master(self, s3_commit_key, resource_type, download_key, output_dir, source_dir, start,
                                 template_file):
         prefix = download_key + '/'
-        unfinished = self.get_undeployed_parts(prefix)
-        if len(unfinished) > 0:
-            App.logger.debug("Parts not finished: {0}".format(unfinished))
+        undeployed = self.get_undeployed_parts(prefix)
+        if len(undeployed) > 0:
+            App.logger.debug("Parts not deployed: {0}".format(undeployed))
             # results = ClientLinterCallback.deploy_if_conversion_finished(s3_commit_key, identifier)
             # if results:
             #     self.all_parts_completed = True
