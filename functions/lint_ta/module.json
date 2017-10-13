@@ -1,0 +1,10 @@
+{
+    "name": "ta",
+    "version": "2",
+    "type": "linter",
+    "resource_types": ["ta"],
+    "input_format": ["md"],
+    "options": [],
+    "private_links": [],
+    "public_links": []
+}

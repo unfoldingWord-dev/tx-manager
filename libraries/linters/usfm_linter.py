@@ -35,7 +35,7 @@ class UsfmLinter(Linter):
                 if self.single_file and (f != self.single_file):
                     continue
 
-                App.logger.debug("converting: " + f)
+                App.logger.debug("linting: " + f)
                 file_path = os.path.join(root, f)
                 sub_path = '.' + file_path[len(self.source_dir):]
                 self.parse_file(file_path, sub_path, f)
@@ -83,12 +83,8 @@ class UsfmLinter(Linter):
 
             if len(errors):
                 for error in errors:
-                    parts = error.split( ":" )
+                    self.log.warning(error)
 
-                    if( len( parts ) < 2 ):
-                        parts.push( "")
-
-                    self.log.warning( "{0} {1} - {2}".format(book_code, " ".join( parts[1:] ), parts[0] ))
         except Exception as e:
             # for debugging
             self.log.warning("Failed to verify book '{0}', exception: {1}".format(file_name, str(e)))

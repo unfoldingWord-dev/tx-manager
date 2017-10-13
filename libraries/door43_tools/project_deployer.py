@@ -49,7 +49,7 @@ class ProjectDeployer(object):
             return False
 
         start = time.time()
-        App.logger.debug("Deploying, build log: " + json.dumps(build_log))
+        App.logger.debug("Deploying, build log: " + json.dumps(build_log)[:256])
 
         user = build_log['repo_owner']
         repo_name = build_log['repo_name']
@@ -134,18 +134,18 @@ class ProjectDeployer(object):
             # update index of templated files
             index_json_fname = 'index.json'
             index_json = self.get_templater_index(s3_commit_key, index_json_fname)
-            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:120])
+            App.logger.debug("initial 'index.json': " + json.dumps(index_json)[:256])
             self.update_index_key(index_json, templater, 'titles')
             self.update_index_key(index_json, templater, 'chapters')
             self.update_index_key(index_json, templater, 'book_codes')
-            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:120])
+            App.logger.debug("final 'index.json': " + json.dumps(index_json)[:256])
             out_file = os.path.join(output_dir, index_json_fname)
             write_file(out_file, index_json)
             App.cdn_s3_handler().upload_file(out_file, s3_commit_key + '/' + index_json_fname)
 
         else:
             # merge multi-part project
-            App.door43_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
+            App.cdn_s3_handler().download_dir(download_key + '/', source_dir)  # get previous templated files
             source_dir = os.path.join(source_dir, download_key)
             files = sorted(glob(os.path.join(source_dir, '*.*')))
             for f in files:
@@ -191,9 +191,9 @@ class ProjectDeployer(object):
 
             if partial:  # move files to common area
                 basename = os.path.basename(filename)
-                if ('finished' not in basename) and ('build_log' not in basename) and ('index.html' not in basename):
+                if basename not in ['finished', 'build_log.json', 'index.html', 'merged.json', 'lint_log.json']:
                     App.logger.debug("Moving {0} to common area".format(basename))
-                    App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, 0)
+                    App.cdn_s3_handler().upload_file(filename, s3_commit_key + '/' + basename, cache_time=0)
                     App.cdn_s3_handler().delete_file(download_key + '/' + basename)
 
         # save master build_log.json
@@ -208,7 +208,7 @@ class ProjectDeployer(object):
                     continue
                 key = s3_commit_key + path.replace(output_dir, '').replace(os.path.sep, '/')
                 App.logger.debug("Uploading {0} to {1}".format(path, key))
-                App.door43_s3_handler().upload_file(path, key, 0)
+                App.door43_s3_handler().upload_file(path, key, cache_time=0)
 
         if not partial:
             # Now we place json files and make an index.html file for the whole repo

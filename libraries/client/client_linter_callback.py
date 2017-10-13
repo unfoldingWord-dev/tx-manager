@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+from datetime import datetime
 from libraries.app.app import App
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip, write_file, remove_tree, remove
@@ -40,6 +41,7 @@ class ClientLinterCallback(object):
             self.errors = []
         self.temp_dir = tempfile.mkdtemp(suffix="", prefix="client_callback_")
         self.s3_results_key = s3_results_key
+        self.job = None
 
     def process_callback(self):
         if not self.identifier:
@@ -55,7 +57,7 @@ class ClientLinterCallback(object):
         id_parts = self.identifier.split('/')
         self.multipart = len(id_parts) > 3
         if self.multipart:
-            job_id, part_count, part_id, book = id_parts[:4]
+            part_count, part_id, book = id_parts[1:4]
             App.logger.debug('Multiple project, part {0} of {1}, linted book {2}'.
                              format(part_id, part_count, book))
             s3__master_results_key = '/'.join(self.s3_results_key.split('/')[:-1])
@@ -78,7 +80,8 @@ class ClientLinterCallback(object):
             build_log['warnings'].append(msg)
             App.logger.error(msg)
         else:
-            App.logger.debug("Linter {0} warnings:\n{1}".format(self.identifier, '\n'.join(self.warnings)))
+            App.logger.debug("Linter {0} {1} warnings:\n{1}".format(self.identifier, len(self.warnings),
+                                                                    '\n'.join(self.warnings[:5])))
 
         has_warnings = len(build_log['warnings']) > 0
         if has_warnings:
@@ -96,6 +99,7 @@ class ClientLinterCallback(object):
             build_log = results
 
         remove_tree(self.temp_dir)  # cleanup
+        App.db_close()
         return build_log
 
     @staticmethod
@@ -123,7 +127,7 @@ class ClientLinterCallback(object):
         multiple_project = len(id_parts) > 3
 
         if not multiple_project:
-            App.logger.debug('Single job: checking if convert and lint have complete.')
+            App.logger.debug('Single job: checking if convert and lint have completed.')
             build_log = ClientLinterCallback.merge_build_status_for_part(build_log, s3_results_key, output_dir)
         else:
             App.logger.debug('Multiple parts: Checking if all parts completed.')
@@ -141,6 +145,9 @@ class ClientLinterCallback(object):
                 build_log['status'] = 'errors'
             elif len(build_log['warnings']):
                 build_log['status'] = 'warnings'
+            build_log['ended_at'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            if multiple_project:
+                build_log['multiple'] = True
 
             ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
@@ -155,6 +162,7 @@ class ClientLinterCallback(object):
     def update_jobs_table(s3_results_key, build_log, output_dir):
         job_id = build_log['job_id']
         App.logger.debug('merging build_logs for job : ' + job_id)
+        build_log['ended_at'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         job = TxJob.get(job_id)
         if job:
             job.status = build_log['status']
@@ -163,6 +171,7 @@ class ClientLinterCallback(object):
             job.errors = build_log['errors']
             job.message = build_log['message']
             job.success = build_log['success']
+            job.ended_at = build_log['ended_at']
 
             # set overall status
             if len(job.errors):
@@ -173,14 +182,17 @@ class ClientLinterCallback(object):
 
             job.update()
         else:
-            job_data = {}
+            job_data = {'manifests_id': 0}  # set a default if not present
             for key in build_log:
                 if hasattr(TxJob, key):
                     job_data[key] = build_log[key]
             job = TxJob(**job_data)
             job.insert()
 
+        # flag this part as done
         ClientLinterCallback.upload_build_log(build_log, 'merged.json', output_dir, s3_results_key)
+        # trigger deployer to start templating this part of the conversion
+        ClientLinterCallback.upload_build_log(build_log, 'build_log.json', output_dir, s3_results_key)
         return
 
     @staticmethod
@@ -199,28 +211,26 @@ class ClientLinterCallback(object):
                 App.logger.debug('Convert not finished for {0}'.format(s3_results_key))
                 return None
 
-            part_build_log = ClientLinterCallback.get_results(s3_results_key, "build_log.json")
+            part_build_log = ClientLinterCallback.get_results(s3_results_key, "convert_log.json")
             if part_build_log:
                 part_build_log_combined = ClientLinterCallback.merge_build_status_for_file(part_build_log,
                                                                                            s3_results_key,
                                                                                            "lint_log.json",
                                                                                            linter_file=True)
                 if part_build_log_combined:
-                    if build_log:
-                        ClientLinterCallback.merge_results_logs(build_log, part_build_log_combined, linter_file=False)
-                    else:
-                        build_log = part_build_log_combined
+                    build_log = ClientLinterCallback.merge_results_logs(build_log, part_build_log_combined,
+                                                                        linter_file=False)
                     ClientLinterCallback.update_jobs_table(s3_results_key, part_build_log_combined, output_dir)
                     return build_log
                 else:
                     App.logger.debug('Lint_log.json not found for {0}'.format(s3_results_key))
             else:
-                App.logger.debug('Build_log.json not found for {0}'.format(s3_results_key))
+                App.logger.debug('convert_log.json not found for {0}'.format(s3_results_key))
 
             return None
 
         else:
-            ClientLinterCallback.merge_results_logs(build_log, part_build_log, linter_file=False)
+            build_log = ClientLinterCallback.merge_results_logs(build_log, part_build_log, linter_file=False)
             return build_log
 
     @staticmethod
@@ -243,27 +253,31 @@ class ClientLinterCallback(object):
         key = "{0}/{1}".format(s3_results_key, file_name)
         file_results = App.cdn_s3_handler().get_json(key)
         if file_results:
-            if build_log is None:
-                build_log = file_results
-            else:
-                ClientLinterCallback.merge_results_logs(build_log, file_results, linter_file)
-
+            build_log = ClientLinterCallback.merge_results_logs(build_log, file_results, linter_file)
             return build_log
         return None
 
     @staticmethod
     def merge_results_logs(build_log, file_results, linter_file):
-        ClientLinterCallback.merge_lists(build_log, file_results, 'log')
-        ClientLinterCallback.merge_lists(build_log, file_results, 'warnings')
-        ClientLinterCallback.merge_lists(build_log, file_results, 'errors')
-        if not linter_file and ('success' in file_results) and (file_results['success'] is False):
-            build_log['success'] = file_results['success']
+        if not build_log:
+            return file_results
+        if file_results:
+            ClientLinterCallback.merge_lists(build_log, file_results, 'log')
+            ClientLinterCallback.merge_lists(build_log, file_results, 'warnings')
+            ClientLinterCallback.merge_lists(build_log, file_results, 'errors')
+            if not linter_file and ('success' in file_results) and (file_results['success'] is False):
+                build_log['success'] = file_results['success']
+        return build_log
 
     @staticmethod
     def merge_lists(build_log, file_results, key):
         if key in file_results:
             value = file_results[key]
-            build_log[key] += value
+            if value:
+                if (key in build_log) and (build_log[key]):
+                    build_log[key] += value
+                else:
+                    build_log[key] = value
 
     @staticmethod
     def update_project_file(build_log, output_dir):
@@ -297,5 +311,5 @@ class ClientLinterCallback(object):
         project_json['commits'] = commits
         project_file = os.path.join(output_dir, 'project.json')
         write_file(project_file, project_json)
-        App.cdn_s3_handler().upload_file(project_file, project_json_key, 0)
+        App.cdn_s3_handler().upload_file(project_file, project_json_key, cache_time=0)
         return project_json
