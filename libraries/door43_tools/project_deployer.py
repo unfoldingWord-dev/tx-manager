@@ -143,7 +143,6 @@ class ProjectDeployer(object):
                                              to_key='{0}/manifest.json'.format(s3_repo_key))
                 App.door43_s3_handler().redirect(s3_repo_key, '/' + s3_commit_key)
                 App.door43_s3_handler().redirect(s3_repo_key + '/index.html', '/' + s3_commit_key)
-                self.upload_file(output_dir, s3_commit_key, 'deployed', ' ')  # flag that deploy has finished
             except:
                 pass
 
@@ -153,8 +152,10 @@ class ProjectDeployer(object):
                 App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
                                           to_key=s3_commit_key + '/build_log.json')
 
+        self.upload_file(output_dir, s3_commit_key, 'deployed', ' ')  # flag that deploy has finished
         elapsed_seconds = int(time.time() - start)
-        App.logger.debug("deploy completed in " + str(elapsed_seconds) + " seconds")
+        App.logger.debug("deploy type partial={0}, multi_merge={1}".format(partial, multi_merge))
+        App.logger.debug("deploy completed in {0} seconds".format(elapsed_seconds))
         self.close()
         return True
 
@@ -197,15 +198,6 @@ class ProjectDeployer(object):
             self.close()
             success = False
         return source_dir, success
-
-    def retrigger_deploy(self, s3_commit_key):
-        App.logger.debug("Retrigger deploy in case it didn't happen due to race condition {0}".format(
-            s3_commit_key + '/build_log.json'))
-        App.cdn_s3_handler().copy(from_key=s3_commit_key + '/build_log.json',
-                                  to_key=s3_commit_key + '/temp_build_log.json')
-        App.cdn_s3_handler().copy(from_key=s3_commit_key + '/temp_build_log.json',
-                                  to_key=s3_commit_key + '/build_log.json')
-        App.cdn_s3_handler().delete_file(s3_commit_key + '/temp_build_log.json')
 
     def get_undeployed_parts(self, prefix):
         unfinished = []
