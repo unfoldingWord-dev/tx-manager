@@ -188,7 +188,7 @@ class ProjectDeployerTests(unittest.TestCase):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en_tw_converted.zip')
         out_dir = os.path.join(self.temp_dir, 'en_tw_converted')
         unzip(zip_file, out_dir)
-        src_dir = os.path.join(out_dir, 'en_tw_converted')
+        self.src_dir = src_dir = os.path.join(out_dir, 'en_tw_converted')
         self.project_files = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
         self.project_key = 'u/door43/en_tw/12345678'
         for filename in self.project_files:
