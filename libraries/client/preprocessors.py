@@ -436,7 +436,7 @@ class TwPreprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(TwPreprocessor, self).__init__(*args, **kwargs)
         self.section_container_id = 1
-        self.index_html = ''
+        self.toc = ''
         self.repo_name = ''
         self.index_json = None
 
@@ -468,7 +468,7 @@ class TwPreprocessor(Preprocessor):
             files = sorted(glob(os.path.join(self.source_dir, project.path, link, '*.md')))
             if files:
                 markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
-                self.index_html += '### {0}:\n\n'.format(title)
+                self.toc += '### {0}:\n\n'.format(title)
                 for file in files:
                     top_box = ""
                     if top_box:
@@ -486,7 +486,7 @@ class TwPreprocessor(Preprocessor):
                         file_name = os.path.basename(file)
                         anchor = os.path.splitext(file_name)[0]
                         markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
-                        self.index_html += '* [{1}]({0}.html#{1})\n'.format(link, anchor)
+                        self.toc += '* [{1}]({0}.html#{1})\n'.format(link, anchor)
 
                     markdown += '---\n\n'  # horizontal rule
 
@@ -502,8 +502,8 @@ class TwPreprocessor(Preprocessor):
         for idx, project in enumerate(self.rc.projects):
             self.section_container_id = 1
             title = project.title
-            self.index_html = '# {0}\n\n'.format(title)
-            self.index_html += '## Table of Contents:\n\n'
+            self.toc = '# {0}\n\n'.format(title)
+            self.toc += '## Table of Contents:\n\n'
             for section in TwPreprocessor.sections:
                 markdown = '# {0}\n\n'.format(title)
                 section_md = self.compile_section(project, section, 2)
@@ -515,9 +515,9 @@ class TwPreprocessor(Preprocessor):
                 write_file(output_file, markdown)
                 self.index_json['titles'][section['link'] + '.html'] = section['title']
 
-            self.index_html = self.fix_links(self.index_html, '-')
+            self.toc = self.fix_links(self.toc, '-')
             output_file = os.path.join(self.output_dir, '0toc.md')
-            write_file(output_file, self.index_html)
+            write_file(output_file, self.toc)
             self.index_json['titles']['0toc.html'] = 'Table of Contents'
             output_file = os.path.join(self.output_dir, 'index.json')
             write_file(output_file, self.index_json)
