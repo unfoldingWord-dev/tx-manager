@@ -501,6 +501,7 @@ class TqPreprocessor(Preprocessor):
         self.section_container_id = 1
         self.toc = ''
         self.repo_name = ''
+        self.index_json = None
 
     def run(self):
         super(TqPreprocessor, self).run()
@@ -529,10 +530,14 @@ class TqPreprocessor(Preprocessor):
                 if initial_markdown != markdown:
                     write_file(file, markdown)
                 self.toc += '* [{1}](./{0}.html)\n'.format(section['book'], section['title'])
+                self.index_json['titles'][section['link'] + '.html'] = section['title']
 
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')
         write_file(output_file, self.toc)
+        self.index_json['titles']['0toc.html'] = 'Table of Contents'
+        output_file = os.path.join(self.output_dir, 'index.json')
+        write_file(output_file, self.index_json)
 
         # Copy the toc and config.yaml file to the output dir so they can be used to
         # generate the ToC on live.door43.org
