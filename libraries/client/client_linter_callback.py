@@ -156,6 +156,7 @@ class ClientLinterCallback(object):
             App.logger.debug('All parts completed, deploying')
         else:
             App.logger.debug('Not all parts completed')
+            build_log = None
 
         file_utils.remove_tree(output_dir)
         return build_log
