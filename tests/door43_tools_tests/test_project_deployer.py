@@ -140,6 +140,7 @@ class ProjectDeployerTests(unittest.TestCase):
         test_repo_name = 'en-ulb-4-books-multipart.zip'
         project_key = 'u/tx-manager-test-data/en-ulb/22f3d09f7a'
         self.mock_s3_bible_project(test_repo_name, project_key, True)
+        self.set_deployed_flags(project_key, 4)
         build_log_key = '{0}/build_log.json'.format(self.project_key)
         expect_success = True
         output_file = '02-EXO.html'
@@ -213,6 +214,15 @@ class ProjectDeployerTests(unittest.TestCase):
                                          'u/door43/en-obs/project.json')
         App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
                                             'templates/project-page.html')
+
+    def set_deployed_flags(self, project_key, part_count, skip=-1):
+        tempf = tempfile.mktemp(prefix="temp", suffix="deployed")
+        file_utils.write_file(tempf, ' ')
+        for i in range(0, part_count):
+            if i != skip:
+                key = '{0}/{1}/deployed'.format(project_key, i)
+                App.cdn_s3_handler().upload_file(tempf, key, cache_time=0)
+        os.remove(tempf)
 
     def mock_s3_bible_project(self, test_file_name, project_key, multi_part=False):
         converted_proj_dir = os.path.join(self.resources_dir, 'converted_projects')
