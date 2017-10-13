@@ -150,10 +150,9 @@ class ClientLinterCallback(object):
             if multiple_project:
                 build_log['multiple'] = True
 
-            ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key,
-                                                  cache_time=600)
+            ClientLinterCallback.upload_build_log(build_log, "final_build_log.json", output_dir, s3_results_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
-            App.logger.debug('All parts completed, deploying')
+            App.logger.debug('All parts completed')
         else:
             App.logger.debug('Not all parts completed')
             build_log = None
@@ -193,7 +192,7 @@ class ClientLinterCallback(object):
             job.insert()
 
         ClientLinterCallback.upload_build_log(build_log, 'merged.json', output_dir, s3_results_key)
-        # update build_log to start deploy of part
+        # update build_log to start deploy of this part
         ClientLinterCallback.upload_build_log(build_log, 'build_log.json', output_dir, s3_results_key, cache_time=600)
         return
 
