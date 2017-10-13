@@ -3,12 +3,9 @@ import os
 import tempfile
 import unittest
 import shutil
-import markdown2
-from libraries.general_tools import file_utils
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess, TqPreprocessor
 from libraries.general_tools.file_utils import unzip, read_file
-from bs4 import BeautifulSoup
 
 
 class TestTqPreprocessor(unittest.TestCase):
