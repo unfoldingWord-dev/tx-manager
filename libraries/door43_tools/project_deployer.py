@@ -6,7 +6,6 @@ import time
 from glob import glob
 from shutil import copyfile
 
-from libraries.client.client_linter_callback import ClientLinterCallback
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
@@ -168,11 +167,6 @@ class ProjectDeployer(object):
         undeployed = self.get_undeployed_parts(prefix)
         if len(undeployed) > 0:
             App.logger.debug("Parts not deployed: {0}".format(undeployed))
-            # results = ClientLinterCallback.deploy_if_conversion_finished(s3_commit_key, identifier)
-            # if results:
-            #     self.all_parts_completed = True
-            #     build_log_json = results
-            return None, False
 
         App.door43_s3_handler().download_dir(prefix, source_dir)  # get previous templated files
         source_dir = os.path.join(source_dir, download_key)
@@ -277,7 +271,7 @@ class ProjectDeployer(object):
         out_file = os.path.join(output_dir, fname)
         write_file(out_file, data)
         key = s3_commit_key + '/' + fname
-        App.logger.debug("Writing {0} to {1}': ".format(fname,))
+        App.logger.debug("Writing {0} to {1}': ".format(fname, key))
         App.cdn_s3_handler().upload_file(out_file, key, cache_time=0)
 
     def run_templater(self, templater):  # for test purposes
