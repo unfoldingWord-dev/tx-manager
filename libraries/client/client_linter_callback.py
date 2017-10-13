@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import tempfile
+import time
 from datetime import datetime
 from libraries.app.app import App
 from libraries.general_tools import file_utils
@@ -218,6 +219,14 @@ class ClientLinterCallback(object):
                                                                                            s3_results_key,
                                                                                            "lint_log.json",
                                                                                            linter_file=True)
+                if not part_build_log_combined:
+                    App.logger.debug('Lint_log.json not found yet for {0}, wait and retry'.format(s3_results_key))
+                    time.sleep(2)
+                    part_build_log_combined = ClientLinterCallback.merge_build_status_for_file(part_build_log,
+                                                                                               s3_results_key,
+                                                                                               "lint_log.json",
+                                                                                               linter_file=True)
+
                 if part_build_log_combined:
                     build_log = ClientLinterCallback.merge_results_logs(build_log, part_build_log_combined,
                                                                         linter_file=False)
