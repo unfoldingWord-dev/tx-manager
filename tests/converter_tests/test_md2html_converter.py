@@ -132,7 +132,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        files_to_verify = ['00-toc.html','manifest.yaml']
+        files_to_verify = ['00-toc.html', 'manifest.yaml', 'index.json']
         for section in TqPreprocessor.sections:
             book = section['book']
             file = '{0}.html'.format(book)

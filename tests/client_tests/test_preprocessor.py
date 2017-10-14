@@ -43,7 +43,7 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '57-TIT.md')))
 
-    def test_preprocessor_for_project_with_one_md_file(self):
+    def test_preprocessor_for_tq_project_with_one_md_file(self):
         file_name = os.path.join('raw_sources', 'en_tq_with_one_md_file.zip')
         repo_name = 'en_tq'
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)

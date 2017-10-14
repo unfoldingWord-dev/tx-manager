@@ -41,6 +41,7 @@ class TestTqPreprocessor(unittest.TestCase):
 
         # then
         self.assertEquals(preproc.repo_name, repo_name)
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))

@@ -507,6 +507,11 @@ class TqPreprocessor(Preprocessor):
         super(TqPreprocessor, self).run()
         self.toc = None
         projects = {}
+        self.index_json = {
+            'titles': {},
+            'chapters': {},
+            'book_codes': {}
+        }
         for idx, project in enumerate(self.rc.projects):
             section = self.get_section_for_file(project.identifier)
             if section:
@@ -530,7 +535,7 @@ class TqPreprocessor(Preprocessor):
                 if initial_markdown != markdown:
                     write_file(file, markdown)
                 self.toc += '* [{1}](./{0}.html)\n'.format(section['book'], section['title'])
-                self.index_json['titles'][section['link'] + '.html'] = section['title']
+                self.index_json['titles'][book + '.html'] = section['title']
 
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')
