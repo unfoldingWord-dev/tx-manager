@@ -78,6 +78,7 @@ class Preprocessor(object):
                         for chapter in chapters:
                             text = self.mark_chapter(project.identifier, chapter, text)
                             for chunk in self.rc.chunks(project.identifier, chapter):
+                                text = self.mark_chunk(project.identifier, chapter, chunk, text)
                                 text += read_file(os.path.join(project_path, chapter, chunk))+"\n\n"
                         if project.identifier.lower() in BOOK_NUMBERS:
                             filename = '{0}-{1}.{2}'.format(BOOK_NUMBERS[project.identifier.lower()],
@@ -89,6 +90,9 @@ class Preprocessor(object):
         return True
 
     def mark_chapter(self, ident, chapter, text):
+        return text  # default does nothing to text
+
+    def mark_chunk(self, ident, chapter, chunk, text):
         return text  # default does nothing to text
 
     def is_multiple_jobs(self):
@@ -513,24 +517,35 @@ class TqPreprocessor(Preprocessor):
         a = '{0} {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
         return text + a
 
-    def compile_section(self, title, link, content, level):
+    def mark_chunk(self, ident, chapter, chunk, text):
+        chunk_marker = os.path.splitext(chunk)[0]
+        a = '{0}# {1}:{2}\n\n'.format(self.section_header_marker, chapter, chunk_marker)  # put in invalid header for section - we will correct heading level later
+        return text + a
+
+    def compile_section(self, title, link, content):
         """
         Recursive section markdown creator
 
+        :param content:
+        :param link:
         :param title:
-        :param int level:
         :return:
         """
+        level = 3
         markdown = ''
         level_increase = ('#' * level)
-        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * (level-1), link, title)  # add book title
+        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * (level-2), link, title)  # add book title
         content = content.replace('\r', '')
         lines = content.split('\n')
         section_header_length = len(self.section_header_marker)
         for i in range(0, len(lines)):
             line = lines[i]
             if line[:section_header_length] == self.section_header_marker:
-                line = level_increase + ' ' + title + line[section_header_length:]  # fix header level and add title
+                text = line[section_header_length:]
+                if text[0] == '#':  # check if chunk marker
+                    line = level_increase + ' ' + title + text[1:]  # fix header level and add title
+                else:  # chapter marker
+                    line = '#' * (level-1) + ' ' + title + text  # fix header level and add title
                 lines[i] = line
             elif line and (line[0] == '#'):
                 if line.rstrip()[-1] == '#':
@@ -572,7 +587,7 @@ class TqPreprocessor(Preprocessor):
                 file = os.path.join(self.output_dir, book + '.md')
                 link = self.get_link_for_section(section)
                 initial_markdown = read_file(file)
-                markdown = self.compile_section(title, link, initial_markdown, 2)
+                markdown = self.compile_section(title, link, initial_markdown)
                 markdown = self.fix_links(markdown, book)
                 if initial_markdown != markdown:
                     write_file(file, markdown)
