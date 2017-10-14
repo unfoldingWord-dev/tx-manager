@@ -240,7 +240,7 @@ class BiblePreprocessor(Preprocessor):
                         if not title and os.path.isfile(os.path.join(project_path, 'title.txt')):
                             title = read_file(os.path.join(project_path, 'title.txt'))
                         usfm = """
-    \\id {0} {1}
+\\id {0} {1}
 \\ide UTF-8
 \\h {2}
 \\toc1 {2}
