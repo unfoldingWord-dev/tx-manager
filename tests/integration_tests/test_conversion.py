@@ -52,6 +52,7 @@ class TestConversions(TestCase):
     def setUpClass(cls):
         """Runs before all tests."""
         branch = os.environ.get('TRAVIS_BRANCH', 'develop')  # default is testing develop branch (dev)
+        print("Testing on branch: {0}".format(branch))
         gogs_user_token = os.environ.get('GOGS_USER_TOKEN', '')
         db_pass = os.environ.get('DB_PASS', '')
 
@@ -72,12 +73,30 @@ class TestConversions(TestCase):
     def setUp(self):
         """Runs before each test."""
         self.warnings = []
+        self.preprocessor_output_extension = "usfm"  # by default expect usfm source for conversion
 
     def tearDown(self):
         """Runs after each test."""
         # delete temp files
         if hasattr(self, 'temp_dir') and os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_en_tn_conversion(self):
+        # given
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
+        git_url = "https://git.door43.org/tx-manager-test-data/en_tn.git"
+        base_url, repo, user = self.get_parts_of_git_url(git_url)
+        expected_output_name = ["00-toc"] + FULL_BIBLE_LIST
+        self.preprocessor_output_extension = "md"
+
+        # when
+        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
+                                                                                                       repo)
+
+        # then
+        self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
+                                 expected_output_name, job)
 
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_en_udb_bundle_conversion(self):
@@ -443,9 +462,9 @@ class TestConversions(TestCase):
             expected_output_names = [expected_output_names]  # put string in list
 
         # check pre-convert files
-        self.download_and_check_zip_file(self.preconvert_handler, expected_output_names, "usfm",
-                                         self.get_preconvert_s3_key(commit_sha), "preconvert", success, chapter_count,
-                                         file_ext)
+        self.download_and_check_zip_file(self.preconvert_handler, expected_output_names,
+                                         self.preprocessor_output_extension, self.get_preconvert_s3_key(commit_sha),
+                                         "preconvert", success, chapter_count, file_ext)
 
         # check converted files
         destination_key = self.get_destination_s3_key(commit_sha, repo, user)
