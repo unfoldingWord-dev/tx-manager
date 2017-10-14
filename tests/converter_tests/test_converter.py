@@ -12,9 +12,9 @@ from libraries.general_tools.file_utils import remove_tree
 
 
 class MyConverter(Converter):
-    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identity=None):
+    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identifier=None):
         super(MyConverter, self).__init__(source, resource, cdn_file=cdn_file, options=options,
-                                          convert_callback=convert_callback, identity=identity)
+                                          convert_callback=convert_callback, identifier=identifier)
         self.convert_return = None
         self.download_return = None
         self.upload_return = None
@@ -41,7 +41,7 @@ class TestConverter(unittest.TestCase):
 
         self.params = {
             'cdn_file': 'tx/job/1234567890.zip',
-            'identity': 'richmahn/en-obs/705948ab00',
+            'identifier': 'richmahn/en-obs/705948ab00',
             'source': 'https://cdn.example.com/preconvert/705948ab00.zip',
             'resource_type': 'obs',
             'options': {'pageSize': 'A4'}
@@ -111,7 +111,7 @@ class TestConverter(unittest.TestCase):
         self.validate_response(results, tx, expected_response_code)
 
     @mock.patch('requests.post')
-    def test_convert_callback_missing_identity(self, mock_request_post):
+    def test_convert_callback_missing_identifier(self, mock_request_post):
         # given
         params = self.params
         params['convert_callback'] = 'http://dummy.org'
@@ -121,7 +121,7 @@ class TestConverter(unittest.TestCase):
         self.get_mock_response(mock_request_post, expected_response_code, response_string)
         params = self.params
         params['convert_callback'] = 'http://dummy.org'
-        del params['identity']
+        del params['identifier']
 
         # when
         with closing(converter) as tx:
@@ -129,7 +129,7 @@ class TestConverter(unittest.TestCase):
             results = tx.run()
 
         # then
-        self.validate_response(results, tx, expected_response_code, valid_identity=False)
+        self.validate_response(results, tx, expected_response_code, valid_identifier=False)
 
     #
     # helpers
@@ -141,14 +141,12 @@ class TestConverter(unittest.TestCase):
         mock_response.reason = response_string
         mock_request_post.return_value = mock_response
 
-    def validate_response(self, results, converter, expected_response_code, valid_identity=True):
+    def validate_response(self, results, converter, expected_response_code, valid_identifier=True):
         self.assertEquals(converter.callback_status, expected_response_code)
-        self.assertTrue('results' in converter.callback_results)
-        self.assertIsNotNone(converter.callback_results['results'])
-        self.assertTrue('identity' in converter.callback_results)
-        if valid_identity:
-            self.assertIsNotNone(converter.callback_results['identity'])
-        self.assertEquals(results, converter.callback_results['results'])
+        self.assertTrue('identifier' in converter.callback_results)
+        if valid_identifier:
+            self.assertIsNotNone(converter.callback_results['identifier'])
+        self.assertEquals(results, converter.callback_results)
 
     def make_duplicate_zip_that_can_be_deleted(self, zip_file):
         in_zip_file = tempfile.mktemp(prefix="test_data", suffix=".zip", dir=self.temp_dir)
@@ -161,10 +159,10 @@ class TestConverter(unittest.TestCase):
         resource = params['resource_type']
         cdn_file = params['cdn_file']
         options = params['options']
-        identity = None if 'identity' not in params else params['identity']
+        identifier = None if 'identifier' not in params else params['identifier']
         convert_callback = None if 'convert_callback' not in params else params['convert_callback']
         converter = Usfm2HtmlConverter(source, resource, cdn_file=cdn_file, options=options,
-                                       convert_callback=convert_callback, identity=identity)
+                                       convert_callback=convert_callback, identifier=identifier)
         converter.download_return = True
         converter.upload_return = True
         converter.convert_return = True

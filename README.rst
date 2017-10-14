@@ -176,7 +176,7 @@ NOTE: This gives URLs and bucket names for test.  For development, replace the `
 
     The uploading of build_log.json in #6 triggers the `Door43 Deploy function <https://github.com/unfoldingWord-dev/tx-manager-lambda/blob/develop/functions/door43_deploy/main.py>`_.
 
-    The Door43 Deploy function is what moves the HTML files converted by #5 and placed in the CDN bucket in #6 to live.door43.org and templates it based on the `door43.org layouts <https://github.com/unfoldingWord-dev/door43.org/tree/develop/_layouts>`_. It also generates header, status and navigation portions of the pages for each revision.
+    The Door43 Deploy function is what moves the HTML files converted by #5 and placed in the CDN bucket in #6 to door43.org and templates it based on the `door43.org layouts <https://github.com/unfoldingWord-dev/door43.org/tree/develop/_layouts>`_. It also generates header, status and navigation portions of the pages for each revision.
 
 
 Register Conversion Module

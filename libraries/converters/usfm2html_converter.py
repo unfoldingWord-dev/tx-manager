@@ -5,6 +5,7 @@ import tempfile
 import codecs
 from bs4 import BeautifulSoup
 from shutil import copyfile
+from libraries.app.app import App
 from libraries.general_tools.file_utils import write_file, remove_tree, get_files
 from converter import Converter
 from usfm_tools.transform import UsfmTransform
@@ -21,7 +22,7 @@ class Usfm2HtmlConverter(Converter):
             return False
 
     def convert_bible(self):
-        self.log.info('Processing the Bible USFM files')
+        App.logger.debug('Processing the Bible USFM files')
 
         # find the first directory that has usfm files.
         files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
@@ -46,10 +47,14 @@ class Usfm2HtmlConverter(Converter):
 
         for filename in files:
             if filename.endswith('.usfm'):
+                base_name = os.path.basename(filename)
                 if exclusive_convert:
-                    base_name = os.path.basename(filename)
                     if base_name not in convert_only:  # see if this is a file we are to convert
                         continue
+
+                msg = 'Converting Bible USFM file: {0}'.format(base_name)
+                self.log.info(msg)
+                App.logger.debug(msg)
 
                 # Covert the USFM file
                 scratch_dir = tempfile.mkdtemp(prefix='scratch_')
