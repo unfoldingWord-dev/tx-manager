@@ -72,9 +72,11 @@ class Preprocessor(object):
                 else:
                     # Case #3: The project path is multiple chapters, so we piece them together
                     chapters = self.rc.chapters(project.identifier)
+                    App.logger.debug("Merging chapters in '{0}'".format(project.identifier))
                     if len(chapters):
                         text = ''
                         for chapter in chapters:
+                            text = self.mark_chapter(project.identifier, chapter, text)
                             for chunk in self.rc.chunks(project.identifier, chapter):
                                 text += read_file(os.path.join(project_path, chapter, chunk))+"\n\n"
                         if project.identifier.lower() in BOOK_NUMBERS:
@@ -85,6 +87,9 @@ class Preprocessor(object):
                                                             self.rc.resource.file_ext)
                         write_file(os.path.join(self.output_dir, filename), text)
         return True
+
+    def mark_chapter(self, ident, chapter, text):
+        return text  # default does nothing to text
 
     def is_multiple_jobs(self):
         return False
@@ -502,6 +507,41 @@ class TqPreprocessor(Preprocessor):
         self.toc = ''
         self.repo_name = ''
         self.index_json = None
+        self.section_header_marker = '###############'
+
+    def mark_chapter(self, ident, chapter, text):
+        a = '{0} Chapter {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
+        # App.logger.debug("Marking Chapter {0} in {1}".format(chapter, ident))
+        return text + a
+
+    def compile_section(self, title, link, content, level):
+        """
+        Recursive section markdown creator
+
+        :param title:
+        :param int level:
+        :return:
+        """
+        markdown = ''
+        level_increase = ('#' * level)
+        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
+        content = content.replace('\r', '')
+        lines = content.split('\n')
+        section_header_length = len(self.section_header_marker)
+        for i in range(0, len(lines)):
+            line = lines[i]
+            if line[:section_header_length] == self.section_header_marker:
+                line = level_increase + line[section_header_length:]
+                lines[i] = line
+            elif line and (line[0] == '#'):
+                if line.rstrip()[-1] == '#':
+                    line = level_increase + line.rstrip() + level_increase
+                else:
+                    line = level_increase + line
+                lines[i] = line
+        content = '\n'.join(lines)
+        markdown += content + '\n\n---\n\n'  # horizontal rule
+        return markdown
 
     def run(self):
         super(TqPreprocessor, self).run()
@@ -529,13 +569,16 @@ class TqPreprocessor(Preprocessor):
         for section in TqPreprocessor.sections:  # index by book order
             book = section['book']
             if book in projects:
+                title = section['title']
                 file = os.path.join(self.output_dir, book + '.md')
+                link = self.get_link_for_section(section)
                 initial_markdown = read_file(file)
-                markdown = self.fix_links(initial_markdown, book)
+                markdown = self.compile_section(title, link, initial_markdown, 2)
+                markdown = self.fix_links(markdown, book)
                 if initial_markdown != markdown:
                     write_file(file, markdown)
-                self.toc += '* [{1}](./{0}.html)\n'.format(section['book'], section['title'])
-                self.index_json['titles'][book + '.html'] = section['title']
+                self.toc += '* [{1}](./{0}.html)\n'.format(section['book'], title)
+                self.index_json['titles'][book + '.html'] = title
 
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')
