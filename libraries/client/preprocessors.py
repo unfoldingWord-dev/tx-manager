@@ -510,8 +510,7 @@ class TqPreprocessor(Preprocessor):
         self.section_header_marker = '###############'
 
     def mark_chapter(self, ident, chapter, text):
-        a = '{0} Chapter {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
-        # App.logger.debug("Marking Chapter {0} in {1}".format(chapter, ident))
+        a = '{0} {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
         return text + a
 
     def compile_section(self, title, link, content, level):
@@ -524,14 +523,14 @@ class TqPreprocessor(Preprocessor):
         """
         markdown = ''
         level_increase = ('#' * level)
-        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
+        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * (level-1), link, title)  # add book title
         content = content.replace('\r', '')
         lines = content.split('\n')
         section_header_length = len(self.section_header_marker)
         for i in range(0, len(lines)):
             line = lines[i]
             if line[:section_header_length] == self.section_header_marker:
-                line = level_increase + line[section_header_length:]
+                line = level_increase + ' ' + title + line[section_header_length:]  # fix header level and add title
                 lines[i] = line
             elif line and (line[0] == '#'):
                 if line.rstrip()[-1] == '#':
