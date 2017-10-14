@@ -367,7 +367,8 @@ class TaTemplater(Templater):
                 title = soup.select('div#content h1')[0].text.strip() 
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].title()
-            if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
+            if title in ['Conversion successful', 'Conversion started...', 'Index',
+                         'Conversion successful with warnings', 'Conversion failed']:
                 continue
             if fname != filename:
                 html += """
