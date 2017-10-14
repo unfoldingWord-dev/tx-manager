@@ -83,10 +83,8 @@ class UsfmLinter(Linter):
 
             if len(errors):
                 for error in errors:
-                    parts = error.split( ":" )
-                    if(len(parts) < 2):
-                        parts.append("")
-                    self.log.warning("{0} {1} - {2}".format(book_code, " ".join(parts[1:]), parts[0]))
+                    self.log.warning(error)
+
         except Exception as e:
             # for debugging
             self.log.warning("Failed to verify book '{0}', exception: {1}".format(file_name, str(e)))
