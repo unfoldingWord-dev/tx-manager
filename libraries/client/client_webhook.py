@@ -147,7 +147,7 @@ class ClientWebhook(object):
             job.expires_at = job.started_at + timedelta(days=1)
             job.eta = job.started_at + timedelta(minutes=5)
             job.status = 'started'
-            job.message = 'Started'
+            job.message = 'Conversion started...'
             job.log_message('Started job for {0}/{1}/{2}'.format(job.user_name, job.repo_name, job.commit_id))
         else:
             job.error_message('No converter was found to convert {0} from {1} to {2}'.format(job.resource_type,
@@ -252,6 +252,7 @@ class ClientWebhook(object):
         """
         :param dict build_log:
         :param string s3_commit_key:
+        :param string part:
         :return:
         """
         build_log_file = os.path.join(self.base_temp_dir, 'build_log.json')
