@@ -583,16 +583,22 @@ class TqPreprocessor(Preprocessor):
         for section in TqPreprocessor.sections:  # index by book order
             book = section['book']
             if book in projects:
-                title = section['title']
                 file = os.path.join(self.output_dir, book + '.md')
                 link = self.get_link_for_section(section)
+                book = section['book']
+                title = section['title']
+                if not os.path.exists(file):
+                    App.logger.debug('TqPreprocessor: book missing: {0}'.format(book))
+                    continue
                 initial_markdown = read_file(file)
                 markdown = self.compile_section(title, link, initial_markdown)
                 markdown = self.fix_links(markdown, book)
                 if initial_markdown != markdown:
                     write_file(file, markdown)
-                self.toc += '* [{1}](./{0}.html)\n'.format(section['book'], title)
+                self.toc += '* [{1}](./{0}.html)\n'.format(book, title)
                 self.index_json['titles'][book + '.html'] = title
+            else:
+                App.logger.debug('TqPreprocessor: missing book: {0}'.format(book))
 
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')
