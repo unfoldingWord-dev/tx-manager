@@ -587,7 +587,7 @@ class TnPreprocessor(Preprocessor):
                 link = self.get_link_for_section(section)
                 book = section['book']
                 title = section['title']
-                if os.path.exists(file):
+                if not os.path.exists(file):
                     App.logger.debug('TqPreprocessor: book missing: {0}'.format(book))
                     continue
                 initial_markdown = read_file(file)
