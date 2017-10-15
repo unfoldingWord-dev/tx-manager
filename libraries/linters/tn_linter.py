@@ -85,6 +85,7 @@ class TnLinter(MarkdownLinter):
 
     def get_link_for_book(self, book):
         parts = book.split('-')
+        link = book
         if len(parts) > 1:
             link = parts[1].lower()
         return link
