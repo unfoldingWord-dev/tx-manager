@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 import os
 import re
 from libraries.app.app import App
+from libraries.client.preprocessors import TnPreprocessor
 from libraries.general_tools import file_utils
 from libraries.linters.markdown_linter import MarkdownLinter
 
@@ -27,6 +28,28 @@ class TnLinter(MarkdownLinter):
                 if parts[1] == '.md':
                     contents = file_utils.read_file(file_path)
                     self.find_invalid_links(root, f, contents)
+
+        for section in TnPreprocessor.sections:
+            book = section['book']
+            file_path = os.path.join(self.source_dir, '{0}.md'.format(book))
+            if os.path.exists(file_path):
+                continue
+            else:
+                found_files = False
+                link = self.get_link_for_book(book)
+                file_path = os.path.join(self.source_dir, link)
+                for root, dirs, files in os.walk(file_path):
+                    if root == file_path:
+                        continue  # skip book folder
+
+                    if len(files) > 0:
+                        found_files = True
+                        break
+
+                if not found_files:
+                    msg = "missing book: {0}".format(book)
+                    self.log.warnings.append(msg)
+                    App.logger.debug(msg)
 
         return super(TnLinter, self).lint()  # Runs checks on Markdown, using the markdown linter
 
@@ -57,3 +80,9 @@ class TnLinter(MarkdownLinter):
                                                                          sub_path, f)
         a = '<a href="{0}">{1}/{2}</a>'.format(url, sub_path, f)
         return a
+
+    def get_link_for_book(self, book):
+        parts = book.split('-')
+        if len(parts) > 1:
+            link = parts[1].lower()
+        return link
