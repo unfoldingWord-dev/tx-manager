@@ -33,6 +33,8 @@ class TnLinter(MarkdownLinter):
             book = section['book']
             file_path = os.path.join(self.source_dir, '{0}.md'.format(book))
             if os.path.exists(file_path):
+                contents = file_utils.read_file(file_path)
+                App.logger.debug("Book {0} found, length={1}".format(book, len(contents)))
                 continue
             else:
                 found_files = False
