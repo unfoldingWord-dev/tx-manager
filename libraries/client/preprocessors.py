@@ -437,6 +437,7 @@ class TaPreprocessor(Preprocessor):
 
 class TnPreprocessor(Preprocessor):
     sections = [
+        {'book': "00-toc", 'title': 'Table of Contents'},
         {'book': "01-GEN", 'title': 'Genesis'},
         {'book': "02-EXO", 'title': 'Exodus'},
         {'book': "03-LEV", 'title': 'Leviticus'},
