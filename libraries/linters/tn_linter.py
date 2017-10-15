@@ -49,7 +49,7 @@ class TnLinter(MarkdownLinter):
                         break
 
                 if not found_files:
-                    msg = "missing book: {0}".format(book)
+                    msg = "missing book: '{0}'".format(link)
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
 
