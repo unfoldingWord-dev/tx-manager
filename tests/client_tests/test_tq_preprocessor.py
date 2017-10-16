@@ -45,7 +45,8 @@ class TestTqPreprocessor(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
-        index = read_file(os.path.join(self.out_dir, '00-toc.md'))
+        toc = read_file(os.path.join(self.out_dir, '00-toc.md'))
+        index = read_file(os.path.join(self.out_dir, 'index.json'))
         gen = read_file(os.path.join(self.out_dir, '01-GEN.md'))
 
     def test_tq_preprocessor_dummy_section(self):

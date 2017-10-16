@@ -604,7 +604,7 @@ class TqPreprocessor(Preprocessor):
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')
         write_file(output_file, self.toc)
-        self.index_json['titles']['0toc.html'] = 'Table of Contents'
+        self.index_json['titles']['00-toc.html'] = 'Table of Contents'
         output_file = os.path.join(self.output_dir, 'index.json')
         write_file(output_file, self.index_json)
 
