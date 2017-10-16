@@ -573,8 +573,7 @@ class TqPreprocessor(Preprocessor):
                 link = self.get_link_for_section(section)
                 book = section['book']
                 if not self.toc:
-                    self.toc = '# {0}\n\n'.format(project.title)
-                    self.toc += '## Table of Contents:\n\n'
+                    self.toc = '# Table of Contents:\n\n'
                 projects[book] = {
                     'link': link,
                 }
