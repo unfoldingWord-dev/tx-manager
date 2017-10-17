@@ -171,6 +171,11 @@ class ClientWebhook(object):
         # Create a build log
         build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                pusher_username, repo_name, user_name)
+        # Upload an initial build_log
+        self.upload_build_log_to_s3(build_log_json, s3_commit_key)
+
+        # Update the project.json file
+        self.update_project_json(commit_id, job, repo_name, user_name)
 
         # Convert and lint
         if converter:
@@ -227,12 +232,8 @@ class ClientWebhook(object):
                             's3_results_key': '{0}/{1}'.format(s3_commit_key, i)
                         }
                         self.send_request_to_linter(book_job, linter, commit_url, extra_payload)
-
-        # Upload an initial build_log
-        self.upload_build_log_to_s3(build_log_json, s3_commit_key)
-
-        # Update the project.json file
-        self.update_project_json(commit_id, job, repo_name, user_name)
+            # Update the build log on the CDN
+            self.upload_build_log_to_s3(build_log_json, s3_commit_key)
 
 
         remove_tree(self.base_temp_dir)  # cleanup
