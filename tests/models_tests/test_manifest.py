@@ -127,7 +127,7 @@ class TxManifestTests(TestCase):
             'title': 'Unlocked Literal Bible',
             'views': 12,
             'last_updated': sometime,
-            #'manifest': read_file(os.path.join(self.resources_dir, 'obs_manifest.yaml'))
+            'manifest': read_file(os.path.join(self.resources_dir, 'obs_manifest.yaml'))
         })
         manifest.insert()
         manifest_from_db = TxManifest.get(manifest.id)
