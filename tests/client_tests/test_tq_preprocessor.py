@@ -37,10 +37,9 @@ class TestTqPreprocessor(unittest.TestCase):
         repo_name = 'dummy_repo'
 
         # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
 
         # then
-        self.assertEquals(preproc.repo_name, repo_name)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
@@ -60,12 +59,15 @@ class TestTqPreprocessor(unittest.TestCase):
         repo_name = 'dummy_repo'
 
         # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
 
         # then
-        self.assertEquals(preproc.repo_name, repo_name)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
 
+    #
+    # helpers
+    #
+    
     @classmethod
     def extractFiles(cls, file_name, repo_name):
         file_path = os.path.join(TestTqPreprocessor.resources_dir, file_name)
