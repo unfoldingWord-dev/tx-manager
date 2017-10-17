@@ -103,8 +103,8 @@ class Templater(object):
 
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
                 soup = BeautifulSoup(f, 'html.parser')
-            if soup.find('h1'):
-                title = soup.h1.text
+            if soup.select('div#content h1'):
+                title = soup.select('div#content h1')[0].text.strip() 
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].replace('_', ' ').capitalize()
 
@@ -258,8 +258,8 @@ class BibleTemplater(Templater):
             book_code.replace(' ', '-').replace('.', '-')  # replacing spaces and periods since used as tag class
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
                 soup = BeautifulSoup(f.read(), 'html.parser')
-            if soup.find('h1'):
-                title = soup.find('h1').text
+            if soup.select('div#content h1'):
+                title = soup.select('div#content h1')[0].text.strip() 
             else:
                 title = '{0}.'.format(book_code)
             self.titles[key] = title
@@ -363,11 +363,12 @@ class TaTemplater(Templater):
         for fname in self.files:
             with codecs.open(fname, 'r', 'utf-8-sig') as f:
                 soup = BeautifulSoup(f.read(), 'html.parser')
-            if soup.find('h1'):
-                title = soup.find('h1').text
+            if soup.select('div#content h1'):
+                title = soup.select('div#content h1')[0].text.strip() 
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].title()
-            if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
+            if title in ['Conversion successful', 'Conversion started...', 'Index',
+                         'Conversion successful with warnings', 'Conversion failed']:
                 continue
             if fname != filename:
                 html += """
