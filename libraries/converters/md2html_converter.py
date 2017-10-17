@@ -73,7 +73,7 @@ class Md2HtmlConverter(Converter):
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
-                if self.resource in ['ta']:
+                if self.resource == 'ta':
                     html = markdown2.markdown(md, extras=['markdown-in-html', 'tables'])
                 else:
                     html = markdown.markdown(md)
