@@ -511,6 +511,14 @@ class TnPreprocessor(Preprocessor):
         self.toc = ''
         self.index_json = None
         self.section_header_marker = '###############'
+        self.books = []
+
+    def is_multiple_jobs(self):
+        return len(self.books) > 1
+
+    def get_book_list(self):
+        self.books.sort()
+        return self.books
 
     def mark_chapter(self, ident, chapter, text):
         a = '{0} {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
@@ -595,6 +603,7 @@ class TnPreprocessor(Preprocessor):
                     write_file(file, markdown)
                 self.toc += '* [{1}](./{0}.html)\n'.format(book, title)
                 self.index_json['titles'][book + '.html'] = title
+                self.books.append(book + '.md')
             else:
                 App.logger.debug('TnPreprocessor: missing book: {0}'.format(book))
 
