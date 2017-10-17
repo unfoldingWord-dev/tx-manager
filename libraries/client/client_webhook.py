@@ -266,15 +266,15 @@ class ClientWebhook(object):
     def create_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                          repo_owner):
         """
-        :param string commit_id: 
-        :param string commit_message: 
-        :param string commit_url: 
-        :param string compare_url: 
-        :param TxJob job: 
-        :param string pusher_username: 
-        :param string repo_name: 
-        :param string repo_owner: 
-        :return dict: 
+        :param string commit_id:
+        :param string commit_message:
+        :param string commit_url:
+        :param string compare_url:
+        :param TxJob job:
+        :param string pusher_username:
+        :param string repo_name:
+        :param string repo_owner:
+        :return dict:
         """
         build_log_json = dict(job)
         build_log_json['repo_name'] = repo_name
@@ -345,7 +345,7 @@ class ClientWebhook(object):
         """
         :param TxJob job:
         :param TxModule converter:
-        :return bool: 
+        :return bool:
         """
         payload = {
             'identifier': job.identifier,
@@ -470,10 +470,10 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        return TxModule.query().filter(TxModule.type=='converter')\
-            .filter(TxModule.input_format.contains(job.input_format))\
-            .filter(TxModule.output_format.contains(job.output_format))\
-            .filter(TxModule.resource_types.contains(job.resource_type))\
+        return TxModule.query().filter(TxModule.type=='converter') \
+            .filter(TxModule.input_format.contains(job.input_format)) \
+            .filter(TxModule.output_format.contains(job.output_format)) \
+            .filter(TxModule.resource_types.contains(job.resource_type)) \
             .first()
 
     def get_linter_module(self, job):
@@ -481,7 +481,7 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        linters = TxModule.query().filter(TxModule.type=='linter')\
+        linters = TxModule.query().filter(TxModule.type=='linter') \
             .filter(TxModule.input_format.contains(job.input_format))
         linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
         if not linter:

@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import json
 import os
 import tempfile
 import traceback
@@ -133,7 +134,7 @@ class Linter(object):
         if url.startswith('http'):
             headers = {"content-type": "application/json"}
             App.logger.debug('Making callback to {0} with payload:'.format(url))
-            App.logger.debug(payload)
+            App.logger.debug(json.dumps(payload)[:256])
             response = requests.post(url, json=payload, headers=headers)
             self.callback_status = response.status_code
             if (self.callback_status >= 200) and (self.callback_status < 299):
