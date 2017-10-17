@@ -88,6 +88,7 @@ class ClientWebhook(object):
             'resource_type': rc.resource.type,
             'title': rc.resource.title,
             'manifest': json.dumps(rc.as_dict()),
+            'last_updated': datetime.utcnow()
         }
         # First see if manifest already exists in DB and update it if it is
         tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
