@@ -576,7 +576,7 @@ class TnPreprocessor(Preprocessor):
                     'link': link,
                 }
             else:
-                App.logger.debug('TqPreprocessor: extra project found: {0}'.format(project.identifier))
+                App.logger.debug('TnPreprocessor: extra project found: {0}'.format(project.identifier))
 
         for section in TnPreprocessor.sections:  # index by book order
             book = section['book']
@@ -586,7 +586,7 @@ class TnPreprocessor(Preprocessor):
                 book = section['book']
                 title = section['title']
                 if not os.path.exists(file):
-                    App.logger.debug('TqPreprocessor: book missing: {0}'.format(book))
+                    App.logger.debug('TnPreprocessor: book missing: {0}'.format(book))
                     continue
                 initial_markdown = read_file(file)
                 markdown = self.compile_section(title, link, initial_markdown)
@@ -596,7 +596,7 @@ class TnPreprocessor(Preprocessor):
                 self.toc += '* [{1}](./{0}.html)\n'.format(book, title)
                 self.index_json['titles'][book + '.html'] = title
             else:
-                App.logger.debug('TqPreprocessor: missing book: {0}'.format(book))
+                App.logger.debug('TnPreprocessor: missing book: {0}'.format(book))
 
         self.toc = self.fix_links(self.toc, '-')
         output_file = os.path.join(self.output_dir, '00-toc.md')

@@ -37,10 +37,9 @@ class TestTnPreprocessor(unittest.TestCase):
         repo_name = 'dummy_repo'
 
         # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
 
         # then
-        self.assertEquals(preproc.repo_name, repo_name)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
@@ -52,17 +51,16 @@ class TestTnPreprocessor(unittest.TestCase):
         # given
         TnPreprocessor.sections = [{'book': "dummy", 'title': 'dummy'}]
         repo_name = 'en_tn'
-        file_name = os.path.join('raw_sources', 'en_tn')
+        file_name = os.path.join('raw_sources', repo_name + '.zip')
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         repo_name = 'dummy_repo'
 
         # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
 
         # then
-        self.assertEquals(preproc.repo_name, repo_name)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
 
     @classmethod
