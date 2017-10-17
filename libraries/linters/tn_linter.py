@@ -39,6 +39,8 @@ class TnLinter(MarkdownLinter):
             else:
                 found_files = False
                 link = self.get_link_for_book(book)
+                if link == "toc":
+                    continue
                 file_path = os.path.join(self.source_dir, link)
                 for root, dirs, files in os.walk(file_path):
                     if root == file_path:
