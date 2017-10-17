@@ -30,7 +30,7 @@ class ProjectPrinterTests(unittest.TestCase):
         self.assertTrue(App.cdn_s3_handler().key_exists('u/{0}/print_all.html'.format(self.project_key)))
         html = App.cdn_s3_handler().get_file_contents('u/{0}/print_all.html'.format(self.project_key))
         soup = BeautifulSoup(html, 'html.parser')
-        self.assertEqual(len(soup.div), 69)
+        self.assertEqual(len(soup.div), 41) # counts lines in first story (now front matter)
         self.assertEqual(soup.html['lang'], 'en')
         self.assertEqual(soup.html['dir'], 'ltr')
         # Run again, shouldn't have to generate

@@ -5,6 +5,7 @@ import os
 import tempfile
 from bs4 import BeautifulSoup
 from moto import mock_s3
+from libraries.client.preprocessors import TqPreprocessor
 from libraries.door43_tools.project_deployer import ProjectDeployer
 from libraries.door43_tools.td_language import TdLanguage
 from libraries.general_tools import file_utils
@@ -58,6 +59,31 @@ class ProjectDeployerTests(unittest.TestCase):
         bad_key = 'u/test_user/test_repo/12345678/bad_build_log.json'
         ret = self.deployer.deploy_revision_to_door43(bad_key)
         self.assertFalse(ret)
+
+    def test_tq_deploy_revision_to_door43(self):
+        # given
+        self.mock_s3_tq_project()
+        build_log_key = '{0}/build_log.json'.format(self.project_key)
+
+        # when
+        ret = self.deployer.deploy_revision_to_door43(build_log_key)
+
+        # then
+        self.assertTrue(ret)
+        self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
+        files_to_verify = ['00-toc.html', 'manifest.yaml']
+        for section in TqPreprocessor.sections:
+            book = section['book']
+            file = '{0}.html'.format(book)
+            files_to_verify.append(file)
+
+        for file_name in files_to_verify:
+            key = '{0}/{1}'.format(self.project_key, file_name)
+            self.assertTrue(App.door43_s3_handler().key_exists(key), "Key not found: {0}".format(key))
+        parent_key = '/'.join(self.project_key.split('/')[:-1])
+        for file_name in ['project.json']:
+            key = '{0}/{1}'.format(parent_key, file_name)
+            self.assertTrue(App.door43_s3_handler().key_exists(key), "Key not found: {0}".format(key))
 
     def test_tw_deploy_revision_to_door43(self):
         self.mock_s3_tw_project()
@@ -184,6 +210,21 @@ class ProjectDeployerTests(unittest.TestCase):
 
     def mock_run_templater_exception(self):
         raise NotImplementedError("Test Exception")
+
+    def mock_s3_tq_project(self):
+        zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en_tq_converted.zip')
+        out_dir = os.path.join(self.temp_dir, 'en_tq_converted')
+        unzip(zip_file, out_dir)
+        src_dir = os.path.join(out_dir, 'en_tq_converted')
+        self.project_files = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+        self.project_key = 'u/door43/en_tq/12345678'
+        for filename in self.project_files:
+            App.cdn_s3_handler().upload_file(os.path.join(src_dir, filename), '{0}/{1}'.format(self.project_key,
+                                                                                               filename))
+        App.cdn_s3_handler().upload_file(os.path.join(src_dir, 'project.json'),
+                                         'u/door43/en_tq/project.json')
+        App.door43_s3_handler().upload_file(os.path.join(self.resources_dir, 'templates', 'project-page.html'),
+                                            'templates/project-page.html')
 
     def mock_s3_tw_project(self):
         zip_file = os.path.join(self.resources_dir, 'converted_projects', 'en_tw_converted.zip')

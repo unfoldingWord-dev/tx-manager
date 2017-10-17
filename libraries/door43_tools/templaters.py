@@ -23,6 +23,8 @@ def init_template(resource_type, source_dir, output_dir, template_file):
         templater = ObsTemplater(resource_type, source_dir, output_dir, template_file)
     elif resource_type == 'ta':
         templater = TaTemplater(resource_type, source_dir, output_dir, template_file)
+    elif resource_type == 'tq':
+        templater = TqTemplater(resource_type, source_dir, output_dir, template_file)
     elif resource_type == 'tw':
         templater = TwTemplater(resource_type, source_dir, output_dir, template_file)
     else:
@@ -237,6 +239,14 @@ class Templater(object):
 class ObsTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(ObsTemplater, self).__init__(*args, **kwargs)
+
+
+class TqTemplater(Templater):
+    def __init__(self, *args, **kwargs):
+        super(TqTemplater, self).__init__(*args, **kwargs)
+        index = file_utils.load_json_object(os.path.join(self.source_dir, 'index.json'))
+        if index:
+            self.titles = index['titles']
 
 
 class TwTemplater(Templater):

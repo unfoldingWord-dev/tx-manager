@@ -88,6 +88,7 @@ class ClientWebhook(object):
             'resource_type': rc.resource.type,
             'title': rc.resource.title,
             'manifest': json.dumps(rc.as_dict()),
+            'last_updated': datetime.utcnow()
         }
         # First see if manifest already exists in DB and update it if it is
         tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
@@ -469,10 +470,10 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        return TxModule.query().filter(TxModule.type=='converter')\
-            .filter(TxModule.input_format.contains(job.input_format))\
-            .filter(TxModule.output_format.contains(job.output_format))\
-            .filter(TxModule.resource_types.contains(job.resource_type))\
+        return TxModule.query().filter(TxModule.type=='converter') \
+            .filter(TxModule.input_format.contains(job.input_format)) \
+            .filter(TxModule.output_format.contains(job.output_format)) \
+            .filter(TxModule.resource_types.contains(job.resource_type)) \
             .first()
 
     def get_linter_module(self, job):
@@ -480,7 +481,7 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        linters = TxModule.query().filter(TxModule.type=='linter')\
+        linters = TxModule.query().filter(TxModule.type=='linter') \
             .filter(TxModule.input_format.contains(job.input_format))
         linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
         if not linter:
