@@ -37,8 +37,7 @@ class TestTwPreprocessor(unittest.TestCase):
         repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         repo_name = 'dummy_repo'
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
-        self.assertEquals(preproc.repo_name, repo_name)
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
@@ -78,8 +77,7 @@ class TestTwPreprocessor(unittest.TestCase):
         file_utils.remove(os.path.join(base_folder, 'manifest.yaml'))
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         repo_name = 'dummy_repo'
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir, repo_name=repo_name)
-        self.assertEquals(preproc.repo_name, repo_name)
+        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
 
     def test_fix_links(self):
@@ -116,7 +114,7 @@ class TestTwPreprocessor(unittest.TestCase):
 
         content = """This [link](rc://en/tn/help/ezr/09/01) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
-        expected = """This [link](https://git.door43.org/Door43/en_tn/src/master/ezr/09/01.md) is a rc link that should go to 
+        expected = """This [link](https://git.door43.org/tw/en_tn/src/master/ezr/09/01.md) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
         converted = tw.fix_links(content, current_category)
         self.assertEqual(converted, expected)

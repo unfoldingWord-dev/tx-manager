@@ -103,7 +103,7 @@ class ClientWebhook(object):
 
         # Preprocess the files
         preprocess_dir = tempfile.mkdtemp(dir=self.base_temp_dir, prefix='preprocess_')
-        results, preprocessor = do_preprocess(rc, repo_dir, preprocess_dir, repo_name)
+        results, preprocessor = do_preprocess(rc, repo_dir, preprocess_dir)
 
         # Zip up the massaged files
         zip_filepath = tempfile.mktemp(dir=self.base_temp_dir, suffix='.zip')
