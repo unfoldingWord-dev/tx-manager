@@ -31,13 +31,17 @@ class TestTwPreprocessor(unittest.TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_tw_preprocessor(self):
+        # given
         repo_name = 'en_tw'
         file_name = os.path.join('raw_sources', repo_name + '.zip')
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        repo_name = 'dummy_repo'
+
+        # when
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
+
+        # then
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
@@ -67,6 +71,7 @@ class TestTwPreprocessor(unittest.TestCase):
         self.assertTrue('../' not in other)
 
     def test_tw_preprocessor_dummy_section(self):
+        # given
         TwPreprocessor.sections = [{'link': 'dumy', 'title': 'dumy'}]
         repo_name = 'en_tw'
         file_name = os.path.join('raw_sources', repo_name + '.zip')
@@ -77,10 +82,15 @@ class TestTwPreprocessor(unittest.TestCase):
         file_utils.remove(os.path.join(base_folder, 'manifest.yaml'))
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         repo_name = 'dummy_repo'
+
+        # when
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
+
+        # then
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
 
     def test_fix_links(self):
+        # given
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'tw'))
         repo_name = 'Door43'
         current_category = 'names'
@@ -88,41 +98,74 @@ class TestTwPreprocessor(unittest.TestCase):
         tw.repo_name = repo_name
         content = "This has links to the same category: (See also: [titus](../names/titus.md), [timothy](../names/timothy.md)"
         expected = "This has links to the same category: (See also: [titus](#titus), [timothy](#timothy)"
+
+        # when
         converted = tw.fix_links(content, current_category)
+
+        # then
         self.assertEqual(converted, expected)
- 
+
+        # given
         content = """This has links to other categories:
         (See also:[lamb](../kt/lamb.md), [license](../other/license.md)"""
         expected = """This has links to other categories:
         (See also:[lamb](kt.html#lamb), [license](other.html#license)"""
+
+        # when
         converted = tw.fix_links(content, current_category)
+
+        # then
         self.assertEqual(converted, expected)
 
+        # given
         content = """This has links to the same category and others:
         (See also: [titus](../names/titus.md), [timothy](../names/timothy.md), [lamb](../kt/lamb.md), 
         [license](../other/license.md)"""
         expected = """This has links to the same category and others:
         (See also: [titus](#titus), [timothy](#timothy), [lamb](kt.html#lamb), 
         [license](other.html#license)"""
+
+        # when
         converted = tw.fix_links(content, current_category)
+
+        # then
         self.assertEqual(converted, expected)
 
+        # given
         content = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
         expected = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
+
+        # when
         converted = tw.fix_links(content, current_category)
+
+        # then
         self.assertEqual(converted, expected)
 
+        # given
         content = """This [link](rc://en/tn/help/ezr/09/01) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
         expected = """This [link](https://git.door43.org/tw/en_tn/src/master/ezr/09/01.md) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
+
+        # when
         converted = tw.fix_links(content, current_category)
+
+        # then
         self.assertEqual(converted, expected)
 
+        # given
         content = """This url should be made into a link: http://example.com/somewhere/outthere and so should www.example.com/asdf.html?id=5&view=dashboard#report."""
         expected = """This url should be made into a link: [http://example.com/somewhere/outthere](http://example.com/somewhere/outthere) and so should [www.example.com/asdf.html?id=5&view=dashboard#report](http://www.example.com/asdf.html?id=5&view=dashboard#report)."""
+
+        # when
         converted = tw.fix_links(content, current_category)
+
+        # then
         self.assertEqual(converted, expected)
+
+    #
+    # helpers
+    #
 
     @classmethod
     def extractFiles(cls, file_name, repo_name):
