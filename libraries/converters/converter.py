@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import traceback
+import urlparse
 import requests
 from libraries.general_tools.url_utils import download_file
 from libraries.general_tools.file_utils import unzip, add_contents_to_zip, remove_tree, remove
@@ -142,3 +143,17 @@ class Converter(object):
                 App.logger.error('Error calling callback code {0}: {1}'.format(self.callback_status, response.reason))
         else:
             App.logger.error('Invalid callback url: {0}'.format(url))
+
+    def check_for_exclusive_convert(self):
+        convert_only = []
+        if self.source and len(self.source) > 0:
+            parsed = urlparse.urlparse(self.source)
+            params = urlparse.parse_qsl(parsed.query)
+            if params and len(params) > 0:
+                for i in range(0, len(params)):
+                    item = params[i]
+                    if item[0] == 'convert_only':
+                        convert_only = item[1].split(',')
+                        self.source = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+                        break
+        return convert_only

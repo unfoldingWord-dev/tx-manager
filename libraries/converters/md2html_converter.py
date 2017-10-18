@@ -25,6 +25,7 @@ class Md2HtmlConverter(Converter):
 
         # find the first directory that has md files.
         files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
+        convert_only_list = self.check_for_exclusive_convert()
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
@@ -34,6 +35,10 @@ class Md2HtmlConverter(Converter):
 
         for filename in files:
             if filename.endswith('.md'):
+                base_name = os.path.basename(filename)
+                if convert_only_list and (base_name not in convert_only_list):  # see if this is a file we are to convert
+                    continue
+
                 # Convert files that are markdown files
                 with codecs.open(filename, 'r', 'utf-8-sig') as md_file:
                     md = md_file.read()
