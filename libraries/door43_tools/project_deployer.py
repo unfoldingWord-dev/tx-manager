@@ -86,7 +86,7 @@ class ProjectDeployer(object):
         App.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
         App.door43_s3_handler().download_file(template_key, template_file)
 
-        if not partial and not multi_merge:
+        if not multi_merge:
             source_dir, success = self.deploy_single_conversion(build_log, download_key, output_dir, repo_name,
                                                                 resource_type, s3_commit_key, source_dir, start,
                                                                 template_file)
