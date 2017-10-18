@@ -33,8 +33,17 @@ class MarkdownLinter(Linter):
         return True
 
     def get_strings(self):
-        files = sorted(get_files(directory=self.source_dir, relative_paths=True, exclude=self.EXCLUDED_FILES,
-                                 extensions=['.md']))
+        if self.convert_only:
+            files = []
+            for dir in self.convert_only:
+                dir_path = os.path.join(self.source_dir, dir)
+                sub_files = sorted(get_files(directory=dir_path, relative_paths=True, exclude=self.EXCLUDED_FILES,
+                                            extensions=['.md']))
+                for f in sub_files:
+                    files.append(os.path.join(dir, f))
+        else:
+            files = sorted(get_files(directory=self.source_dir, relative_paths=True, exclude=self.EXCLUDED_FILES,
+                                     extensions=['.md']))
         strings = {}
         for f in files:
             path = os.path.join(self.source_dir, f)

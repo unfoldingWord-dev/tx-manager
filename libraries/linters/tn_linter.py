@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import re
+import urlparse
 from libraries.app.app import App
 from libraries.client.preprocessors import TnPreprocessor
 from libraries.general_tools import file_utils
@@ -21,13 +22,21 @@ class TnLinter(MarkdownLinter):
         :return boolean:
         """
         self.source_dir = os.path.abspath(self.source_dir)
-        for root, dirs, files in os.walk(self.source_dir):
-            for f in files:
-                file_path = os.path.join(root, f)
-                parts = os.path.splitext(f)
-                if parts[1] == '.md':
-                    contents = file_utils.read_file(file_path)
-                    self.find_invalid_links(root, f, contents)
+        source_dirs = []
+        if not self.convert_only:
+            source_dirs = [self.source_dir]
+        else:
+            for d in self.convert_only:
+                source_dirs.append(os.path.join(self.source_dir, d))
+
+        for source in source_dirs:
+            for root, dirs, files in os.walk(source):
+                for f in files:
+                    file_path = os.path.join(root, f)
+                    parts = os.path.splitext(f)
+                    if parts[1] == '.md':
+                        contents = file_utils.read_file(file_path)
+                        self.find_invalid_links(root, f, contents)
 
         for section in TnPreprocessor.sections:
             book = section['book']
@@ -40,6 +49,8 @@ class TnLinter(MarkdownLinter):
                 found_files = False
                 link = self.get_link_for_book(book)
                 if link == "toc":
+                    continue  # not checking for toc, that will be generated
+                if self.convert_only and (link not in self.convert_only):
                     continue
                 file_path = os.path.join(self.source_dir, link)
                 for root, dirs, files in os.walk(file_path):
@@ -91,3 +102,23 @@ class TnLinter(MarkdownLinter):
         if len(parts) > 1:
             link = parts[1].lower()
         return link
+
+    def check_for_exclusive_convert(self):
+        self.convert_only = []
+        if self.source_zip_url and len(self.source_zip_url) > 0:
+            parsed = urlparse.urlparse(self.source_zip_url)
+            params = urlparse.parse_qsl(parsed.query)
+            if params and len(params) > 0:
+                for i in range(0, len(params)):
+                    item = params[i]
+                    if item[0] == 'convert_only':
+                        for f in item[1].split(','):
+                            base_name = f.split('.')[0]
+                            parts = base_name.split('-')
+                            if len(parts) > 1:
+                                base_name = parts[1]
+                            self.convert_only.append(base_name.lower())
+                        self.source_zip_url = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path,
+                                                                  '', '', ''))
+                        break
+        return self.convert_only

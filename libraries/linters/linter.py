@@ -32,6 +32,7 @@ class Linter(object):
         self.source_zip_file = source_file
         self.source_dir = source_dir
         self.commit_data = commit_data
+        self.convert_only = None
 
         self.log = LintLogger()
 
