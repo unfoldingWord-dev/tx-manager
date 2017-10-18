@@ -65,6 +65,11 @@ class ProjectDeployer(object):
         if 'multiple' in build_log:
             multi_merge = build_log['multiple']
             App.logger.debug("found multi-part merge")
+            key_deployed_ = download_key + '/deployed'
+            if App.cdn_s3_handler().key_exists(key_deployed_):
+                App.logger.debug("Already merged parts")
+                return False
+            self.write_data_to_file(self.temp_dir, key_deployed_, 'deployed', ' ')  # flag that deploy has begun
 
         elif 'part' in build_log:
             part = build_log['part']
