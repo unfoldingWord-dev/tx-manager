@@ -88,6 +88,7 @@ class ClientWebhook(object):
             'resource_type': rc.resource.type,
             'title': rc.resource.title,
             'manifest': json.dumps(rc.as_dict()),
+            'last_updated': datetime.utcnow()
         }
         # First see if manifest already exists in DB and update it if it is
         tx_manifest = TxManifest.get(repo_name=repo_name, user_name=user_name)
@@ -170,6 +171,11 @@ class ClientWebhook(object):
         # Create a build log
         build_log_json = self.create_build_log(commit_id, commit_message, commit_url, compare_url, job,
                                                pusher_username, repo_name, user_name)
+        # Upload an initial build_log
+        self.upload_build_log_to_s3(build_log_json, s3_commit_key)
+
+        # Update the project.json file
+        self.update_project_json(commit_id, job, repo_name, user_name)
 
         # Convert and lint
         if converter:
@@ -227,13 +233,6 @@ class ClientWebhook(object):
                         }
                         self.send_request_to_linter(book_job, linter, commit_url, extra_payload)
 
-        # Upload an initial build_log
-        self.upload_build_log_to_s3(build_log_json, s3_commit_key)
-
-        # Update the project.json file
-        self.update_project_json(commit_id, job, repo_name, user_name)
-
-
         remove_tree(self.base_temp_dir)  # cleanup
         return build_log_json
 
@@ -265,15 +264,15 @@ class ClientWebhook(object):
     def create_build_log(self, commit_id, commit_message, commit_url, compare_url, job, pusher_username, repo_name,
                          repo_owner):
         """
-        :param string commit_id: 
-        :param string commit_message: 
-        :param string commit_url: 
-        :param string compare_url: 
-        :param TxJob job: 
-        :param string pusher_username: 
-        :param string repo_name: 
-        :param string repo_owner: 
-        :return dict: 
+        :param string commit_id:
+        :param string commit_message:
+        :param string commit_url:
+        :param string compare_url:
+        :param TxJob job:
+        :param string pusher_username:
+        :param string repo_name:
+        :param string repo_owner:
+        :return dict:
         """
         build_log_json = dict(job)
         build_log_json['repo_name'] = repo_name
@@ -344,7 +343,7 @@ class ClientWebhook(object):
         """
         :param TxJob job:
         :param TxModule converter:
-        :return bool: 
+        :return bool:
         """
         payload = {
             'identifier': job.identifier,
@@ -469,10 +468,10 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        return TxModule.query().filter(TxModule.type=='converter')\
-            .filter(TxModule.input_format.contains(job.input_format))\
-            .filter(TxModule.output_format.contains(job.output_format))\
-            .filter(TxModule.resource_types.contains(job.resource_type))\
+        return TxModule.query().filter(TxModule.type=='converter') \
+            .filter(TxModule.input_format.contains(job.input_format)) \
+            .filter(TxModule.output_format.contains(job.output_format)) \
+            .filter(TxModule.resource_types.contains(job.resource_type)) \
             .first()
 
     def get_linter_module(self, job):
@@ -480,7 +479,7 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        linters = TxModule.query().filter(TxModule.type=='linter')\
+        linters = TxModule.query().filter(TxModule.type=='linter') \
             .filter(TxModule.input_format.contains(job.input_format))
         linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
         if not linter:

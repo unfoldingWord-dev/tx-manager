@@ -3,6 +3,7 @@ import os
 import re
 from glob import glob
 from shutil import copy
+from libraries.app.app import App
 from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
@@ -11,12 +12,22 @@ from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 def do_preprocess(rc, repo_dir, output_dir):
     if rc.resource.identifier == 'obs':
+        App.logger.debug("do_preprocess: using ObsPreprocessor")
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
+        App.logger.debug("do_preprocess: using BiblePreprocessor")
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'ta':
+        App.logger.debug("do_preprocess: using TaPreprocessor")
         preprocessor = TaPreprocessor(rc, repo_dir, output_dir)
+    elif rc.resource.identifier == 'tw':
+        App.logger.debug("do_preprocess: using TwPreprocessor")
+        preprocessor = TwPreprocessor(rc, repo_dir, output_dir)
+    elif rc.resource.identifier == 'tq':
+        App.logger.debug("do_preprocess: using TqPreprocessor")
+        preprocessor = TqPreprocessor(rc, repo_dir, output_dir)
     else:
+        App.logger.debug("do_preprocess: using Preprocessor")
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
 
@@ -63,10 +74,13 @@ class Preprocessor(object):
                 else:
                     # Case #3: The project path is multiple chapters, so we piece them together
                     chapters = self.rc.chapters(project.identifier)
+                    App.logger.debug("Merging chapters in '{0}'".format(project.identifier))
                     if len(chapters):
                         text = ''
                         for chapter in chapters:
+                            text = self.mark_chapter(project.identifier, chapter, text)
                             for chunk in self.rc.chunks(project.identifier, chapter):
+                                text = self.mark_chunk(project.identifier, chapter, chunk, text)
                                 text += read_file(os.path.join(project_path, chapter, chunk))+"\n\n"
                         if project.identifier.lower() in BOOK_NUMBERS:
                             filename = '{0}-{1}.{2}'.format(BOOK_NUMBERS[project.identifier.lower()],
@@ -76,6 +90,12 @@ class Preprocessor(object):
                                                             self.rc.resource.file_ext)
                         write_file(os.path.join(self.output_dir, filename), text)
         return True
+
+    def mark_chapter(self, ident, chapter, text):
+        return text  # default does nothing to text
+
+    def mark_chunk(self, ident, chapter, chunk, text):
+        return text  # default does nothing to text
 
     def is_multiple_jobs(self):
         return False
@@ -404,6 +424,365 @@ class TaPreprocessor(Preprocessor):
         for idx, project in enumerate(self.rc.projects):
             pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project.identifier))
             replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
+            content = re.sub(pattern, replace, content)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
+        return content
+
+
+class TqPreprocessor(Preprocessor):
+    sections = [
+        {'book': "00-toc", 'title': 'Table of Contents'},
+        {'book': "01-GEN", 'title': 'Genesis'},
+        {'book': "02-EXO", 'title': 'Exodus'},
+        {'book': "03-LEV", 'title': 'Leviticus'},
+        {'book': "04-NUM", 'title': 'Numbers'},
+        {'book': "05-DEU", 'title': 'Deuteronomy'},
+        {'book': "06-JOS", 'title': 'Joshua'},
+        {'book': "07-JDG", 'title': 'Judges'},
+        {'book': "08-RUT", 'title': 'Ruth'},
+        {'book': "09-1SA", 'title': '1 Samuel'},
+        {'book': "10-2SA", 'title': '2 Samuel'},
+        {'book': "11-1KI", 'title': '1 Kings'},
+        {'book': "12-2KI", 'title': '2 Kings'},
+        {'book': "13-1CH", 'title': '1 Chronicles'},
+        {'book': "14-2CH", 'title': '2 Chronicles'},
+        {'book': "15-EZR", 'title': 'Ezra'},
+        {'book': "16-NEH", 'title': 'Nehemiah'},
+        {'book': "17-EST", 'title': 'Esther'},
+        {'book': "18-JOB", 'title': 'Job'},
+        {'book': "19-PSA", 'title': 'Psalms'},
+        {'book': "20-PRO", 'title': 'Proverbs'},
+        {'book': "21-ECC", 'title': 'Ecclesiastes'},
+        {'book': "22-SNG", 'title': 'Song of Solomon'},
+        {'book': "23-ISA", 'title': 'Isaiah'},
+        {'book': "24-JER", 'title': 'Jeremiah'},
+        {'book': "25-LAM", 'title': 'Lamentations'},
+        {'book': "26-EZK", 'title': 'Ezekiel'},
+        {'book': "27-DAN", 'title': 'Daniel'},
+        {'book': "28-HOS", 'title': 'Hosea'},
+        {'book': "29-JOL", 'title': 'Joel'},
+        {'book': "30-AMO", 'title': 'Amos'},
+        {'book': "31-OBA", 'title': 'Obadiah'},
+        {'book': "32-JON", 'title': 'Jonah'},
+        {'book': "33-MIC", 'title': 'Micah'},
+        {'book': "34-NAM", 'title': 'Nahum'},
+        {'book': "35-HAB", 'title': 'Habakkuk'},
+        {'book': "36-ZEP", 'title': 'Zephaniah'},
+        {'book': "37-HAG", 'title': 'Haggai'},
+        {'book': "38-ZEC", 'title': 'Zechariah'},
+        {'book': "39-MAL", 'title': 'Malachi'},
+        {'book': "41-MAT", 'title': 'Matthew'},
+        {'book': "42-MRK", 'title': 'Mark'},
+        {'book': "43-LUK", 'title': 'Luke'},
+        {'book': "44-JHN", 'title': 'John'},
+        {'book': "45-ACT", 'title': 'Acts'},
+        {'book': "46-ROM", 'title': 'Romans'},
+        {'book': "47-1CO", 'title': '1 Corinthians'},
+        {'book': "48-2CO", 'title': '2 Corinthians'},
+        {'book': "49-GAL", 'title': 'Galatians'},
+        {'book': "50-EPH", 'title': 'Ephesians'},
+        {'book': "51-PHP", 'title': 'Philippians'},
+        {'book': "52-COL", 'title': 'Colossians'},
+        {'book': "53-1TH", 'title': '1 Thessalonians'},
+        {'book': "54-2TH", 'title': '2 Thessalonians'},
+        {'book': "55-1TI", 'title': '1 Timothy'},
+        {'book': "56-2TI", 'title': '2 Timothy'},
+        {'book': "57-TIT", 'title': 'Titus'},
+        {'book': "58-PHM", 'title': 'Philemon'},
+        {'book': "59-HEB", 'title': 'Hebrews'},
+        {'book': "60-JAS", 'title': 'James'},
+        {'book': "61-1PE", 'title': '1 Peter'},
+        {'book': "62-2PE", 'title': '2 Peter'},
+        {'book': "63-1JN", 'title': '1 John'},
+        {'book': "64-2JN", 'title': '2 John'},
+        {'book': "65-3JN", 'title': '3 John'},
+        {'book': "66-JUD", 'title': 'Jude'},
+        {'book': "67-REV", 'title': 'Revelation'},
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(TqPreprocessor, self).__init__(*args, **kwargs)
+        self.section_container_id = 1
+        self.toc = ''
+        self.index_json = None
+        self.section_header_marker = '###############'
+
+    def mark_chapter(self, ident, chapter, text):
+        a = '{0} {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
+        return text + a
+
+    def mark_chunk(self, ident, chapter, chunk, text):
+        chunk_marker = os.path.splitext(chunk)[0]
+        a = '{0}# {1}:{2}\n\n'.format(self.section_header_marker, chapter, chunk_marker)  # put in invalid header for section - we will correct heading level later
+        return text + a
+
+    def compile_section(self, title, link, content):
+        """
+        Recursive section markdown creator
+
+        :param content:
+        :param link:
+        :param title:
+        :return:
+        """
+        level = 3
+        markdown = ''
+        level_increase = ('#' * level)
+        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * (level-2), link, title)  # add book title
+        content = content.replace('\r', '')
+        lines = content.split('\n')
+        section_header_length = len(self.section_header_marker)
+        for i in range(0, len(lines)):
+            line = lines[i]
+            if line[:section_header_length] == self.section_header_marker:
+                text = line[section_header_length:]
+                if text[0] == '#':  # check if chunk marker
+                    line = level_increase + ' ' + title + text[1:]  # fix header level and add title
+                else:  # chapter marker
+                    line = '#' * (level-1) + ' ' + title + text  # fix header level and add title
+                lines[i] = line
+            elif line and (line[0] == '#'):
+                if line.rstrip()[-1] == '#':
+                    line = level_increase + line.rstrip() + level_increase
+                else:
+                    line = level_increase + line
+                lines[i] = line
+        content = '\n'.join(lines)
+        markdown += content + '\n\n---\n\n'  # horizontal rule
+        return markdown
+
+    def run(self):
+        super(TqPreprocessor, self).run()
+        self.toc = None
+        projects = {}
+        self.index_json = {
+            'titles': {},
+            'chapters': {},
+            'book_codes': {}
+        }
+        for idx, project in enumerate(self.rc.projects):
+            section = self.get_section_for_file(project.identifier)
+            if section:
+                link = self.get_link_for_section(section)
+                book = section['book']
+                if not self.toc:
+                    self.toc = '# Table of Contents:\n\n'
+                projects[book] = {
+                    'link': link,
+                }
+            else:
+                App.logger.debug('TqPreprocessor: extra project found: {0}'.format(project.identifier))
+
+        for section in TqPreprocessor.sections:  # index by book order
+            book = section['book']
+            if book in projects:
+                file = os.path.join(self.output_dir, book + '.md')
+                link = self.get_link_for_section(section)
+                book = section['book']
+                title = section['title']
+                if not os.path.exists(file):
+                    App.logger.debug('TqPreprocessor: book missing: {0}'.format(book))
+                    continue
+                initial_markdown = read_file(file)
+                markdown = self.compile_section(title, link, initial_markdown)
+                markdown = self.fix_links(markdown, book)
+                if initial_markdown != markdown:
+                    write_file(file, markdown)
+                self.toc += '* [{1}](./{0}.html)\n'.format(book, title)
+                self.index_json['titles'][book + '.html'] = title
+            else:
+                App.logger.debug('TqPreprocessor: missing book: {0}'.format(book))
+
+        self.toc = self.fix_links(self.toc, '-')
+        output_file = os.path.join(self.output_dir, '00-toc.md')
+        write_file(output_file, self.toc)
+        self.index_json['titles']['00-toc.html'] = 'Table of Contents'
+        output_file = os.path.join(self.output_dir, 'index.json')
+        write_file(output_file, self.index_json)
+
+        # Copy the toc and config.yaml file to the output dir so they can be used to
+        # generate the ToC on live.door43.org
+        toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
+        if os.path.isfile(toc_file):
+            copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
+        config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+        if os.path.isfile(config_file):
+            copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
+        return True
+
+    def fix_links(self, content, section_link):
+        if not content:
+            return content
+
+        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.rc.repo_name), content,
+                         flags=re.IGNORECASE)
+        # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
+        # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
+        pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section_link)
+        content = re.sub(pattern, r'](#\1)', content)
+        # fix links to other sections within the same manual (only one ../ and a section name)
+        # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
+        for section in TqPreprocessor.sections:
+            link = self.get_link_for_section(section)
+            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link))
+            replace = r']({0}.html#\1)'.format(link)
+            content = re.sub(pattern, replace, content)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
+        return content
+
+    def get_section_for_file(self, id):
+        id = id.lower()
+        for section in TqPreprocessor.sections:
+            if (id == section['book'].lower()) or (id == self.get_link_for_section(section)):
+                return section
+        return None
+
+    def get_link_for_section(self, section):
+        link = section['book']
+        parts = link.split('-')
+        if len(parts) > 1:
+            link = parts[1].lower()
+        return link
+
+
+class TwPreprocessor(Preprocessor):
+    sections = [
+        {'link': 'kt', 'title': 'Key Terms'},
+        {'link': 'names', 'title': 'Names'},
+        {'link': 'other', 'title': 'Other'}
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(TwPreprocessor, self).__init__(*args, **kwargs)
+        self.section_container_id = 1
+        self.toc = ''
+        self.index_json = None
+
+    def get_title(self, project, alt_title=None):
+        title = alt_title
+        return title.title()
+
+    def get_content(self, content_file):
+        if os.path.isfile(content_file):
+            return read_file(content_file)
+
+    def compile_section(self, project, section, level):
+        """
+        Recursive section markdown creator
+
+        :param project:
+        :param dict section:
+        :param int level:
+        :return:
+        """
+        if 'link' in section:
+            link = section['link']
+        else:
+            return ''
+        title = self.get_title(project, section['title'])
+        markdown = ''
+        if 'link' in section:
+            level_increase = ('#' * level)
+            files = sorted(glob(os.path.join(self.source_dir, project.path, link, '*.md')))
+            if files:
+                markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
+                self.toc += '### {0}:\n\n'.format(title)
+                for file in files:
+                    top_box = ""
+                    if top_box:
+                        markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
+                    content = self.get_content(file)
+                    content = content.replace('\r', '')
+                    lines = content.split('\n')
+                    for i in range(0, len(lines)):
+                        line = lines[i]
+                        if line and (line[0] == '#'):
+                            line = level_increase + line.rstrip() + level_increase
+                            lines[i] = line
+                    content = '\n'.join(lines)
+                    if content:
+                        file_name = os.path.basename(file)
+                        anchor = os.path.splitext(file_name)[0]
+                        markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
+                        self.toc += '* [{1}]({0}.html#{1})\n'.format(link, anchor)
+
+                    markdown += '---\n\n'  # horizontal rule
+
+        return markdown
+
+    def run(self):
+        self.index_json = {
+            'titles': {},
+            'chapters': {},
+            'book_codes': {}
+        }
+
+        for idx, project in enumerate(self.rc.projects):
+            self.section_container_id = 1
+            title = project.title
+            self.toc = '# {0}\n\n'.format(title)
+            self.toc += '## Table of Contents:\n\n'
+            for section in TwPreprocessor.sections:
+                markdown = '# {0}\n\n'.format(title)
+                section_md = self.compile_section(project, section, 2)
+                if not section_md:
+                    continue
+                markdown += section_md
+                markdown = self.fix_links(markdown, section['link'])
+                output_file = os.path.join(self.output_dir, '{0}.md'.format(section['link']))
+                write_file(output_file, markdown)
+                self.index_json['titles'][section['link'] + '.html'] = section['title']
+
+            self.toc = self.fix_links(self.toc, '-')
+            output_file = os.path.join(self.output_dir, '0toc.md')
+            write_file(output_file, self.toc)
+            self.index_json['titles']['0toc.html'] = 'Table of Contents'
+            output_file = os.path.join(self.output_dir, 'index.json')
+            write_file(output_file, self.index_json)
+
+            # Copy the toc and config.yaml file to the output dir so they can be used to
+            # generate the ToC on live.door43.org
+            toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
+            if os.path.isfile(toc_file):
+                copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
+            config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+            if os.path.isfile(config_file):
+                copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
+        return True
+
+    def fix_links(self, content, section_link):
+        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.rc.repo_name), content,
+                         flags=re.IGNORECASE)
+        # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
+        # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
+        pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section_link)
+        content = re.sub(pattern, r'](#\1)', content)
+        # fix links to other sections within the same manual (only one ../ and a section name)
+        # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
+        for section in TwPreprocessor.sections:
+            link_ = section['link']
+            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link_))
+            replace = r']({0}.html#\1)'.format(link_)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
