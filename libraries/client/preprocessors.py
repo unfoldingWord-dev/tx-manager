@@ -454,7 +454,7 @@ class TqPreprocessor(Preprocessor):
                 markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
                 for chapter in chapters:
                     chapter = os.path.basename(chapter)
-                    markdown += '## <a id="tq-{0}-{1}"/> {0} {1}\n\n'.format(book, chapter.zfill(3), name,
+                    markdown += '## <a id="tq-{0}-{1}" class="c-num"/> {2} {3}\n\n'.format(book, chapter.zfill(3), name,
                                                                              chapter.lstrip('0'))
                     chunks = glob(os.path.join(self.source_dir, book, chapter, '*.md'))
                     for chunk_idx, chunk in enumerate(chunks):
