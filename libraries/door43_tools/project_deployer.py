@@ -97,7 +97,6 @@ class ProjectDeployer(object):
                                                                 template_file)
             if not success:
                 return
-
         else:
             # merge multi-part project
             source_dir, success = self.deploy_multipart_master(s3_commit_key, resource_type, download_key, output_dir,
@@ -106,10 +105,10 @@ class ProjectDeployer(object):
                 return False
 
         # Copy first HTML file to index.html if index.html doesn't exist
-        html_files = sorted(glob(os.path.join(output_dir, '*.html')))
-        if (not partial) and (len(html_files) > 0):
+        if not partial or multi_merge:
+            html_files = sorted(glob(os.path.join(output_dir, '*.html')))
             index_file = os.path.join(output_dir, 'index.html')
-            if not os.path.isfile(index_file):
+            if len(html_files) > 0 and not os.path.isfile(index_file):
                 copyfile(os.path.join(output_dir, html_files[0]), index_file)
 
         # Copy all other files over that don't already exist in output_dir, like css files

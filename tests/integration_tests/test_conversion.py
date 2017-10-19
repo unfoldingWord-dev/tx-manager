@@ -81,6 +81,40 @@ class TestConversions(TestCase):
         if hasattr(self, 'temp_dir') and os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
+    def test_en_tq_conversion(self):
+        # given
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
+        git_url = "https://git.door43.org/tx-manager-test-data/en_tq.git"
+        base_url, repo, user = self.get_parts_of_git_url(git_url)
+        expected_output_name = ["00-toc"] + FULL_BIBLE_LIST
+        self.preprocessor_output_extension = "md"
+
+        # when
+        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
+                                                                                                       repo)
+
+        # then
+        self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
+                                 expected_output_name, job)
+
+    def test_en_tw_conversion(self):
+        # given
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
+        git_url = "https://git.door43.org/tx-manager-test-data/en_tw.git"
+        base_url, repo, user = self.get_parts_of_git_url(git_url)
+        expected_output_name = ["0toc", "kt", "names", "other"]
+        self.preprocessor_output_extension = "md"
+
+        # when
+        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
+                                                                                                       repo)
+
+        # then
+        self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
+                                 expected_output_name, job)
+
     def test_en_tn_conversion(self):
         # given
         if not self.is_testing_enabled():

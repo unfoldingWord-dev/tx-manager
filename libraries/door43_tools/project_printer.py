@@ -51,7 +51,7 @@ class ProjectPrinter(object):
         <h1>{2}: {3}</h1>
 """.format(rc.resource.language.identifier, rc.resource.language.direction, rc.resource.language.title,
            rc.resource.title))
-                for fname in sorted(glob(os.path.join(project_dir, '*.html'))):
+                for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.frontToBack):
                     with codecs.open(fname, 'r', 'utf-8-sig') as f:
                         soup = BeautifulSoup(f, 'html.parser')
                         # get the body of the raw html file
@@ -69,3 +69,12 @@ class ProjectPrinter(object):
         else:
             html = App.cdn_s3_handler().get_file_contents(print_all_key)
         return html
+
+    def frontToBack(self, file):
+        # make front and back sort before and after numeric files
+        if(file.find('front') >= 0):
+            return "00"
+        elif(file.find('back') >= 0):
+            return "99"
+        else:
+            return file[-7:-5]
