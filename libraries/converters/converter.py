@@ -154,6 +154,7 @@ class Converter(object):
                     item = params[i]
                     if item[0] == 'convert_only':
                         convert_only = item[1].split(',')
+                        App.logger.debug('Converting only: {0}'.format(convert_only))
                         self.source = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
                         break
         return convert_only
