@@ -61,7 +61,7 @@ class Usfm2HtmlConverter(Converter):
                 else:
                     content_div.append('<div class="error">ERROR! NOT CONVERTED!</div>')
                 output_file = os.path.join(self.output_dir, html_filename)
-                write_file(output_file, template_soup.prettify())
+                write_file(output_file, unicode(template_soup))
                 self.log.info('Converted {0} to {1}.'.format(os.path.basename(filename),
                                                              os.path.basename(html_filename)))
                 remove_tree(scratch_dir)
