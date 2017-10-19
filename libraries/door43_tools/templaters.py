@@ -273,7 +273,7 @@ class TqTemplater(Templater):
                 title = '{0}.'.format(book_code)
             self.titles[key] = title
             self.book_codes[key] = book_code
-            chapters = soup.find_all('h2', {'c-num'})
+            chapters = soup.find_all('h2')
             self.chapters[key] = [c['id'] for c in chapters]
 
     def build_page_nav(self, filename=None):

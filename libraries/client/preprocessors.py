@@ -450,13 +450,13 @@ class TqPreprocessor(Preprocessor):
             if project.identifier in BOOK_NAMES:
                 book = project.identifier
                 name = BOOK_NAMES[book]
-                chapters = glob(os.path.join(self.source_dir, book, '*'))
+                chapters = sorted(glob(os.path.join(self.source_dir, book, '*')))
                 markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
                 for chapter in chapters:
                     chapter = os.path.basename(chapter)
-                    markdown += '## <a id="tq-{0}-{1}" class="c-num"/> {2} {3}\n\n'.format(book, chapter.zfill(3), name,
+                    markdown += '## <a id="chapter-{0}-{1}" class="c-num"/> {2} {3}\n\n'.format(book, chapter.zfill(3), name,
                                                                              chapter.lstrip('0'))
-                    chunks = glob(os.path.join(self.source_dir, book, chapter, '*.md'))
+                    chunks = sorted(glob(os.path.join(self.source_dir, book, chapter, '*.md')))
                     for chunk_idx, chunk in enumerate(chunks):
                         chunk = os.path.basename(chunk)
                         start_verse = os.path.splitext(chunk)[0].lstrip('0')
@@ -464,7 +464,7 @@ class TqPreprocessor(Preprocessor):
                             end_verse = str(int(os.path.splitext(os.path.basename(chunks[chunk_idx+1]))[0])-1)
                         else:
                             end_verse = BOOK_CHAPTER_VERSES[book][chapter.lstrip('0')]
-                        markdown += '### <a id="tq-{0}-{1}-{2}"/>{3} {4}:{5}{6}\n\n'.\
+                        markdown += '### <a id="chunk-{0}-{1}-{2}"/>{3} {4}:{5}{6}\n\n'.\
                             format(book, str(chapter).zfill(3), str(start_verse).zfill(3), name, chapter.lstrip('0'),
                                    start_verse, '-'+end_verse if start_verse != end_verse else '')
                         text = read_file(os.path.join(self.source_dir, book, chapter, chunk)) + '\n\n'
@@ -472,7 +472,7 @@ class TqPreprocessor(Preprocessor):
                         markdown += text
                 file_path = os.path.join(self.output_dir, '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper()))
                 write_file(file_path, markdown)
-                index_json['titles'][book + '.html'] = name
+                index_json['titles']['{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())] = name
             else:
                 App.logger.debug('TqPreprocessor: extra project found: {0}'.format(project.identifier))
         # Write out index.json
