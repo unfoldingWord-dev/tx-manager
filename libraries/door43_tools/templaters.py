@@ -33,7 +33,7 @@ def init_template(resource_type, source_dir, output_dir, template_file):
 
 
 class Templater(object):
-    NO_NAV_TITLES = ['Conversion requested...', 'Conversion started...', 'Conversion successful',
+    NO_NAV_TITLES = ['', 'Conversion requested...', 'Conversion started...', 'Conversion successful',
                      'Conversion successful with warnings', 'Index']
 
     def __init__(self, resource_type, source_dir, output_dir, template_file):

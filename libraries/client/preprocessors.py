@@ -445,9 +445,9 @@ class TqPreprocessor(Preprocessor):
             'chapters': {},
             'book_codes': {}
         }
-        markdown = ''
         for idx, project in enumerate(self.rc.projects):
             if project.identifier in BOOK_NAMES:
+                markdown = ''
                 book = project.identifier.lower()
                 filename = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
                 index_json['book_codes'][filename] = book
