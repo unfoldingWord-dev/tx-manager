@@ -250,6 +250,7 @@ class TqTemplater(Templater):
         if index:
             self.titles = index['titles']
             self.chapters = index['chapters']
+            self.book_codes = index['book_codes']
 
     def get_page_navigation(self):
         for fname in self.files:
