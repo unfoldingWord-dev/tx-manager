@@ -64,7 +64,7 @@ class ProjectDeployer(object):
         multipart_merge = False
         if 'multiple' in build_log:
             multipart_merge = build_log['multiple']
-            App.logger.debug("found multi-part merge")
+            App.logger.debug("found multi-part merge: {0}".format(download_key))
 
             prefix = download_key + '/'
             undeployed = self.get_undeployed_parts(prefix)
@@ -74,7 +74,7 @@ class ProjectDeployer(object):
 
             key_deployed_ = download_key + '/deployed'
             if App.cdn_s3_handler().key_exists(key_deployed_):
-                App.logger.debug("Already merged parts")
+                App.logger.debug("Already merged parts: {0}".format(download_key))
                 return False
             self.write_data_to_file(self.temp_dir, key_deployed_, 'deployed', ' ')  # flag that deploy has begun
 
@@ -82,7 +82,7 @@ class ProjectDeployer(object):
             part = build_log['part']
             download_key += '/' + part
             partial_deploy = True
-            App.logger.debug("found partial: " + part)
+            App.logger.debug("found partial: {0}".format(download_key))
 
             if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
                 App.logger.debug("Not ready to process partial")
