@@ -40,7 +40,6 @@ class TestPreprocessor(unittest.TestCase):
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '57-TIT.md')))
 
@@ -50,7 +49,6 @@ class TestPreprocessor(unittest.TestCase):
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
 
     @classmethod
