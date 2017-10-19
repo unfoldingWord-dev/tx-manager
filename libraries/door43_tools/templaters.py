@@ -307,7 +307,7 @@ class TqTemplater(Templater):
                 chapters = self.chapters[key]
             for chapter in chapters:
                 chapter_parts = chapter.split('-')
-                label = chapter if len(chapter_parts) < 4 else chapter_parts[4].lstrip('0')
+                label = chapter if len(chapter_parts) < 4 else chapter_parts[3].lstrip('0')
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
                     """.format(os.path.basename(fname) if fname != filename else '', chapter,
