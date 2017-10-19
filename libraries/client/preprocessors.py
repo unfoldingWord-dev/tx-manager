@@ -448,15 +448,19 @@ class TqPreprocessor(Preprocessor):
         markdown = ''
         for idx, project in enumerate(self.rc.projects):
             if project.identifier in BOOK_NAMES:
-                book = project.identifier
+                book = project.identifier.lower()
+                filename = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+                index_json['book_codes'][filename] = book
                 name = BOOK_NAMES[book]
-                chapters = sorted(glob(os.path.join(self.source_dir, book, '*')))
+                chapters = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
                 markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
+                index_json['chapters'][filename] = []
                 for chapter in chapters:
                     chapter = os.path.basename(chapter)
-                    markdown += '## <a id="chapter-{0}-{1}" class="c-num"/> {2} {3}\n\n'.format(book, chapter.zfill(3), name,
-                                                                             chapter.lstrip('0'))
-                    chunks = sorted(glob(os.path.join(self.source_dir, book, chapter, '*.md')))
+                    link = 'tq-chapter-{0}-{1}'.format(book, chapter.zfill(3))
+                    index_json['chapters'][filename].append(link)
+                    markdown += '## <a id="{0}" class="c-num"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
+                    chunks = sorted(glob(os.path.join(self.source_dir, project.path, chapter, '*.md')))
                     for chunk_idx, chunk in enumerate(chunks):
                         chunk = os.path.basename(chunk)
                         start_verse = os.path.splitext(chunk)[0].lstrip('0')
@@ -464,9 +468,10 @@ class TqPreprocessor(Preprocessor):
                             end_verse = str(int(os.path.splitext(os.path.basename(chunks[chunk_idx+1]))[0])-1)
                         else:
                             end_verse = BOOK_CHAPTER_VERSES[book][chapter.lstrip('0')]
-                        markdown += '### <a id="chunk-{0}-{1}-{2}"/>{3} {4}:{5}{6}\n\n'.\
-                            format(book, str(chapter).zfill(3), str(start_verse).zfill(3), name, chapter.lstrip('0'),
-                                   start_verse, '-'+end_verse if start_verse != end_verse else '')
+                        link = 'tq-chunk-{0}-{1}-{2}'.format(book, str(chapter).zfill(3), str(start_verse).zfill(3))
+                        markdown += '### <a id="{0}"/>{1} {2}:{3}{4}\n\n'.\
+                            format(link, name, chapter.lstrip('0'), start_verse,
+                                   '-'+end_verse if start_verse != end_verse else '')
                         text = read_file(os.path.join(self.source_dir, book, chapter, chunk)) + '\n\n'
                         text = text.replace('# ', '#### ')
                         markdown += text

@@ -249,6 +249,7 @@ class TqTemplater(Templater):
         index = file_utils.load_json_object(os.path.join(self.source_dir, 'index.json'))
         if index:
             self.titles = index['titles']
+            self.chapters = index['chapters']
 
     def get_page_navigation(self):
         for fname in self.files:
@@ -306,7 +307,7 @@ class TqTemplater(Templater):
                 chapters = self.chapters[key]
             for chapter in chapters:
                 chapter_parts = chapter.split('-')
-                label = chapter if len(chapter_parts) < 3 else chapter_parts[2].lstrip('0')
+                label = chapter if len(chapter_parts) < 4 else chapter_parts[4].lstrip('0')
                 html += """
                        <li class="chapter"><a href="{0}#{1}">{2}</a></li>
                     """.format(os.path.basename(fname) if fname != filename else '', chapter,
