@@ -17,11 +17,15 @@ class ProjectPrinter(object):
     if the print_all.html page doesn't already exist. Return the contents of print_all.html
     """
 
+    def __init__(self):
+        self.project_id = None
+
     def print_project(self, project_id):
         """
         :param string project_id: 
         :return string: 
         """
+        self.project_id = project_id
         if len(project_id.split('/')) != 3:
             raise Exception('Project not found.')
         user_name, repo_name, commit_id = project_id.split('/')
@@ -70,11 +74,14 @@ class ProjectPrinter(object):
             html = App.cdn_s3_handler().get_file_contents(print_all_key)
         return html
 
-    def frontToBack(self, file):
-        # make front and back sort before and after numeric files
-        if(file.find('front') >= 0):
+    def frontToBack(self, file_path):
+        if '_obs' not in self.project_id:
+            return file_path
+        parent_dir = os.path.dirname(file_path)
+        filename = os.path.basename(file_path)
+        if parent_dir.endswith('/front') or filename.startswith('front'):
             return "00"
-        elif(file.find('back') >= 0):
+        elif parent_dir.endswith('/back') or filename.startswith('back'):
             return "99"
         else:
-            return file[-7:-5]
+            return os.path.splitext(filename)[0]
