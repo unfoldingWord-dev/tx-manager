@@ -35,15 +35,12 @@ class TestTqLinter(LinterTestCase):
     def test_lint(self, mock_invoke_markdown_linter):
         # given
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tq linting
-        expected_warnings = 1 
+        expected_warnings = 0 
         zip_file = os.path.join(self.resources_dir, 'tq_linter', 'en_tq.zip')
         linter = TqLinter(source_file=zip_file, commit_data=self.commit_data)
 
         # when
         linter.run()
-
-        print("LINTER WARNINGS")
-        print(linter.log.warnings)
 
         # then
         self.verify_results_warnings_count(expected_warnings, linter)
