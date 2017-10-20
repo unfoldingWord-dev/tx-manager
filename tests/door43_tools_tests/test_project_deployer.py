@@ -74,8 +74,8 @@ class ProjectDeployerTests(unittest.TestCase):
         self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
         files_to_verify = ['manifest.yaml']
         for book in BOOK_NUMBERS:
-            file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
-            files_to_verify.append(file)
+            html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+            files_to_verify.append(html_file)
 
         for file_name in files_to_verify:
             key = '{0}/{1}'.format(self.project_key, file_name)

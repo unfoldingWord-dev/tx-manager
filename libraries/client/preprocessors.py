@@ -449,16 +449,17 @@ class TqPreprocessor(Preprocessor):
             if project.identifier in BOOK_NAMES:
                 markdown = ''
                 book = project.identifier.lower()
-                filename = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
-                index_json['book_codes'][filename] = book
+                html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+                index_json['book_codes'][html_file] = book
                 name = BOOK_NAMES[book]
+                index_json['titles'][html_file] = name
                 chapters = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
                 markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
-                index_json['chapters'][filename] = []
+                index_json['chapters'][html_file] = []
                 for chapter in chapters:
                     chapter = os.path.basename(chapter)
                     link = 'tq-chapter-{0}-{1}'.format(book, chapter.zfill(3))
-                    index_json['chapters'][filename].append(link)
+                    index_json['chapters'][html_file].append(link)
                     markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
                     chunks = sorted(glob(os.path.join(self.source_dir, project.path, chapter, '*.md')))
                     for chunk_idx, chunk in enumerate(chunks):
@@ -477,7 +478,6 @@ class TqPreprocessor(Preprocessor):
                         markdown += text
                 file_path = os.path.join(self.output_dir, '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper()))
                 write_file(file_path, markdown)
-                index_json['titles']['{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())] = name
             else:
                 App.logger.debug('TqPreprocessor: extra project found: {0}'.format(project.identifier))
         # Write out index.json
