@@ -459,7 +459,7 @@ class TqPreprocessor(Preprocessor):
                     chapter = os.path.basename(chapter)
                     link = 'tq-chapter-{0}-{1}'.format(book, chapter.zfill(3))
                     index_json['chapters'][filename].append(link)
-                    markdown += '## <a id="{0}" class="c-num"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
+                    markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
                     chunks = sorted(glob(os.path.join(self.source_dir, project.path, chapter, '*.md')))
                     for chunk_idx, chunk in enumerate(chunks):
                         chunk = os.path.basename(chunk)
