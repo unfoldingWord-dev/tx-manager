@@ -55,7 +55,7 @@ class TestTqLinter(LinterTestCase):
 
         # remove everything past genesis
         for book in BOOK_NUMBERS: 
-            link = self.get_link_for_book('{0}-{1}.html'.format(BOOK_NUBMERS[book], book.upper()))
+            link = self.get_link_for_book('{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper()))
             book_path = os.path.join(out_dir, 'en_tq', link)
             if os.path.exists(book_path):
                 if BOOK_NUMBERS[book] > "02":
