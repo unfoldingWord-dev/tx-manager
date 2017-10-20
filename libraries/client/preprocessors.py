@@ -465,7 +465,7 @@ class TqPreprocessor(Preprocessor):
                     for chunk_idx, chunk_file in enumerate(chunk_files):
                         start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
                         if chunk_idx < len(chunk_files)-1:
-                            end_verse = str(int(os.path.splitext(os.path.basename(chunks[chunk_idx+1]))[0])-1)
+                            end_verse = str(int(os.path.splitext(os.path.basename(chunk_files[chunk_idx+1]))[0])-1)
                         else:
                             end_verse = BOOK_CHAPTER_VERSES[book][chapter.lstrip('0')]
                         link = 'tq-chunk-{0}-{1}-{2}'.format(book, str(chapter).zfill(3), str(start_verse).zfill(3))
