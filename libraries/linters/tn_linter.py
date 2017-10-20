@@ -1,7 +1,6 @@
 from __future__ import print_function, unicode_literals
 import os
 import re
-import urlparse
 from libraries.app.app import App
 from libraries.client.preprocessors import TnPreprocessor
 from libraries.general_tools import file_utils
@@ -21,6 +20,7 @@ class TnLinter(MarkdownLinter):
         self.source_dir is the directory of source files (.md)
         :return boolean:
         """
+        self.check_for_exclusive_convert()
         self.source_dir = os.path.abspath(self.source_dir)
         source_dirs = []
         if not self.convert_only:
@@ -102,23 +102,3 @@ class TnLinter(MarkdownLinter):
         if len(parts) > 1:
             link = parts[1].lower()
         return link
-
-    def check_for_exclusive_convert(self):
-        self.convert_only = []
-        if self.source_zip_url and len(self.source_zip_url) > 0:
-            parsed = urlparse.urlparse(self.source_zip_url)
-            params = urlparse.parse_qsl(parsed.query)
-            if params and len(params) > 0:
-                for i in range(0, len(params)):
-                    item = params[i]
-                    if item[0] == 'convert_only':
-                        for f in item[1].split(','):
-                            base_name = f.split('.')[0]
-                            parts = base_name.split('-')
-                            if len(parts) > 1:
-                                base_name = parts[1]
-                            self.convert_only.append(base_name.lower())
-                        self.source_zip_url = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path,
-                                                                  '', '', ''))
-                        break
-        return self.convert_only

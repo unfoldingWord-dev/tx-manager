@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import os
 import json
+import urlparse
 from HTMLParser import HTMLParser
 from libraries.linters.linter import Linter
 from libraries.aws_tools.lambda_handler import LambdaHandler
@@ -81,6 +82,27 @@ class MarkdownLinter(Linter):
             return None
         elif 'Payload' in response:
             return json.loads(response['Payload'].read())
+
+    def check_for_exclusive_convert(self):
+        self.convert_only = []
+        if self.source_zip_url and len(self.source_zip_url) > 0:
+            parsed = urlparse.urlparse(self.source_zip_url)
+            params = urlparse.parse_qsl(parsed.query)
+            if params and len(params) > 0:
+                for i in range(0, len(params)):
+                    item = params[i]
+                    if item[0] == 'convert_only':
+                        for f in item[1].split(','):
+                            base_name = f.split('.')[0]
+                            parts = base_name.split('-')
+                            if len(parts) > 1:
+                                base_name = parts[1]
+                            self.convert_only.append(base_name.lower())
+                        App.logger.debug('Converting only: {0}'.format(self.convert_only))
+                        self.source_zip_url = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path,
+                                                                   '', '', ''))
+                        break
+        return self.convert_only
 
     @staticmethod
     def strip_tags(html):

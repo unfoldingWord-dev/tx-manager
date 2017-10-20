@@ -38,8 +38,7 @@ class TestTnLinter(LinterTestCase):
         expected_warnings = 0
         zip_file = os.path.join(self.resources_dir, 'tn_linter', 'en_tn.zip')
         linter = TnLinter(source_file=zip_file, commit_data=self.commit_data, source_url='http://door43.org/dummy?convert_only=01-GEN.md')
-        linter.check_for_exclusive_convert()
-        linter.source_zip_url = None  # so we use test zip file
+        linter.download_archive = self.mock_download_archive
 
         # when
         linter.run()
@@ -112,3 +111,6 @@ class TestTnLinter(LinterTestCase):
         if len(parts) > 1:
             link = parts[1].lower()
         return link
+
+    def mock_download_archive(self):
+        return True
