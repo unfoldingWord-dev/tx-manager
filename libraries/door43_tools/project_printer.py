@@ -79,9 +79,9 @@ class ProjectPrinter(object):
             return file_path
         parent_dir = os.path.dirname(file_path)
         filename = os.path.basename(file_path)
-        if parent_dir.endswith('/front') or filename.startswith('front'):
+        if parent_dir.endswith('/front'):
             return "00"
-        elif parent_dir.endswith('/back') or filename.startswith('back'):
+        elif parent_dir.endswith('/back'):
             return "99"
         else:
             return os.path.splitext(filename)[0]
