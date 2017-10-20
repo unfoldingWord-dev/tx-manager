@@ -75,7 +75,7 @@ class ProjectPrinter(object):
         return html
 
     def frontToBack(self, file_path):
-        if '_obs' not in self.project_id:
+        if '_obs' not in self.project_id and '-obs' not in self.project_id:
             return file_path
         parent_dir = os.path.dirname(file_path)
         filename = os.path.basename(file_path)
