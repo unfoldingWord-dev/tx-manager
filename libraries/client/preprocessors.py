@@ -879,7 +879,7 @@ class TnPreprocessor(Preprocessor):
         self.books = []
 
     def is_multiple_jobs(self):
-        return len(self.books) > 1
+        return True
 
     def get_book_list(self):
         self.books.sort()
