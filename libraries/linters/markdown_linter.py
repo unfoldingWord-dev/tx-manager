@@ -19,7 +19,9 @@ class MarkdownLinter(Linter):
         self.source_dir is the directory of source files (.usfm)
         :return bool:
         """
-        lint_data = self.invoke_markdown_linter(self.get_invoke_payload(self.get_strings()))
+        md_data = self.get_strings()
+        App.logger.debug("Size of markdown data={0}".format(len(md_data)))
+        lint_data = self.invoke_markdown_linter(self.get_invoke_payload(md_data))
         if not lint_data:
             return False
         for f in lint_data.keys():
@@ -76,6 +78,7 @@ class MarkdownLinter(Linter):
     def invoke_markdown_linter(self, payload):
         lambda_handler = LambdaHandler()
         lint_function = '{0}tx_markdown_linter'.format(App.prefix)
+        App.logger.debug("Size of lint data={0}".format(len(payload)))
         response = lambda_handler.invoke(lint_function, payload)
         if 'errorMessage' in response:
             App.logger.error(response['errorMessage'])

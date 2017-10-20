@@ -21,6 +21,7 @@ class TnLinter(MarkdownLinter):
         :return boolean:
         """
         self.check_for_exclusive_convert()
+        App.logger.debug("Exclusive convert '{0}' url={1}".format(len(self.convert_only) > 0, self.source_zip_url))
         self.source_dir = os.path.abspath(self.source_dir)
         source_dirs = []
         if not self.convert_only:
@@ -66,7 +67,10 @@ class TnLinter(MarkdownLinter):
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
 
-        return super(TnLinter, self).lint()  # Runs checks on Markdown, using the markdown linter
+        results = super(TnLinter, self).lint()  # Runs checks on Markdown, using the markdown linter
+        if not results:
+            App.logger.debug("Error running MD linter on {0}".format(self.s3_results_key))
+        return results
 
     def find_invalid_links(self, folder, f, contents):
         for link_match in TnLinter.link_marker_re.finditer(contents):
