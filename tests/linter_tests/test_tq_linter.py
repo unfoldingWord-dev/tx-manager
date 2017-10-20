@@ -58,7 +58,7 @@ class TestTqLinter(LinterTestCase):
             link = self.get_link_for_book('{0}-{1}.html'.format(BOOK_NUBMERS[book], book.upper()))
             book_path = os.path.join(out_dir, 'en_tq', link)
             if os.path.exists(book_path):
-                if BOOK_NUMBER[book] > "02":
+                if BOOK_NUMBERS[book] > "02":
                     file_utils.remove_tree(book_path)
 
         # put a verse in exo so that we can test that there is some content there
