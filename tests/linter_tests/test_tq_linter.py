@@ -55,8 +55,7 @@ class TestTqLinter(LinterTestCase):
 
         # remove everything past genesis
         for book in BOOK_NUMBERS: 
-            link = self.get_link_for_book('{0}-{1}.html'.format(BOOK_NUBMERS[book], book.upper()))
-            book_path = os.path.join(out_dir, 'en_tq', link)
+            book_path = os.path.join(out_dir, 'en_tq', book)
             if os.path.exists(book_path):
                 if BOOK_NUMBERS[book] > "02":
                     file_utils.remove_tree(book_path)
@@ -112,9 +111,3 @@ class TestTqLinter(LinterTestCase):
         unzip(zip_file, out_dir)
         return out_dir
 
-    def get_link_for_book(self, book):
-        parts = book.split('-')
-        link = book
-        if len(parts) > 1:
-            link = parts[1].lower()
-        return link
