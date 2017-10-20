@@ -473,7 +473,7 @@ class TqPreprocessor(Preprocessor):
                             format(link, name, chapter.lstrip('0'), start_verse,
                                    '-'+end_verse if start_verse != end_verse else '')
                         text = read_file(chunk_file) + '\n\n'
-                        text = text.replace('# ', '#### ')
+                        text = text.replace('# ', '#### ')  # This will bump any header down 4 levels
                         markdown += text
                 file_path = os.path.join(self.output_dir, '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper()))
                 write_file(file_path, markdown)
