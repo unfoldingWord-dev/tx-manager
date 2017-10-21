@@ -12,6 +12,17 @@ class TnLinter(MarkdownLinter):
     # match links of form '](link)'
     link_marker_re = re.compile(r'\]\(([^\n()]+)\)', re.UNICODE)
 
+    def __init__(self, single_file=None, *args, **kwargs):
+        self.single_file = single_file
+        super(MarkdownLinter, self).__init__(*args, **kwargs)
+
+        App.logger.debug("Convert single '{0}'".format(self.single_file))
+        self.single_dir = None
+        if self.single_file:
+            parts = os.path.splitext(self.single_file)
+            self.single_dir = self.get_dir_for_book(parts[0])
+            App.logger.debug("Single source dir '{0}'".format(self.single_dir))
+
     def lint(self):
         """
         Checks for issues with translationNotes

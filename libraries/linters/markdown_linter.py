@@ -1,7 +1,6 @@
 from __future__ import print_function, unicode_literals
 import os
 import json
-import urlparse
 from HTMLParser import HTMLParser
 from libraries.linters.linter import Linter
 from libraries.aws_tools.lambda_handler import LambdaHandler
@@ -12,15 +11,8 @@ from libraries.app.app import App
 class MarkdownLinter(Linter):
 
     def __init__(self, single_file=None, *args, **kwargs):
-        self.single_file = single_file
-        super(MarkdownLinter, self).__init__(*args, **kwargs)
-
-        App.logger.debug("Convert single '{0}'".format(self.single_file))
+        self.single_file = None
         self.single_dir = None
-        if self.single_file:
-            parts = os.path.splitext(self.single_file)
-            self.single_dir = self.get_dir_for_book(parts[0])
-            App.logger.debug("Single source dir '{0}'".format(self.single_dir))
 
     def lint(self):
         """
