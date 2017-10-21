@@ -74,14 +74,20 @@ class ProjectPrinter(object):
             html = App.cdn_s3_handler().get_file_contents(print_all_key)
         return html
 
-    def frontToBack(self, file_path):
-        if '_obs' not in self.project_id and '-obs' not in self.project_id:
-            return file_path
+    @staticmethod
+    def frontToBack(file_path):
+        """
+        Used with sorting. Primarily used with OBS
+        Replaces any "front" or "back" directory with a number so they are first and last respectively
+        :param file_path:
+        :return:
+        """
         parent_dir = os.path.dirname(file_path)
+        parent_parent_dir = os.path.dirname(parent_dir)
         filename = os.path.basename(file_path)
-        if parent_dir.endswith('/front'):
-            return "00"
-        elif parent_dir.endswith('/back'):
-            return "99"
+        if parent_dir.endswith('front'):
+            return os.path.join(parent_parent_dir, '00_{0}'.format(filename))
+        elif parent_dir.endswith('back'):
+            return os.path.join(parent_parent_dir, '99_{0}'.format(filename))
         else:
-            return os.path.splitext(filename)[0]
+            return file_path

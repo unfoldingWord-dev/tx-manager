@@ -445,6 +445,8 @@ class TqPreprocessor(Preprocessor):
             'chapters': {},
             'book_codes': {}
         }
+        title_re = re.compile('^# +(.*?) *#*$', flags=re.MULTILINE)
+        headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
         for idx, project in enumerate(self.rc.projects):
             if project.identifier in BOOK_NAMES:
                 markdown = ''
