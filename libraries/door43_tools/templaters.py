@@ -256,9 +256,10 @@ class TwTemplater(Templater):
         if index:
             self.titles = index['titles']
             self.chapters = index['chapters']
-            self.book_codes = index['book_codes']
 
     def build_page_nav(self, filename=None):
+        if not self.titles or not self.chapters:
+            return ""
         html = """
             <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
                 <ul class="nav nav-stacked">
