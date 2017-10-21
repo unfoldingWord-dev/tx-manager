@@ -37,7 +37,7 @@ class TestTnLinter(LinterTestCase):
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tn linting
         expected_warnings = 0
         zip_file = os.path.join(self.resources_dir, 'tn_linter', 'en_tn.zip')
-        linter = TnLinter(source_file=zip_file, commit_data=self.commit_data, source_url='http://door43.org/dummy?convert_only=01-GEN.md')
+        linter = TnLinter(source_file=zip_file, commit_data=self.commit_data, single_file='01-GEN.md')
         linter.download_archive = self.mock_download_archive
 
         # when

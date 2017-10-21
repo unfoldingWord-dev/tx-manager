@@ -11,6 +11,17 @@ from libraries.app.app import App
 
 class MarkdownLinter(Linter):
 
+    def __init__(self, single_file=None, *args, **kwargs):
+        self.single_file = single_file
+        super(MarkdownLinter, self).__init__(*args, **kwargs)
+
+        App.logger.debug("Convert single '{0}'".format(self.single_file))
+        self.single_dir = None
+        if self.single_file:
+            parts = os.path.splitext(self.single_file)
+            self.single_dir = self.get_dir_for_book(parts[0])
+            App.logger.debug("Single source dir '{0}'".format(self.single_dir))
+
     def lint(self):
         """
         Checks for issues with all Markdown project, such as bad use of headers, bullets, etc.
@@ -36,21 +47,14 @@ class MarkdownLinter(Linter):
         return True
 
     def get_strings(self):
-        if self.convert_only:
-            files = []
-            for dir in self.convert_only:
-                dir_path = os.path.join(self.source_dir, dir)
-                sub_files = sorted(get_files(directory=dir_path, relative_paths=True, exclude=self.EXCLUDED_FILES,
-                                            extensions=['.md']))
-                for f in sub_files:
-                    files.append(os.path.join(dir, f))
-        else:
-            files = sorted(get_files(directory=self.source_dir, relative_paths=True, exclude=self.EXCLUDED_FILES,
-                                     extensions=['.md']))
+        source_dir = self.source_dir
+        if self.single_dir:
+            source_dir = os.path.join(self.source_dir, self.single_dir)
+
+        files = sorted(get_files(directory=source_dir, exclude=self.EXCLUDED_FILES, extensions=['.md']))
         strings = {}
         for f in files:
-            path = os.path.join(self.source_dir, f)
-            text = read_file(path)
+            text = read_file(f)
             strings[f] = text
         return strings
 
@@ -78,7 +82,7 @@ class MarkdownLinter(Linter):
     def invoke_markdown_linter(self, payload):
         lambda_handler = LambdaHandler()
         lint_function = '{0}tx_markdown_linter'.format(App.prefix)
-        App.logger.debug("Size of lint data={0}".format(len(payload)))
+        App.logger.debug("Size of {0} lint data={1}".format(self.s3_results_key, len(payload)))
         response = lambda_handler.invoke(lint_function, payload)
         if 'errorMessage' in response:
             App.logger.error(response['errorMessage'])
@@ -86,26 +90,12 @@ class MarkdownLinter(Linter):
         elif 'Payload' in response:
             return json.loads(response['Payload'].read())
 
-    def check_for_exclusive_convert(self):
-        self.convert_only = []
-        if self.source_zip_url and len(self.source_zip_url) > 0:
-            parsed = urlparse.urlparse(self.source_zip_url)
-            params = urlparse.parse_qsl(parsed.query)
-            if params and len(params) > 0:
-                for i in range(0, len(params)):
-                    item = params[i]
-                    if item[0] == 'convert_only':
-                        for f in item[1].split(','):
-                            base_name = f.split('.')[0]
-                            parts = base_name.split('-')
-                            if len(parts) > 1:
-                                base_name = parts[1]
-                            self.convert_only.append(base_name.lower())
-                        App.logger.debug('Converting only: {0}'.format(self.convert_only))
-                        self.source_zip_url = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path,
-                                                                   '', '', ''))
-                        break
-        return self.convert_only
+    def get_dir_for_book(self, book):
+        parts = book.split('-')
+        link = book
+        if len(parts) > 1:
+            link = parts[1].lower()
+        return link
 
     @staticmethod
     def strip_tags(html):
