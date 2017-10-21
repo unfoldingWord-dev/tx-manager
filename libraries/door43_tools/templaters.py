@@ -196,7 +196,7 @@ class Templater(object):
                     right_sidebar_html = self.build_right_sidebar(filename)
                     if right_sidebar_html:
                         right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser')
-                        if right_sidebar.nav:
+                        if right_sidebar and right_sidebar.nav:
                             right_sidebar_nav = right_sidebar.nav.extract()
                             right_sidebar_div.append(right_sidebar_nav)
 
