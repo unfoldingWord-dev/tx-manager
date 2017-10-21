@@ -3,9 +3,9 @@ import os
 import tempfile
 import json
 import time
+import traceback
 from glob import glob
 from shutil import copyfile
-
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file, remove_tree
 from libraries.door43_tools.templaters import init_template
@@ -249,7 +249,9 @@ class ProjectDeployer(object):
             self.run_templater(templater)
             success = True
         except Exception as e:
-            App.logger.error("Error applying template {0} to resource type {1}".format(template_file, resource_type))
+            App.logger.error("Error applying template {0} to resource type {1}:".format(template_file, resource_type))
+            App.logger.error(e.message)
+            App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
             self.close()
             success = False
 
