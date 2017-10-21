@@ -258,66 +258,27 @@ class TwTemplater(Templater):
             self.chapters = index['chapters']
             self.book_codes = index['book_codes']
 
-    def build_section_toc(self, section):
-        """
-        Recursive section toc builder
-        :param dict section:
-        :return:
-        """
-        if 'link' in section:
-            link = section['link']
-        else:
-            link = 'section-container-{0}'.format(self.section_container_id)
-            self.section_container_id = self.section_container_id + 1
-        html = """
-            <li>
-                <a href="#{0}">{1}</a>
-            """.format(link, section['title'])
-        if 'sections' in section:
-            html += """ 
-                <a href="#" data-target="#{0}-sub" data-toggle="collapse" class="content-nav-expand collapsed"></a>
-                <ul id="{0}-sub" class="collapse">
-            """.format(link)
-            for subsection in section['sections']:
-                html += self.build_section_toc(subsection)
-            html += """
-                </ul>
-            """
-        html += """
-            </li>
-        """
-        return html
-
     def build_page_nav(self, filename=None):
-        self.section_container_id = 1
         html = """
             <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
                 <ul class="nav nav-stacked">
         """
         for fname in self.files:
-            with codecs.open(fname, 'r', 'utf-8-sig') as f:
-                soup = BeautifulSoup(f.read(), 'html.parser')
-            if soup.select('div#content h1'):
-                title = soup.select('div#content h1')[0].text.strip()
-            else:
-                title = os.path.splitext(os.path.basename(fname))[0].title()
-            if title in ['Conversion successful', 'Conversion started...', 'Index',
-                         'Conversion successful with warnings', 'Conversion failed']:
-                continue
-            if fname != filename:
+            section = os.path.splitext(fname)[0]
+            html += """
+                    <li{0}><a href="{1}#tw-section-{2}">{3}</a>
+                        <a class="content-nav-expand collapsed" data-target="#section-{2}-sub" data-toggle="collapse" href="#"></a>
+                        <ul class="collapse" id="section-{2}-sub">
+            """.format(' class="active"' if fname == filename else '', fname if fname != filename else '',
+                       section, self.titles[fname])
+            for link, title in self.chapters[fname].iteritmes():
                 html += """
-                <h4><a href="{0}">{1}</a></h4>
-                """.format(os.path.basename(fname), title)
-            else:
-                html += """
-                <h4>{0}</h4>
-                """.format(title)
-                toc = load_yaml_object(os.path.join('{0}-toc.yaml'.format(os.path.splitext(fname)[0])))
-                if toc:
-                    for section in toc['sections']:
-                        html += self.build_section_toc(section)
-                html += """
-                """
+                            <li><a href="{0}#{1}">{2}</a></li>
+                """.format(fname if fname != filename else '', link, title)
+            html += """
+                        </ul>
+                    </li>
+            """
         html += """
                 </ul>
             </nav>
