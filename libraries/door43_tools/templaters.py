@@ -272,11 +272,12 @@ class TwTemplater(Templater):
                         <ul class="collapse" id="section-{2}-sub">
             """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
                        section, self.titles[key])
-            links_sorted_by_title = sorted(self.chapters[key], key=self.chapters[key].get)
+            titles = self.chapters[key]
+            links_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
             for link in links_sorted_by_title:
                 html += """
                             <li><a href="{0}#{1}">{2}</a></li>
-                """.format(key if fname != filename else '', link, self.chapters[key][link])
+                """.format(key if fname != filename else '', link, titles[link])
             html += """
                         </ul>
                     </li>

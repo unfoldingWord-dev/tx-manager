@@ -704,7 +704,8 @@ class TwPreprocessor(Preprocessor):
                     term_text[link] = text
                 # Sort terms by title and add to markdown
                 markdown = ''
-                links_sorted_by_title = sorted(index_json['chapters'][key], key=index_json['chapters'][key].get)
+                titles = index_json['chapters'][key]
+                links_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
                 for link in links_sorted_by_title:
                     if markdown:
                         markdown += '<hr>\n\n'
