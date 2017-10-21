@@ -724,7 +724,7 @@ class TwPreprocessor(Preprocessor):
     def fix_links(self, content, section):
         # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
         content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/Door43/\1_\2/src/master/\3/01.md', content,
+                         r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
                          flags=re.IGNORECASE)
         # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
