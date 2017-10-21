@@ -25,9 +25,9 @@ class TestTqPreprocessor(unittest.TestCase):
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_tq_preprocessor(self):
+    def test_tq_preprocessor_two_books(self):
         # given
-        repo_name = 'en_tq'
+        repo_name = 'en_tq_two_books'
         file_name = os.path.join('raw_sources', repo_name + '.zip')
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         repo_dir = os.path.join(repo_dir)
@@ -38,8 +38,9 @@ class TestTqPreprocessor(unittest.TestCase):
 
         # then
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '57-TIT.md')))
+
 
     #
     # helpers

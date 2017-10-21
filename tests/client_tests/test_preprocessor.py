@@ -36,7 +36,7 @@ class TestPreprocessor(unittest.TestCase):
 
     def test_preprocessor_for_tq_two_books(self):
         file_name = os.path.join('raw_sources', 'en_tq_two_books.zip')
-        repo_name = 'en_tq'
+        repo_name = 'en_tq_two_books'
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
         do_preprocess(rc, repo_dir, self.out_dir)
