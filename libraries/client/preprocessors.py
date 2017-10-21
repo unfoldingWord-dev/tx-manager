@@ -699,7 +699,6 @@ class TwPreprocessor(Preprocessor):
                         text = title_re.sub(r'# <a id="{0}"/>\1 #'.format(link), text)  # inject our link by the title
                     else:
                         title = os.path.splitext(os.path.basename(term_file))[0]  # No title found, so using term
-                    index_json['titles'][section_file] = title
                     index_json['chapters'][section_file][link] = title
                     text = headers_re.sub(r'#\1 \2', text)
                     markdown += text + '\n\n'

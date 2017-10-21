@@ -270,12 +270,12 @@ class TwTemplater(Templater):
                     <li{0}><a href="{1}#tw-section-{2}">{3}</a>
                         <a class="content-nav-expand collapsed" data-target="#section-{2}-sub" data-toggle="collapse" href="#"></a>
                         <ul class="collapse" id="section-{2}-sub">
-            """.format(' class="active"' if fname == filename else '', fname if fname != filename else '',
+            """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
                        section, self.titles[key])
             for link, title in self.chapters[key].iteritems():
                 html += """
                             <li><a href="{0}#{1}">{2}</a></li>
-                """.format(fname if fname != filename else '', link, title)
+                """.format(key if fname != filename else '', link, title)
             html += """
                         </ul>
                     </li>
