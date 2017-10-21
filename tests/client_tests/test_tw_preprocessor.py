@@ -49,7 +49,7 @@ class TestTwPreprocessor(unittest.TestCase):
         soup = BeautifulSoup(markdown2.markdown(kt, extras=['markdown-in-html', 'tables']), 'html.parser')
         self.assertEqual(soup.h1.text, 'Key Terms')
         self.assertEqual(soup.h2.text, 'abomination, abominations, abominable')
-        self.assertIsNotNone(soup.find('a', {'id': 'tw-term-kt-adoption'}))
+        self.assertIsNotNone(soup.find('a', {'id': 'adoption'}))
         self.assertEqual(len(soup.find_all('li')), 4009)
         # Test links have been converted
         # self.assertIsNotNone(soup.find("a", {"href": "#accuracy-check"}))
