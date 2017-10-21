@@ -707,6 +707,8 @@ class TwPreprocessor(Preprocessor):
                 # Sort terms by title and add to markdown
                 terms_by_title_sorted = sorted(index_json['chapters'][key].items(), key=operator.itemgetter(1))
                 for link, title in terms_by_title_sorted:
+                    if markdown:
+                        markdown += '<hr>\n\n'
                     markdown += term_text[link] + '\n\n'
                 markdown = self.fix_links(markdown, section)
                 output_file = os.path.join(self.output_dir, '{0}.md'.format(section))
