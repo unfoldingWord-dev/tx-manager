@@ -1,7 +1,6 @@
 from __future__ import unicode_literals, print_function
 import os
 import re
-import operator
 from glob import glob
 from shutil import copy
 from libraries.app.app import App
@@ -705,8 +704,8 @@ class TwPreprocessor(Preprocessor):
                     term_text[link] = text
                 # Sort terms by title and add to markdown
                 markdown = ''
-                terms_by_title_sorted = sorted(index_json['chapters'][key].items(), key=operator.itemgetter(1))
-                for link, title in terms_by_title_sorted:
+                links_sorted_by_title = sorted(index_json['chapters'][key], key=index_json['chapters'][key].get)
+                for link in links_sorted_by_title:
                     if markdown:
                         markdown += '<hr>\n\n'
                     markdown += term_text[link] + '\n\n'
