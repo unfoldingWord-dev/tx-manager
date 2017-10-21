@@ -258,7 +258,7 @@ class TwTemplater(Templater):
             self.chapters = index['chapters']
 
     def build_page_nav(self, filename=None):
-        if not self.titles or not self.chapters:
+        if not self.files or not self.titles or not self.chapters:
             return ""
         html = """
             <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
