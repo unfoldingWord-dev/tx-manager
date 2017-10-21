@@ -13,9 +13,9 @@ class TnLinter(MarkdownLinter):
     link_marker_re = re.compile(r'\]\(([^\n()]+)\)', re.UNICODE)
 
     def __init__(self, single_file=None, *args, **kwargs):
-        self.single_file = single_file
         super(MarkdownLinter, self).__init__(*args, **kwargs)
 
+        self.single_file = single_file
         App.logger.debug("Convert single '{0}'".format(self.single_file))
         self.single_dir = None
         if self.single_file:
