@@ -28,7 +28,7 @@ class TestTemplater(unittest.TestCase):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def testTemplaterBibleFourBooks(self):
-        test_folder_name = "converted_projects/en-ulb-4-books.zip"
+        test_folder_name = os.path.join('converted_projects', 'en-ulb-4-books.zip')
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
         success = self.doTemplater('bible', test_file_path)
@@ -36,14 +36,14 @@ class TestTemplater(unittest.TestCase):
                                   ['01-GEN.html', '02-EXO.html', '03-LEV.html', '05-DEU.html'])
 
     def testTemplaterObsComplete(self):
-        test_folder_name = "converted_projects/aab_obs_text_obs-complete.zip"
+        test_folder_name = os.path.join('converted_projects', 'aab_obs_text_obs-complete.zip')
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
         success = self.doTemplater('obs', test_file_path)
         self.verifyObsTemplater(success, expect_success, self.out_dir)
 
     def testTemplaterTaComplete(self):
-        test_folder_name = "converted_projects/en_ta-complete.zip"
+        test_folder_name = os.path.join('converted_projects', 'en_ta-complete.zip')
         expect_success = True
         test_file_path = self.extractZipFiles(test_folder_name)
         success = self.doTemplater('ta', test_file_path)
@@ -54,6 +54,19 @@ class TestTemplater(unittest.TestCase):
         self.assertEqual(len(soup.find('nav', {'id': 'right-sidebar-nav'}).findAll('li')), 49)
         self.assertEqual(len(soup.find('div', {'id': 'content'}).findAll(re.compile(r'h\d+'),
                                                                          {'class': 'section-header'})), 44)
+
+    def testTemplaterTwComplete(self):
+        test_folder_name = os.path.join('converted_projects', 'en_tw_converted.zip')
+        expect_success = True
+        test_file_path = self.extractZipFiles(test_folder_name)
+        test_file_path = os.path.join(test_file_path, 'en_tw_converted')
+        success = self.doTemplater('tw', test_file_path)
+        self.verifyTaTemplater(success, expect_success, self.out_dir, ['kt.html', 'names.html', 'other.html'])
+        # Verify sidebar nav generated
+        soup = BeautifulSoup(read_file(os.path.join(self.out_dir, 'kt.html')), 'html.parser')
+        self.assertEqual(len(soup.find('nav', {'id': 'right-sidebar-nav'}).findAll('li')), 1020)
+        self.assertEqual(len(soup.find('div', {'id': 'content'}).findAll(re.compile(r'h\d+'),
+                                                                         {'class': 'section-header'})), 212)
 
     def testCommitToDoor43Empty(self):
         test_folder_name = os.path.join('converted_projects', 'aae_obs_text_obs-empty.zip')
@@ -89,15 +102,6 @@ class TestTemplater(unittest.TestCase):
 
         self.assertIn('dir', soup.html.attrs)
         self.assertEqual('rtl', soup.html.attrs['dir'])
-
-    def testTemplaterBibleFourBooks(self):
-        test_folder_name = "converted_projects/en-ulb-4-books.zip"
-        expect_success = True
-        alreadyProcessed = True
-        test_file_path = self.extractZipFiles(test_folder_name)
-        success = self.doTemplater('bible', test_file_path, alreadyProcessed)
-        self.verifyBibleTemplater(success, expect_success, self.out_dir,
-                                  ['01-GEN.html', '02-EXO.html', '03-LEV.html', '05-DEU.html'])
 
     def extractZipFiles(self, test_folder_name):
         file_path = os.path.join(self.resources_dir, test_folder_name)

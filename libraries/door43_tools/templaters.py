@@ -192,10 +192,13 @@ class Templater(object):
                     left_sidebar_div.append(left_sidebar)
 
                 if right_sidebar_div:
-                    right_sidebar_html = self.build_right_sidebar(filename)
-                    right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
                     right_sidebar_div.clear()
-                    right_sidebar_div.append(right_sidebar)
+                    right_sidebar_html = self.build_right_sidebar(filename)
+                    if right_sidebar_html:
+                        right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser')
+                        if right_sidebar and right_sidebar.nav:
+                            right_sidebar_nav = right_sidebar.nav.extract()
+                            right_sidebar_div.append(right_sidebar_nav)
 
                 # render the html as an unicode string
                 html = unicode(soup)
@@ -255,6 +258,40 @@ class TwTemplater(Templater):
         index = file_utils.load_json_object(os.path.join(self.source_dir, 'index.json'))
         if index:
             self.titles = index['titles']
+            self.chapters = index['chapters']
+
+    def build_page_nav(self, filename=None):
+        if not self.files or not self.titles or not self.chapters:
+            return ""
+        html = """
+            <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+                <ul class="nav nav-stacked">
+        """
+        for fname in self.files:
+            key = os.path.basename(fname)
+            section = os.path.splitext(key)[0]
+            html += """
+                    <li{0}><a href="{1}#tw-section-{2}">{3}</a>
+                        <a class="content-nav-expand{4}" data-target="#section-{2}-sub" data-toggle="collapse" href="#"{6}></a>
+                        <ul class="collapse{5}" id="section-{2}-sub"{6}>
+            """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
+                       section, self.titles[key], ' collapsed' if fname != filename else '',
+                       ' in' if fname == filename else '', ' aria-expanded="true"' if fname == filename else '')
+            titles = self.chapters[key]
+            terms_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
+            for term in terms_sorted_by_title:
+                html += """
+                            <li><a href="{0}#{1}">{2}</a></li>
+                """.format(key if fname != filename else '', term, titles[term])
+            html += """
+                        </ul>
+                    </li>
+            """
+        html += """
+                </ul>
+            </nav>
+        """
+        return html
 
 
 class BibleTemplater(Templater):

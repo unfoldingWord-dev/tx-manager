@@ -20,11 +20,10 @@ class TestTwLinter(LinterTestCase):
             'repository': {
                 'name': 'en_tw',
                 'owner': {
-                    'username': 'door43'
+                    'username': 'Door43'
                 }
             }
         }
-
 
     def tearDown(self):
         """Runs after each test."""
