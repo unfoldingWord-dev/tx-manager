@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 import os
 import codecs
+import operator
 from glob import glob
 from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
@@ -272,7 +273,8 @@ class TwTemplater(Templater):
                         <ul class="collapse" id="section-{2}-sub">
             """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
                        section, self.titles[key])
-            for link, title in self.chapters[key].iteritems():
+            terms_by_title_sorted = sorted(self.chapters.items(), key=operator.itemgetter(1))
+            for link, title in terms_by_title_sorted:
                 html += """
                             <li><a href="{0}#{1}">{2}</a></li>
                 """.format(key if fname != filename else '', link, title)

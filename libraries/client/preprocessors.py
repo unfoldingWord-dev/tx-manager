@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 import os
 import re
+import operator
 from glob import glob
 from shutil import copy
 from libraries.app.app import App
@@ -679,15 +680,16 @@ class TwPreprocessor(Preprocessor):
         title_re = re.compile('^# +(.*?) *#*$', flags=re.MULTILINE)
         headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
         for idx, project in enumerate(self.rc.projects):
+            term_text = {}
             section_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
             for section_dir in section_dirs:
                 section = os.path.basename(section_dir)
                 if section not in self.section_titles:
                     continue
-                section_file = '{0}.html'.format(section)
-                index_json['titles'][section_file] = self.section_titles[section]
-                index_json['chapters'][section_file] = {}
-                index_json['book_codes'][section_file] = section
+                key = '{0}.html'.format(section)
+                index_json['titles'][key] = self.section_titles[section]
+                index_json['chapters'][key] = {}
+                index_json['book_codes'][key] = section
                 markdown = '# <a id="tw-section-{0}"/>{1}\n\n'.format(section, self.section_titles[section])
                 term_files = sorted(glob(os.path.join(section_dir, '*.md')))
                 for term_file in term_files:
@@ -699,9 +701,13 @@ class TwPreprocessor(Preprocessor):
                         text = title_re.sub(r'# <a id="{0}"/>\1 #'.format(link), text)  # inject our link by the title
                     else:
                         title = os.path.splitext(os.path.basename(term_file))[0]  # No title found, so using term
-                    index_json['chapters'][section_file][link] = title
                     text = headers_re.sub(r'#\1 \2', text)
-                    markdown += text + '\n\n'
+                    index_json['chapters'][key][link] = title
+                    term_text[link] = text
+                # Sort terms by title and add to markdown
+                terms_by_title_sorted = sorted(index_json['chapters'][key].items(), key=operator.itemgetter(1))
+                for link, title in terms_by_title_sorted:
+                    markdown += term_text[link] + '\n\n'
                 markdown = self.fix_links(markdown, section)
                 output_file = os.path.join(self.output_dir, '{0}.md'.format(section))
                 write_file(output_file, markdown)
