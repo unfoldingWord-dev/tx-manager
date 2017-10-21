@@ -46,7 +46,7 @@ class ProjectDeployer(object):
 
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
                 or 'repo_name' not in build_log:
-            App.logger.debug("Invalid build log at {0}: {1}".format(build_log_key, build_log))
+            App.logger.debug("Exiting, Invalid build log at {0}: {1}".format(build_log_key, build_log))
             return False
 
         start = time.time()
@@ -85,7 +85,7 @@ class ProjectDeployer(object):
             App.logger.debug("found partial: {0}".format(download_key))
 
             if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
-                App.logger.debug("Not ready to process partial")
+                App.logger.debug("Exiting, Not ready to process partial")
                 return False
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
