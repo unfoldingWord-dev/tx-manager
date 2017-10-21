@@ -268,10 +268,11 @@ class TwTemplater(Templater):
             section = os.path.splitext(key)[0]
             html += """
                     <li{0}><a href="{1}#tw-section-{2}">{3}</a>
-                        <a class="content-nav-expand collapsed" data-target="#section-{2}-sub" data-toggle="collapse" href="#"></a>
-                        <ul class="collapse" id="section-{2}-sub">
+                        <a class="content-nav-expand{4}" data-target="#section-{2}-sub" data-toggle="collapse" href="#"{6}></a>
+                        <ul class="collapse{5}" id="section-{2}-sub"{6}>
             """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
-                       section, self.titles[key])
+                       section, self.titles[key], ' collapsed' if fname != filename else '',
+                       ' in' if fname == filename else '', ' aria-expanded="true"' if fname == filename else '')
             titles = self.chapters[key]
             links_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
             for link in links_sorted_by_title:
