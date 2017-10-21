@@ -192,10 +192,13 @@ class Templater(object):
                     left_sidebar_div.append(left_sidebar)
 
                 if right_sidebar_div:
-                    right_sidebar_html = self.build_right_sidebar(filename)
-                    right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
                     right_sidebar_div.clear()
-                    right_sidebar_div.append(right_sidebar)
+                    right_sidebar_html = self.build_right_sidebar(filename)
+                    if right_sidebar_html:
+                        right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser')
+                        if right_sidebar.nav:
+                            right_sidebar_nav = right_sidebar.nav.extract()
+                            right_sidebar_div.append(right_sidebar_nav)
 
                 # render the html as an unicode string
                 html = unicode(soup)
