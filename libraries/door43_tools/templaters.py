@@ -272,7 +272,7 @@ class TwTemplater(Templater):
             section = os.path.splitext(key)[0]
             html += """
                     <li{0}><a href="{1}#tw-section-{2}">{3}</a>
-                        <a class="content-nav-expand" data-target="#section-{2}-sub" data-toggle="collapse" href="#"></a>
+                        <a class="content-nav-expand collapsed" data-target="#section-{2}-sub" data-toggle="collapse" href="#"></a>
                         <ul class="collapse" id="section-{2}-sub">
             """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
                        section, self.titles[key])
