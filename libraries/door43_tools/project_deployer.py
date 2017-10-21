@@ -64,17 +64,17 @@ class ProjectDeployer(object):
         multipart_merge = False
         if 'multiple' in build_log:
             multipart_merge = build_log['multiple']
-            App.logger.debug("found multi-part merge: {0}".format(download_key))
+            App.logger.debug("Found multi-part merge: {0}".format(download_key))
 
             prefix = download_key + '/'
             undeployed = self.get_undeployed_parts(prefix)
             if len(undeployed) > 0:
-                App.logger.debug("Parts not yet deployed: {0}".format(undeployed))
+                App.logger.debug("Exiting, Parts not yet deployed: {0}".format(undeployed))
                 return False
 
             key_deployed_ = download_key + '/deployed'
             if App.cdn_s3_handler().key_exists(key_deployed_):
-                App.logger.debug("Already merged parts: {0}".format(download_key))
+                App.logger.debug("Exiting, Already merged parts: {0}".format(download_key))
                 return False
             self.write_data_to_file(self.temp_dir, key_deployed_, 'deployed', ' ')  # flag that deploy has begun
 
