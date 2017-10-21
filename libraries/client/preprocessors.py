@@ -690,7 +690,6 @@ class TwPreprocessor(Preprocessor):
                 index_json['titles'][key] = self.section_titles[section]
                 index_json['chapters'][key] = {}
                 index_json['book_codes'][key] = section
-                markdown = '# <a id="tw-section-{0}"/>{1}\n\n'.format(section, self.section_titles[section])
                 term_files = sorted(glob(os.path.join(section_dir, '*.md')))
                 for term_file in term_files:
                     term = os.path.splitext(os.path.basename(term_file))[0]
@@ -705,11 +704,13 @@ class TwPreprocessor(Preprocessor):
                     index_json['chapters'][key][link] = title
                     term_text[link] = text
                 # Sort terms by title and add to markdown
+                markdown = ''
                 terms_by_title_sorted = sorted(index_json['chapters'][key].items(), key=operator.itemgetter(1))
                 for link, title in terms_by_title_sorted:
                     if markdown:
                         markdown += '<hr>\n\n'
                     markdown += term_text[link] + '\n\n'
+                markdown = '# <a id="tw-section-{0}"/>{1}\n\n'.format(section, self.section_titles[section]) + markdown
                 markdown = self.fix_links(markdown, section)
                 output_file = os.path.join(self.output_dir, '{0}.md'.format(section))
                 write_file(output_file, markdown)
