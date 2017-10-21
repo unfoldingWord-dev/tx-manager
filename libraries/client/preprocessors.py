@@ -664,125 +664,71 @@ class TqPreprocessor(Preprocessor):
 
 
 class TwPreprocessor(Preprocessor):
-    sections = [
-        {'link': 'kt', 'title': 'Key Terms'},
-        {'link': 'names', 'title': 'Names'},
-        {'link': 'other', 'title': 'Other'}
-    ]
-
-    def __init__(self, *args, **kwargs):
-        super(TwPreprocessor, self).__init__(*args, **kwargs)
-        self.section_container_id = 1
-        self.toc = ''
-        self.index_json = None
-
-    def get_title(self, project, alt_title=None):
-        title = alt_title
-        return title.title()
-
-    def get_content(self, content_file):
-        if os.path.isfile(content_file):
-            return read_file(content_file)
-
-    def compile_section(self, project, section, level):
-        """
-        Recursive section markdown creator
-
-        :param project:
-        :param dict section:
-        :param int level:
-        :return:
-        """
-        if 'link' in section:
-            link = section['link']
-        else:
-            return ''
-        title = self.get_title(project, section['title'])
-        markdown = ''
-        if 'link' in section:
-            level_increase = ('#' * level)
-            files = sorted(glob(os.path.join(self.source_dir, project.path, link, '*.md')))
-            if files:
-                markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * level, link, title)
-                self.toc += '### {0}:\n\n'.format(title)
-                for file in files:
-                    top_box = ""
-                    if top_box:
-                        markdown += '<div class="top-box box" markdown="1">\n{0}\n</div>\n\n'.format(top_box)
-                    content = self.get_content(file)
-                    content = content.replace('\r', '')
-                    lines = content.split('\n')
-                    for i in range(0, len(lines)):
-                        line = lines[i]
-                        if line and (line[0] == '#'):
-                            line = level_increase + line.rstrip() + level_increase
-                            lines[i] = line
-                    content = '\n'.join(lines)
-                    if content:
-                        file_name = os.path.basename(file)
-                        anchor = os.path.splitext(file_name)[0]
-                        markdown += '<a id="{0}"/>\n\n{1}\n\n'.format(anchor, content)
-                        self.toc += '* [{1}]({0}.html#{1})\n'.format(link, anchor)
-
-                    markdown += '---\n\n'  # horizontal rule
-
-        return markdown
+    section_titles = {
+        'kt': 'Key Terms',
+        'names': 'Names',
+        'other': 'Other'
+    }
 
     def run(self):
-        self.index_json = {
+        index_json = {
             'titles': {},
             'chapters': {},
             'book_codes': {}
         }
-
+        title_re = re.compile('^# +(.*?) *#*$', flags=re.MULTILINE)
+        headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
         for idx, project in enumerate(self.rc.projects):
-            self.section_container_id = 1
-            title = project.title
-            self.toc = '# {0}\n\n'.format(title)
-            self.toc += '## Table of Contents:\n\n'
-            for section in TwPreprocessor.sections:
-                markdown = '# {0}\n\n'.format(title)
-                section_md = self.compile_section(project, section, 2)
-                if not section_md:
+            section_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
+            for section_dir in section_dirs:
+                section = os.path.basename(section_dir)
+                if section not in self.section_titles:
                     continue
-                markdown += section_md
-                markdown = self.fix_links(markdown, section['link'])
-                output_file = os.path.join(self.output_dir, '{0}.md'.format(section['link']))
+                section_file = '{0}.html'.format(section)
+                index_json['titles'][section_file] = self.section_titles[section]
+                index_json['chapters'][section_file] = {}
+                index_json['book_codes'][section_file] = section
+                markdown = '# <a id="tw-section-{0}"/>{1}\n\n'.format(section, self.section_titles[section])
+                term_files = sorted(glob(os.path.join(section_dir, '*.md')))
+                for term_file in term_files:
+                    term = os.path.splitext(os.path.basename(term_file))[0]
+                    text = read_file(term_file)
+                    link = 'tw-term-{0}-{1}'.format(section, term)
+                    if title_re.search(text):
+                        title = title_re.search(text).group(1)
+                        text = title_re.sub(r'# <a id="{0}"/>\1 #'.format(link), text)  # inject our link by the title
+                    else:
+                        title = os.path.splitext(os.path.basename(term_file))[0]  # No title found, so using term
+                    index_json['titles'][section_file] = title
+                    index_json['chapters'][section_file][link] = title
+                    text = headers_re.sub(r'#\1 \2', text)
+                    markdown += text + '\n\n'
+                markdown = self.fix_links(markdown, section)
+                output_file = os.path.join(self.output_dir, '{0}.md'.format(section))
                 write_file(output_file, markdown)
-                self.index_json['titles'][section['link'] + '.html'] = section['title']
 
-            self.toc = self.fix_links(self.toc, '-')
-            output_file = os.path.join(self.output_dir, '0toc.md')
-            write_file(output_file, self.toc)
-            self.index_json['titles']['0toc.html'] = 'Table of Contents'
             output_file = os.path.join(self.output_dir, 'index.json')
-            write_file(output_file, self.index_json)
-
-            # Copy the toc and config.yaml file to the output dir so they can be used to
-            # generate the ToC on live.door43.org
-            toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
-            if os.path.isfile(toc_file):
-                copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
-            config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
-            if os.path.isfile(config_file):
-                copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
+            write_file(output_file, index_json)
         return True
 
-    def fix_links(self, content, section_link):
-        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+    def fix_links(self, content, section):
+        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
+        content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_\2/src/master/\3/01.md', content,
+                         flags=re.IGNORECASE)
+        # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.rc.repo_name), content,
+                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content,
                          flags=re.IGNORECASE)
         # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
         # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
-        pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section_link)
+        pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section)
         content = re.sub(pattern, r'](#\1)', content)
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
-        for section in TwPreprocessor.sections:
-            link_ = section['link']
-            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link_))
-            replace = r']({0}.html#\1)'.format(link_)
+        for s in TwPreprocessor.section_titles:
+            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(s))
+            replace = r']({0}.html#\1)'.format(s)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)

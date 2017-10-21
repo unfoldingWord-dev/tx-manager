@@ -4,7 +4,6 @@ import tempfile
 import unittest
 import shutil
 import markdown2
-from libraries.general_tools import file_utils
 from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess, TwPreprocessor
 from libraries.general_tools.file_utils import unzip, read_file
@@ -19,11 +18,9 @@ class TestTwPreprocessor(unittest.TestCase):
         """Runs before each test."""
         self.out_dir = ''
         self.temp_dir = ""
-        self.save_sections = TwPreprocessor.sections
 
     def tearDown(self):
         """Runs after each test."""
-        TwPreprocessor.sections = self.save_sections
         # delete temp files
         if os.path.isdir(self.out_dir):
             shutil.rmtree(self.out_dir, ignore_errors=True)
@@ -42,52 +39,29 @@ class TestTwPreprocessor(unittest.TestCase):
         results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
 
         # then
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'kt.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'names.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'other.md')))
-        index = read_file(os.path.join(self.out_dir, '0toc.md'))
         kt = read_file(os.path.join(self.out_dir, 'kt.md'))
         names = read_file(os.path.join(self.out_dir, 'names.md'))
         other = read_file(os.path.join(self.out_dir, 'other.md'))
         soup = BeautifulSoup(markdown2.markdown(kt, extras=['markdown-in-html', 'tables']), 'html.parser')
-        self.assertEqual(soup.h1.text, "translationWords")
-        self.assertEqual(soup.h2.text, "Key Terms")
-        self.assertIsNotNone(soup.find("a", {"id": "adoption"}))
+        self.assertEqual(soup.h1.text, 'Key Terms')
+        self.assertEqual(soup.h2.text, 'abomination, abominations, abominable')
+        self.assertIsNotNone(soup.find('a', {'id': 'tw-term-kt-adoption'}))
         self.assertEqual(len(soup.find_all('li')), 4009)
         # Test links have been converted
         # self.assertIsNotNone(soup.find("a", {"href": "#accuracy-check"}))
         # self.assertIsNotNone(soup.find("a", {"href": "03-translate.html#figs-explicit"}))
         # make sure no old links exist
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'manifest.yaml')))
-        self.assertTrue('(rc:' not in index)
         self.assertTrue('(rc:' not in kt)
         self.assertTrue('(rc:' not in names)
         self.assertTrue('(rc:' not in other)
-        self.assertTrue('../' not in index)
         self.assertTrue('../' not in kt)
         self.assertTrue('../' not in names)
         self.assertTrue('../' not in other)
-
-    def test_tw_preprocessor_dummy_section(self):
-        # given
-        TwPreprocessor.sections = [{'link': 'dumy', 'title': 'dumy'}]
-        repo_name = 'en_tw'
-        file_name = os.path.join('raw_sources', repo_name + '.zip')
-        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
-        repo_dir = os.path.join(repo_dir)
-        # speed up testing by removing manifest
-        base_folder = os.path.join(self.temp_dir, repo_name)
-        file_utils.remove(os.path.join(base_folder, 'manifest.yaml'))
-        self.out_dir = tempfile.mkdtemp(prefix='output_')
-        repo_name = 'dummy_repo'
-
-        # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
-
-        # then
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '0toc.md')))
 
     def test_fix_links(self):
         # given
@@ -144,7 +118,7 @@ class TestTwPreprocessor(unittest.TestCase):
         # given
         content = """This [link](rc://en/tn/help/ezr/09/01) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
-        expected = """This [link](https://git.door43.org/tw/en_tn/src/master/ezr/09/01.md) is a rc link that should go to 
+        expected = """This [link](https://git.door43.org/Door43/en_tn/src/master/ezr/09/01.md) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
 
         # when
