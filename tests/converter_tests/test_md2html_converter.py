@@ -143,12 +143,10 @@ class TestMd2HtmlConverter(unittest.TestCase):
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
                             .format(file_to_verify))
 
-        
     def test_tw(self):
         """
         Runs the converter and verifies the output
         """
-
         # given
         file_name = 'en_tw.zip'
 
@@ -162,7 +160,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        files_to_verify = ['0toc.html','index.json','kt.html','names.html','other.html','config.yaml','manifest.yaml']
+        files_to_verify = ['index.json', 'kt.html', 'names.html', 'other.html', 'config.yaml', 'manifest.yaml']
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'

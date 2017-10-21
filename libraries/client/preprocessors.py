@@ -706,7 +706,9 @@ class TwPreprocessor(Preprocessor):
                 markdown = self.fix_links(markdown, section)
                 output_file = os.path.join(self.output_dir, '{0}.md'.format(section))
                 write_file(output_file, markdown)
-
+                config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
+                if os.path.isfile(config_file):
+                    copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
             output_file = os.path.join(self.output_dir, 'index.json')
             write_file(output_file, index_json)
         return True

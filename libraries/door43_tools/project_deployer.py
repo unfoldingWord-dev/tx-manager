@@ -91,7 +91,7 @@ class ProjectDeployer(object):
                                                                 resource_type, s3_commit_key, source_dir, start,
                                                                 template_file)
             if not success:
-                return
+                return False
         else:
             # merge multi-part project
             source_dir, success = self.deploy_multipart_master(s3_commit_key, resource_type, download_key, output_dir,
@@ -212,7 +212,7 @@ class ProjectDeployer(object):
     def deploy_single_conversion(self, build_log, download_key, output_dir, repo_name, resource_type, s3_commit_key,
                                  source_dir, start, template_file):
         App.cdn_s3_handler().download_dir(download_key + '/', source_dir)
-        source_dir = os.path.join(source_dir, download_key)
+        source_dir = os.path.join(source_dir, download_key.replace('/', os.path.sep))
         elapsed_seconds = int(time.time() - start)
         App.logger.debug("deploy download completed in " + str(elapsed_seconds) + " seconds")
         html_files = sorted(glob(os.path.join(source_dir, '*.html')))
@@ -249,8 +249,7 @@ class ProjectDeployer(object):
             self.run_templater(templater)
             success = True
         except Exception as e:
-            App.logger.error("Error applying template {0} to resource type {1}".format(template_file,
-                                                                                       resource_type))
+            App.logger.error("Error applying template {0} to resource type {1}".format(template_file, resource_type))
             self.close()
             success = False
 
