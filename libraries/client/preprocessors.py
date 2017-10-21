@@ -30,7 +30,7 @@ def do_preprocess(rc, repo_dir, output_dir):
         App.logger.debug("do_preprocess: using TnPreprocessor")
         preprocessor = TnPreprocessor(rc, repo_dir, output_dir)
     else:
-        App.logger.debug("do_preprocess: using Preprocessor")
+        App.logger.debug("do_preprocess: using Preprocessor for resource: {0}".format(rc.resource.identifier))
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
 

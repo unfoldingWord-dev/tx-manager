@@ -10,7 +10,7 @@ from libraries.app.app import App
 
 class MarkdownLinter(Linter):
 
-    def __init__(self, single_file=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.single_file = None
         self.single_dir = None
 
