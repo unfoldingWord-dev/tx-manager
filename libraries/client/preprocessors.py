@@ -693,23 +693,22 @@ class TwPreprocessor(Preprocessor):
                 for term_file in term_files:
                     term = os.path.splitext(os.path.basename(term_file))[0]
                     text = read_file(term_file)
-                    link = 'tw-term-{0}-{1}'.format(section, term)
                     if title_re.search(text):
                         title = title_re.search(text).group(1)
-                        text = title_re.sub(r'# <a id="{0}"/>\1 #'.format(link), text)  # inject our link by the title
+                        text = title_re.sub(r'# <a id="{0}"/>\1 #'.format(term), text)  # inject the term by the title
                     else:
                         title = os.path.splitext(os.path.basename(term_file))[0]  # No title found, so using term
                     text = headers_re.sub(r'#\1 \2', text)
-                    index_json['chapters'][key][link] = title
-                    term_text[link] = text
+                    index_json['chapters'][key][term] = title
+                    term_text[term] = text
                 # Sort terms by title and add to markdown
                 markdown = ''
                 titles = index_json['chapters'][key]
-                links_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
-                for link in links_sorted_by_title:
+                terms_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
+                for term in terms_sorted_by_title:
                     if markdown:
                         markdown += '<hr>\n\n'
-                    markdown += term_text[link] + '\n\n'
+                    markdown += term_text[term] + '\n\n'
                 markdown = '# <a id="tw-section-{0}"/>{1}\n\n'.format(section, self.section_titles[section]) + markdown
                 markdown = self.fix_links(markdown, section)
                 output_file = os.path.join(self.output_dir, '{0}.md'.format(section))

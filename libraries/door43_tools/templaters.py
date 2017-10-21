@@ -275,11 +275,11 @@ class TwTemplater(Templater):
                        section, self.titles[key], ' collapsed' if fname != filename else '',
                        ' in' if fname == filename else '', ' aria-expanded="true"' if fname == filename else '')
             titles = self.chapters[key]
-            links_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
-            for link in links_sorted_by_title:
+            terms_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
+            for term in terms_sorted_by_title:
                 html += """
                             <li><a href="{0}#{1}">{2}</a></li>
-                """.format(key if fname != filename else '', link, titles[link])
+                """.format(key if fname != filename else '', term, titles[term])
             html += """
                         </ul>
                     </li>
