@@ -451,35 +451,34 @@ class TqPreprocessor(Preprocessor):
             if project.identifier in BOOK_NAMES:
                 markdown = ''
                 book = project.identifier.lower()
-                filename = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
-                index_json['book_codes'][filename] = book
+                html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+                index_json['book_codes'][html_file] = book
                 name = BOOK_NAMES[book]
-                chapters = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
+                index_json['titles'][html_file] = name
+                chapter_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
                 markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
-                index_json['chapters'][filename] = []
-                for chapter in chapters:
-                    chapter = os.path.basename(chapter)
+                index_json['chapters'][html_file] = []
+                for chapter_dir in chapter_dirs:
+                    chapter = os.path.basename(chapter_dir)
                     link = 'tq-chapter-{0}-{1}'.format(book, chapter.zfill(3))
-                    index_json['chapters'][filename].append(link)
-                    markdown += '## <a id="{0}" class="c-num"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
-                    chunks = sorted(glob(os.path.join(self.source_dir, project.path, chapter, '*.md')))
-                    for chunk_idx, chunk in enumerate(chunks):
-                        chunk = os.path.basename(chunk)
-                        start_verse = os.path.splitext(chunk)[0].lstrip('0')
-                        if chunk_idx < len(chunks)-1:
-                            end_verse = str(int(os.path.splitext(os.path.basename(chunks[chunk_idx+1]))[0])-1)
+                    index_json['chapters'][html_file].append(link)
+                    markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
+                    chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
+                    for chunk_idx, chunk_file in enumerate(chunk_files):
+                        start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
+                        if chunk_idx < len(chunk_files)-1:
+                            end_verse = str(int(os.path.splitext(os.path.basename(chunk_files[chunk_idx+1]))[0])-1)
                         else:
                             end_verse = BOOK_CHAPTER_VERSES[book][chapter.lstrip('0')]
                         link = 'tq-chunk-{0}-{1}-{2}'.format(book, str(chapter).zfill(3), str(start_verse).zfill(3))
                         markdown += '### <a id="{0}"/>{1} {2}:{3}{4}\n\n'.\
                             format(link, name, chapter.lstrip('0'), start_verse,
                                    '-'+end_verse if start_verse != end_verse else '')
-                        text = read_file(os.path.join(self.source_dir, book, chapter, chunk)) + '\n\n'
-                        text = text.replace('# ', '#### ')
+                        text = read_file(chunk_file) + '\n\n'
+                        text = text.replace('# ', '#### ')  # This will bump any header down 4 levels
                         markdown += text
                 file_path = os.path.join(self.output_dir, '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper()))
                 write_file(file_path, markdown)
-                index_json['titles']['{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())] = name
             else:
                 App.logger.debug('TqPreprocessor: extra project found: {0}'.format(project.identifier))
         # Write out index.json

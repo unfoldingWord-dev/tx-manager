@@ -1,10 +1,9 @@
 from __future__ import print_function, unicode_literals
-
 import os
-
 from libraries.app.app import App
 from libraries.client.preprocessors import TqPreprocessor
 from libraries.linters.markdown_linter import MarkdownLinter
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 
 
 class TqLinter(MarkdownLinter):
@@ -17,13 +16,9 @@ class TqLinter(MarkdownLinter):
         self.source_dir is the directory of source files (.md)
         :return bool:
         """
-        for section in TqPreprocessor.sections:
-            book = section['book']
-            if book[:3] == "00-":
-                continue
-
+        for book in BOOK_NUMBERS: 
             found_files = False
-            link = self.get_link_for_book(book)
+            link = self.get_link_for_book('{0}-{1}'.format(BOOK_NUMBERS[book], book.upper()))
             file_path = os.path.join(self.source_dir, link)
             for root, dirs, files in os.walk(file_path):
                 if root == file_path:
