@@ -52,26 +52,10 @@ class ProjectPrinterTests(unittest.TestCase):
             App.cdn_s3_handler().upload_file(os.path.join(project_dir, filename), 'u/{0}/{1}'.format(self.project_key, filename))
         App.cdn_s3_handler().upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')
 
-    def test_project_printer(self):
-        # similar to RC v0.2 OBS
-        file_list = ['01.md', '02.md', os.path.join('back', 'intro.md'), os.path.join('front', 'intro.md'),
-                 os.path.join('front', 'title.md')]
-        # Doing this for testing on multiple platforms
-        for idx, filename in enumerate(file_list):
-            file_list[idx] = os.path.join('tmp', 'en_obs', 'content', filename)
-        sorted_file_list = sorted(file_list, key=ProjectPrinter.frontToBack)
-        self.assertEqual(sorted_file_list[0], file_list[3])
-        self.assertEqual(sorted_file_list[1], file_list[4])
-        self.assertEqual(sorted_file_list[2], file_list[0])
-        self.assertEqual(sorted_file_list[-1], file_list[2])
-
-        # Similar to Pre-RC OBS
-        file_list = ['01.md', '02.md', os.path.join('_back', 'back-matter.md'),
-                     os.path.join('_front', 'front-matter.md')]
-        # Doing this for testing on multiple platforms
-        for idx, filename in enumerate(file_list):
-            file_list[idx] = os.path.join('tmp', 'en_obs', 'content', filename)
-        sorted_file_list = sorted(file_list, key=ProjectPrinter.frontToBack)
+    def test_front_to_back(self):
+        file_list = ['01.html', '02.html', 'back.html', 'front.html']
+        sorted_file_list = sorted(file_list, key=ProjectPrinter.front_to_back)
         self.assertEqual(sorted_file_list[0], file_list[3])
         self.assertEqual(sorted_file_list[1], file_list[0])
-        self.assertEqual(sorted_file_list[-1], file_list[2])
+        self.assertEqual(sorted_file_list[2], file_list[1])
+        self.assertEqual(sorted_file_list[3], file_list[2])

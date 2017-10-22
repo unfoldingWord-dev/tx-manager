@@ -55,7 +55,7 @@ class ProjectPrinter(object):
         <h1>{2}: {3}</h1>
 """.format(rc.resource.language.identifier, rc.resource.language.direction, rc.resource.language.title,
            rc.resource.title))
-                for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.frontToBack):
+                for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.front_to_back):
                     with codecs.open(fname, 'r', 'utf-8-sig') as f:
                         soup = BeautifulSoup(f, 'html.parser')
                         # get the body of the raw html file
@@ -75,19 +75,18 @@ class ProjectPrinter(object):
         return html
 
     @staticmethod
-    def frontToBack(file_path):
+    def front_to_back(file_path):
         """
+        Prefixes any "front" or "back" file with a number so they are first and last respectively
         Used with sorting. Primarily used with OBS
-        Replaces any "front" or "back" directory with a number so they are first and last respectively
-        :param file_path:
-        :return:
+        :param string file_path:
+        :return string:
         """
         parent_dir = os.path.dirname(file_path)
-        parent_parent_dir = os.path.dirname(parent_dir)
-        filename = os.path.basename(file_path)
-        if parent_dir.endswith('front'):
-            return os.path.join(parent_parent_dir, '00_{0}'.format(filename))
-        elif parent_dir.endswith('back'):
-            return os.path.join(parent_parent_dir, '99_{0}'.format(filename))
+        file_name = os.path.basename(file_path)
+        if file_name == 'front.html':
+            return os.path.join(parent_dir, '00_{0}'.format(file_name))
+        elif file_name == 'back.html':
+            return os.path.join(parent_dir, '99_{0}'.format(file_name))
         else:
             return file_path
