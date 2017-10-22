@@ -11,6 +11,7 @@ from libraries.door43_tools.project_deployer import ProjectDeployer
 from libraries.door43_tools.td_language import TdLanguage
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.app.app import App
 from shutil import rmtree
 
@@ -72,11 +73,10 @@ class ProjectDeployerTests(unittest.TestCase):
         # then
         self.assertTrue(ret)
         self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
-        files_to_verify = ['00-toc.html', 'manifest.yaml']
-        for section in TqPreprocessor.sections:
-            book = section['book']
-            file = '{0}.html'.format(book)
-            files_to_verify.append(file)
+        files_to_verify = ['manifest.yaml']
+        for book in BOOK_NUMBERS:
+            html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+            files_to_verify.append(html_file)
 
         for file_name in files_to_verify:
             key = '{0}/{1}'.format(self.project_key, file_name)
@@ -92,7 +92,7 @@ class ProjectDeployerTests(unittest.TestCase):
         ret = self.deployer.deploy_revision_to_door43(build_log_key)
         self.assertTrue(ret)
         self.assertTrue(App.door43_s3_handler().key_exists(build_log_key))
-        for file_name in ['index.html','0toc.html','kt.html','names.html','other.html','build_log.json','manifest.yaml']:
+        for file_name in ['index.html', 'kt.html', 'names.html', 'other.html', 'build_log.json', 'manifest.yaml']:
             key = '{0}/{1}'.format(self.project_key, file_name)
             self.assertTrue(App.door43_s3_handler().key_exists(key), "Key not found: {0}".format(key))
         parent_key = '/'.join(self.project_key.split('/')[:-1])

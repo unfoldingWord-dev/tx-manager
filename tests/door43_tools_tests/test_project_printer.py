@@ -30,7 +30,7 @@ class ProjectPrinterTests(unittest.TestCase):
         self.assertTrue(App.cdn_s3_handler().key_exists('u/{0}/print_all.html'.format(self.project_key)))
         html = App.cdn_s3_handler().get_file_contents('u/{0}/print_all.html'.format(self.project_key))
         soup = BeautifulSoup(html, 'html.parser')
-        self.assertEqual(len(soup.div), 41) # counts lines in first story (now front matter)
+        self.assertEqual(len(soup.div), 69) 
         self.assertEqual(soup.html['lang'], 'en')
         self.assertEqual(soup.html['dir'], 'ltr')
         # Run again, shouldn't have to generate
@@ -51,3 +51,11 @@ class ProjectPrinterTests(unittest.TestCase):
         for filename in self.project_files:
             App.cdn_s3_handler().upload_file(os.path.join(project_dir, filename), 'u/{0}/{1}'.format(self.project_key, filename))
         App.cdn_s3_handler().upload_file(os.path.join(out_dir, 'door43', 'en-obs', 'project.json'), 'u/door43/en-obs/project.json')
+
+    def test_front_to_back(self):
+        file_list = ['01.html', '02.html', 'back.html', 'front.html']
+        sorted_file_list = sorted(file_list, key=ProjectPrinter.front_to_back)
+        self.assertEqual(sorted_file_list[0], file_list[3])
+        self.assertEqual(sorted_file_list[1], file_list[0])
+        self.assertEqual(sorted_file_list[2], file_list[1])
+        self.assertEqual(sorted_file_list[3], file_list[2])

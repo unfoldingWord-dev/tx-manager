@@ -17,11 +17,15 @@ class ProjectPrinter(object):
     if the print_all.html page doesn't already exist. Return the contents of print_all.html
     """
 
+    def __init__(self):
+        self.project_id = None
+
     def print_project(self, project_id):
         """
         :param string project_id: 
         :return string: 
         """
+        self.project_id = project_id
         if len(project_id.split('/')) != 3:
             raise Exception('Project not found.')
         user_name, repo_name, commit_id = project_id.split('/')
@@ -51,7 +55,7 @@ class ProjectPrinter(object):
         <h1>{2}: {3}</h1>
 """.format(rc.resource.language.identifier, rc.resource.language.direction, rc.resource.language.title,
            rc.resource.title))
-                for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.frontToBack):
+                for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.front_to_back):
                     with codecs.open(fname, 'r', 'utf-8-sig') as f:
                         soup = BeautifulSoup(f, 'html.parser')
                         # get the body of the raw html file
@@ -70,11 +74,19 @@ class ProjectPrinter(object):
             html = App.cdn_s3_handler().get_file_contents(print_all_key)
         return html
 
-    def frontToBack(self, file):
-        # make front and back sort before and after numeric files
-        if(file.find('front') >= 0):
-            return "00"
-        elif(file.find('back') >= 0):
-            return "99"
+    @staticmethod
+    def front_to_back(file_path):
+        """
+        Prefixes any "front" or "back" file with a number so they are first and last respectively
+        Used with sorting. Primarily used with OBS
+        :param string file_path:
+        :return string:
+        """
+        parent_dir = os.path.dirname(file_path)
+        file_name = os.path.basename(file_path)
+        if file_name == 'front.html':
+            return os.path.join(parent_dir, '00_{0}'.format(file_name))
+        elif file_name == 'back.html':
+            return os.path.join(parent_dir, '99_{0}'.format(file_name))
         else:
-            return file[-7:-5]
+            return file_path

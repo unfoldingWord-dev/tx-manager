@@ -141,7 +141,7 @@ class ClientLinterCallback(object):
                     App.logger.debug('Part {0} not complete'.format(part_key))
                     all_parts_completed = False
 
-        if all_parts_completed and (build_log is not None):  # if all parts found, save build log and kick off deploy
+        if all_parts_completed and build_log is not None:  # if all parts found, save build log and kick off deploy
             # set overall status
             if len(build_log['errors']):
                 build_log['status'] = 'errors'
@@ -152,6 +152,8 @@ class ClientLinterCallback(object):
                 build_log['multiple'] = True
 
             ClientLinterCallback.upload_build_log(build_log, "final_build_log.json", output_dir, s3_results_key)
+            if not multiple_project:
+                ClientLinterCallback.upload_build_log(build_log, "build_log.json", output_dir, s3_results_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
             App.logger.debug('All parts completed')
         else:

@@ -35,6 +35,9 @@ def init_template(resource_type, source_dir, output_dir, template_file):
 
 
 class Templater(object):
+    NO_NAV_TITLES = ['', 'Conversion requested...', 'Conversion started...', 'Conversion successful',
+                     'Conversion successful with warnings', 'Index']
+
     def __init__(self, resource_type, source_dir, output_dir, template_file):
         self.resource_type = resource_type
         self.source_dir = source_dir  # Local directory
@@ -89,8 +92,7 @@ class Templater(object):
             title = ""
             if key in self.titles:
                 title = self.titles[key]
-
-            if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
+            if title in self.NO_NAV_TITLES:
                 continue
             if filename != fname:
                 html += '<li><a href="{0}">{1}</a></li>'.format(os.path.basename(fname), title)
@@ -194,10 +196,13 @@ class Templater(object):
                     left_sidebar_div.append(left_sidebar)
 
                 if right_sidebar_div:
-                    right_sidebar_html = self.build_right_sidebar(filename)
-                    right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser').nav.extract()
                     right_sidebar_div.clear()
-                    right_sidebar_div.append(right_sidebar)
+                    right_sidebar_html = self.build_right_sidebar(filename)
+                    if right_sidebar_html:
+                        right_sidebar = BeautifulSoup(right_sidebar_html, 'html.parser')
+                        if right_sidebar and right_sidebar.nav:
+                            right_sidebar_nav = right_sidebar.nav.extract()
+                            right_sidebar_div.append(right_sidebar_nav)
 
                 # render the html as an unicode string
                 html = unicode(soup)
@@ -249,6 +254,80 @@ class TqTemplater(Templater):
         index = file_utils.load_json_object(os.path.join(self.source_dir, 'index.json'))
         if index:
             self.titles = index['titles']
+            self.chapters = index['chapters']
+            self.book_codes = index['book_codes']
+
+    def get_page_navigation(self):
+        for fname in self.files:
+            key = os.path.basename(fname)
+            if key in self.titles:  # skip if we already have data
+                continue
+            filebase = os.path.splitext(os.path.basename(fname))[0]
+            # Getting the book code for HTML tag references
+            fileparts = filebase.split('-')
+            if len(fileparts) == 2:
+                # Assuming filename of ##-<name>.usfm, such as 01-GEN.usfm
+                book_code = fileparts[1].lower()
+            else:
+                # Assuming filename of <name.usfm, such as GEN.usfm
+                book_code = fileparts[0].lower()
+            book_code.replace(' ', '-').replace('.', '-')  # replacing spaces and periods since used as tag class
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f.read(), 'html.parser')
+            if soup.select('div#content h1'):
+                title = soup.select('div#content h1')[0].text.strip() 
+            else:
+                title = '{0}.'.format(book_code)
+            self.titles[key] = title
+            self.book_codes[key] = book_code
+            chapters = soup.find_all('h2')
+            self.chapters[key] = [c['id'] for c in chapters]
+
+    def build_page_nav(self, filename=None):
+        html = """
+        <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
+            """
+        for fname in self.files:
+            key = os.path.basename(fname)
+            book_code = ""
+            if key in self.book_codes:
+                book_code = self.book_codes[key]
+            title = ""
+            if key in self.titles:
+                title = self.titles[key]
+            if title in self.NO_NAV_TITLES:
+                continue
+            html += """
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            <a class="accordion-toggle" data-toggle="collapse" data-parent="#sidebar-nav" href="#collapse{0}">{1}</a>
+                        </h4>
+                    </div>
+                    <div id="collapse{0}" class="panel-collapse collapse{2}">
+                        <ul class="panel-body chapters">
+                    """.format(book_code, title, ' in' if fname == filename else '')
+            chapters = {}
+            if key in self.chapters:
+                chapters = self.chapters[key]
+            for chapter in chapters:
+                chapter_parts = chapter.split('-')
+                label = chapter if len(chapter_parts) < 4 else chapter_parts[3].lstrip('0')
+                html += """
+                       <li class="chapter"><a href="{0}#{1}">{2}</a></li>
+                    """.format(os.path.basename(fname) if fname != filename else '', chapter,
+                               label)
+            html += """
+                        </ul>
+                    </div>
+                </div>
+                    """
+        html += """
+            </ul>
+        </nav>
+            """
+        return html
 
 
 class TwTemplater(Templater):
@@ -257,6 +336,39 @@ class TwTemplater(Templater):
         index = file_utils.load_json_object(os.path.join(self.source_dir, 'index.json'))
         if index:
             self.titles = index['titles']
+            self.chapters = index['chapters']
+
+    def build_page_nav(self, filename=None):
+        if not self.files or not self.titles or not self.chapters:
+            return ""
+        html = """
+            <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+                <ul class="nav nav-stacked">
+        """
+        for fname in self.files:
+            key = os.path.basename(fname)
+            section = os.path.splitext(key)[0]
+            html += """
+                    <li{0}><a href="{1}#tw-section-{2}">{3}</a>
+                        <a class="content-nav-expand collapsed" data-target="#section-{2}-sub" data-toggle="collapse" href="#"></a>
+                        <ul class="collapse" id="section-{2}-sub">
+            """.format(' class="active"' if fname == filename else '', key if fname != filename else '',
+                       section, self.titles[key])
+            titles = self.chapters[key]
+            terms_sorted_by_title = sorted(titles, key=lambda i: titles[i].lower())
+            for term in terms_sorted_by_title:
+                html += """
+                            <li><a href="{0}#{1}">{2}</a></li>
+                """.format(key if fname != filename else '', term, titles[term])
+            html += """
+                        </ul>
+                    </li>
+            """
+        html += """
+                </ul>
+            </nav>
+        """
+        return html
 
 
 class TnTemplater(Templater):
@@ -276,7 +388,6 @@ class BibleTemplater(Templater):
             key = os.path.basename(fname)
             if key in self.titles:  # skip if we already have data
                 continue
-
             filebase = os.path.splitext(os.path.basename(fname))[0]
             # Getting the book code for HTML tag references
             fileparts = filebase.split('-')
@@ -305,16 +416,13 @@ class BibleTemplater(Templater):
             """
         for fname in self.files:
             key = os.path.basename(fname)
-
             book_code = ""
             if key in self.book_codes:
                 book_code = self.book_codes[key]
-
             title = ""
             if key in self.titles:
                 title = self.titles[key]
-
-            if title == "Conversion requested..." or title == "Conversion successful" or title == "Index":
+            if title in self.NO_NAV_TITLES:
                 continue
             html += """
                 <div class="panel panel-default">
@@ -398,8 +506,7 @@ class TaTemplater(Templater):
                 title = soup.select('div#content h1')[0].text.strip() 
             else:
                 title = os.path.splitext(os.path.basename(fname))[0].title()
-            if title in ['Conversion successful', 'Conversion started...', 'Index',
-                         'Conversion successful with warnings', 'Conversion failed']:
+            if title in self.NO_NAV_TITLES:
                 continue
             if fname != filename:
                 html += """
