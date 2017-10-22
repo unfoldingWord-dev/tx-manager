@@ -6,6 +6,7 @@ import mock
 from libraries.client.preprocessors import TqPreprocessor
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import unzip, write_file, read_file, add_contents_to_zip
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from tests.linter_tests.linter_unittest import LinterTestCase
 from libraries.linters.tq_linter import TqLinter
 
@@ -34,7 +35,7 @@ class TestTqLinter(LinterTestCase):
     def test_lint(self, mock_invoke_markdown_linter):
         # given
         mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tq linting
-        expected_warnings = 0
+        expected_warnings = 0 
         zip_file = os.path.join(self.resources_dir, 'tq_linter', 'en_tq.zip')
         linter = TqLinter(source_file=zip_file, commit_data=self.commit_data)
 
@@ -53,12 +54,10 @@ class TestTqLinter(LinterTestCase):
         out_dir = self.unzip_resource(zip_file)
 
         # remove everything past genesis
-        for section in TqPreprocessor.sections:
-            book = section['book']
-            link = self.get_link_for_book(book)
-            book_path = os.path.join(out_dir, 'en_tq', link)
+        for book in BOOK_NUMBERS: 
+            book_path = os.path.join(out_dir, 'en_tq', book)
             if os.path.exists(book_path):
-                if book > "02":
+                if BOOK_NUMBERS[book] > "02":
                     file_utils.remove_tree(book_path)
 
         # put a verse in exo so that we can test that there is some content there
@@ -112,9 +111,3 @@ class TestTqLinter(LinterTestCase):
         unzip(zip_file, out_dir)
         return out_dir
 
-    def get_link_for_book(self, book):
-        parts = book.split('-')
-        link = book
-        if len(parts) > 1:
-            link = parts[1].lower()
-        return link

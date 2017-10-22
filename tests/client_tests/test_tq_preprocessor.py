@@ -16,53 +16,31 @@ class TestTqPreprocessor(unittest.TestCase):
         """Runs before each test."""
         self.out_dir = ''
         self.temp_dir = ""
-        self.save_sections = TqPreprocessor.sections
 
     def tearDown(self):
         """Runs after each test."""
-        TqPreprocessor.sections = self.save_sections
         # delete temp files
         if os.path.isdir(self.out_dir):
             shutil.rmtree(self.out_dir, ignore_errors=True)
         if os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_tq_preprocessor(self):
+    def test_tq_preprocessor_two_books(self):
         # given
-        repo_name = 'en_tq'
+        repo_name = 'en_tq_two_books'
         file_name = os.path.join('raw_sources', repo_name + '.zip')
         rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
         repo_dir = os.path.join(repo_dir)
         self.out_dir = tempfile.mkdtemp(prefix='output_')
-        repo_name = 'dummy_repo'
 
         # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
+        do_preprocess(rc, repo_dir, self.out_dir)
 
         # then
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
-        toc = read_file(os.path.join(self.out_dir, '00-toc.md'))
-        index = read_file(os.path.join(self.out_dir, 'index.json'))
-        gen = read_file(os.path.join(self.out_dir, '01-GEN.md'))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '51-PHP.md')))
+        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '57-TIT.md')))
 
-    def test_tq_preprocessor_dummy_section(self):
-        # given
-        TqPreprocessor.sections = [{'book': "dummy", 'title': 'dummy'}]
-        repo_name = 'en_tq'
-        file_name = os.path.join('raw_sources', 'en_tq_two_books.zip')
-        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
-        repo_dir = os.path.join(repo_dir)
-        self.out_dir = tempfile.mkdtemp(prefix='output_')
-        repo_name = 'dummy_repo'
-
-        # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
-
-        # then
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
 
     #
     # helpers
