@@ -151,7 +151,7 @@ class ClientLinterCallback(object):
             if multiple_project:
                 build_log['multiple'] = True
 
-            App.cdn_s3_handler().delete_file('{0}/deployed'.format(s3_results_key))
+            App.cdn_s3_handler().delete_file('{0}/final_deployed'.format(s3_results_key))
             ClientLinterCallback.upload_build_log(build_log, "final_build_log.json", output_dir, s3_results_key)
             ClientLinterCallback.update_project_file(build_log, output_dir)
             App.logger.debug('All parts completed')

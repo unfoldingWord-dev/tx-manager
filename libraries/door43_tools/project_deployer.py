@@ -72,17 +72,18 @@ class ProjectDeployer(object):
                 App.logger.debug("Exiting, Parts not yet deployed: {0}".format(undeployed))
                 return False
 
-            key_deployed_ = download_key + '/deployed'
+            key_deployed_ = download_key + '/final_deployed'
             if App.cdn_s3_handler().key_exists(key_deployed_):
                 App.logger.debug("Exiting, Already merged parts: {0}".format(download_key))
                 return False
-            self.write_data_to_file(self.temp_dir, key_deployed_, 'deployed', ' ')  # flag that deploy has begun
+            self.write_data_to_file(self.temp_dir, key_deployed_, 'final_deployed', ' ')  # flag that deploy has begun
+            App.logger.debug("Continuing with merge: {0}".format(download_key))
 
         elif 'part' in build_log:
             part = build_log['part']
             download_key += '/' + part
             partial_deploy = True
-            App.logger.debug("found partial: {0}".format(download_key))
+            App.logger.debug("Found partial: {0}".format(download_key))
 
             if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
                 App.logger.debug("Exiting, Not ready to process partial")
