@@ -8,6 +8,7 @@ from contextlib import closing
 from libraries.client.preprocessors import TqPreprocessor
 from libraries.converters.md2html_converter import Md2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree, unzip, remove
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from bs4 import BeautifulSoup
 from libraries.app.app import App
 
@@ -132,23 +133,20 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        files_to_verify = ['00-toc.html', 'manifest.yaml', 'index.json']
-        for section in TqPreprocessor.sections:
-            book = section['book']
-            file = '{0}.html'.format(book)
-            files_to_verify.append(file)
+        files_to_verify = ['manifest.yaml', 'index.json']
+        for book in  BOOK_NUMBERS:
+            html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+            files_to_verify.append(html_file)
 
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
                             .format(file_to_verify))
 
-        
     def test_tw(self):
         """
         Runs the converter and verifies the output
         """
-
         # given
         file_name = 'en_tw.zip'
 
@@ -162,7 +160,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        files_to_verify = ['0toc.html','index.json','kt.html','names.html','other.html','config.yaml','manifest.yaml']
+        files_to_verify = ['index.json', 'kt.html', 'names.html', 'other.html', 'config.yaml', 'manifest.yaml']
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'

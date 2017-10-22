@@ -17,11 +17,15 @@ class ProjectPrinter(object):
     if the print_all.html page doesn't already exist. Return the contents of print_all.html
     """
 
+    def __init__(self):
+        self.project_id = None
+
     def print_project(self, project_id):
         """
         :param string project_id: 
         :return string: 
         """
+        self.project_id = project_id
         if len(project_id.split('/')) != 3:
             raise Exception('Project not found.')
         user_name, repo_name, commit_id = project_id.split('/')
@@ -70,11 +74,20 @@ class ProjectPrinter(object):
             html = App.cdn_s3_handler().get_file_contents(print_all_key)
         return html
 
-    def frontToBack(self, file):
-        # make front and back sort before and after numeric files
-        if(file.find('front') >= 0):
-            return "00"
-        elif(file.find('back') >= 0):
-            return "99"
+    @staticmethod
+    def frontToBack(file_path):
+        """
+        Used with sorting. Primarily used with OBS
+        Replaces any "front" or "back" directory with a number so they are first and last respectively
+        :param file_path:
+        :return:
+        """
+        parent_dir = os.path.dirname(file_path)
+        parent_parent_dir = os.path.dirname(parent_dir)
+        filename = os.path.basename(file_path)
+        if parent_dir.endswith('front'):
+            return os.path.join(parent_parent_dir, '00_{0}'.format(filename))
+        elif parent_dir.endswith('back'):
+            return os.path.join(parent_parent_dir, '99_{0}'.format(filename))
         else:
-            return file[-7:-5]
+            return file_path
