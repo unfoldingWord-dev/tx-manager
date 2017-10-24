@@ -642,7 +642,7 @@ class TnPreprocessor(Preprocessor):
                             format(link, name, chapter.lstrip('0'), start_verse,
                                    '-'+end_verse if start_verse != end_verse else '')
                         text = read_file(chunk_file) + '\n\n'
-                        text = headers_re.sub(r'\1#### \2', text)  # This will bump any header down 4 levels
+                        text = headers_re.sub(r'\1## \2', text)  # This will bump any header down 2 levels
                         markdown += text
                 book_file_name = '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper())
                 self.books.append(book_file_name)
