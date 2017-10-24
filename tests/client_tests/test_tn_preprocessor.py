@@ -16,11 +16,9 @@ class TestTnPreprocessor(unittest.TestCase):
         """Runs before each test."""
         self.out_dir = ''
         self.temp_dir = ""
-        self.save_sections = TnPreprocessor.sections
 
     def tearDown(self):
         """Runs after each test."""
-        TnPreprocessor.sections = self.save_sections
         # delete temp files
         if os.path.isdir(self.out_dir):
             shutil.rmtree(self.out_dir, ignore_errors=True)
@@ -41,11 +39,10 @@ class TestTnPreprocessor(unittest.TestCase):
 
         # then
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, 'index.json')))
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '01-GEN.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
-        index = read_file(os.path.join(self.out_dir, '00-toc.md'))
         gen = read_file(os.path.join(self.out_dir, '01-GEN.md'))
+        rev = read_file(os.path.join(self.out_dir, '67-REV.md'))
 
     def test_tn_preprocessor_dummy_section(self):
         # given

@@ -41,7 +41,7 @@ def setup_logger(logger, level):
     for h in logger.handlers:
         logger.removeHandler(h)
     sh = logging.StreamHandler(sys.stdout)
-    head = '%(asctime)s - %(levelname)s: %(message)s'
+    head = '%(process)d - %(asctime)s - %(levelname)s: %(message)s'
     sh.setFormatter(logging.Formatter(head))
     logger.addHandler(sh)
     logger.setLevel(level)

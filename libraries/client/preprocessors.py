@@ -578,235 +578,75 @@ class TwPreprocessor(Preprocessor):
 
 
 class TnPreprocessor(Preprocessor):
-    sections = [
-        {'book': "00-toc", 'title': 'Table of Contents'},
-        {'book': "01-GEN", 'title': 'Genesis'},
-        {'book': "02-EXO", 'title': 'Exodus'},
-        {'book': "03-LEV", 'title': 'Leviticus'},
-        {'book': "04-NUM", 'title': 'Numbers'},
-        {'book': "05-DEU", 'title': 'Deuteronomy'},
-        {'book': "06-JOS", 'title': 'Joshua'},
-        {'book': "07-JDG", 'title': 'Judges'},
-        {'book': "08-RUT", 'title': 'Ruth'},
-        {'book': "09-1SA", 'title': '1 Samuel'},
-        {'book': "10-2SA", 'title': '2 Samuel'},
-        {'book': "11-1KI", 'title': '1 Kings'},
-        {'book': "12-2KI", 'title': '2 Kings'},
-        {'book': "13-1CH", 'title': '1 Chronicles'},
-        {'book': "14-2CH", 'title': '2 Chronicles'},
-        {'book': "15-EZR", 'title': 'Ezra'},
-        {'book': "16-NEH", 'title': 'Nehemiah'},
-        {'book': "17-EST", 'title': 'Esther'},
-        {'book': "18-JOB", 'title': 'Job'},
-        {'book': "19-PSA", 'title': 'Psalms'},
-        {'book': "20-PRO", 'title': 'Proverbs'},
-        {'book': "21-ECC", 'title': 'Ecclesiastes'},
-        {'book': "22-SNG", 'title': 'Song of Solomon'},
-        {'book': "23-ISA", 'title': 'Isaiah'},
-        {'book': "24-JER", 'title': 'Jeremiah'},
-        {'book': "25-LAM", 'title': 'Lamentations'},
-        {'book': "26-EZK", 'title': 'Ezekiel'},
-        {'book': "27-DAN", 'title': 'Daniel'},
-        {'book': "28-HOS", 'title': 'Hosea'},
-        {'book': "29-JOL", 'title': 'Joel'},
-        {'book': "30-AMO", 'title': 'Amos'},
-        {'book': "31-OBA", 'title': 'Obadiah'},
-        {'book': "32-JON", 'title': 'Jonah'},
-        {'book': "33-MIC", 'title': 'Micah'},
-        {'book': "34-NAM", 'title': 'Nahum'},
-        {'book': "35-HAB", 'title': 'Habakkuk'},
-        {'book': "36-ZEP", 'title': 'Zephaniah'},
-        {'book': "37-HAG", 'title': 'Haggai'},
-        {'book': "38-ZEC", 'title': 'Zechariah'},
-        {'book': "39-MAL", 'title': 'Malachi'},
-        {'book': "41-MAT", 'title': 'Matthew'},
-        {'book': "42-MRK", 'title': 'Mark'},
-        {'book': "43-LUK", 'title': 'Luke'},
-        {'book': "44-JHN", 'title': 'John'},
-        {'book': "45-ACT", 'title': 'Acts'},
-        {'book': "46-ROM", 'title': 'Romans'},
-        {'book': "47-1CO", 'title': '1 Corinthians'},
-        {'book': "48-2CO", 'title': '2 Corinthians'},
-        {'book': "49-GAL", 'title': 'Galatians'},
-        {'book': "50-EPH", 'title': 'Ephesians'},
-        {'book': "51-PHP", 'title': 'Philippians'},
-        {'book': "52-COL", 'title': 'Colossians'},
-        {'book': "53-1TH", 'title': '1 Thessalonians'},
-        {'book': "54-2TH", 'title': '2 Thessalonians'},
-        {'book': "55-1TI", 'title': '1 Timothy'},
-        {'book': "56-2TI", 'title': '2 Timothy'},
-        {'book': "57-TIT", 'title': 'Titus'},
-        {'book': "58-PHM", 'title': 'Philemon'},
-        {'book': "59-HEB", 'title': 'Hebrews'},
-        {'book': "60-JAS", 'title': 'James'},
-        {'book': "61-1PE", 'title': '1 Peter'},
-        {'book': "62-2PE", 'title': '2 Peter'},
-        {'book': "63-1JN", 'title': '1 John'},
-        {'book': "64-2JN", 'title': '2 John'},
-        {'book': "65-3JN", 'title': '3 John'},
-        {'book': "66-JUD", 'title': 'Jude'},
-        {'book': "67-REV", 'title': 'Revelation'},
-    ]
-
-    def __init__(self, *args, **kwargs):
-        super(TnPreprocessor, self).__init__(*args, **kwargs)
-        self.section_container_id = 1
-        self.toc = ''
-        self.index_json = None
-        self.section_header_marker = '###############'
-        self.books = []
+    index_json = {
+        'titles': {},
+        'chapters': {},
+        'book_codes': {}
+    }
 
     def is_multiple_jobs(self):
         return True
 
-    def get_book_list(self):
-        self.books.sort()
-        return self.books
-
-    def mark_chapter(self, ident, chapter, text):
-        a = '{0} {1}\n\n'.format(self.section_header_marker, chapter)  # put in invalid header for section - we will correct heading level later
-        return text + a
-
-    def mark_chunk(self, ident, chapter, chunk, text):
-        chunk_marker = os.path.splitext(chunk)[0]
-        a = '{0}# {1}:{2}\n\n'.format(self.section_header_marker, chapter, chunk_marker)  # put in invalid header for section - we will correct heading level later
-        return text + a
-
-    def compile_section(self, title, link, content):
-        """
-        Recursive section markdown creator
-
-        :param content:
-        :param link:
-        :param title:
-        :return:
-        """
-        level = 3
-        markdown = ''
-        level_increase = ('#' * level)
-        markdown += '{0} <a id="{1}"/>{2}\n\n'.format('#' * (level-2), link, title)  # add book title
-        content = content.replace('\r', '')
-        lines = content.split('\n')
-        section_header_length = len(self.section_header_marker)
-        for i in range(0, len(lines)):
-            line = lines[i]
-            if line[:section_header_length] == self.section_header_marker:
-                text = line[section_header_length:]
-                if text[0] == '#':  # check if chunk marker
-                    line = level_increase + ' ' + title + text[1:]  # fix header level and add title
-                else:  # chapter marker
-                    line = '#' * (level-1) + ' ' + title + text  # fix header level and add title
-                lines[i] = line
-            elif line and (line[0] == '#'):
-                if line.rstrip()[-1] == '#':
-                    line = level_increase + line.rstrip() + level_increase
-                else:
-                    line = level_increase + line
-                lines[i] = line
-        content = '\n'.join(lines)
-        markdown += content + '\n\n---\n\n'  # horizontal rule
-        return markdown
-
     def run(self):
-        super(TnPreprocessor, self).run()
-        self.toc = None
-        projects = {}
-        self.index_json = {
+        index_json = {
             'titles': {},
             'chapters': {},
             'book_codes': {}
         }
+        headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
         for idx, project in enumerate(self.rc.projects):
-            section = self.get_section_for_file(project.identifier)
-            if section:
-                link = self.get_link_for_section(section)
-                book = section['book']
-                if not self.toc:
-                    self.toc = '# Table of Contents:\n\n'
-                projects[book] = {
-                    'link': link,
-                }
+            if project.identifier in BOOK_NAMES:
+                markdown = ''
+                book = project.identifier.lower()
+                html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+                index_json['book_codes'][html_file] = book
+                name = BOOK_NAMES[book]
+                index_json['titles'][html_file] = name
+                chapter_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
+                markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
+                index_json['chapters'][html_file] = []
+                for move_str in ['front', 'intro']:
+                    self.move_to_front(chapter_dirs, move_str)
+                for chapter_dir in chapter_dirs:
+                    chapter = os.path.basename(chapter_dir)
+                    link = 'tq-chapter-{0}-{1}'.format(book, chapter.zfill(3))
+                    index_json['chapters'][html_file].append(link)
+                    markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
+                    chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
+                    for move_str in ['front', 'intro']:
+                        self.move_to_front(chunk_files, move_str)
+                    for chunk_idx, chunk_file in enumerate(chunk_files):
+                        start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
+                        if chunk_idx < len(chunk_files)-1:
+                            base_file_name = os.path.splitext(os.path.basename(chunk_files[chunk_idx + 1]))[0]
+                            if base_file_name.isdigit():
+                                end_verse = str(int(base_file_name) - 1)
+                            else:
+                                end_verse = start_verse
+                        else:
+                            chapter_str = chapter.lstrip('0')
+                            chapter_verses = BOOK_CHAPTER_VERSES[book]
+                            end_verse = chapter_verses[chapter_str] if chapter_str in chapter_verses else start_verse
+
+                        start_verse_str = str(start_verse).zfill(3) if start_verse.isdigit() else start_verse
+                        link = 'tn-chunk-{0}-{1}-{2}'.format(book, str(chapter).zfill(3), start_verse_str)
+                        markdown += '### <a id="{0}"/>{1} {2}:{3}{4}\n\n'. \
+                            format(link, name, chapter.lstrip('0'), start_verse,
+                                   '-'+end_verse if start_verse != end_verse else '')
+                        text = read_file(chunk_file) + '\n\n'
+                        text = headers_re.sub(r'\1### \2', text)  # This will bump any header down 3 levels
+                        markdown += text
+                file_path = os.path.join(self.output_dir, '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper()))
+                write_file(file_path, markdown)
             else:
                 App.logger.debug('TnPreprocessor: extra project found: {0}'.format(project.identifier))
-
-        for section in TnPreprocessor.sections:  # index by book order
-            book = section['book']
-            if book in projects:
-                file = os.path.join(self.output_dir, book + '.md')
-                link = self.get_link_for_section(section)
-                book = section['book']
-                title = section['title']
-                if not os.path.exists(file):
-                    App.logger.debug('TnPreprocessor: book missing: {0}'.format(book))
-                    continue
-                initial_markdown = read_file(file)
-                markdown = self.compile_section(title, link, initial_markdown)
-                markdown = self.fix_links(markdown, book)
-                if initial_markdown != markdown:
-                    write_file(file, markdown)
-                self.toc += '* [{1}](./{0}.html)\n'.format(book, title)
-                self.index_json['titles'][book + '.html'] = title
-                self.books.append(book + '.md')
-            else:
-                App.logger.debug('TnPreprocessor: missing book: {0}'.format(book))
-
-        self.toc = self.fix_links(self.toc, '-')
-        output_file = os.path.join(self.output_dir, '00-toc.md')
-        write_file(output_file, self.toc)
-        self.index_json['titles']['00-toc.html'] = 'Table of Contents'
+        # Write out index.json
         output_file = os.path.join(self.output_dir, 'index.json')
-        write_file(output_file, self.index_json)
-
-        # Copy the toc and config.yaml file to the output dir so they can be used to
-        # generate the ToC on live.door43.org
-        toc_file = os.path.join(self.source_dir, project.path, 'toc.yaml')
-        if os.path.isfile(toc_file):
-            copy(toc_file, os.path.join(self.output_dir, 'toc.yaml'))
-        config_file = os.path.join(self.source_dir, project.path, 'config.yaml')
-        if os.path.isfile(config_file):
-            copy(config_file, os.path.join(self.output_dir, 'config.yaml'))
+        write_file(output_file, index_json)
         return True
 
-    def fix_links(self, content, section_link):
-        if not content:
-            return content
-
-        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
-        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/{0}/\1_\2/src/master/\4.md'.format(self.rc.repo_name), content,
-                         flags=re.IGNORECASE)
-        # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
-        # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
-        pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section_link)
-        content = re.sub(pattern, r'](#\1)', content)
-        # fix links to other sections within the same manual (only one ../ and a section name)
-        # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
-        for section in TnPreprocessor.sections:
-            link = self.get_link_for_section(section)
-            pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(link))
-            replace = r']({0}.html#\1)'.format(link)
-            content = re.sub(pattern, replace, content)
-        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
-        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
-        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
-        # convert URLs to links if not already
-        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
-                         content, flags=re.IGNORECASE)
-        # URLS wth just www at the start, no http
-        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
-                         content, flags=re.IGNORECASE)
-        return content
-
-    def get_section_for_file(self, id):
-        id = id.lower()
-        for section in TnPreprocessor.sections:
-            if (id == section['book'].lower()) or (id == self.get_link_for_section(section)):
-                return section
-        return None
-
-    def get_link_for_section(self, section):
-        link = section['book']
-        parts = link.split('-')
-        if len(parts) > 1:
-            link = parts[1].lower()
-        return link
+    def move_to_front(self, chunk_files, move_str):
+        last_file = chunk_files[-1]
+        if move_str in last_file:  # move intro to front
+            chunk_files.pop()
+            chunk_files.insert(0, last_file)
