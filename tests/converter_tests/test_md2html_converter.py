@@ -186,8 +186,8 @@ class TestMd2HtmlConverter(unittest.TestCase):
         remove(self.out_zip_file)
 
         files_to_verify = ['00-toc.html', 'manifest.yaml', 'index.json']
-        for section in TnPreprocessor.sections:
-            book = section['book']
+        for dir in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
             file = '{0}.html'.format(book)
             files_to_verify.append(file)
 
@@ -217,8 +217,8 @@ class TestMd2HtmlConverter(unittest.TestCase):
 
         files_to_verify = ['01-GEN.html', 'manifest.yaml', 'index.json']
 
-        for section in TnPreprocessor.sections:
-            book = section['book']
+        for dir in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
             file = '{0}.html'.format(book)
             file_path = os.path.join(self.out_dir, file)
             if file not in files_to_verify:
