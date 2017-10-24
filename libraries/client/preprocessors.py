@@ -595,6 +595,7 @@ class TnPreprocessor(Preprocessor):
         }
         headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
         for idx, project in enumerate(self.rc.projects):
+            App.logger.debug('TnPreprocessor: processing project: {0}'.format(project.identifier))
             if project.identifier in BOOK_NAMES:
                 markdown = ''
                 book = project.identifier.lower()
@@ -645,8 +646,9 @@ class TnPreprocessor(Preprocessor):
         write_file(output_file, index_json)
         return True
 
-    def move_to_front(self, chunk_files, move_str):
-        last_file = chunk_files[-1]
-        if move_str in last_file:  # move intro to front
-            chunk_files.pop()
-            chunk_files.insert(0, last_file)
+    def move_to_front(self, files, move_str):
+        if files:
+            last_file = files[-1]
+            if move_str in last_file:  # move intro to front
+                files.pop()
+                files.insert(0, last_file)
