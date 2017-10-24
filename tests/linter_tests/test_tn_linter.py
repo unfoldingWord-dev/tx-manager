@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import mock
 
-from libraries.client.preprocessors import TnPreprocessor
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import add_contents_to_zip, read_file, write_file, unzip
 from tests.linter_tests.linter_unittest import LinterTestCase
@@ -55,8 +55,8 @@ class TestTnLinter(LinterTestCase):
         out_dir = self.unzip_resource(zip_file)
 
         # remove everything past genesis
-        for section in TnPreprocessor.sections:
-            book = section['book']
+        for dir in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
             link = self.get_link_for_book(book)
             book_path = os.path.join(out_dir, 'en_tn', link)
             if os.path.exists(book_path):

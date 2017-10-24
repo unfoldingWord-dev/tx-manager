@@ -2,7 +2,7 @@ from __future__ import print_function, unicode_literals
 import os
 import re
 from libraries.app.app import App
-from libraries.client.preprocessors import TnPreprocessor
+from libraries.door43_tools.bible_books import BOOK_NUMBERS
 from libraries.general_tools import file_utils
 from libraries.linters.markdown_linter import MarkdownLinter
 
@@ -41,8 +41,8 @@ class TnLinter(MarkdownLinter):
                     contents = file_utils.read_file(file_path)
                     self.find_invalid_links(root, f, contents)
 
-        for section in TnPreprocessor.sections:
-            book = section['book']
+        for dir in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
             file_path = os.path.join(self.source_dir, '{0}.md'.format(book))
             if os.path.exists(file_path):
                 contents = file_utils.read_file(file_path)
