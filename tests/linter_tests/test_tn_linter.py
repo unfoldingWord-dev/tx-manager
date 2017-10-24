@@ -90,6 +90,40 @@ class TestTnLinter(LinterTestCase):
         self.verify_results_warnings_count(expected_warnings, linter)
 
 
+    @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
+    def test_lint_overflow_warnings(self, mock_invoke_markdown_linter):
+        # given
+        warning = {'errorContext': 'dummy error message', 'lineNumber': 42, 'ruleDescription': 'dummy rule'}
+        warnings = []
+        warning_count = 202
+        for i in range(0, warning_count):
+            warnings.append(warning)
+        mock_invoke_markdown_linter.return_value = {  # Don't care about markdown linting here, just specific tw linting
+            '/tmp/tmp_lint_EYZ5zV/en_tn/2th/front/intro.md': warnings
+        }
+        expected_warnings = 200  # should be limited
+        zip_file = os.path.join(self.resources_dir, 'tn_linter', 'en_tn.zip')
+        out_dir = self.unzip_resource(zip_file)
+
+        # remove everything past genesis
+        for dir in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
+            link = self.get_link_for_book(book)
+            book_path = os.path.join(out_dir, 'en_tn', link)
+            if os.path.exists(book_path):
+                if book > "02":
+                    file_utils.remove_tree(book_path)
+
+        new_zip = self.create_new_zip(out_dir)
+        linter = TnLinter(source_file=new_zip, commit_data=self.commit_data)
+
+        # when
+        results = linter.run()
+
+        # then
+        self.assertEqual(len(results['warnings']), expected_warnings)
+
+
     #
     # helpers
     #
