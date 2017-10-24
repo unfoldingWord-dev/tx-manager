@@ -584,8 +584,15 @@ class TnPreprocessor(Preprocessor):
         'book_codes': {}
     }
 
+    def __init__(self, *args, **kwargs):
+        super(TnPreprocessor, self).__init__(*args, **kwargs)
+        self.books = []
+
     def is_multiple_jobs(self):
         return True
+
+    def get_book_list(self):
+        return self.books
 
     def run(self):
         index_json = {
@@ -637,7 +644,9 @@ class TnPreprocessor(Preprocessor):
                         text = read_file(chunk_file) + '\n\n'
                         text = headers_re.sub(r'\1### \2', text)  # This will bump any header down 3 levels
                         markdown += text
-                file_path = os.path.join(self.output_dir, '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper()))
+                book_file_name = '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper())
+                self.books.append(book_file_name)
+                file_path = os.path.join(self.output_dir, book_file_name)
                 write_file(file_path, markdown)
             else:
                 App.logger.debug('TnPreprocessor: extra project found: {0}'.format(project.identifier))
