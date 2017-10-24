@@ -20,7 +20,7 @@ class MarkdownLinter(Linter):
         Checks for issues with all Markdown project, such as bad use of headers, bullets, etc.
 
         Use self.log.warning("message") to log any issues.
-        self.source_dir is the directory of source files (.usfm)
+        self.source_dir is the directory of source files (.md)
         :return bool:
         """
         md_data = self.get_strings()
@@ -29,15 +29,25 @@ class MarkdownLinter(Linter):
         if not lint_data:
             return False
         for f in lint_data.keys():
-            file_url = 'https://git.door43.org/{0}/{1}/src/master/{2}'.format(self.repo_owner, self.repo_name, f)
+            short_path = self.clean_path(f)
+            file_url = 'https://git.door43.org/{0}/{1}/src/master/{2}'.format(self.repo_owner, self.rc.repo_name, short_path)
             for item in lint_data[f]:
                 error_context = ''
                 if item['errorContext']:
                     error_context = 'See "{0}"'.format(self.strip_tags(item['errorContext']))
-                line = '<a href="{0}" target="_blank">{1}</a> - Line{2}: {3}. {4}'. \
-                    format(file_url, f, item['lineNumber'], item['ruleDescription'], error_context)
+                line = '<a href="{0}" target="_blank">{1}</a> - Line {2}: {3}. {4}'. \
+                    format(file_url, short_path, item['lineNumber'], item['ruleDescription'], error_context)
                 self.log.warning(line)
         return True
+
+    def clean_path(self, f):
+        find_str = '/' + self.rc.repo_name + '/'
+        pos = f.find(find_str)
+        if pos > 1:
+            new_f = f[pos + len(find_str):]
+            App.logger.debug('Markdown linter: changing file {0} to {1}'.format(f, new_f))
+            f = new_f
+        return f
 
     def get_strings(self):
         source_dir = self.source_dir

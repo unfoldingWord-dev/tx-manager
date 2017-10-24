@@ -4,7 +4,7 @@ import tempfile
 import unittest
 import shutil
 from libraries.resource_container.ResourceContainer import RC
-from libraries.client.preprocessors import do_preprocess, TnPreprocessor
+from libraries.client.preprocessors import do_preprocess
 from libraries.general_tools.file_utils import unzip, read_file
 
 
@@ -45,22 +45,6 @@ class TestTnPreprocessor(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
         gen = read_file(os.path.join(self.out_dir, '01-GEN.md'))
         rev = read_file(os.path.join(self.out_dir, '67-REV.md'))
-
-    def test_tn_preprocessor_dummy_section(self):
-        # given
-        TnPreprocessor.sections = [{'book': "dummy", 'title': 'dummy'}]
-        repo_name = 'en_tn'
-        file_name = os.path.join('raw_sources', repo_name + '.zip')
-        rc, repo_dir, self.temp_dir = self.extractFiles(file_name, repo_name)
-        repo_dir = os.path.join(repo_dir)
-        self.out_dir = tempfile.mkdtemp(prefix='output_')
-        repo_name = 'dummy_repo'
-
-        # when
-        results, preproc = do_preprocess(rc, repo_dir, self.out_dir)
-
-        # then
-        self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '00-toc.md')))
 
     @classmethod
     def extractFiles(cls, file_name, repo_name):

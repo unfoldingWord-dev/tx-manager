@@ -49,8 +49,17 @@ class TestTnLinter(LinterTestCase):
     @mock.patch('libraries.linters.markdown_linter.MarkdownLinter.invoke_markdown_linter')
     def test_lint_broken_links(self, mock_invoke_markdown_linter):
         # given
-        mock_invoke_markdown_linter.return_value = {}  # Don't care about markdown linting here, just specific tw linting
-        expected_warnings = 66-2  # we only leave 2 books
+        mock_invoke_markdown_linter.return_value = {  # Don't care about markdown linting here, just specific tw linting
+            '/tmp/tmp_lint_EYZ5zV/en_tn/2th/front/intro.md':
+                [
+                    {
+                        'errorContext': 'dummy error message',
+                        'lineNumber': 42,
+                        'ruleDescription': 'dummy rule'
+                    }
+                ]
+        }
+        expected_warnings = 64 + 1  # 64 missing books + 1 markdown warning
         zip_file = os.path.join(self.resources_dir, 'tn_linter', 'en_tn.zip')
         out_dir = self.unzip_resource(zip_file)
 

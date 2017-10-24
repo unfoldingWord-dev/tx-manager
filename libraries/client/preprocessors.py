@@ -644,6 +644,7 @@ class TnPreprocessor(Preprocessor):
                         text = read_file(chunk_file) + '\n\n'
                         text = headers_re.sub(r'\1## \2', text)  # This will bump any header down 2 levels
                         markdown += text
+                markdown = self.fix_links(markdown)
                 book_file_name = '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper())
                 self.books.append(book_file_name)
                 file_path = os.path.join(self.output_dir, book_file_name)
@@ -661,3 +662,23 @@ class TnPreprocessor(Preprocessor):
             if move_str in last_file:  # move intro to front
                 files.pop()
                 files.insert(0, last_file)
+
+    def fix_links(self, content):
+        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
+        content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
+                         flags=re.IGNORECASE)
+        # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content,
+                         flags=re.IGNORECASE)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
+        return content
