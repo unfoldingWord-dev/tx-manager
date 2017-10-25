@@ -29,35 +29,31 @@ class MarkdownLinter(Linter):
         if not lint_data:
             return False
         for f in lint_data.keys():
-            short_path = self.clean_path(f)
-            file_url = 'https://git.door43.org/{0}/{1}/src/master/{2}'.format(self.repo_owner, self.rc.repo_name, short_path)
+            file_url = 'https://git.door43.org/{0}/{1}/src/master/{2}'.format(self.repo_owner, self.rc.repo_name, f)
             for item in lint_data[f]:
                 error_context = ''
                 if item['errorContext']:
                     error_context = 'See "{0}"'.format(self.strip_tags(item['errorContext']))
                 line = '<a href="{0}" target="_blank">{1}</a> - Line {2}: {3}. {4}'. \
-                    format(file_url, short_path, item['lineNumber'], item['ruleDescription'], error_context)
+                    format(file_url, f, item['lineNumber'], item['ruleDescription'], error_context)
                 self.log.warning(line)
         return True
 
-    def clean_path(self, f):
-        find_str = '/' + self.rc.repo_name + '/'
-        pos = f.find(find_str)
-        if pos > 1:
-            new_f = f[pos + len(find_str):]
-            App.logger.debug('Markdown linter: changing file {0} to {1}'.format(f, new_f))
-            f = new_f
-        return f
-
     def get_strings(self):
-        source_dir = self.source_dir
         if self.single_dir:
-            source_dir = os.path.join(self.source_dir, self.single_dir)
-
-        files = sorted(get_files(directory=source_dir, exclude=self.EXCLUDED_FILES, extensions=['.md']))
+            dir_path = os.path.join(self.source_dir, self.single_dir)
+            sub_files = sorted(get_files(directory=dir_path, relative_paths=True, exclude=self.EXCLUDED_FILES,
+                                         extensions=['.md']))
+            files = []
+            for f in sub_files:
+                files.append(os.path.join(self.single_dir, f))
+        else:
+            files = sorted(get_files(directory=self.source_dir, relative_paths=True, exclude=self.EXCLUDED_FILES,
+                                     extensions=['.md']))
         strings = {}
         for f in files:
-            text = read_file(f)
+            path = os.path.join(self.source_dir, f)
+            text = read_file(path)
             strings[f] = text
         return strings
 
