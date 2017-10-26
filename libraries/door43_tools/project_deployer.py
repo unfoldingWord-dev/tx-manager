@@ -60,10 +60,10 @@ class ProjectDeployer(object):
         s3_repo_key = 'u/{0}/{1}'.format(user, repo_name)
         download_key = s3_commit_key
 
-        partial_deploy = False
-        multipart_merge = False
+        do_part_template_only = False
+        do_multipart_merge = False
         if 'multiple' in build_log:
-            multipart_merge = build_log['multiple']
+            do_multipart_merge = build_log['multiple']
             App.logger.debug("Found multi-part merge: {0}".format(download_key))
 
             prefix = download_key + '/'
@@ -82,7 +82,7 @@ class ProjectDeployer(object):
         elif 'part' in build_log:
             part = build_log['part']
             download_key += '/' + part
-            partial_deploy = True
+            do_part_template_only = True
             App.logger.debug("Found partial: {0}".format(download_key))
 
             if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
@@ -99,14 +99,13 @@ class ProjectDeployer(object):
         App.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
         App.door43_s3_handler().download_file(template_key, template_file)
 
-        if not multipart_merge:
+        if not do_multipart_merge:
             source_dir, success = self.template_converted_files(build_log, download_key, output_dir, repo_name,
                                                                 resource_type, s3_commit_key, source_dir, start,
                                                                 template_file)
             if not success:
                 return False
         else:
-            # merge multi-part project
             source_dir, success = self.multipart_master_merge(s3_commit_key, resource_type, download_key, output_dir,
                                                               source_dir, start, template_file)
             if not success:
@@ -118,8 +117,8 @@ class ProjectDeployer(object):
         #
         #######################
 
-        # Copy first HTML file to index.html if index.html doesn't exist
-        if not partial_deploy or multipart_merge:
+        if not do_part_template_only or do_multipart_merge:
+            # Copy first HTML file to index.html if index.html doesn't exist
             html_files = sorted(glob(os.path.join(output_dir, '*.html')))
             index_file = os.path.join(output_dir, 'index.html')
             if len(html_files) > 0 and not os.path.isfile(index_file):
@@ -131,7 +130,7 @@ class ProjectDeployer(object):
             if not os.path.exists(output_file) and not os.path.isdir(filename):
                 copyfile(filename, output_file)
 
-            if partial_deploy:  # move files to common area
+            if do_part_template_only:  # move files to common area
                 basename = os.path.basename(filename)
                 if basename not in ['finished', 'build_log.json', 'index.html', 'merged.json', 'lint_log.json']:
                     App.logger.debug("Moving {0} to common area".format(basename))
@@ -152,8 +151,8 @@ class ProjectDeployer(object):
                 App.logger.debug("Uploading {0} to {1}".format(path, key))
                 App.door43_s3_handler().upload_file(path, key, cache_time=0)
 
-        if not partial_deploy:
-            # Now we place json files and make an index.html file for the whole repo
+        if not do_part_template_only:
+            # Now we place json files and redirect index.html for the whole repo to this index.html file
             try:
                 App.door43_s3_handler().copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=App.cdn_bucket)
                 App.door43_s3_handler().copy(from_key='{0}/manifest.json'.format(s3_commit_key),
@@ -173,7 +172,7 @@ class ProjectDeployer(object):
                                           to_key=s3_commit_key + '/build_log.json')
 
         elapsed_seconds = int(time.time() - start)
-        App.logger.debug("deploy type partial={0}, multi_merge={1}".format(partial_deploy, multipart_merge))
+        App.logger.debug("deploy type partial={0}, multi_merge={1}".format(do_part_template_only, do_multipart_merge))
         App.logger.debug("deploy completed in {0} seconds".format(elapsed_seconds))
         self.close()
         return True
