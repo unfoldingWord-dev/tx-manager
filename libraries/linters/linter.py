@@ -96,10 +96,16 @@ class Linter(object):
             App.logger.error(message)
             self.log.warnings.append(message)
             App.logger.error('{0}: {1}'.format(str(e), traceback.format_exc()))
+        warnings = self.log.warnings
+        if len(warnings) > 200:  # sanity check so we don't overflow callback size limits
+            warnings = warnings[0:199]
+            msg = 'Warnings truncated for {0}'.format(self.s3_results_key)
+            App.logger.debug(msg)
+            warnings.append(msg)
         results = {
             'identifier': self.identifier,
             'success': success,
-            'warnings': self.log.warnings,
+            'warnings': warnings,
             's3_results_key': self.s3_results_key
         }
 

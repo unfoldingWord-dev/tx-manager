@@ -115,6 +115,23 @@ class TestConversions(TestCase):
         self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
                                  expected_output_name, job)
 
+    def test_en_tn_conversion(self):
+        # given
+        if not self.is_testing_enabled():
+            return  # skip test if integration test not enabled
+        git_url = "https://git.door43.org/tx-manager-test-data/en_tn.git"
+        base_url, repo, user = self.get_parts_of_git_url(git_url)
+        expected_output_name = FULL_BIBLE_LIST
+        self.preprocessor_output_extension = "md"
+
+        # when
+        build_log_json, commit_id, commit_path, commit_sha, success, job = self.do_conversion_for_repo(base_url, user,
+                                                                                                       repo)
+
+        # then
+        self.validate_conversion(user, repo, success, build_log_json, commit_id, commit_sha, commit_path,
+                                 expected_output_name, job)
+
     @unittest.skip("Skip test for time reasons - leave for standalone testing")
     def test_usfm_en_udb_bundle_conversion(self):
         # given

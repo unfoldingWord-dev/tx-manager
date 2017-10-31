@@ -188,7 +188,7 @@ class ClientWebhook(object):
                     self.send_request_to_linter(job, linter, commit_url, extra_payload=extra_payload)
             else:
                 # -----------------------------
-                # multiple Bible book project
+                # multiple book project
                 # -----------------------------
                 books = preprocessor.get_book_list()
                 App.logger.debug('Splitting job into separate parts for books: ' + ','.join(books))

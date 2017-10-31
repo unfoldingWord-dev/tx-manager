@@ -46,7 +46,7 @@ class ProjectDeployer(object):
 
         if not build_log or 'commit_id' not in build_log or 'repo_owner' not in build_log \
                 or 'repo_name' not in build_log:
-            App.logger.debug("Invalid build log at {0}: {1}".format(build_log_key, build_log))
+            App.logger.debug("Exiting, Invalid build log at {0}: {1}".format(build_log_key, build_log))
             return False
 
         start = time.time()
@@ -60,20 +60,33 @@ class ProjectDeployer(object):
         s3_repo_key = 'u/{0}/{1}'.format(user, repo_name)
         download_key = s3_commit_key
 
-        partial = False
-        multi_merge = False
+        do_part_template_only = False
+        do_multipart_merge = False
         if 'multiple' in build_log:
-            multi_merge = build_log['multiple']
-            App.logger.debug("found multi-part merge")
+            do_multipart_merge = build_log['multiple']
+            App.logger.debug("Found multi-part merge: {0}".format(download_key))
+
+            prefix = download_key + '/'
+            undeployed = self.get_undeployed_parts(prefix)
+            if len(undeployed) > 0:
+                App.logger.debug("Exiting, Parts not yet deployed: {0}".format(undeployed))
+                return False
+
+            key_deployed_ = download_key + '/final_deployed'
+            if App.cdn_s3_handler().key_exists(key_deployed_):
+                App.logger.debug("Exiting, Already merged parts: {0}".format(download_key))
+                return False
+            self.write_data_to_file(self.temp_dir, key_deployed_, 'final_deployed', ' ')  # flag that deploy has begun
+            App.logger.debug("Continuing with merge: {0}".format(download_key))
 
         elif 'part' in build_log:
             part = build_log['part']
             download_key += '/' + part
-            partial = True
-            App.logger.debug("found partial: " + part)
+            do_part_template_only = True
+            App.logger.debug("Found partial: {0}".format(download_key))
 
             if not App.cdn_s3_handler().key_exists(download_key + '/finished'):
-                App.logger.debug("Not ready to process partial")
+                App.logger.debug("Exiting, Not ready to process partial")
                 return False
 
         source_dir = tempfile.mkdtemp(prefix='source_', dir=self.temp_dir)
@@ -86,21 +99,26 @@ class ProjectDeployer(object):
         App.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
         App.door43_s3_handler().download_file(template_key, template_file)
 
-        if not multi_merge:
-            source_dir, success = self.deploy_single_conversion(build_log, download_key, output_dir, repo_name,
+        if not do_multipart_merge:
+            source_dir, success = self.template_converted_files(build_log, download_key, output_dir, repo_name,
                                                                 resource_type, s3_commit_key, source_dir, start,
                                                                 template_file)
             if not success:
                 return False
         else:
-            # merge multi-part project
-            source_dir, success = self.deploy_multipart_master(s3_commit_key, resource_type, download_key, output_dir,
-                                                               source_dir, start, template_file)
+            source_dir, success = self.multipart_master_merge(s3_commit_key, resource_type, download_key, output_dir,
+                                                              source_dir, start, template_file)
             if not success:
                 return False
 
-        # Copy first HTML file to index.html if index.html doesn't exist
-        if not partial or multi_merge:
+        #######################
+        #
+        #  Now do the deploy
+        #
+        #######################
+
+        if not do_part_template_only or do_multipart_merge:
+            # Copy first HTML file to index.html if index.html doesn't exist
             html_files = sorted(glob(os.path.join(output_dir, '*.html')))
             index_file = os.path.join(output_dir, 'index.html')
             if len(html_files) > 0 and not os.path.isfile(index_file):
@@ -112,7 +130,7 @@ class ProjectDeployer(object):
             if not os.path.exists(output_file) and not os.path.isdir(filename):
                 copyfile(filename, output_file)
 
-            if partial:  # move files to common area
+            if do_part_template_only:  # move files to common area
                 basename = os.path.basename(filename)
                 if basename not in ['finished', 'build_log.json', 'index.html', 'merged.json', 'lint_log.json']:
                     App.logger.debug("Moving {0} to common area".format(basename))
@@ -133,8 +151,8 @@ class ProjectDeployer(object):
                 App.logger.debug("Uploading {0} to {1}".format(path, key))
                 App.door43_s3_handler().upload_file(path, key, cache_time=0)
 
-        if not partial:
-            # Now we place json files and make an index.html file for the whole repo
+        if not do_part_template_only:
+            # Now we place json files and redirect index.html for the whole repo to this index.html file
             try:
                 App.door43_s3_handler().copy(from_key='{0}/project.json'.format(s3_repo_key), from_bucket=App.cdn_bucket)
                 App.door43_s3_handler().copy(from_key='{0}/manifest.json'.format(s3_commit_key),
@@ -145,28 +163,23 @@ class ProjectDeployer(object):
             except:
                 pass
 
-        else:  # if processing part
+        else:  # if processing part of multi-part merge
+            self.write_data_to_file(output_dir, download_key, 'deployed', ' ')  # flag that deploy has finished
             if App.cdn_s3_handler().key_exists(s3_commit_key + '/final_build_log.json'):
                 App.logger.debug("final build detected")
                 App.logger.debug("conversions all finished, trigger final merge")
                 App.cdn_s3_handler().copy(from_key=s3_commit_key + '/final_build_log.json',
                                           to_key=s3_commit_key + '/build_log.json')
 
-            self.write_data_to_file(output_dir, download_key, 'deployed', ' ')  # flag that deploy has finished
-
         elapsed_seconds = int(time.time() - start)
-        App.logger.debug("deploy type partial={0}, multi_merge={1}".format(partial, multi_merge))
+        App.logger.debug("deploy type partial={0}, multi_merge={1}".format(do_part_template_only, do_multipart_merge))
         App.logger.debug("deploy completed in {0} seconds".format(elapsed_seconds))
         self.close()
         return True
 
-    def deploy_multipart_master(self, s3_commit_key, resource_type, download_key, output_dir, source_dir, start,
-                                template_file):
+    def multipart_master_merge(self, s3_commit_key, resource_type, download_key, output_dir, source_dir, start,
+                               template_file):
         prefix = download_key + '/'
-        undeployed = self.get_undeployed_parts(prefix)
-        if len(undeployed) > 0:
-            App.logger.debug("Parts not deployed: {0}".format(undeployed))
-
         App.door43_s3_handler().download_dir(prefix, source_dir)  # get previous templated files
         source_dir = os.path.join(source_dir, download_key)
         files = sorted(glob(os.path.join(source_dir, '*.*')))
@@ -209,7 +222,7 @@ class ProjectDeployer(object):
                         unfinished.append(part_num)
         return unfinished
 
-    def deploy_single_conversion(self, build_log, download_key, output_dir, repo_name, resource_type, s3_commit_key,
+    def template_converted_files(self, build_log, download_key, output_dir, repo_name, resource_type, s3_commit_key,
                                  source_dir, start, template_file):
         App.cdn_s3_handler().download_dir(download_key + '/', source_dir)
         source_dir = os.path.join(source_dir, download_key.replace('/', os.path.sep))
