@@ -272,6 +272,8 @@ class ProjectDeployerTests(unittest.TestCase):
         file_utils.write_file(os.path.join(src_dir, 'build_log.json'), build_log)
         App.cdn_s3_handler().upload_file(os.path.join(src_dir, 'build_log.json'),
                                          '{0}/{1}/build_log.json'.format(self.project_key, part))
+        App.cdn_s3_handler().upload_file(os.path.join(src_dir, 'index.json'),
+                                         '{0}/{1}/index.json'.format(self.project_key, part))
         App.cdn_s3_handler().upload_file(os.path.join(src_dir, 'build_log.json'),
                                          '{0}/{1}/finished'.format(self.project_key, part))
         App.cdn_s3_handler().upload_file(os.path.join(src_dir, '01-GEN.html'),
