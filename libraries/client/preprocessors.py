@@ -611,7 +611,7 @@ class TnPreprocessor(Preprocessor):
                 name = BOOK_NAMES[book]
                 index_json['titles'][html_file] = name
                 chapter_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
-                markdown += '# <a id="tq-{0}"/> {1}\n\n'.format(book, name)
+                markdown += '# <a id="tn-{0}"/> {1}\n\n'.format(book, name)
                 index_json['chapters'][html_file] = []
                 for move_str in ['front', 'intro']:
                     self.move_to_front(chapter_dirs, move_str)
