@@ -135,7 +135,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         remove(self.out_zip_file)
 
         files_to_verify = ['manifest.yaml', 'index.json']
-        for book in  BOOK_NUMBERS:
+        for book in BOOK_NUMBERS:
             html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
             files_to_verify.append(html_file)
 
@@ -186,10 +186,10 @@ class TestMd2HtmlConverter(unittest.TestCase):
         remove(self.out_zip_file)
 
         files_to_verify = ['manifest.yaml', 'index.json']
-        for dir in BOOK_NUMBERS:
-            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
-            file = '{0}.html'.format(book)
-            files_to_verify.append(file)
+        for folder in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[folder], folder.upper())
+            filename = '{0}.html'.format(book)
+            files_to_verify.append(filename)
 
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)

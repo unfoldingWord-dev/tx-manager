@@ -617,7 +617,7 @@ class TnPreprocessor(Preprocessor):
                     self.move_to_front(chapter_dirs, move_str)
                 for chapter_dir in chapter_dirs:
                     chapter = os.path.basename(chapter_dir)
-                    link = 'tq-chapter-{0}-{1}'.format(book, chapter.zfill(3))
+                    link = 'tn-chapter-{0}-{1}'.format(book, chapter.zfill(3))
                     index_json['chapters'][html_file].append(link)
                     markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
                     chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
