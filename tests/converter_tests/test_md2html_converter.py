@@ -185,7 +185,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         unzip(self.out_zip_file, self.out_dir)
         remove(self.out_zip_file)
 
-        files_to_verify = ['00-toc.html', 'manifest.yaml', 'index.json']
+        files_to_verify = ['manifest.yaml', 'index.json']
         for dir in BOOK_NUMBERS:
             book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
             file = '{0}.html'.format(book)

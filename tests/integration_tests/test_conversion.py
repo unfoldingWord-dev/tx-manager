@@ -121,7 +121,7 @@ class TestConversions(TestCase):
             return  # skip test if integration test not enabled
         git_url = "https://git.door43.org/tx-manager-test-data/en_tn.git"
         base_url, repo, user = self.get_parts_of_git_url(git_url)
-        expected_output_name = ["00-toc"] + FULL_BIBLE_LIST
+        expected_output_name = FULL_BIBLE_LIST
         self.preprocessor_output_extension = "md"
 
         # when
