@@ -69,6 +69,7 @@ class TestTnPreprocessor(unittest.TestCase):
         self.assertFalse(os.path.isfile(os.path.join(self.out_dir, '67-REV.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '02-EXO.md')))
         self.assertTrue(os.path.isfile(os.path.join(self.out_dir, '03-LEV.md')))
+        index_json = read_file(os.path.join(self.out_dir, 'index.json'))
         exo = read_file(os.path.join(self.out_dir, '02-EXO.md'))
         self.assertGreater(len(exo), 1000)
         lev = read_file(os.path.join(self.out_dir, '03-LEV.md'))
