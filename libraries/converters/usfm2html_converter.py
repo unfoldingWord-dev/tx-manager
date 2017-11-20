@@ -15,7 +15,7 @@ from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 class Usfm2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource in BIBLE_RESOURCE_TYPES:
+        if self.resource.format == 'text/usfm':
             self.convert_bible()
             return True
         else:
