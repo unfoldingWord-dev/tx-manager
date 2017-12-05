@@ -187,16 +187,6 @@ class TestUsfmHtmlConverter(unittest.TestCase):
         self.assertFalse(result['success'])
         self.assertEqual(result['errors'], [u'Conversion process ended abnormally: Failed to download bad_source'])
 
-    def test_bad_resource(self):
-        """This tests giving a bad resource type to the converter"""
-        zip_file = self.resources_dir + "/51-PHP.zip"
-        zip_file = self.make_duplicate_zip_that_can_be_deleted(zip_file)
-        with closing(Usfm2HtmlConverter('', 'bad_resource')) as tx:
-            tx.input_zip_file = zip_file
-            result = tx.run()
-        self.assertFalse(result['success'])
-        self.assertEqual(result['errors'], ['Resource bad_resource currently not supported.'])
-
     #
     # helpers
     #
