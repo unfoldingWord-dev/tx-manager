@@ -468,12 +468,13 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        converters = TxModule.query().filter(TxModule.type=='converter')\
-            .filter(TxModule.input_format.contains(job.input_format))\
+        converters = TxModule.query().filter(TxModule.type=='converter') \
+            .filter(TxModule.input_format.contains(job.input_format)) \
             .filter(TxModule.output_format.contains(job.output_format))
-        if job.input_format != 'usfm':
-            converters = converters.filter(TxModule.resource_types.contains(job.resource_type))
-        return converters.first()
+        converter = converters.filter(TxModule.resource_types.contains(job.resource_type)).first()
+        if not converter:
+            converter = converters.filter(TxModule.resource_types.contains('other')).first()
+        return converter
 
     def get_linter_module(self, job):
         """
@@ -482,10 +483,7 @@ class ClientWebhook(object):
         """
         linters = TxModule.query().filter(TxModule.type=='linter') \
             .filter(TxModule.input_format.contains(job.input_format))
-        if job.input_format != 'usfm':
-            linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
-            if not linter:
-                linter = linters.filter(TxModule.resource_types.contains('other')).first()
-            return linter
-        else:
-            return linters.first()
+        linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
+        if not linter:
+            linter = linters.filter(TxModule.resource_types.contains('other')).first()
+        return linter
