@@ -355,7 +355,7 @@ class Resource:
             if len(self.rc.usfm_files()):
                 return 'bundle'
             else:
-                return resource_map[self.identifier]['type']
+                return 'book'
         elif self.identifier in resource_map:
             return resource_map[self.identifier]['type']
         else:
