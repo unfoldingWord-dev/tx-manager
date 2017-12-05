@@ -13,7 +13,6 @@ from usfm_tools.transform import UsfmTransform
 
 class Usfm2HtmlConverter(Converter):
 
-
     def convert(self):
         App.logger.debug('Processing the Bible USFM files')
 
