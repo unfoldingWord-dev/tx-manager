@@ -2,7 +2,7 @@
     "name": "usfm2html",
     "version": "2",
     "type": "converter",
-    "resource_types": ["bible", "ulb", "udb", "reg"],
+    "resource_types": ["bible", "ulb", "udb", "reg", "other"],
     "input_format": ["usfm"],
     "output_format": ["html"],
     "options": [],
