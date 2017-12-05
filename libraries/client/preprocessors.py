@@ -7,14 +7,13 @@ from libraries.app.app import App
 from libraries.door43_tools.bible_books import BOOK_NUMBERS, BOOK_NAMES, BOOK_CHAPTER_VERSES
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
-from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 def do_preprocess(rc, repo_dir, output_dir):
     if rc.resource.identifier == 'obs':
         App.logger.debug("do_preprocess: using ObsPreprocessor")
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
-    elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
+    elif rc.resource.file_ext == 'usfm':
         App.logger.debug("do_preprocess: using BiblePreprocessor")
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'ta':

@@ -9,19 +9,11 @@ from libraries.app.app import App
 from libraries.general_tools.file_utils import write_file, remove_tree, get_files
 from converter import Converter
 from usfm_tools.transform import UsfmTransform
-from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 class Usfm2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource in BIBLE_RESOURCE_TYPES:
-            self.convert_bible()
-            return True
-        else:
-            return False
-
-    def convert_bible(self):
         App.logger.debug('Processing the Bible USFM files')
 
         # find the first directory that has usfm files.

@@ -7,7 +7,7 @@ import hashlib
 from datetime import datetime, timedelta
 from libraries.general_tools.file_utils import unzip, write_file, add_contents_to_zip, remove_tree
 from libraries.general_tools.url_utils import download_file
-from libraries.resource_container.ResourceContainer import RC, BIBLE_RESOURCE_TYPES
+from libraries.resource_container.ResourceContainer import RC
 from libraries.client.preprocessors import do_preprocess
 from libraries.models.manifest import TxManifest
 from libraries.models.module import TxModule
@@ -395,7 +395,7 @@ class ClientWebhook(object):
         }
         if extra_payload:
             payload.update(extra_payload)
-        if job.resource_type in BIBLE_RESOURCE_TYPES or job.resource_type == 'obs':
+        if job.input_format == 'usfm' or job.resource_type == 'obs':
             # Need to give the massaged source since it maybe was in chunks originally
             payload['source_url'] = job.source
         else:
@@ -468,11 +468,12 @@ class ClientWebhook(object):
         :param TxJob job:
         :return TxModule:
         """
-        return TxModule.query().filter(TxModule.type=='converter') \
-            .filter(TxModule.input_format.contains(job.input_format)) \
-            .filter(TxModule.output_format.contains(job.output_format)) \
-            .filter(TxModule.resource_types.contains(job.resource_type)) \
-            .first()
+        converters = TxModule.query().filter(TxModule.type=='converter')\
+            .filter(TxModule.input_format.contains(job.input_format))\
+            .filter(TxModule.output_format.contains(job.output_format))
+        if job.input_format != 'usfm':
+            converters = converters.filter(TxModule.resource_types.contains(job.resource_type))
+        return converters.first()
 
     def get_linter_module(self, job):
         """
@@ -481,7 +482,10 @@ class ClientWebhook(object):
         """
         linters = TxModule.query().filter(TxModule.type=='linter') \
             .filter(TxModule.input_format.contains(job.input_format))
-        linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
-        if not linter:
-            linter = linters.filter(TxModule.resource_types.contains('other')).first()
-        return linter
+        if job.input_format != 'usfm':
+            linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
+            if not linter:
+                linter = linters.filter(TxModule.resource_types.contains('other')).first()
+            return linter
+        else:
+            return linters.first()
