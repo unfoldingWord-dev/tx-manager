@@ -48,6 +48,7 @@ class Templater(object):
         self.titles = {}
         self.chapters = {}
         self.book_codes = {}
+        self.classes = []
 
     def run(self):
         # get the resource container
@@ -56,8 +57,8 @@ class Templater(object):
             self.template_html = template_file.read()
             soup = BeautifulSoup(self.template_html, 'html.parser')
             soup.body['class'] = soup.body.get('class', []) + [self.resource_type]
-            if self.resource_type in BIBLE_RESOURCE_TYPES and self.resource_type != 'bible':
-                soup.body['class'] = soup.body.get('class', []) + ['bible']
+            if self.classes:
+                soup.body['class'] = soup.body.get('class', []) + self.classes
             self.template_html = unicode(soup)
         self.apply_template()
         return True
@@ -453,6 +454,7 @@ class TnTemplater(Templater):
 class BibleTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(BibleTemplater, self).__init__(*args, **kwargs)
+        self.classes = ['bible']
 
     def get_page_navigation(self):
         for fname in self.files:
