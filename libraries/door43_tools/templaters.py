@@ -7,7 +7,6 @@ from libraries.general_tools import file_utils
 from libraries.general_tools.file_utils import write_file
 from libraries.resource_container.ResourceContainer import RC
 from libraries.general_tools.file_utils import load_yaml_object
-from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 from libraries.app.app import App
 
 
@@ -17,9 +16,7 @@ def do_template(resource_type, source_dir, output_dir, template_file):
 
 
 def init_template(resource_type, source_dir, output_dir, template_file):
-    if resource_type in BIBLE_RESOURCE_TYPES:
-        templater = BibleTemplater(resource_type, source_dir, output_dir, template_file)
-    elif resource_type == 'obs':
+    if resource_type == 'obs':
         templater = ObsTemplater(resource_type, source_dir, output_dir, template_file)
     elif resource_type == 'ta':
         templater = TaTemplater(resource_type, source_dir, output_dir, template_file)
@@ -27,8 +24,10 @@ def init_template(resource_type, source_dir, output_dir, template_file):
         templater = TqTemplater(resource_type, source_dir, output_dir, template_file)
     elif resource_type == 'tw':
         templater = TwTemplater(resource_type, source_dir, output_dir, template_file)
+    elif resource_type == 'tn':
+        templater = TnTemplater(resource_type, source_dir, output_dir, template_file)
     else:
-        templater = Templater(resource_type, source_dir, output_dir, template_file)
+        templater = BibleTemplater(resource_type, source_dir, output_dir, template_file)
     return templater
 
 
@@ -49,6 +48,7 @@ class Templater(object):
         self.titles = {}
         self.chapters = {}
         self.book_codes = {}
+        self.classes = []
 
     def run(self):
         # get the resource container
@@ -57,8 +57,8 @@ class Templater(object):
             self.template_html = template_file.read()
             soup = BeautifulSoup(self.template_html, 'html.parser')
             soup.body['class'] = soup.body.get('class', []) + [self.resource_type]
-            if self.resource_type in BIBLE_RESOURCE_TYPES and self.resource_type != 'bible':
-                soup.body['class'] = soup.body.get('class', []) + ['bible']
+            if self.classes:
+                soup.body['class'] = soup.body.get('class', []) + self.classes
             self.template_html = unicode(soup)
         self.apply_template()
         return True
@@ -369,9 +369,92 @@ class TwTemplater(Templater):
         return html
 
 
+class TnTemplater(Templater):
+    def __init__(self, *args, **kwargs):
+        super(TnTemplater, self).__init__(*args, **kwargs)
+        index = file_utils.load_json_object(os.path.join(self.source_dir, 'index.json'))
+        if index:
+            self.titles = index['titles']
+            self.chapters = index['chapters']
+            self.book_codes = index['book_codes']
+
+    def get_page_navigation(self):
+        for fname in self.files:
+            key = os.path.basename(fname)
+            if key in self.titles:  # skip if we already have data
+                continue
+            filebase = os.path.splitext(os.path.basename(fname))[0]
+            # Getting the book code for HTML tag references
+            fileparts = filebase.split('-')
+            if len(fileparts) == 2:
+                # Assuming filename of ##-<name>.usfm, such as 01-GEN.usfm
+                book_code = fileparts[1].lower()
+            else:
+                # Assuming filename of <name.usfm, such as GEN.usfm
+                book_code = fileparts[0].lower()
+            book_code.replace(' ', '-').replace('.', '-')  # replacing spaces and periods since used as tag class
+            with codecs.open(fname, 'r', 'utf-8-sig') as f:
+                soup = BeautifulSoup(f.read(), 'html.parser')
+            if soup.select('div#content h1'):
+                title = soup.select('div#content h1')[0].text.strip()
+            else:
+                title = '{0}.'.format(book_code)
+            self.titles[key] = title
+            self.book_codes[key] = book_code
+            chapters = soup.find_all('h2')
+            self.chapters[key] = [c['id'] for c in chapters]
+
+    def build_page_nav(self, filename=None):
+        html = """
+        <nav class="hidden-print hidden-xs hidden-sm content-nav" id="right-sidebar-nav">
+            <ul id="sidebar-nav" class="nav nav-stacked books panel-group">
+            """
+        for fname in self.files:
+            key = os.path.basename(fname)
+            book_code = ""
+            if key in self.book_codes:
+                book_code = self.book_codes[key]
+            title = ""
+            if key in self.titles:
+                title = self.titles[key]
+            if title in self.NO_NAV_TITLES:
+                continue
+            html += """
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            <a class="accordion-toggle" data-toggle="collapse" data-parent="#sidebar-nav" href="#collapse{0}">{1}</a>
+                        </h4>
+                    </div>
+                    <div id="collapse{0}" class="panel-collapse collapse{2}">
+                        <ul class="panel-body chapters">
+                    """.format(book_code, title, ' in' if fname == filename else '')
+            chapters = {}
+            if key in self.chapters:
+                chapters = self.chapters[key]
+            for chapter in chapters:
+                chapter_parts = chapter.split('-')
+                label = chapter if len(chapter_parts) < 4 else chapter_parts[3].lstrip('0')
+                html += """
+                       <li class="chapter"><a href="{0}#{1}">{2}</a></li>
+                    """.format(os.path.basename(fname) if fname != filename else '', chapter,
+                               label)
+            html += """
+                        </ul>
+                    </div>
+                </div>
+                    """
+        html += """
+            </ul>
+        </nav>
+            """
+        return html
+
+
 class BibleTemplater(Templater):
     def __init__(self, *args, **kwargs):
         super(BibleTemplater, self).__init__(*args, **kwargs)
+        self.classes = ['bible']
 
     def get_page_navigation(self):
         for fname in self.files:

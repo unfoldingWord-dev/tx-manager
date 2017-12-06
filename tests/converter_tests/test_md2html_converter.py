@@ -6,6 +6,7 @@ import codecs
 import shutil
 from contextlib import closing
 from libraries.client.preprocessors import TqPreprocessor
+from libraries.client.preprocessors import TnPreprocessor
 from libraries.converters.md2html_converter import Md2HtmlConverter
 from libraries.general_tools.file_utils import remove_tree, unzip, remove
 from libraries.door43_tools.bible_books import BOOK_NUMBERS
@@ -134,7 +135,7 @@ class TestMd2HtmlConverter(unittest.TestCase):
         remove(self.out_zip_file)
 
         files_to_verify = ['manifest.yaml', 'index.json']
-        for book in  BOOK_NUMBERS:
+        for book in BOOK_NUMBERS:
             html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
             files_to_verify.append(html_file)
 
@@ -161,6 +162,68 @@ class TestMd2HtmlConverter(unittest.TestCase):
         remove(self.out_zip_file)
 
         files_to_verify = ['index.json', 'kt.html', 'names.html', 'other.html', 'config.yaml', 'manifest.yaml']
+        for file_to_verify in files_to_verify:
+            file_path = os.path.join(self.out_dir, file_to_verify)
+            self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
+                            .format(file_to_verify))
+
+    def test_tn(self):
+        """
+        Runs the converter and verifies the output
+        """
+
+        # given
+        file_name = 'en_tn.zip'
+
+        # when
+        self.doTransformTn(file_name)
+
+        # then
+        self.assertTrue(os.path.isfile(self.out_zip_file), "There was no output zip file produced.")
+        self.assertIsNotNone(self.return_val, "There was no return value.")
+        self.out_dir = tempfile.mkdtemp(prefix='tw_')
+        unzip(self.out_zip_file, self.out_dir)
+        remove(self.out_zip_file)
+
+        files_to_verify = ['manifest.yaml', 'index.json']
+        for folder in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[folder], folder.upper())
+            filename = '{0}.html'.format(book)
+            files_to_verify.append(filename)
+
+        for file_to_verify in files_to_verify:
+            file_path = os.path.join(self.out_dir, file_to_verify)
+            self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
+                            .format(file_to_verify))
+
+    def test_tn_part(self):
+        """
+        Runs the converter and verifies the output
+        """
+
+        # given
+        file_name = 'en_tn.zip'
+        part = '01-GEN.md'
+
+        # when
+        self.doTransformTn(file_name, part=part)
+
+        # then
+        self.assertTrue(os.path.isfile(self.out_zip_file), "There was no output zip file produced.")
+        self.assertIsNotNone(self.return_val, "There was no return value.")
+        self.out_dir = tempfile.mkdtemp(prefix='tw_')
+        unzip(self.out_zip_file, self.out_dir)
+        remove(self.out_zip_file)
+
+        files_to_verify = ['01-GEN.html', 'manifest.yaml', 'index.json']
+
+        for dir in BOOK_NUMBERS:
+            book = '{0}-{1}'.format(BOOK_NUMBERS[dir], dir.upper())
+            file = '{0}.html'.format(book)
+            file_path = os.path.join(self.out_dir, file)
+            if file not in files_to_verify:
+                self.assertFalse(os.path.isfile(file_path), 'file should not be converted: {0}'.format(file))
+
         for file_to_verify in files_to_verify:
             file_path = os.path.join(self.out_dir, file_to_verify)
             self.assertTrue(os.path.isfile(file_path), 'file not found: {0}'
@@ -206,6 +269,18 @@ class TestMd2HtmlConverter(unittest.TestCase):
         self.out_zip_file = tempfile.mktemp(prefix="en_tw", suffix=".zip")
         self.return_val = None
         with closing(Md2HtmlConverter('', 'tw', self.out_zip_file)) as tx:
+            tx.input_zip_file = zip_file_path
+            self.return_val = tx.run()
+        return tx
+
+    def doTransformTn(self, file_name, part=None):
+        zip_file_path = os.path.join(self.resources_dir, file_name)
+        zip_file_path = self.make_duplicate_zip_that_can_be_deleted(zip_file_path)
+        self.out_zip_file = tempfile.mktemp(prefix="en_tq", suffix=".zip")
+        self.return_val = None
+        source = '' if not part else 'https://door43.org/dummy?convert_only={0}'.format(part)
+
+        with closing(Md2HtmlConverter(source, 'tn', self.out_zip_file)) as tx:
             tx.input_zip_file = zip_file_path
             self.return_val = tx.run()
         return tx

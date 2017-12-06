@@ -9,37 +9,16 @@ from libraries.app.app import App
 from libraries.general_tools.file_utils import write_file, remove_tree, get_files
 from converter import Converter
 from usfm_tools.transform import UsfmTransform
-from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 class Usfm2HtmlConverter(Converter):
 
     def convert(self):
-        if self.resource in BIBLE_RESOURCE_TYPES:
-            self.convert_bible()
-            return True
-        else:
-            return False
-
-    def convert_bible(self):
         App.logger.debug('Processing the Bible USFM files')
 
         # find the first directory that has usfm files.
         files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
-
-        exclusive_convert = False
-        convert_only = []
-        if self.source and len(self.source) > 0:
-            parsed = urlparse.urlparse(self.source)
-            params = urlparse.parse_qsl(parsed.query)
-            if params and len(params) > 0:
-                for i in range(0, len(params)):
-                    item = params[i]
-                    if item[0] == 'convert_only':
-                        convert_only = item[1].split(',')
-                        exclusive_convert = True
-                        self.source = urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
-                        break
+        convert_only_list = self.check_for_exclusive_convert()
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, 'templates', 'template.html')) as template_file:
@@ -48,9 +27,8 @@ class Usfm2HtmlConverter(Converter):
         for filename in files:
             if filename.endswith('.usfm'):
                 base_name = os.path.basename(filename)
-                if exclusive_convert:
-                    if base_name not in convert_only:  # see if this is a file we are to convert
-                        continue
+                if convert_only_list and (base_name not in convert_only_list):  # see if this is a file we are to convert
+                    continue
 
                 msg = 'Converting Bible USFM file: {0}'.format(base_name)
                 self.log.info(msg)
@@ -88,3 +66,4 @@ class Usfm2HtmlConverter(Converter):
                 except:
                     pass
         self.log.info('Finished processing Bible USFM files.')
+        return True

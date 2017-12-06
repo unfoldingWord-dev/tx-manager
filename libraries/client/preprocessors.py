@@ -7,14 +7,13 @@ from libraries.app.app import App
 from libraries.door43_tools.bible_books import BOOK_NUMBERS, BOOK_NAMES, BOOK_CHAPTER_VERSES
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
-from libraries.resource_container.ResourceContainer import BIBLE_RESOURCE_TYPES
 
 
 def do_preprocess(rc, repo_dir, output_dir):
     if rc.resource.identifier == 'obs':
         App.logger.debug("do_preprocess: using ObsPreprocessor")
         preprocessor = ObsPreprocessor(rc, repo_dir, output_dir)
-    elif rc.resource.identifier in BIBLE_RESOURCE_TYPES:
+    elif rc.resource.file_ext == 'usfm':
         App.logger.debug("do_preprocess: using BiblePreprocessor")
         preprocessor = BiblePreprocessor(rc, repo_dir, output_dir)
     elif rc.resource.identifier == 'ta':
@@ -26,8 +25,11 @@ def do_preprocess(rc, repo_dir, output_dir):
     elif rc.resource.identifier == 'tw':
         App.logger.debug("do_preprocess: using TwPreprocessor")
         preprocessor = TwPreprocessor(rc, repo_dir, output_dir)
+    elif rc.resource.identifier == 'tn':
+        App.logger.debug("do_preprocess: using TnPreprocessor")
+        preprocessor = TnPreprocessor(rc, repo_dir, output_dir)
     else:
-        App.logger.debug("do_preprocess: using Preprocessor")
+        App.logger.debug("do_preprocess: using Preprocessor for resource: {0}".format(rc.resource.identifier))
         preprocessor = Preprocessor(rc, repo_dir, output_dir)
     return preprocessor.run(), preprocessor
 
@@ -562,6 +564,113 @@ class TwPreprocessor(Preprocessor):
             pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(s))
             replace = r']({0}.html#\1)'.format(s)
             content = re.sub(pattern, replace, content)
+        # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
+        # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
+        content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+        # convert URLs to links if not already
+        content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
+                         content, flags=re.IGNORECASE)
+        # URLS wth just www at the start, no http
+        content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
+                         content, flags=re.IGNORECASE)
+        return content
+
+
+class TnPreprocessor(Preprocessor):
+    index_json = {
+        'titles': {},
+        'chapters': {},
+        'book_codes': {}
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(TnPreprocessor, self).__init__(*args, **kwargs)
+        self.books = []
+
+    def is_multiple_jobs(self):
+        return True
+
+    def get_book_list(self):
+        return self.books
+
+    def run(self):
+        index_json = {
+            'titles': {},
+            'chapters': {},
+            'book_codes': {}
+        }
+        headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
+        for idx, project in enumerate(self.rc.projects):
+            App.logger.debug('TnPreprocessor: processing project: {0}'.format(project.identifier))
+            if project.identifier in BOOK_NAMES:
+                markdown = ''
+                book = project.identifier.lower()
+                html_file = '{0}-{1}.html'.format(BOOK_NUMBERS[book], book.upper())
+                index_json['book_codes'][html_file] = book
+                name = BOOK_NAMES[book]
+                index_json['titles'][html_file] = name
+                chapter_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
+                markdown += '# <a id="tn-{0}"/> {1}\n\n'.format(book, name)
+                index_json['chapters'][html_file] = []
+                for move_str in ['front', 'intro']:
+                    self.move_to_front(chapter_dirs, move_str)
+                for chapter_dir in chapter_dirs:
+                    chapter = os.path.basename(chapter_dir)
+                    link = 'tn-chapter-{0}-{1}'.format(book, chapter.zfill(3))
+                    index_json['chapters'][html_file].append(link)
+                    markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
+                    chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
+                    for move_str in ['front', 'intro']:
+                        self.move_to_front(chunk_files, move_str)
+                    for chunk_idx, chunk_file in enumerate(chunk_files):
+                        start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
+                        if chunk_idx < len(chunk_files)-1:
+                            base_file_name = os.path.splitext(os.path.basename(chunk_files[chunk_idx + 1]))[0]
+                            if base_file_name.isdigit():
+                                end_verse = str(int(base_file_name) - 1)
+                            else:
+                                end_verse = start_verse
+                        else:
+                            chapter_str = chapter.lstrip('0')
+                            chapter_verses = BOOK_CHAPTER_VERSES[book]
+                            end_verse = chapter_verses[chapter_str] if chapter_str in chapter_verses else start_verse
+
+                        start_verse_str = str(start_verse).zfill(3) if start_verse.isdigit() else start_verse
+                        link = 'tn-chunk-{0}-{1}-{2}'.format(book, str(chapter).zfill(3), start_verse_str)
+                        markdown += '### <a id="{0}"/>{1} {2}:{3}{4}\n\n'. \
+                            format(link, name, chapter.lstrip('0'), start_verse,
+                                   '-'+end_verse if start_verse != end_verse else '')
+                        text = read_file(chunk_file) + '\n\n'
+                        text = headers_re.sub(r'\1## \2', text)  # This will bump any header down 2 levels
+                        markdown += text
+                markdown = self.fix_links(markdown)
+                book_file_name = '{0}-{1}.md'.format(BOOK_NUMBERS[book], book.upper())
+                self.books.append(book_file_name)
+                file_path = os.path.join(self.output_dir, book_file_name)
+                write_file(file_path, markdown)
+            else:
+                App.logger.debug('TnPreprocessor: extra project found: {0}'.format(project.identifier))
+        # Write out index.json
+        output_file = os.path.join(self.output_dir, 'index.json')
+        write_file(output_file, index_json)
+        return True
+
+    def move_to_front(self, files, move_str):
+        if files:
+            last_file = files[-1]
+            if move_str in last_file:  # move intro to front
+                files.pop()
+                files.insert(0, last_file)
+
+    def fix_links(self, content):
+        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
+        content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
+                         flags=re.IGNORECASE)
+        # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
+        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content,
+                         flags=re.IGNORECASE)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
         content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
