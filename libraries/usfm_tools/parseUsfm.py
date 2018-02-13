@@ -59,6 +59,7 @@ sr      = usfmTokenValue("sr", phrase)
 sts     = usfmTokenValue("sts", phrase)
 r       = usfmTokenValue("r", phrase)
 p       = usfmToken("p")
+pc      = usfmToken("pc")
 pi      = usfmToken("pi")
 pi2     = usfmToken("pi2")
 b       = usfmToken("b")
@@ -91,17 +92,19 @@ m       = usfmToken("m")
 
 # Footnotes
 fs      = usfmTokenValue("f", plus)
+fe      = usfmEndToken("f")
+fes     = usfmTokenValue("fe", plus)
+fee     = usfmEndToken("fe")
 fr      = usfmTokenValue("fr", phrase)
 fre     = usfmEndToken("fr")
 fk      = usfmTokenValue("fk", phrase)
 ft      = usfmTokenValue("ft", phrase)
+fp      = usfmToken("fp")
 fq      = usfmTokenValue("fq", phrase)
 fqe     = usfmEndToken("fq")
 fqa     = usfmTokenValue("fqa", phrase)
 fqae    = usfmEndToken("fqa")
 fqb     = usfmTokenValue("fqb", phrase)
-fe      = usfmEndToken("f")
-fp      = usfmToken("fp")
 fv      = usfmTokenValue("fv", phrase)
 fve     = usfmEndToken("fv")
 fdc     = usfmTokenValue("fdc", phrase)
@@ -216,6 +219,7 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
                        sts,
                        r,
                        p,
+                       pc,
                        pi,
                        pi2,
                        mi,
@@ -249,6 +253,7 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
                        nb,
                        m,
                        fs,
+                       fes,
                        fr,
                        fre,
                        fk,
@@ -259,6 +264,7 @@ element =  MatchFirst([ide, id, h, toc, toc1, toc2, toc3, mt, mt1, mt2, mt3,
                        fqae,
                        fqb,
                        fe,
+                       fee,
                        fp,
                        fv,
                        fve,
@@ -390,6 +396,7 @@ def createToken(t):
         'ms2':  MS2Token,
         'mr':   MRToken,
         'p':    PToken,
+        'pc':   PCToken,
         'pi':   PIToken,
         'pi2': PI2Token,
         'b':    BToken,
@@ -429,6 +436,7 @@ def createToken(t):
         'qt*':  QTEToken,
         'nb':   NBToken,
         'f':    FSToken,
+        'fe':   FESToken,  # Footnote intended as an end note
         'fr':   FRToken,
         'fr*':  FREToken,
         'fk':   FKToken,
@@ -439,6 +447,7 @@ def createToken(t):
         'fqa*': FQAEToken,
         'fqb':  FQAEToken,
         'f*':   FEToken,
+        'fe*':  FEEToken,
         'fv':   FVSToken,
         'fv*':  FVEToken,
         'fdc':  FDCSToken,
@@ -555,6 +564,7 @@ class UsfmToken(object):
     def isMR(self):     return False
     def isR(self):      return False
     def isP(self):      return False
+    def isPC(self):     return False
     def isPI(self):     return False
     def isPI2(self):    return False
     def isS(self):      return False
@@ -592,12 +602,14 @@ class UsfmToken(object):
     def isQTE(self):    return False
     def isNB(self):     return False
     def isFS(self):     return False
+    def isFES(self):    return False
     def isFR(self):     return False
     def isFRE(self):    return False
     def isFK(self):     return False
     def isFT(self):     return False
     def isFQ(self):     return False
     def isFQA(self):    return False
+    def isFQE(self):    return False
     def isFQAE(self):   return False
     def isFQB(self):    return False
     def isFE(self):     return False
@@ -606,6 +618,7 @@ class UsfmToken(object):
     def isFVE(self):    return False
     def isFDCS(self):   return False
     def isFDCE(self):   return False
+    def isFEE(self):    return False
     def isXS(self):     return False
     def isXDCS(self):   return False
     def isXDCE(self):   return False
@@ -887,6 +900,11 @@ class FSToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFS(self)
     def isFS(self):      return True
 
+class FESToken(UsfmToken):
+    def renderOn(self, printer):
+        return printer.renderFES(self)
+    def isFES(self):      return True
+
 class FRToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFR(self)
     def isFR(self):      return True
@@ -928,6 +946,11 @@ class FQBToken(UsfmToken):
 class FEToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFE(self)
     def isFE(self):      return True
+
+class FEEToken(UsfmToken):
+    def renderOn(self, printer):
+        return printer.renderFEE(self)
+    def isFEE(self):      return True
 
 class FVSToken(UsfmToken):
     def renderOn(self, printer): return printer.renderFVS(self)
@@ -1059,6 +1082,12 @@ class TLSToken(UsfmToken):
 class TLEToken(UsfmToken):
     def renderOn(self, printer): return printer.renderTLE(self)
     def isTLE(self):      return True
+
+# Formatted paragraphs, like pc, pi, etc.
+class PCToken(UsfmToken):
+    def renderOn(self, printer):
+        return printer.renderPC(self)
+    def isPC(self):      return True
 
 # Indenting paragraphs
 class PIToken(UsfmToken):
