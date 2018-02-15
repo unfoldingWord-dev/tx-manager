@@ -642,6 +642,7 @@ class UsfmToken(object):
     def isNDE(self):    return False
     def isTLS(self):    return False
     def isTLE(self):    return False
+    def isB(self):      return False
     def isBDS(self):    return False
     def isBDE(self):    return False
     def isBDITS(self):  return False
