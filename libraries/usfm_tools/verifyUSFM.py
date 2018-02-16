@@ -544,16 +544,20 @@ def takeV(v):
             report_error(state.reference + " - Missing paragraph marker (\\p), margin (\\m) or quote (\\q) before: "
                          + '\n')
 
+    missing = ""
     if state.verse < state.lastVerse and state.addError(state.lastRef):
         report_error(state.reference + " - Verse out of order: after " + state.lastRef + '\n')
         state.addError(state.reference)
     elif state.verse == state.lastVerse:
         report_error(state.reference + " - Duplicated verse" + '\n')
     elif state.verse == state.lastVerse + 2 and not isOptional(state.reference):
-        if state.addError(state.lastRef):
-            report_error(state.lastRef + " - Missing verse between this and: " + state.reference + '\n')
-    elif state.verse > state.lastVerse + 2 and state.addError(state.lastRef):
-        if error_log:  # see if already warned for missing verses
+        missing = " - Missing verse between this and: "
+    elif state.verse > state.lastVerse + 2:
+        missing = " - Missing verses between this and: "
+    
+    if missing:
+        state.addError(state.lastRef)
+        if not error_log is None:  # see if already warned for missing verses
             gaps = False
             for i in range(state.lastVerse+1, state.verse):
                 ref = state.ID + ' ' + str(state.chapter) + ':' + str(i)
@@ -563,13 +567,12 @@ def takeV(v):
                     if error[:ref_len] == ref:
                         verse_warning_found = True
                         break
-
                 if not verse_warning_found:
                     gaps = True
             if not gaps:
                 return
 
-        report_error(state.lastRef + " - Missing verses between this and: " + state.reference + '\n')
+        report_error(state.lastRef + missing + state.reference + '\n')
 
 def takeText(t):
     state = State()
