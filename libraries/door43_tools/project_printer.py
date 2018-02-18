@@ -32,47 +32,44 @@ class ProjectPrinter(object):
         source_path = 'u/{0}'.format(project_id)
         print_all_key = '{0}/print_all.html'.format(source_path)
         print_all_file = tempfile.mktemp(prefix='print_all_')
-        if not App.cdn_s3_handler().key_exists(print_all_key):
-            files_dir = tempfile.mkdtemp(prefix='files_')
-            App.cdn_s3_handler().download_dir(source_path, files_dir)
-            project_dir = os.path.join(files_dir, source_path.replace('/', os.path.sep))
-            if not os.path.isdir(project_dir):
-                raise Exception('Project not found.')
-            rc = RC(project_dir, repo_name)
-            with codecs.open(print_all_file, 'w', 'utf-8-sig') as print_all:
-                print_all.write("""
-<html lang="{0}" dir="{1}">
-    <head>
-        <meta charset="UTF-8"/>
-        <title>{2}: {3}</title>
-        <style type="text/css">
-            body > div {{
-                page-break-after: always;
-            }}
-        </style>
-    </head>
-    <body onLoad="window.print()">
-        <h1>{2}: {3}</h1>
+        if App.cdn_s3_handler().key_exists(print_all_key):
+            return App.cdn_s3_handler().bucket_name + '/' + print_all_key
+        files_dir = tempfile.mkdtemp(prefix='files_')
+        App.cdn_s3_handler().download_dir(source_path, files_dir)
+        project_dir = os.path.join(files_dir, source_path.replace('/', os.path.sep))
+        if not os.path.isdir(project_dir):
+            raise Exception('Project not found.')
+        rc = RC(project_dir, repo_name)
+        with codecs.open(print_all_file, 'w', 'utf-8-sig') as print_all:
+            print_all.write("""<html lang="{0}" dir="{1}">
+<head>
+    <meta charset="UTF-8"/>
+    <title>{2}: {3}</title>
+    <style type="text/css">
+        body > div {{
+            page-break-after: always;
+        }}
+    </style>
+</head>
+<body onLoad="window.print()">
+    <h1>{2}: {3}</h1>
 """.format(rc.resource.language.identifier, rc.resource.language.direction, rc.resource.language.title,
-           rc.resource.title))
-                for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.front_to_back):
-                    with codecs.open(fname, 'r', 'utf-8-sig') as f:
-                        soup = BeautifulSoup(f, 'html.parser')
-                        # get the body of the raw html file
-                        content = soup.div
-                        if not content:
-                            content = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
-                        content['id'] = os.path.basename(fname)
-                        print_all.write(unicode(content))
-                print_all.write("""
-    </body>
+       rc.resource.title))
+            for fname in sorted(glob(os.path.join(project_dir, '*.html')), key=self.front_to_back):
+                with codecs.open(fname, 'r') as f:
+                    soup = BeautifulSoup(f, 'html.parser')
+                    # get the body of the raw html file
+                    content = soup.div
+                    if not content:
+                        content = BeautifulSoup('<div>No content</div>', 'html.parser').find('div').extract()
+                    content['id'] = os.path.basename(fname)
+                    print_all.write(unicode(content))
+            print_all.write("""
+</body>
 </html>
 """)
-                App.cdn_s3_handler().upload_file(print_all_file, print_all_key, cache_time=0)
-            html = read_file(print_all_file)
-        else:
-            html = App.cdn_s3_handler().get_file_contents(print_all_key)
-        return html
+            App.cdn_s3_handler().upload_file(print_all_file, print_all_key, cache_time=0, content_type='text/html')
+        return App.cdn_s3_handler().bucket_name + '/' + print_all_key
 
     @staticmethod
     def front_to_back(file_path):

@@ -137,7 +137,7 @@ class S3Handler(object):
             return self.resource.Object(bucket_name=self.bucket_name, key=key).copy_from(
                 CopySource='{0}/{1}'.format(self.bucket_name, key), MetadataDirective='REPLACE')
 
-    def upload_file(self, path, key, cache_time=600):
+    def upload_file(self, path, key, cache_time=600, content_type=None):
         """
         Upload file to S3 storage. Similar to the s3.upload_file, however, that
         does not work nicely with moto, whereas this function does.
@@ -146,10 +146,12 @@ class S3Handler(object):
         """
         with open(path, 'rb') as f:
             binary = f.read()
+        if content_type is None:
+            content_type = get_mime_type(path)
         self.bucket.put_object(
             Key=key,
             Body=binary,
-            ContentType=get_mime_type(path),
+            ContentType=content_type,
             CacheControl='max-age={0}'.format(cache_time)
         )
 
