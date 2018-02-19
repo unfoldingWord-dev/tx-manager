@@ -19,7 +19,6 @@ from libraries.usfm_tools import parseUsfm, usfm_verses
 # sys.path.append(os.path.join(rootdiroftools,'support'))
 
 # Global variables
-# lastToken = parseUsfm.UsfmToken(None)
 lastToken = None
 vv_re = re.compile(r'([0-9]+)-([0-9]+)')
 error_log = None
@@ -152,7 +151,7 @@ class State:
         return id
 
     def addParagraph(self):
-        State.nParagraphs += State.nParagraphs + 1
+        State.nParagraphs += 1
         State.textOkayHere = True
 
     def addMargin(self):
@@ -260,7 +259,9 @@ def verifyVerseCount():
         return -1
 
     if state.chapter > 0 and state.verse != state.nVerses(state.ID, state.chapter):
-        if state.reference != 'REV 12:18':  # Revelation 12 may have 17 or 18 verses
+        # Revelation 12 may have 17 or 18 verses
+        # 3 John may have 14 or 15 verses
+        if state.reference != 'REV 12:18' and state.reference != '3JN 1:15':
             report_error(state.reference + " - Should have " + str(state.nVerses(state.ID, state.chapter)) + " verses" + '\n')
 
 def verifyNotEmpty(filename):
@@ -477,7 +478,7 @@ def takeTOC2(text):
 def takeTOC3(text):
     state = State()
     state.addTOC3(text)
-    verifyTextTranslated(text, 'toc3')
+    # verifyTextTranslated(text, 'toc3') # toc3 commonly has 3-letter book code, not to be translated
 
 def takeMT(text):
     state = State()
@@ -543,40 +544,40 @@ def takeV(v):
             report_error(state.reference + " - Missing paragraph marker (\\p), margin (\\m) or quote (\\q) before: "
                          + '\n')
 
+    missing = ""
     if state.verse < state.lastVerse and state.addError(state.lastRef):
         report_error(state.reference + " - Verse out of order: after " + state.lastRef + '\n')
         state.addError(state.reference)
     elif state.verse == state.lastVerse:
         report_error(state.reference + " - Duplicated verse" + '\n')
-    elif state.verse > state.lastVerse + 1 and state.addError(state.lastRef):
-        if state.lastRef == 'MAT 17:20' and state.reference == 'MAT 17:22':
-            exception = 'MAT 17:21'
-        elif state.lastRef == 'MAT 18:10' and state.reference == 'MAT 18:12':
-            exception = 'MAT 18:11'
-        else:
-            if error_log:  # see if already warned for missing verses
-                gaps = False
-                for i in range(state.lastVerse+1, state.verse):
-                    ref = state.ID + ' ' + str(state.chapter) + ':' + str(i)
-                    ref_len = len(ref)
-                    verse_warning_found = False
-                    for error in error_log:
-                        if error[:ref_len] == ref:
-                            verse_warning_found = True
-                            break
+    elif state.verse == state.lastVerse + 2 and not isOptional(state.reference):
+        missing = " - Missing verse between this and: "
+    elif state.verse > state.lastVerse + 2:
+        missing = " - Missing verses between this and: "
+    
+    if missing:
+        state.addError(state.lastRef)
+        if not error_log is None:  # see if already warned for missing verses
+            gaps = False
+            for i in range(state.lastVerse+1, state.verse):
+                ref = state.ID + ' ' + str(state.chapter) + ':' + str(i)
+                ref_len = len(ref)
+                verse_warning_found = False
+                for error in error_log:
+                    if error[:ref_len] == ref:
+                        verse_warning_found = True
+                        break
+                if not verse_warning_found:
+                    gaps = True
+            if not gaps:
+                return
 
-                    if not verse_warning_found:
-                        gaps = True
-                if not gaps:
-                    return
-
-            report_error(state.lastRef + " - Missing verse(s) between this and: " + state.reference + '\n')
+        report_error(state.lastRef + missing + state.reference + '\n')
 
 def takeText(t):
     state = State()
     global lastToken
-    if not state.textOkay() and not lastToken.isM() and not lastToken.isFS() and not lastToken.isFE()\
-            and not lastToken.isSP() and not lastToken.isD():
+    if not state.textOkay() and not isTextCarryingToken(lastToken):
         if t[0] == '\\':
             report_error(state.reference + " - Nearby uncommon or invalid marker" + '\n')
         else:
@@ -593,28 +594,37 @@ def takeUnknown(state, token):
     value = token.getValue()
     if (value == 'v') or (value == 'c'):
         return  # skip malformed chapter and verses - will be caught later
-    report_error( state.reference + " - Unknown Token: '\\" + value + "'")
+    elif value == 'p':
+        report_error( state.reference + " - Orphan paragraph marker follows")
+    else:
+        report_error( state.reference + " - Unknown Token: '\\" + value + "'")
 
-# Returns True if token is the start of a footnote - note that verse can contain footnote for more reasons than just
-#       does not appear in some manuscripts.
-def isFootnoted(token):
-    state = State()
-    footnoted = token.isFS()
-    # and state.reference in { 'MAT 17:21', 'MAT 18:11', 'MAT 23:14', 'MRK 7:16', 'MRK 9:44', 'MRK 9:46', 'MRK 11:26', 'MRK 15:28', 'MRK 16:9', 'MRK 16:12', 'MRK 16:14', 'MRK 16:17', 'MRK 16:19', 'LUK 17:36', 'LUK 23:17', 'JHN 5:4', 'JHN 7:53', 'JHN 8:1', 'JHN 8:4', 'JHN 8:7', 'JHN 8:9', 'ACT 8:37', 'ACT 15:34', 'ACT 24:7', 'ACT 28:29', 'ROM 16:24' }
-    if footnoted:
-        state.addText()     # footnote counts as text for our purposes
-    return footnoted
+# Returns True if token is part of a footnote
+def isFootnote(token):
+    return token.isFS() or token.isFE() or token.isFR() or token.isFRE() or token.isFT() or token.isFP() or token.isFES() or token.isFEE()
 
+# Returns true if token is part of a cross reference.
 def isCrossRef(token):
-    state = State()
-    xref = token.isXS()
-    if xref:
-        state.addText()     # cross reference counts as text for our purposes
-    return xref
+    return token.isXS() or token.isXE() or token.isXO() or token.isXT()
 
+# Returns True if the specified reference immediately FOLLOWS a verse that does not appear in some manuscripts.
+# Does not handle optional passages, such as John 7:53-8:11, or Mark 16:9-20.
+def isOptional(ref):
+#   return ref in { 'MAT 17:21', 'MAT 18:11', 'MAT 23:14', 'MRK 7:16', 'MRK 9:44', 'MRK 9:46', 'MRK 11:26', 'MRK 15:28', 'MRK 16:9', 'MRK 16:12', 'MRK 16:14', 'MRK 16:17', 'MRK 16:19', 'LUK 17:36', 'LUK 23:17', 'JHN 5:4', 'JHN 7:53', 'JHN 8:1', 'JHN 8:4', 'JHN 8:7', 'JHN 8:9', 'ACT 8:37', 'ACT 15:34', 'ACT 24:7', 'ACT 28:29', 'ROM 16:24' }
+    return ref in { 'MAT 17:22', 'MAT 18:12', 'MAT 23:15', 'MRK 7:17', 'MRK 9:45', 'MRK 9:47', 'MRK 11:27', 'MRK 15:29', 'LUK 17:37', 'LUK 23:18', 'JHN 5:5', 'ACT 8:38', 'ACT 15:35', 'ACT 24:8', 'ACT 28:30', 'ROM 16:25' }
+
+def isPoetry(token):
+    return token.isQ() or token.isQ1() or token.isQA() or token.isSP()
+
+def isIntro(token):
+    return token.is_is1() or token.is_ip() or token.is_iot() or token.is_io1()
+    
+def isTextCarryingToken(token):
+    return token.isB() or token.isM() or token.isD() or isFootnote(token) or isCrossRef(token) or isPoetry(token) or isIntro(token)
+    
 def take(token):
     state = State()
-    if state.needText() and not token.isTEXT() and not isFootnoted(token) and not isCrossRef(token):
+    if state.needText() and not token.isTEXT() and not isTextCarryingToken(token):
         report_error(state.reference + " - Empty verse" + '\n')
     if token.isID():
         takeID(token.value)
@@ -633,9 +643,9 @@ def take(token):
     elif token.isCL():
         takeCL(token.value)
     elif token.isC():
-        verifyVerseCount()
+        verifyVerseCount()  # for the preceding chapter
         takeC(token.value)
-    elif token.isP() or token.isPI() or token.isNB():
+    elif token.isP() or token.isPI() or token.isPC() or token.isNB():
         takeP()
     elif token.isV():
         takeV(token.value)

@@ -197,8 +197,8 @@ class TestUsfmLinter(LinterTestCase):
 
     def test_PhpUntranslatedToc3(self):
         out_dir = self.copy_resource(self.php_repo_path)
-        self.replace_tag(out_dir, self.php_file_name, 'toc3', '\\toc3 Genesis')
-        expected_warnings = True
+        self.replace_tag(out_dir, self.php_file_name, 'toc3', '\\toc3 job')
+        expected_warnings = False
         linter = self.run_linter(out_dir)
         self.verify_results(expected_warnings, linter)
 
