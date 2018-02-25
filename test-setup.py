@@ -59,7 +59,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     install_requires=[
-        'requests==2.13.0',
+        'requests>=2.13.0',
         'responses==0.5.1',
         'boto3==1.4.4',
         'bs4==0.0.1',
