@@ -288,10 +288,9 @@ class ClientWebhookTest(unittest.TestCase):
         return self.upload_file(bucket_name, project_file, s3_key)
 
     def upload_file(self, bucket_name, project_file, s3_key):
-        filename = tempfile.mktemp(dir=ClientWebhookTest.base_temp_dir)
-        shutil.copyfile(project_file, filename)
-        self.uploaded_files.append({'file': filename, 'key': bucket_name + '/' + s3_key})
-        return
+        with tempfile.NamedTemporaryFile(dir=ClientWebhookTest.base_temp_dir, delete=False) as tmp:
+            shutil.copyfile(project_file, tmp.name)
+            self.uploaded_files.append({'file': tmp.name, 'key': bucket_name + '/' + s3_key})
 
     def mock_cdn_get_json(self, project_json_key):
         return {}
