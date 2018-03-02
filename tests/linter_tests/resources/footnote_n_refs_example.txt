@@ -14,7 +14,8 @@
 \v 8 y ha llegado a ser superior a los ángeles, pues ha recibido en herencia un título mucho más importante que el de ellos.
 \p
 \s5
-\v 9 But when Joseph heard that Archelaus had succeeded his father Herod as king of Judea, he was afraid to go there. He was given more instructions in a dream, so he went to the province of Galilee
+\v 9 \f + \ft The best ancient copies omit the sentence that some versions include at v. 9. \fqa For the Son of Man came to save that which was lost \fqa* . \f*
+
 \v 10 \x - \xo 1.10: \xt Mrk 1.24; Luk 2.39; Jhn 1.45.\x* and made his home in a town named Nazareth. And so what the prophets had said came true: “He will be called a Nazarene.”
 \p
 \v 11 “Why do you call me good?” Jesus asked him. “No one is good except God alone.

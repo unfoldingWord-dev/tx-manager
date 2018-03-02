@@ -624,6 +624,8 @@ def isTextCarryingToken(token):
     
 def take(token):
     state = State()
+    if isFootnote(token):
+        state.addText()     # footnote suffices for verse text
     if state.needText() and not token.isTEXT() and not isTextCarryingToken(token):
         report_error(state.reference + " - Empty verse" + '\n')
     if token.isID():
