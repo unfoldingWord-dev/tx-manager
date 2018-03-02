@@ -7,7 +7,7 @@ from libraries.app.app import App
 from libraries.door43_tools.bible_books import BOOK_NUMBERS, BOOK_NAMES, BOOK_CHAPTER_VERSES
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
-from converters import txt2md_or_usfm
+from converters import txt2md
 
 
 def do_preprocess(rc, repo_dir, output_dir):
@@ -470,8 +470,8 @@ class TqPreprocessor(Preprocessor):
                     chunk_files_txt = sorted(glob(os.path.join(chapter_dir, '*.txt')))
                     # If there are txt files in chapter folders, convert them to md format
                     if len(chunk_files_txt) > 0:
-                        txt2md_or_usfm(chapter_dir)
-                        return self.run()
+                        if txt2md(chapter_dir):
+                            return self.run()
 
                     for chunk_idx, chunk_file in enumerate(chunk_files):
                         start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
