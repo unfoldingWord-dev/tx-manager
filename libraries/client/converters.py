@@ -17,13 +17,12 @@ def txt2md(rootdir="."):
             filename = fileinfo[0]
             ext = fileinfo[1]
 
-            App.logger.debug('TqPreprocessor: file: {0}'.format(filepath))
+            App.logger.debug('Filepath: {0}'.format(filepath))
 
             if ext == ".txt":
                 with open(filepath, "r") as data_file:
                     # if content of the file starts from the valid json character
                     # then it's a json file
-                    App.logger.debug('data: {0}'.format(data_file.read()))
                     if re.match(r"^\[|^\{", data_file.read()):
                         try:
                             data = json.load(data_file)
@@ -38,12 +37,18 @@ def txt2md(rootdir="."):
                             with open(md_filepath, "w") as md_file:
                                 md_file.write(md)
 
+                            if os.path.isfile(md_filepath):
+                                App.logger.debug('MD Data: {0}'.format(md))
+
                             if os.path.isfile(filepath):
                                 os.remove(filepath)
 
+                            if not os.path.isfile(filepath):
+                                App.logger.debug('File deleted: {0}'.format(filepath))
+
                             proccessed = True
                         except ValueError, e:
-                            App.logger.debug('TqPreprocessor: error: {0}'.format(e.message))
+                            App.logger.debug('Error: {0}'.format(e.message))
 
     return proccessed
 

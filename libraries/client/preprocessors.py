@@ -468,12 +468,13 @@ class TqPreprocessor(Preprocessor):
                     chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
 
                     chunk_files_txt = sorted(glob(os.path.join(chapter_dir, '*.txt')))
-                    App.logger.debug('TqPreprocessor: chapter dir: {0}'.format(chapter_dir))
-                    App.logger.debug('TqPreprocessor: number of txt files: {0}'.format(len(chunk_files_txt)))
+                    App.logger.debug('Number of txt files after: {0}'.format(len(chunk_files_txt)))
                     # If there are txt files in chapter folders, convert them to md format
                     if len(chunk_files_txt):
                         if txt2md(chapter_dir):
                             return self.run()
+
+                    App.logger.debug('Number of txt files before: {0}'.format(len(chunk_files_txt)))
 
                     for chunk_idx, chunk_file in enumerate(chunk_files):
                         start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
