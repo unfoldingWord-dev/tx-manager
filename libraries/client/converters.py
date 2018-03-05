@@ -32,23 +32,17 @@ def txt2md(rootdir="."):
                                     md += "# " + elm["title"] + "\n\n"
                                     md += elm["body"] + "\n\n"
 
-                            md_filepath = os.path.join(dir, filename + ".md")
-
+                            #md_filepath = os.path.join(dir, filename + ".md")
+                            md_filepath = re.sub(r"\.txt$", ".md", filepath)
                             with open(md_filepath, "w") as md_file:
                                 md_file.write(md)
 
-                            if os.path.isfile(md_filepath):
-                                App.logger.debug('MD Data: {0}'.format(md))
-
-                            if os.path.isfile(filepath):
-                                os.remove(filepath)
-
-                            if not os.path.isfile(filepath):
-                                App.logger.debug('File deleted: {0}'.format(filepath))
-
                             proccessed = True
-                        except ValueError, e:
+                        except BaseException as e:
                             App.logger.debug('Error: {0}'.format(e.message))
+
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
 
     return proccessed
 
