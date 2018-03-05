@@ -20,21 +20,23 @@ def txt2md(rootdir="."):
             App.logger.debug('Filepath: {0}'.format(filepath))
 
             if ext == ".txt":
-                with open(filepath, "r") as data_file:
+                with open(filepath, "r", encoding='utf-8') as data_file:
                     # if content of the file starts from the valid json character
                     # then it's a json file
-                    if re.match(r"^\[|^\{", data_file.read()):
+                    content = data_file.read()
+
+                    if re.match(r"^\[|^\{", content):
                         try:
-                            data = json.load(data_file)
+                            data = json.loads(content)
                             md = ""
                             for elm in data:
                                 if "title" in elm and "body" in elm:
                                     md += "# " + elm["title"] + "\n\n"
                                     md += elm["body"] + "\n\n"
 
-                            #md_filepath = os.path.join(dir, filename + ".md")
+                            # md_filepath = os.path.join(dir, filename + ".md")
                             md_filepath = re.sub(r"\.txt$", ".md", filepath)
-                            with open(md_filepath, "w") as md_file:
+                            with open(md_filepath, "w", encoding='utf-8') as md_file:
                                 md_file.write(md)
 
                             proccessed = True
