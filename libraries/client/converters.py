@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from libraries.app.app import App
 
 
 def txt2md(rootdir="."):
@@ -15,6 +16,8 @@ def txt2md(rootdir="."):
 
             filename = fileinfo[0]
             ext = fileinfo[1]
+
+            App.logger.debug('TqPreprocessor: file: '.format(filepath))
 
             if ext == ".txt":
                 with open(filepath, "r") as data_file:
@@ -38,8 +41,8 @@ def txt2md(rootdir="."):
                                 os.remove(filepath)
 
                             proccessed = True
-                        except ValueError:
-                            pass
+                        except ValueError, e:
+                            App.logger.debug('TqPreprocessor: error: '.format(e.message))
 
     return proccessed
 
