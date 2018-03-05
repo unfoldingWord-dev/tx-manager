@@ -23,6 +23,7 @@ def txt2md(rootdir="."):
                 with open(filepath, "r") as data_file:
                     # if content of the file starts from the valid json character
                     # then it's a json file
+                    App.logger.debug('data: {0}'.format(data_file.read()))
                     if re.match(r"^\[|^\{", data_file.read()):
                         try:
                             data = json.load(data_file)
