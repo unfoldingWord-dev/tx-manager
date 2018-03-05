@@ -12,18 +12,12 @@ def txt2md(rootdir="."):
     for dir, subdir, files in os.walk(rootdir):
         for fname in files:
             filepath = os.path.join(dir, fname)
-            fileinfo = os.path.splitext(fname)
 
-            filename = fileinfo[0]
-            ext = fileinfo[1]
-
-            App.logger.debug('Filepath: {0}'.format(filepath))
-
-            if ext == ".txt":
-                with open(filepath, "r", encoding='utf-8') as data_file:
+            if os.path.splitext(fname)[1] == ".txt":
+                with open(filepath, "r") as data_file:
                     # if content of the file starts from the valid json character
                     # then it's a json file
-                    content = data_file.read()
+                    content = data_file.read().decode('utf-8')
 
                     if re.match(r"^\[|^\{", content):
                         try:
@@ -34,9 +28,8 @@ def txt2md(rootdir="."):
                                     md += "# " + elm["title"] + "\n\n"
                                     md += elm["body"] + "\n\n"
 
-                            # md_filepath = os.path.join(dir, filename + ".md")
                             md_filepath = re.sub(r"\.txt$", ".md", filepath)
-                            with open(md_filepath, "w", encoding='utf-8') as md_file:
+                            with open(md_filepath, "w") as md_file:
                                 md_file.write(md)
 
                             proccessed = True
@@ -57,22 +50,17 @@ def txt2usfm(rootdir="."):
     for dir, subdir, files in os.walk(rootdir):
         for fname in files:
             filepath = os.path.join(dir, fname)
-            fileinfo = os.path.splitext(fname)
 
-            filename = fileinfo[0]
-            ext = fileinfo[1]
-
-            if ext == ".txt":
+            if os.path.splitext(fname)[1] == ".txt":
                 with open(filepath, "r") as data_file:
                     # if content of the file starts from the valid usfm chapter or verse tag
                     # then it's a usfm file
                     if re.match(r"^[\s]*\\c|^[\s]*\\v", data_file.read()):
-                        os.rename(filepath, os.path.join(dir, filename + ".usfm"))
-
-                        if os.path.isfile(filepath):
-                            os.remove(filepath)
-
                         proccessed = True
+
+                if proccessed and os.path.isfile(filepath):
+                    usfm_filepath = re.sub(r"\.txt$", ".usfm", filepath)
+                    os.rename(filepath, usfm_filepath)
 
 
     return proccessed
