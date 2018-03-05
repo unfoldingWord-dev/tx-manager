@@ -17,7 +17,7 @@ def txt2md(rootdir="."):
             filename = fileinfo[0]
             ext = fileinfo[1]
 
-            App.logger.debug('TqPreprocessor: file: '.format(filepath))
+            App.logger.debug('TqPreprocessor: file: {0}'.format(filepath))
 
             if ext == ".txt":
                 with open(filepath, "r") as data_file:
@@ -42,7 +42,7 @@ def txt2md(rootdir="."):
 
                             proccessed = True
                         except ValueError, e:
-                            App.logger.debug('TqPreprocessor: error: '.format(e.message))
+                            App.logger.debug('TqPreprocessor: error: {0}'.format(e.message))
 
     return proccessed
 
