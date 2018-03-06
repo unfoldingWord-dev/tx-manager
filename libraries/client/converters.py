@@ -62,5 +62,4 @@ def txt2usfm(rootdir="."):
                     usfm_filepath = re.sub(r"\.txt$", ".usfm", filepath)
                     os.rename(filepath, usfm_filepath)
 
-
     return proccessed
