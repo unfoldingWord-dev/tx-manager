@@ -1,5 +1,5 @@
-tX Development Architecture
-===========================
+tX Architecture
+===============
 
 This document explains the layout of the translationConvertor (tX)
 conversion platform and how the components of the system should interact
@@ -63,6 +63,7 @@ Modules MUST all present an API endpoint that the other components of
 the system can use. Modules MAY present API endpoints that the public
 can use.
 
+Background: Issue for tX creation at https://github.com/unfoldingWord-dev/door43.org/issues/53.
 
 Separating Production from Development and Test
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
