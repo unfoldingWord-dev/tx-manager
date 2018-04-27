@@ -49,8 +49,7 @@ class ClientWebhook(object):
             raise Exception('Invalid DCS user token given in Payload')
 
         # Check that the URL to the DCS repo is valid
-        commit_url = commit['url']
-        if not commit_url.startswith(App.gogs_url):
+        if not self.commit_data['repository']['html_url'].startswith(App.gogs_url):
             raise Exception('Repos can only belong to {0} to use this webhook client.'.format(App.gogs_url))
 
         # Check that commit is on repo's default branch, else quit
@@ -58,16 +57,20 @@ class ClientWebhook(object):
             commit_branch = self.commit_data['ref'].split('/')[2]
         except IndexError:
             raise Exception('Could not determine commit branch, exiting.')
+        except KeyError:
+            Exception('This does not appear to be a push, exiting.')
         if commit_branch != self.commit_data['repository']['default_branch']:
             raise Exception('Commit branch: {0} is not the default branch, exiting.'.format(commit_branch))
 
-        # Get the commit_id, and see if there are multiple commits to this webhook payload
+        # Get the commit_id, commit_url
         commit_id = self.commit_data['after']
         commit = None
         for commit in self.commit_data['commits']:
             if commit['id'] == commit_id:
                 break
         commit_id = commit_id[:10]  # Only use the short form
+        commit_url = commit['url']
+
 
         # Gather other details from the commit that we will note for the job(s)
         user_name = self.commit_data['repository']['owner']['username']
