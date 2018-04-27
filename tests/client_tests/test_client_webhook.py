@@ -117,6 +117,12 @@ class ClientWebhookTest(unittest.TestCase):
         self.assertEqual(tx_manifest.id, tx_job.manifests_id)
 
     @mock.patch('libraries.client.client_webhook.download_file')
+    def test_process_webhook_wrong_branch(self, mock_download_file):
+        # Verifies that webhook bails if we are not on default_branch for the repo
+        self.assertRaises(Exception, self.setup_client_webhook_mock(
+            'kpb_mat_text_udb_repo', mock_download_file, 'refs/heads/test_branch'))
+
+    @mock.patch('libraries.client.client_webhook.download_file')
     def test_process_webhook_no_converter_error(self, mock_download_file):
         # given
         client_web_hook = self.setup_client_webhook_mock('unknown_resource', mock_download_file)
@@ -255,12 +261,12 @@ class ClientWebhookTest(unittest.TestCase):
                 return upload['file']
         return None
 
-    def setup_client_webhook_mock(self, repo_name, mock_download_file):
-        App.gogs_url = self.resources_dir
+    def setup_client_webhook_mock(self, repo_name, mock_download_file, ref='refs/heads/master'):
+        App.gogs_url = 'https://git.door43.org'
         App.gogs_user_token = mock_utils.valid_token
         mock_download_file.side_effect = self.mock_download_file
         source = os.path.join(self.resources_dir, repo_name)
-        commit_data = self.get_commit_data(source)
+        commit_data = self.get_commit_data(source, ref)
         self.cwh = ClientWebhook(commit_data)
         self.cwh.send_payload_to_converter = self.mock_send_payload_to_converter
         self.cwh.send_payload_to_linter = self.mock_send_payload_to_linter
@@ -298,7 +304,7 @@ class ClientWebhookTest(unittest.TestCase):
     def mock_clear_commit_directory_in_cdn(self, s3_results_key):
         return
 
-    def get_commit_data(self, source_path):
+    def get_commit_data(self, source_path, ref):
         base_url = 'https://git.door43.org'
         commit_id = '22f3d09f7a33d2496db6993648f0cd967a9006f6'
         commit_path = '/tx-manager-test-data/en-ulb/commit/22f3d09f7a33d2496db6993648f0cd967a9006f6'
@@ -310,6 +316,7 @@ class ClientWebhookTest(unittest.TestCase):
 
         commit_data = {
             'after': commit_id,
+            'ref': ref,
             'commits': [
                 {
                     'id': commit_id,
@@ -319,6 +326,8 @@ class ClientWebhookTest(unittest.TestCase):
             'compare_url': '',
             'repository': {
                 'name': repo,
+                'html_url': 'https://git.door43.org/unfoldingWord/en_ulb',
+                'default_branch': 'master',
                 'owner': {
                     'id': '1234567890',
                     'username': user,

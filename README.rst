@@ -19,25 +19,21 @@ develop:
     :target: https://coveralls.io/github/unfoldingWord-dev/tx-manager?branch=develop
 
 
+tX Overview
+===========
 
-**NOTE: High level Architecture documentation is here\:** `tX Architecture`_.
+tX (translationConverter) is a conversion tool for the content in the `Door43 Conent Service (DCS) <https://git.door43.org/>`__. The goal is to support several different input formats, output formats, and resource types.
 
+See the documentation at https://tx-manager.readthedocs.io/en/latest.
 
-
-tx-manager
-==========
-
-Project description at `tX Manager Module`_.
-
-Issue for its creation at https://github.com/unfoldingWord-dev/door43.org/issues/53.
-
+Issue queue maintained at https://github.com/unfoldingWord-dev/door43.org/issues.
 
 Setting Up a Developer Environment (CLI Version)
-================================================
+------------------------------------------------
 
 Satisfy basic depedencies:
 
-.. highlight:: bash
+.. code-block:: bash
 
     git clone git@github.com:unfoldingWord-dev/tx-manager.git
     sudo apt-get install libssl1.0.0 python-pip
@@ -45,46 +41,52 @@ Satisfy basic depedencies:
 
 We recommend you create a Python virtual environment to help manage Python package dependencies:
 
-.. highlight:: bash
+.. code-block:: bash
 
     cd tx-manager
     virtualenv venv
 
 Now load that virtual environment and install dependencies:
 
-.. highlight:: bash
+.. code-block:: bash
 
     source venv/bin/activate
     pip install -r requirements.txt
 
 Set AWS variables:
 
-.. highlight:: bash
+.. code-block:: bash
 
     export AWS_DEFAULT_REGION=us-west-2
     export AWS_REGION=us-west-2
 
 Run the test suite:
 
-.. highlight:: bash
+.. code-block:: bash
 
     python test-setup.py test
 
+Or, to run a single test, run:
+
+.. code-block:: bash
+
+    python -m unittest tests.client_tests.test_client_webhook
+
 Optionally to do Integration tests on 'test' site, first deploy tx-manager to test:
 
-.. highlight:: bash
+.. code-block:: bash
 
     apex deploy -p test -e test
 
 Now you can run the integration test(s) (see run_integration_tests for setup steps and help):
 
-.. highlight:: bash
+.. code-block:: bash
 
     ./scripts/run_integration_tests.sh test_ts_mat_conversion
 
 
 tX Pipeline
-===========
+-----------
 
 1. Gogs
 2. Webhook
@@ -95,7 +97,8 @@ tX Pipeline
 7. Door43 Deploy
 
 Definitions
-===========
+-----------
+
 The following placeholders are used in examples in this document:
 
 * <repo> - the machine name of a Gog's repo. This is used in the URL for the repo, such as en-obs
@@ -103,7 +106,7 @@ The following placeholders are used in examples in this document:
 * <commit> - The 10 character hash string that represents the commit (revision) that is being processed
 
 How it Works
-============
+------------
 
 Request Conversion Job
 ----------------------
@@ -194,23 +197,19 @@ the following variables:
 See `tx-md2html_register Lambda function <https://github.com/unfoldingWord-dev/tx-md2html/blob/develop/functions/register/main.py>`_. for an example of a module registering itself.
 
 
-.. _tX Architecture:
-
-.. include:: README-tXArchitecture.rst
-
-
 Setting up as deployed in virtual environment
-=============================================
+---------------------------------------------
 
 In IntelliJ terminal, switch to virtual environment and install requirements.
 
-.. highlight:: bash
+.. code-block:: bash
 
     source ~/venv/txml/bin/activate
     ./install-requirements.sh
 
 Deploying your branch of tx-manager to AWS
-==========================================
+------------------------------------------
+
 For developing the tx-manager library which this repo uses for every function, you can deploy your code to a test AWS
 environment with apex by doing the following:
 
