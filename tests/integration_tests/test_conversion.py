@@ -747,6 +747,7 @@ class TestConversions(TestCase):
     def do_conversion_job(self, base_url, commit_id, commit_path, commit_sha, repo, user):
         commit_data = {
             "after": commit_id,
+            "ref": "refs/heads/master",
             "commits": [
                 {
                     "id": "b9278437b27024e07d02490400138d4fd7d1677c",
@@ -756,6 +757,8 @@ class TestConversions(TestCase):
             "compare_url": "",
             "repository": {
                 "name": repo,
+                "html_url": "https://git.door43.org/unfoldingWord/en_ulb",
+                "default_branch": "master",
                 "owner": {
                     "id": 1234567890,
                     "username": user,

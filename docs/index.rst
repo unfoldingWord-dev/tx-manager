@@ -1,11 +1,11 @@
-tx-manager documentation!
-=========================
+tX Documentation
+================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    readme
+   architecture
    license
 
 Indices and tables
@@ -13,4 +13,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
