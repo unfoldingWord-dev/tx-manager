@@ -42,7 +42,7 @@ class ClientConverterCallback(object):
         self.job = TxJob.get(job_id)
 
         if not self.job:
-            error = 'No job found for job_id = {0}, identifier = {0}'.format(job_id, self.identifier)
+            error = 'No job found for job_id = {0}, identifier = {1}'.format(job_id, self.identifier)
             App.logger.error(error)
             raise Exception(error)
 

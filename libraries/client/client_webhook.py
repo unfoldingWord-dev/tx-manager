@@ -140,7 +140,7 @@ class ClientWebhook(object):
         job.source = self.source_url_base + "/" + file_key
         job.cdn_bucket = App.cdn_bucket
         job.cdn_file = 'tx/job/{0}.zip'.format(job.job_id)
-        job.output = 'https://{0}/{1}'.format(App.cdn_bucket, job.cdn_file)
+        job.output = 'http://{0}.s3-{1}.amazonaws.com/{2}'.format(App.cdn_bucket, App.aws_region_name, job.cdn_file)
         job.callback = App.api_url + '/client/callback'
         job.output_format = 'html'
         job.links = {
@@ -218,7 +218,7 @@ class ClientWebhook(object):
                         book_job.job_id = self.get_unique_job_id()
                         book_job.identifier = '{0}/{1}/{2}/{3}'.format(book_job.job_id, book_count, i, book)
                         book_job.cdn_file = 'tx/job/{0}.zip'.format(book_job.job_id)
-                        book_job.output = 'https://{0}/{1}'.format(App.cdn_bucket, book_job.cdn_file)
+                        book_job.output = 'http://{0}.s3-{1}.amazonaws.com/{2}'.format(App.cdn_bucket, App.aws_region_name, book_job.cdn_file)
                         book_job.links = {
                             "href": "{0}/tx/job/{1}".format(App.api_url, book_job.job_id),
                             "rel": "self",

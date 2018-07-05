@@ -1,13 +1,22 @@
 {
-  "name": "tx",
-  "description": "tX Manager lambda functions for handling conversions",
-  "runtime": "python2.7",
-  "memory": 512,
-  "timeout": 300,
-  "role": "arn:aws:iam::002723143144:role/tx_lambda_function",
-  "environment": {},
-  "hooks": {
-    "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
-    "clean": "rm -rf ./*/ ./*.pyc"
-  }
+    "name": "tx",
+    "description": "tX Manager lambda functions for handling conversions",
+    "runtime": "python2.7",
+    "memory": 512,
+    "timeout": 300,
+    "role": "arn:aws:iam::581647696645:role/tx_lambda_function",
+    "environment": {},
+    "hooks": {
+        "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
+        "clean": "rm -rf ./*/ ./*.pyc"
+    },
+    "vpc": {
+        "securityGroups": [
+            "sg-a35184c9"
+        ],
+        "subnets": [
+            "subnet-586bc022",
+            "subnet-e9a8da81"
+        ]
+    }
 }

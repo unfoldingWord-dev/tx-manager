@@ -1,6 +1,6 @@
 {
-    "name": "dev-tx",
-    "description": "DEVELOPMENT tX Manager lambda functions for handling conversions",
+    "name": "poc-tx",
+    "description": "Proof of concept tX Manager lambda functions for handling conversions",
     "runtime": "python2.7",
     "memory": 512,
     "timeout": 300,

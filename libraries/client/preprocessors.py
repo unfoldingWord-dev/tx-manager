@@ -7,6 +7,7 @@ from libraries.app.app import App
 from libraries.door43_tools.bible_books import BOOK_NUMBERS, BOOK_NAMES, BOOK_CHAPTER_VERSES
 from libraries.general_tools.file_utils import write_file, read_file
 from libraries.resource_container.ResourceContainer import RC
+from converters import txt2md
 
 
 def do_preprocess(rc, repo_dir, output_dir):
@@ -465,6 +466,13 @@ class TqPreprocessor(Preprocessor):
                     index_json['chapters'][html_file].append(link)
                     markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
                     chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
+
+                    chunk_files_txt = sorted(glob(os.path.join(chapter_dir, '*.txt')))
+                    # If there are txt files in chapter folders, convert them to md format
+                    if len(chunk_files_txt):
+                        if txt2md(chapter_dir):
+                            return self.run()
+
                     for chunk_idx, chunk_file in enumerate(chunk_files):
                         start_verse = os.path.splitext(os.path.basename(chunk_file))[0].lstrip('0')
                         if chunk_idx < len(chunk_files)-1:
@@ -515,6 +523,13 @@ class TwPreprocessor(Preprocessor):
                 index_json['chapters'][key] = {}
                 index_json['book_codes'][key] = section
                 term_files = sorted(glob(os.path.join(section_dir, '*.md')))
+
+                term_files_txt = sorted(glob(os.path.join(section_dir, '*.txt')))
+                # If there are txt files in section folders, convert them to md format
+                if len(term_files_txt):
+                    if txt2md(section_dir):
+                        return self.run()
+
                 for term_file in term_files:
                     term = os.path.splitext(os.path.basename(term_file))[0]
                     text = read_file(term_file)
@@ -620,6 +635,13 @@ class TnPreprocessor(Preprocessor):
                     index_json['chapters'][html_file].append(link)
                     markdown += '## <a id="{0}"/> {1} {2}\n\n'.format(link, name, chapter.lstrip('0'))
                     chunk_files = sorted(glob(os.path.join(chapter_dir, '*.md')))
+
+                    chunk_files_txt = sorted(glob(os.path.join(chapter_dir, '*.txt')))
+                    # If there are txt files in chapter folders, convert them to md format
+                    if len(chunk_files_txt):
+                        if txt2md(chapter_dir):
+                            return self.run()
+
                     for move_str in ['front', 'intro']:
                         self.move_to_front(chunk_files, move_str)
                     for chunk_idx, chunk_file in enumerate(chunk_files):
