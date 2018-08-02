@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 from libraries.door43_tools.project_deployer import ProjectDeployer
 from libraries.lambda_handlers.handler import Handler
 from libraries.app.app import App
+import os
 
 
 class Door43DeployHandler(Handler):
@@ -13,6 +14,8 @@ class Door43DeployHandler(Handler):
         """
         deployer = ProjectDeployer()
         prefix = ''
+        deploy_bucket =  os.environ.get('DEPLOYBUCKET')
+        cdn_bucket =  os.environ.get('CDNBUCKET')
         try:
             if 'prefix' in event:
                 prefix = event['prefix']
@@ -25,13 +28,24 @@ class Door43DeployHandler(Handler):
                         if '-' in bucket_name:
                             prefix = bucket_name.split('-')[0] + '-'
                         App(prefix=prefix)
+                        App.cdn_bucket = bucket_name
+                        if deploy_bucket is not None:
+                            App.door43_bucket = deploy_bucket
                         key = record['s3']['object']['key']
                         deployer.deploy_revision_to_door43(key)
             elif 'build_log_key' in event:
                 App(prefix=prefix)
+                if deploy_bucket is not None:
+                    App.door43_bucket = deploy_bucket
+                if cdn_bucket is not None:
+                    App.cdn_bucket = cdn_bucket
                 deployer.deploy_revision_to_door43(event['build_log_key'])
             else:
                 App(prefix=prefix)
+                if deploy_bucket is not None:
+                    App.door43_bucket = deploy_bucket
+                if cdn_bucket is not None:
+                    App.cdn_bucket = cdn_bucket
                 # this is triggered manually through AWS Lambda console to update all projects
                 deploy_function = '{0}tx_door43_deploy'.format(App.prefix)
                 deployer.redeploy_all_projects(deploy_function)
