@@ -18,7 +18,7 @@ class Converter(object):
 
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
-    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identifier=None):
+    def __init__(self, source, resource, cdn_file=None, options=None, convert_callback=None, identifier=None, cdn_bucket=None):
         """
         :param string source:
         :param string resource:
@@ -31,6 +31,8 @@ class Converter(object):
         self.source = source
         self.resource = resource
         self.cdn_file = cdn_file
+        self.cdn_bucket = cdn_bucket
+        App.cdn_bucket = cdn_bucket
         self.options = {} if not options else options
 
         self.log = ConvertLogger()
@@ -87,7 +89,7 @@ class Converter(object):
                 add_contents_to_zip(self.output_zip_file, self.output_dir)
                 remove_tree(self.output_dir)
                 # upload the output archive either to cdn_bucket or to a file (no cdn_bucket)
-                App.logger.debug("Uploading archive to {0}/{1}".format(App.cdn_bucket, self.cdn_file))
+                App.logger.debug("Uploading archive to {0}/{1}".format(self.cdn_bucket, self.cdn_file))
                 self.upload_archive()
                 remove(self.output_zip_file)
                 App.logger.debug("Uploaded")
