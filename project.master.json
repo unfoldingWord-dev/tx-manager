@@ -6,7 +6,7 @@
     "timeout": 300,
     "role": "arn:aws:iam::581647696645:role/tx_lambda_function",
     "environment": {
-        "DEPLOYBUCKET": "read-dev.bibletranslationtools.org"
+        "DEPLOYBUCKET": "read.bibletranslationtools.org"
     },
     "hooks": {
         "build": "pip install --upgrade -r ../../requirements.txt -t .;cp -Rf ../../libraries .",
