@@ -28,12 +28,13 @@ class ConvertHandler(Handler):
         source = self.retrieve(self.data, 'source_url', 'Payload')
         resource = self.retrieve(self.data, 'resource_id', 'Payload')
         cdn_file = self.retrieve(self.data, 'cdn_file', 'Payload')
+        cdn_bucket = self.retrieve(self.data, 'cdn_bucket', 'Payload')
         options = self.retrieve(self.data, 'options', 'Payload', required=False, default={})
         convert_callback = self.retrieve(self.data, 'convert_callback', 'Payload', required=False)
 
         # Execute
         converter = self.converter_class(source=source, resource=resource, cdn_file=cdn_file, options=options,
-                                         convert_callback=convert_callback, identifier=identifier)
+                                         convert_callback=convert_callback, identifier=identifier, cdn_bucket=cdn_bucket)
         results = converter.run()
         converter.close()  # do cleanup after run
         return results

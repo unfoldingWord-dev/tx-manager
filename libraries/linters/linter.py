@@ -17,7 +17,7 @@ class Linter(object):
     EXCLUDED_FILES = ["license.md", "package.json", "project.json", 'readme.md']
 
     def __init__(self, source_url=None, source_file=None, source_dir=None, commit_data=None,
-                 lint_callback=None, identifier=None, s3_results_key=None, **kwargs):
+                 lint_callback=None, identifier=None, s3_results_key=None, cdn_bucket=None , **kwargs):
         """
         :param string source_url: The main way to give Linter the files
         :param string source_file: If set, will just unzip this local file
@@ -48,6 +48,8 @@ class Linter(object):
         self.callback_status = 0
         self.callback_results = None
         self.identifier = identifier
+        self.cdn_bucket = cdn_bucket
+        App.cdn_bucket = cdn_bucket
         if self.callback and not identifier:
             App.logger.error("Identity not given for callback")
         self.s3_results_key = s3_results_key

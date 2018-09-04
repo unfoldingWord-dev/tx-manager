@@ -27,12 +27,13 @@ class LintHandler(Handler):
         single_file = self.retrieve(self.data, 'single_file', 'Payload', required=False, default=None)
         lint_callback = self.retrieve(self.data, 'lint_callback', 'Payload', required=False, default=None)
         cdn_file = self.retrieve(self.data, 'cdn_file', 'Payload', required=False, default=None)
+        cdn_bucket = self.retrieve(self.data, 'cdn_bucket', 'Payload', required=False, default=None)
         s3_results_key = self.retrieve(self.data, 's3_results_key', 'payload', required=False, default=None)
 
         # Execute
         linter = self.linter_class(source_url=source_url, commit_data=commit_data, resource_id=resource_id,
                                    single_file=single_file, lint_callback=lint_callback, identifier=identifier,
-                                   cdn_file=cdn_file, s3_results_key=s3_results_key)
+                                   cdn_file=cdn_file, s3_results_key=s3_results_key, cdn_bucket = cdn_bucket)
         results = linter.run()
         linter.close()  # do cleanup after run
         return results
