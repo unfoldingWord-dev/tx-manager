@@ -29,12 +29,13 @@ class Door43DeployHandler(Handler):
                         if '-' in bucket_name:
                             prefix = bucket_name.split('-')[0] + '-'
                         App(prefix=prefix)
+                        App.aws_region_name = record['awsRegion']
                         if cdn_bucket is not None:
                             App.cdn_bucket = cdn_bucket
                         if deploy_bucket is not None:
                             App.door43_bucket = deploy_bucket
                         if bucket_name == deploy_bucket:
-                            deployer.redeploy_all_projects(deploy_function)
+                            deployer.redeploy_all_projects(deploy_function, True)
                         else:
                             key = record['s3']['object']['key']
                             deployer.deploy_revision_to_door43(key)
