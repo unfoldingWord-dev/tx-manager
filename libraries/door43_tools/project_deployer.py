@@ -306,21 +306,19 @@ class ProjectDeployer(object):
         return index_json
 
     @staticmethod
-    def redeploy_all_projects(deploy_function):
+    def redeploy_all_projects(deploy_function, ignoretime = False):
         i = 0
         one_day_ago = datetime.utcnow() - timedelta(hours=24)
         for obj in App.cdn_s3_handler().get_objects(prefix='u/', suffix='build_log.json'):
             i += 1
             last_modified = obj.last_modified.replace(tzinfo=None)
-            if one_day_ago <= last_modified:
+            if one_day_ago <= last_modified and not ignoretime:
                 continue
             App.lambda_handler().invoke(
-                FunctionName=deploy_function,
-                InvocationType='Event',
-                LogType='Tail',
-                Payload=json.dumps({
+                function_name=deploy_function,
+                payload={
                     'prefix': App.prefix,
                     'build_log_key': obj.key
-                })
+                }
             )
         return True
