@@ -16,7 +16,7 @@ class Door43DeployHandler(Handler):
         prefix = ''
         deploy_bucket =  os.environ.get('DEPLOYBUCKET')
         cdn_bucket =  os.environ.get('CDNBUCKET')
-        deploy_function = os.environ.gett('LAMBDA_FUNCTION_NAME')
+        deploy_function = os.environ.get('LAMBDA_FUNCTION_NAME')
         try:
             if 'prefix' in event:
                 prefix = event['prefix']
