@@ -196,7 +196,8 @@ class ProjectDeployer(object):
         templater.titles = index_json['titles']
         templater.chapters = index_json['chapters']
         templater.book_codes = index_json['book_codes']
-        templater.already_converted = templater.files  # do not reconvert files
+        # Commented out to see if this fixes the render problem
+        #templater.already_converted = templater.files  # do not reconvert files
         # merge the source files with the template
         try:
             self.run_templater(templater)
