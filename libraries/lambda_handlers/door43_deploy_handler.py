@@ -16,6 +16,7 @@ class Door43DeployHandler(Handler):
         prefix = ''
         deploy_bucket =  os.environ.get('DEPLOYBUCKET')
         cdn_bucket =  os.environ.get('CDNBUCKET')
+        deploy_function = os.environ.get('LAMBDA_FUNCTION_NAME')
         try:
             if 'prefix' in event:
                 prefix = event['prefix']
@@ -28,11 +29,16 @@ class Door43DeployHandler(Handler):
                         if '-' in bucket_name:
                             prefix = bucket_name.split('-')[0] + '-'
                         App(prefix=prefix)
-                        App.cdn_bucket = bucket_name
+                        App.aws_region_name = record['awsRegion']
+                        if cdn_bucket is not None:
+                            App.cdn_bucket = cdn_bucket
                         if deploy_bucket is not None:
                             App.door43_bucket = deploy_bucket
-                        key = record['s3']['object']['key']
-                        deployer.deploy_revision_to_door43(key)
+                        if bucket_name == deploy_bucket:
+                            deployer.redeploy_all_projects(deploy_function, True)
+                        else:
+                            key = record['s3']['object']['key']
+                            deployer.deploy_revision_to_door43(key)
             elif 'build_log_key' in event:
                 App(prefix=prefix)
                 if deploy_bucket is not None:
@@ -47,7 +53,6 @@ class Door43DeployHandler(Handler):
                 if cdn_bucket is not None:
                     App.cdn_bucket = cdn_bucket
                 # this is triggered manually through AWS Lambda console to update all projects
-                deploy_function = '{0}tx_door43_deploy'.format(App.prefix)
                 deployer.redeploy_all_projects(deploy_function)
 
         except Exception as e:

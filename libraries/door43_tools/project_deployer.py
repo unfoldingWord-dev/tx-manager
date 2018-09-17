@@ -96,7 +96,7 @@ class ProjectDeployer(object):
         resource_type = build_log['resource_type']
         template_key = 'templates/project-page.html'
         template_file = os.path.join(template_dir, 'project-page.html')
-        App.logger.debug("Downloading {0} to {1}...".format(template_key, template_file))
+        App.logger.debug("Downloading {0} to {1}...".format(App.door43_bucket + "/" + template_key, template_file))
         App.door43_s3_handler().download_file(template_key, template_file)
 
         if not do_multipart_merge:
@@ -306,21 +306,17 @@ class ProjectDeployer(object):
         return index_json
 
     @staticmethod
-    def redeploy_all_projects(deploy_function):
-        i = 0
+    def redeploy_all_projects(deploy_function, ignoretime = False):
         one_day_ago = datetime.utcnow() - timedelta(hours=24)
         for obj in App.cdn_s3_handler().get_objects(prefix='u/', suffix='build_log.json'):
-            i += 1
             last_modified = obj.last_modified.replace(tzinfo=None)
-            if one_day_ago <= last_modified:
+            if one_day_ago <= last_modified and not ignoretime:
                 continue
             App.lambda_handler().invoke(
-                FunctionName=deploy_function,
-                InvocationType='Event',
-                LogType='Tail',
-                Payload=json.dumps({
+                function_name=deploy_function,
+                payload={
                     'prefix': App.prefix,
                     'build_log_key': obj.key
-                })
+                }
             )
         return True

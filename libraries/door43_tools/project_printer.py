@@ -25,6 +25,7 @@ class ProjectPrinter(object):
         :param string project_id: 
         :return string: 
         """
+        App.cdn_bucket =  os.environ.get('CDNBUCKET')
         self.project_id = project_id
         if len(project_id.split('/')) != 3:
             raise Exception('Project not found.')
