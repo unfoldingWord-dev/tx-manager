@@ -75,7 +75,7 @@ class App(object):
     db_protocol = 'mysql+pymysql'
     db_user = 'tx'
     db_pass = None
-    db_end_point = 'd43-gogs.ccidwldijq9p.us-west-2.rds.amazonaws.com'
+    db_end_point = 'door43.cluster-ccidwldijq9p.us-west-2.rds.amazonaws.com'
     db_port = '3306'
     db_name = 'tx'
     db_connection_string = None
