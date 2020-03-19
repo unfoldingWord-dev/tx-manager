@@ -15,6 +15,6 @@ sphinx==1.5.2
 sphinx-autobuild==0.6.0
 sphinx-rtd-theme==0.1.9
 moto==1.0.1
-pyyaml==3.12
+pyyaml==5.1
 pymysql==0.7.11
 sqlalchemy==1.2.0b2
