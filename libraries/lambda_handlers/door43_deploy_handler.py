@@ -55,6 +55,6 @@ class Door43DeployHandler(Handler):
                 # this is triggered manually through AWS Lambda console to update all projects
                 deployer.redeploy_all_projects(deploy_function)
 
-        except Exception as e:
-            App.logger.debug("Project Deployer Error: " + str(e))
+        except Exception:
+            App.logger.exception("Project Deployer Error")
             deployer.close()
