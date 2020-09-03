@@ -18,18 +18,3 @@ after_success:
 env:
   global:
     - PYTHONDONTWRITEBYTECODE=true
-
-deploy:
-- provider: script
-  skip_cleanup: true
-  script:
-  - scripts/deploy.sh && scripts/register_modules.sh https://dev-api.door43.org && scripts/integration_test.sh
-  on:
-    branch: develop
-- provider: script
-  skip_cleanup: true
-  script:
-  - scripts/deploy.sh && scripts/register_modules.sh https://api.door43.org && scripts/integration_test.sh
-  on:
-    branch: master
-
