@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 import urlparse
 import os
+import sys
 import tempfile
 import codecs
 from bs4 import BeautifulSoup
@@ -15,6 +16,10 @@ class Usfm2HtmlConverter(Converter):
 
     def convert(self):
         App.logger.debug('Processing the Bible USFM files')
+
+        # Increase the recursion limit -- certain books were crashing
+        # because BeautifulSoup ran out of resources.
+        sys.setrecursionlimit(1500)
 
         # find the first directory that has usfm files.
         files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
