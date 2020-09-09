@@ -4,7 +4,7 @@ import boto3
 
 
 class LambdaHandler(object):
-    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name='us-west-2'):
+    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, aws_region_name=None):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_region_name = aws_region_name
