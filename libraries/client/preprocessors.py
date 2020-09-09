@@ -425,7 +425,8 @@ class TaPreprocessor(Preprocessor):
         # fix links to other manuals (two ../ and a manual name and a section name)
         # e.g. [how to translate](../../translate/accurate/01.md) => [how to translate](translate.html#accurate)
         for idx, project in enumerate(self.rc.projects):
-            pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project.identifier))
+            project_path_basename = os.path.basename(project.path)
+            pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project_path_basename))
             replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
             content = re.sub(pattern, replace, content)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
