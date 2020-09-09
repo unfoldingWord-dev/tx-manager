@@ -245,10 +245,9 @@ class BiblePreprocessor(Preprocessor):
                     chapters = self.rc.chapters(project.identifier)
                     if len(chapters):
                         #          Piece the USFM file together
-                        title_file = os.path.join(project_path, chapters[0], 'title.txt')
+                        title_file = os.path.join(project_path, 'front', 'title.txt')
                         if os.path.isfile(title_file):
-                            title = read_file(title_file)
-                            title = re.sub(r' \d+$', '', title).strip()
+                            title = read_file(title_file).strip()
                         else:
                             title = project.title
                         if not title and os.path.isfile(os.path.join(project_path, 'title.txt')):
@@ -259,6 +258,7 @@ class BiblePreprocessor(Preprocessor):
 \\h {2}
 \\toc1 {2}
 \\toc2 {2}
+\\toc3 {2}
 \\mt {2}
 """.format(project.identifier.upper(), self.rc.resource.title, title)
                         for chapter in chapters:
