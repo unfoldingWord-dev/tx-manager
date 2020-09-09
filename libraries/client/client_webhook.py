@@ -487,14 +487,23 @@ class ClientWebhook(object):
             converter = converters.filter(TxModule.resource_types.contains('other')).first()
         return converter
 
+    def query_linters(self, resource_type = None, input_format = None):
+        query = TxModule.query().filter(TxModule.type == 'linter') 
+        if input_format:
+            query = query.filter(TxModule.input_format.contains(input_format))
+        if resource_type:
+            query = query.filter(TxModule.resource_types.contains(resource_type))
+        return query
+
     def get_linter_module(self, job):
         """
         :param TxJob job:
         :return TxModule:
         """
-        linters = TxModule.query().filter(TxModule.type=='linter') \
-            .filter(TxModule.input_format.contains(job.input_format))
-        linter = linters.filter(TxModule.resource_types.contains(job.resource_type)).first()
+        linter = self.query_linters(job.resource_type, job.input_format).first() or \
+            self.query_linters('other', job.input_format).first()
         if not linter:
-            linter = linters.filter(TxModule.resource_types.contains('other')).first()
+            App.logger.debug("No matching linter for job {0}".format(job.__dict__))
+            linters = [row.__dict__ for row in self.query_linters()]
+            App.logger.debug("Available linters: {0}".format(linters))
         return linter
