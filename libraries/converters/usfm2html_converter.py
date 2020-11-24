@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import codecs
+import bs4
 from bs4 import BeautifulSoup
 from shutil import copyfile
 from libraries.app.app import App
@@ -17,9 +18,10 @@ class Usfm2HtmlConverter(Converter):
     def convert(self):
         App.logger.debug('Processing the Bible USFM files')
 
-        # Increase the recursion limit -- certain books were crashing
-        # because BeautifulSoup ran out of resources.
-        sys.setrecursionlimit(1500)
+        App.logger.debug('bs4 version: ' + bs4.__version__)
+
+        sys.setrecursionlimit(3000)
+        App.logger.debug('Recursion limit: ' + str(sys.getrecursionlimit()))
 
         # find the first directory that has usfm files.
         files = get_files(directory=self.files_dir, exclude=self.EXCLUDED_FILES)
@@ -68,6 +70,7 @@ class Usfm2HtmlConverter(Converter):
                     output_file = os.path.join(self.output_dir, os.path.basename(filename))
                     if not os.path.exists(output_file):
                         copyfile(filename, output_file)
+                        self.log.info('Copied {0} to {1}'.format(filename, output_file))
                 except:
                     pass
         self.log.info('Finished processing Bible USFM files.')

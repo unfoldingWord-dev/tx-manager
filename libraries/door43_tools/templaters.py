@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, print_function
 import os
 import codecs
+import sys
+import bs4
 from glob import glob
 from bs4 import BeautifulSoup
 from libraries.general_tools import file_utils
@@ -118,6 +120,11 @@ class Templater(object):
             self.titles[key] = title
 
     def apply_template(self):
+
+        App.logger.debug('bs4 version: ' + bs4.__version__)
+        sys.setrecursionlimit(3000)
+        App.logger.debug('Recursion limit: ' + str(sys.getrecursionlimit()))
+
         language_code = self.rc.resource.language.identifier
         language_name = self.rc.resource.language.title
         language_dir = self.rc.resource.language.direction

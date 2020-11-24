@@ -75,7 +75,7 @@ setup(
         'requests==2.13.0',
         'responses==0.5.1',
         'gogs_client==1.0.3',
-        'bs4==0.0.1',
+        'beautifulsoup4==4.6.0',
         'boto3==1.4.4',
         'python-json-logger==0.1.5',
         'markdown==2.6.8',
