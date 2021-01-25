@@ -118,7 +118,7 @@ class TestTwPreprocessor(unittest.TestCase):
         # given
         content = """This [link](rc://en/tn/help/ezr/09/01) is a rc link that should go to 
             ezr/09/01.md in the en_tn repo"""
-        expected = """This [link](https://git.door43.org/Door43/en_tn/src/master/ezr/09/01.md) is a rc link that should go to 
+        expected = """This [link](https://content.bibletranslationtools.org/WycliffeAssociates/en_tn/src/master/ezr/09/01.md) is a rc link that should go to
             ezr/09/01.md in the en_tn repo"""
 
         # when
