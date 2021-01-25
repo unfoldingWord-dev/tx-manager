@@ -692,7 +692,7 @@ class TnPreprocessor(Preprocessor):
                          flags=re.IGNORECASE)
         # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content,
+                         r'https://content.bibletranslationtools.org/WycliffeAssociates/\1_\2/src/master/\4.md', content,
                          flags=re.IGNORECASE)
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)

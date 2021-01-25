@@ -4,7 +4,7 @@ import tempfile
 import unittest
 import shutil
 from libraries.resource_container.ResourceContainer import RC
-from libraries.client.preprocessors import do_preprocess
+from libraries.client.preprocessors import do_preprocess, TnPreprocessor
 from libraries.general_tools.file_utils import unzip, read_file
 
 
@@ -74,6 +74,46 @@ class TestTnPreprocessor(unittest.TestCase):
         self.assertGreater(len(exo), 1000)
         lev = read_file(os.path.join(self.out_dir, '03-LEV.md'))
         self.assertGreater(len(lev), 1000)
+
+    def test_fix_links(self):
+        # given
+        rc = RC(os.path.join(self.resources_dir, 'manifests', 'tn'))
+        repo_name = 'Door43'
+        current_category = 'names'
+        tn = TnPreprocessor(rc, tempfile.gettempdir(), tempfile.gettempdir())
+        tn.repo_name = repo_name
+
+        # given
+        content = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
+        expected = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
+
+        # when
+        converted = tn.fix_links(content)
+
+        # then
+        self.assertEqual(converted, expected)
+
+        # given
+        content = """This [link](rc://en/tn/help/ezr/09/01) is a rc link that should go to
+            ezr/09/01.md in the en_tn repo"""
+        expected = """This [link](https://content.bibletranslationtools.org/WycliffeAssociates/en_tn/src/master/ezr/09/01.md) is a rc link that should go to
+            ezr/09/01.md in the en_tn repo"""
+
+        # when
+        converted = tn.fix_links(content)
+
+        # then
+        self.assertEqual(converted, expected)
+
+        # given
+        content = """This url should be made into a link: http://example.com/somewhere/outthere and so should www.example.com/asdf.html?id=5&view=dashboard#report."""
+        expected = """This url should be made into a link: [http://example.com/somewhere/outthere](http://example.com/somewhere/outthere) and so should [www.example.com/asdf.html?id=5&view=dashboard#report](http://www.example.com/asdf.html?id=5&view=dashboard#report)."""
+
+        # when
+        converted = tn.fix_links(content)
+
+        # then
+        self.assertEqual(converted, expected)
 
     @classmethod
     def extractFiles(cls, file_name, repo_name):
