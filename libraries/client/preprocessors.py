@@ -512,9 +512,14 @@ class TwPreprocessor(Preprocessor):
         }
         title_re = re.compile('^# +(.*?) *#*$', flags=re.MULTILINE)
         headers_re = re.compile('^(#+) +(.+?) *#*$', flags=re.MULTILINE)
+
         for idx, project in enumerate(self.rc.projects):
+            project_path = project.path
+            if project_path == "./" and os.path.exists(os.path.join(self.source_dir, "bible")):
+                App.logger.info("Rewriting project path from ./ to bible")
+                project_path = "bible"
             term_text = {}
-            section_dirs = sorted(glob(os.path.join(self.source_dir, project.path, '*')))
+            section_dirs = sorted(glob(os.path.join(self.source_dir, project_path, '*')))
             for section_dir in section_dirs:
                 section = os.path.basename(section_dir)
                 if section not in self.section_titles:
