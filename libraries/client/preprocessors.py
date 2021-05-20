@@ -36,7 +36,7 @@ def do_preprocess(rc, repo_dir, output_dir):
 
 
 class Preprocessor(object):
-    ignoreDirectories = ['.git', '00']
+    ignoreDirectories = ['.git', '00', 'front']
     ignoreFiles = ['.DS_Store', 'reference.txt', 'title.txt', 'LICENSE.md', 'README.md']
 
     def __init__(self, rc, source_dir, output_dir):
