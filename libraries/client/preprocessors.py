@@ -305,6 +305,8 @@ class TaPreprocessor(Preprocessor):
         'translate': 'Translation Manual'
     }
 
+    language_commit_number_dict = {}
+
     def __init__(self, *args, **kwargs):
         super(TaPreprocessor, self).__init__(*args, **kwargs)
         self.section_container_id = 1
@@ -417,10 +419,15 @@ class TaPreprocessor(Preprocessor):
                                                                                              project.identifier)))
         return True
 
-    @staticmethod
-    def get_wa_catalog_commit_number(language_and_format):
+    def get_wa_catalog_commit_number(self, language_and_format):
+        if language_and_format in self.language_commit_number_dict.keys():
+            return self.language_commit_number_dict[language_and_format]
+
         res = requests.get('http://read.bibletranslationtools.org/u/WA-Catalog/{}'.format(language_and_format))
-        return re.sub(r'http[A-Z0-9./:_\-]+/([A-Z0-9]{10})/', r'\1', res.url, flags=re.IGNORECASE)
+        commit_number = re.sub(r'http[A-Z0-9./:_\-]+/([A-Z0-9]{10})/$', r'\1', res.url, flags=re.IGNORECASE)
+
+        self.language_commit_number_dict[language_and_format] = commit_number
+        return commit_number
 
     @staticmethod
     def get_book_number(book_slug):

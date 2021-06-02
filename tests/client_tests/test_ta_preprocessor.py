@@ -104,17 +104,20 @@ class TestTaPreprocessor(unittest.TestCase):
         # expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to
         #     other/dream.md in the en_tw repo"""
         content = """
-        [link](rc://as/tn/help/1co/04/14)
-        [link](rc://en/tn/help/1co/04/14)
-        [link](rc://fr/tn/help/1co/04/14)
+        [link](rc://as/tn/help/rut/04/14)
+        [link](rc://en/tn/help/1co/05/14)
+        [link](rc://fr/tn/help/1co/06/14)
+        [link](rc://fr/tn/help/1co/07/14)
+        [link](rc://fr/tn/help/1co/08/14)
         """
         expected = """
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/as_tn/5ec1fb81f6/47-1CO.html#tn-chunk-1co-004-014)
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/47-1CO.html#tn-chunk-1co-004-014)
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-004-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/as_tn/5ec1fb81f6/8-RUT.html#tn-chunk-rut-004-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/47-1CO.html#tn-chunk-1co-005-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-006-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-007-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-008-014)
         """
 
-        ta.get_book_number('1co')
         converted = ta.fix_links(content)
         self.assertEqual(expected, converted)
 
