@@ -68,8 +68,12 @@ class TestTwPreprocessor(unittest.TestCase):
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'tw'))
         repo_name = 'Door43'
         current_category = 'names'
+
         tw = TwPreprocessor(rc, tempfile.gettempdir(), tempfile.gettempdir())
         tw.repo_name = repo_name
+
+
+        # given
         content = "This has links to the same category: (See also: [titus](../names/titus.md), [timothy](../names/timothy.md)"
         expected = "This has links to the same category: (See also: [titus](#titus), [timothy](#timothy)"
 
@@ -77,19 +81,23 @@ class TestTwPreprocessor(unittest.TestCase):
         converted = tw.fix_links(content, current_category)
 
         # then
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
 
         # given
         content = """This has links to other categories:
-        (See also:[lamb](../kt/lamb.md), [license](../other/license.md)"""
+        (See also:[lamb](../kt/lamb.md), [license](../other/license.md)
+        (See also:[tit](../kt/tit.md), [license](../other/license.md))"""
         expected = """This has links to other categories:
-        (See also:[lamb](kt.html#lamb), [license](other.html#license)"""
+        (See also:[lamb](kt.html#lamb), [license](other.html#license)
+        (See also:[tit](kt.html#tit), [license](other.html#license))"""
 
         # when
         converted = tw.fix_links(content, current_category)
 
         # then
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
 
         # given
         content = """This has links to the same category and others:
@@ -103,7 +111,8 @@ class TestTwPreprocessor(unittest.TestCase):
         converted = tw.fix_links(content, current_category)
 
         # then
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
 
         # given
         content = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
@@ -113,7 +122,8 @@ class TestTwPreprocessor(unittest.TestCase):
         converted = tw.fix_links(content, current_category)
 
         # then
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
 
         # given
         content = """This [link](rc://en/tn/help/ezr/09/01) is a rc link that should go to
@@ -125,7 +135,8 @@ class TestTwPreprocessor(unittest.TestCase):
         converted = tw.fix_links(content, current_category)
 
         # then
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
 
         # given
         content = """This url should be made into a link: http://example.com/somewhere/outthere and so should www.example.com/asdf.html?id=5&view=dashboard#report."""
@@ -135,7 +146,20 @@ class TestTwPreprocessor(unittest.TestCase):
         converted = tw.fix_links(content, current_category)
 
         # then
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
+
+        # given
+        content = "https://git.door43.org/unfoldingWord/en_tw/src/branch/master/bible/kt/sin.md"
+        expected = "https://read.bibletranslationtools.org/u/WycliffeAssociates/en_tw/#sin"
+
+        # when
+        converted = tw.fix_links(content, current_category)
+
+        # then
+        print(converted)
+        print(expected)
+        self.assertEqual(expected, converted)
 
     #
     # helpers

@@ -1,6 +1,8 @@
 from __future__ import unicode_literals, print_function
 import os
 import re
+import requests
+import json
 from glob import glob
 from shutil import copy
 from libraries.app.app import App
@@ -415,13 +417,50 @@ class TaPreprocessor(Preprocessor):
                                                                                              project.identifier)))
         return True
 
+    @staticmethod
+    def get_wa_catalog_commit_number(language_and_format):
+        res = requests.get('http://read.bibletranslationtools.org/u/WA-Catalog/{}'.format(language_and_format))
+        return re.sub(r'http[A-Z0-9./:_\-]+/([A-Z0-9]{10})/', r'\1', res.url, flags=re.IGNORECASE)
+
+    @staticmethod
+    def get_book_number(book_slug):
+        json_book_path = os.path.dirname(os.path.realpath(__file__)) + '/resources/books.json'
+        with open(json_book_path) as f:
+            book_data = json.load(f)
+
+        return book_data[book_slug]['num']
+
+    def fix_rc_links(self, content):
+        language_and_format = re.search(r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([^/]+)\)', content, flags=re.IGNORECASE)
+
+        while language_and_format is not None:
+            commit_number = self.get_wa_catalog_commit_number(
+                '{}_{}'.format(language_and_format.group(1), language_and_format.group(2))
+            )
+            book_slug = language_and_format.group(3)
+            verse = language_and_format.group(4)
+            chapter = language_and_format.group(5)
+            book_number = self.get_book_number(book_slug)
+
+            content = re.sub(
+                r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
+                r'http://read.bibletranslationtools.org/u/WA-Catalog/\1_\2/{}/{}-{}.html#tn-chunk-{}-{}-{}',
+                content,
+                1,
+                flags=re.IGNORECASE
+            ).format(commit_number, book_number, book_slug.upper(), book_slug, verse.zfill(3), chapter.zfill(3))
+
+            language_and_format = re.search(r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([^/]+)\)', content, flags=re.IGNORECASE)
+
+        return content
+
     def fix_links(self, content):
-        # convert RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
-        content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
-                         r'https://git.door43.org/Door43/\1_\2/src/master/\4.md', content, flags=re.IGNORECASE)
+        content = self.fix_rc_links(content)
+
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
         content = re.sub(r'\]\(\.\./([^/)]+)/01.md\)', r'](#\1)', content)
+
         # fix links to other manuals (two ../ and a manual name and a section name)
         # e.g. [how to translate](../../translate/accurate/01.md) => [how to translate](translate.html#accurate)
         for idx, project in enumerate(self.rc.projects):
@@ -429,15 +468,19 @@ class TaPreprocessor(Preprocessor):
             pattern = re.compile(r'\]\(\.\./\.\./{0}/([^/)]+)/01.md\)'.format(project_path_basename))
             replace = r']({0}-{1}.html#\1)'.format(str(idx+1).zfill(2), project.identifier)
             content = re.sub(pattern, replace, content)
+
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
         content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+
         # convert URLs to links if not already
         content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
                          content, flags=re.IGNORECASE)
+
         # URLS wth just www at the start, no http
         content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
                          content, flags=re.IGNORECASE)
+
         return content
 
 
@@ -566,29 +609,46 @@ class TwPreprocessor(Preprocessor):
         content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
                          r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
                          flags=re.IGNORECASE)
+
         # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
                          r'https://content.bibletranslationtools.org/WycliffeAssociates/\1_\2/src/master/\4.md', content,
                          flags=re.IGNORECASE)
+
         # fix links to other sections within the same manual (only one ../ and a section name that matches section_link)
         # e.g. [covenant](../kt/covenant.md) => [covenant](#covenant)
         pattern = r'\]\(\.\.\/{0}\/([^/]+).md\)'.format(section)
         content = re.sub(pattern, r'](#\1)', content)
+
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [commit](../other/commit.md) => [commit](other.html#commit)
         for s in TwPreprocessor.section_titles:
             pattern = re.compile(r'\]\(\.\./{0}/([^/]+).md\)'.format(s))
             replace = r']({0}.html#\1)'.format(s)
             content = re.sub(pattern, replace, content)
+
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
         content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+
         # convert URLs to links if not already
         content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
                          content, flags=re.IGNORECASE)
+
         # URLS wth just www at the start, no http
         content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
                          content, flags=re.IGNORECASE)
+
+        # git.door43.org urls
+        # https://git.door43.org/unfoldingWord/en_tw/src/branch/master/bible/kt/sin.md
+        # https://read.bibletranslationtools.org/u/WycliffeAssociates/en_tw/#sin
+        # content = re.sub(
+        #     r'^(https://)?(git.door43.org/unfoldingWord/)([A-Z_]+)(/src/branch/master/bible/kt/)([A-Z]+)(.md)',
+        #     r'https://read.bibletranslationtools.org/u/WycliffeAssociates/\3/#\5',
+        #     content,
+        #     flags=re.IGNORECASE
+        # )
+
         return content
 
 

@@ -62,41 +62,72 @@ class TestTaPreprocessor(unittest.TestCase):
     def test_fix_links(self):
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'ta'))
         ta = TaPreprocessor(rc, tempfile.gettempdir(), tempfile.gettempdir())
+
         content = "This has [links](../section1/01.md) to the same [manual](../section2/01.md)"
         expected = "This has [links](#section1) to the same [manual](#section2)"
+
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
- 
+
+        ################################################################################################################
+
         content = """This has links to 
         [other](../../checking/section1/01.md) [manuals](../../translate/section2/01.md)"""
         expected = """This has links to 
         [other](04-checking.html#section1) [manuals](03-translate.html#section2)"""
+
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
+
+        ################################################################################################################
 
         content = """This has links to both this [manual](../section1/01.md),
          this [page](section2) and [another manual](../../process/section3/01.md)."""
         expected = """This has links to both this [manual](#section1),
          this [page](#section2) and [another manual](02-process.html#section3)."""
+
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
+
+        ################################################################################################################
 
         content = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
         expected = """This link should NOT be converted: [webpage](http://example.com/somewhere/outthere) """
+
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
 
-        content = """This [link](rc://en/tw/dict/bible/other/dream) is a rc link that should go to 
-            other/dream.md in the en_tw repo"""
-        expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to 
-            other/dream.md in the en_tw repo"""
+        ################################################################################################################
+
+        # content = """This [link](rc://en/tw/dict/bible/other/dream) is a rc link that should go to
+        #     other/dream.md in the en_tw repo"""
+        # expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to
+        #     other/dream.md in the en_tw repo"""
+        content = """
+        [link](rc://as/tn/help/1co/04/14)
+        [link](rc://en/tn/help/1co/04/14)
+        [link](rc://fr/tn/help/1co/04/14)
+        """
+        expected = """
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/as_tn/5ec1fb81f6/47-1CO.html#tn-chunk-1co-004-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/47-1CO.html#tn-chunk-1co-004-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-004-014)
+        """
+
+        ta.get_book_number('1co')
         converted = ta.fix_links(content)
-        self.assertEqual(converted, expected)
+        self.assertEqual(expected, converted)
+
+        ################################################################################################################
 
         content = """This url should be made into a link: http://example.com/somewhere/outthere and so should www.example.com/asdf.html?id=5&view=dashboard#report."""
         expected = """This url should be made into a link: [http://example.com/somewhere/outthere](http://example.com/somewhere/outthere) and so should [www.example.com/asdf.html?id=5&view=dashboard#report](http://www.example.com/asdf.html?id=5&view=dashboard#report)."""
+
         converted = ta.fix_links(content)
         self.assertEqual(converted, expected)
+
+        ################################################################################################################
+
         # Tests https://git.door43.org/Door43/en_ta/raw/master/translate/translate-source-text/01.md
         content = """
 ### Factors to Consider for a Source Text
