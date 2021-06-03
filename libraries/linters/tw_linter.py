@@ -48,6 +48,8 @@ class TwLinter(MarkdownLinter):
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
 
+    # TODO: change this
+    # probably just as simple as changing git.door43.org -> content.bibletranslationtools.org
     def get_file_link(self, f, folder):
         parts = folder.split(self.source_dir)
         sub_path = self.source_dir  # default

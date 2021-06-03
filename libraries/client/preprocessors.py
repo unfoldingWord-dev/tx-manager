@@ -185,6 +185,7 @@ class ObsPreprocessor(Preprocessor):
                 for chapter in self.get_chapters(project_path):
                     markdown = '# {0}\n\n'.format(chapter['title'])
                     for frame in chapter['frames']:
+                        # TODO: will most likely need to change this but can't test this as of 6/3/21
                         markdown += '![Frame {0}](https://cdn.door43.org/obs/jpg/360px/obs-en-{0}.jpg)\n\n' \
                             .format(frame.get('id'))
                         markdown += frame['text'] + '\n\n'
@@ -305,8 +306,6 @@ class TaPreprocessor(Preprocessor):
         'translate': 'Translation Manual'
     }
 
-    language_commit_number_dict = {}
-
     def __init__(self, *args, **kwargs):
         super(TaPreprocessor, self).__init__(*args, **kwargs)
         self.section_container_id = 1
@@ -419,52 +418,10 @@ class TaPreprocessor(Preprocessor):
                                                                                              project.identifier)))
         return True
 
-    def get_wa_catalog_commit_number(self, language_and_format):
-        if language_and_format in self.language_commit_number_dict.keys():
-            return self.language_commit_number_dict[language_and_format]
 
-        res = requests.get('http://read.bibletranslationtools.org/u/WA-Catalog/{}'.format(language_and_format))
-        commit_number = re.sub(r'http[A-Z0-9./:_\-]+/([A-Z0-9]{10})/$', r'\1', res.url, flags=re.IGNORECASE)
-
-        self.language_commit_number_dict[language_and_format] = commit_number
-        return commit_number
-
-    @staticmethod
-    def get_book_number(book_slug):
-        json_book_path = os.path.dirname(os.path.realpath(__file__)) + '/resources/books.json'
-        with open(json_book_path) as f:
-            book_data = json.load(f)
-
-        return book_data[book_slug]['num']
-
-    def fix_rc_links(self, content):
-        # matches on rc links like rc://fr/tn/help/1co/08/14
-        rc_link_values_pattern = r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([\d]+)'
-        rc_link_values = re.search(rc_link_values_pattern, content, flags=re.IGNORECASE)
-
-        while rc_link_values is not None:
-            commit_number = self.get_wa_catalog_commit_number(
-                '{}_{}'.format(rc_link_values.group(1), rc_link_values.group(2))
-            )
-            book_slug = rc_link_values.group(3)
-            verse = rc_link_values.group(4)
-            chapter = rc_link_values.group(5)
-            book_number = self.get_book_number(book_slug)
-
-            content = re.sub(
-                r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
-                r'http://read.bibletranslationtools.org/u/WA-Catalog/\1_\2/{}/{}-{}.html#tn-chunk-{}-{}-{}',
-                content,
-                1,
-                flags=re.IGNORECASE
-            ).format(commit_number, book_number, book_slug.upper(), book_slug, verse.zfill(3), chapter.zfill(3))
-
-            rc_link_values = re.search(rc_link_values_pattern, content, flags=re.IGNORECASE)
-
-        return content
 
     def fix_links(self, content):
-        content = self.fix_rc_links(content)
+        # content = self.fix_rc_links(content)
 
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
@@ -614,6 +571,7 @@ class TwPreprocessor(Preprocessor):
         return True
 
     def fix_links(self, content, section):
+        # TODO: change what this is pointing to as well
         # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
         content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
                          r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
@@ -667,6 +625,8 @@ class TnPreprocessor(Preprocessor):
         'chapters': {},
         'book_codes': {}
     }
+
+    language_commit_number_dict = {}
 
     def __init__(self, *args, **kwargs):
         super(TnPreprocessor, self).__init__(*args, **kwargs)
@@ -754,7 +714,53 @@ class TnPreprocessor(Preprocessor):
                 files.pop()
                 files.insert(0, last_file)
 
+    def get_wa_catalog_commit_number(self, language_and_format):
+        if language_and_format in self.language_commit_number_dict.keys():
+            return self.language_commit_number_dict[language_and_format]
+
+        res = requests.get('http://read.bibletranslationtools.org/u/WA-Catalog/{}'.format(language_and_format))
+        commit_number = re.sub(r'http[A-Z0-9./:_\-]+/([A-Z0-9]{10})/$', r'\1', res.url, flags=re.IGNORECASE)
+
+        self.language_commit_number_dict[language_and_format] = commit_number
+        return commit_number
+
+    @staticmethod
+    def get_book_number(book_slug):
+        json_book_path = os.path.dirname(os.path.realpath(__file__)) + '/resources/books.json'
+        with open(json_book_path) as f:
+            book_data = json.load(f)
+
+        return book_data[book_slug]['num']
+
+    def fix_rc_links(self, content):
+        # matches on rc links like rc://fr/tn/help/1co/08/14
+        rc_link_values_pattern = r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([\d]+)'
+        rc_link_values = re.search(rc_link_values_pattern, content, flags=re.IGNORECASE)
+
+        while rc_link_values is not None:
+            commit_number = self.get_wa_catalog_commit_number(
+                '{}_{}'.format(rc_link_values.group(1), rc_link_values.group(2))
+            )
+            book_slug = rc_link_values.group(3)
+            verse = rc_link_values.group(4)
+            chapter = rc_link_values.group(5)
+            book_number = self.get_book_number(book_slug)
+
+            content = re.sub(
+                r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s\p{P})\]\n$]+)',
+                r'http://read.bibletranslationtools.org/u/WA-Catalog/\1_\2/{}/{}-{}.html#tn-chunk-{}-{}-{}',
+                content,
+                1,
+                flags=re.IGNORECASE
+            ).format(commit_number, book_number, book_slug.upper(), book_slug, verse.zfill(3), chapter.zfill(3))
+
+            rc_link_values = re.search(rc_link_values_pattern, content, flags=re.IGNORECASE)
+
+        return content
+
     def fix_links(self, content):
+        content = self.fix_rc_links(content)
+
         # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
         content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
                          r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
@@ -763,13 +769,17 @@ class TnPreprocessor(Preprocessor):
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
                          r'https://content.bibletranslationtools.org/WycliffeAssociates/\1_\2/src/master/\4.md', content,
                          flags=re.IGNORECASE)
+
         # fix links to other sections that just have the section name but no 01.md page (preserve http:// links)
         # e.g. See [Verbs](figs-verb) => See [Verbs](#figs-verb)
         content = re.sub(r'\]\(([^# :/)]+)\)', r'](#\1)', content)
+
         # convert URLs to links if not already
         content = re.sub(r'([^"(])((http|https|ftp)://[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](\2)',
                          content, flags=re.IGNORECASE)
+
         # URLS wth just www at the start, no http
         content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
                          content, flags=re.IGNORECASE)
+
         return content
