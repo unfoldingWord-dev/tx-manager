@@ -438,15 +438,17 @@ class TaPreprocessor(Preprocessor):
         return book_data[book_slug]['num']
 
     def fix_rc_links(self, content):
-        language_and_format = re.search(r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([^/]+)\)', content, flags=re.IGNORECASE)
+        # matches on rc links like rc://fr/tn/help/1co/08/14
+        rc_link_values_pattern = r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([\d]+)'
+        rc_link_values = re.search(rc_link_values_pattern, content, flags=re.IGNORECASE)
 
-        while language_and_format is not None:
+        while rc_link_values is not None:
             commit_number = self.get_wa_catalog_commit_number(
-                '{}_{}'.format(language_and_format.group(1), language_and_format.group(2))
+                '{}_{}'.format(rc_link_values.group(1), rc_link_values.group(2))
             )
-            book_slug = language_and_format.group(3)
-            verse = language_and_format.group(4)
-            chapter = language_and_format.group(5)
+            book_slug = rc_link_values.group(3)
+            verse = rc_link_values.group(4)
+            chapter = rc_link_values.group(5)
             book_number = self.get_book_number(book_slug)
 
             content = re.sub(
@@ -457,7 +459,7 @@ class TaPreprocessor(Preprocessor):
                 flags=re.IGNORECASE
             ).format(commit_number, book_number, book_slug.upper(), book_slug, verse.zfill(3), chapter.zfill(3))
 
-            language_and_format = re.search(r'rc://([^/]+)/([^/]+)/help/([^/]+)/([^/]+)/([^/]+)\)', content, flags=re.IGNORECASE)
+            rc_link_values = re.search(rc_link_values_pattern, content, flags=re.IGNORECASE)
 
         return content
 
