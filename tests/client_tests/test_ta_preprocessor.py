@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals, print_function
 import os
 import tempfile
 import unittest
+import mock
 import shutil
 import markdown2
 from libraries.resource_container.ResourceContainer import RC
@@ -59,7 +60,42 @@ class TestTaPreprocessor(unittest.TestCase):
         self.assertEqual(preprocessor.get_title(rc.project('checking'), 'fake-link', 'My Title'), 'My Title')
         self.assertEqual(preprocessor.get_title(rc.project('checking'), 'fake-link'), 'Fake Link')
 
-    def test_fix_links(self):
+    # IMPORTANT
+    # This test may fail as it relies on the commit number for languages to be the same as expected
+    # These commit numbers could change daily
+    # Thus to ensure that this test behaves correctly, the commit numbers specified as variables should be checked
+    # to be correct first.
+    @unittest.skip("This test is conditional on outside resources we can't control.")
+    def test_url_requests_with_get_links(self):
+        rc = RC(os.path.join(self.resources_dir, 'manifests', 'ta'))
+        ta = TaPreprocessor(rc, tempfile.gettempdir(), tempfile.gettempdir())
+
+        as_tn_commit_number = "5ec1fb81f6"
+        en_tn_commit_number = "ccdb2a707b"
+        fr_tn_commit_number = "5f066d1aab"
+
+        content = """
+        [link](rc://as/tn/help/rut/04/14)
+        [link](rc://en/tn/help/1co/05/14)
+        [link](rc://fr/tn/help/1co/06/14)
+        [link](rc://fr/tn/help/1co/07/14)
+        [link](rc://fr/tn/help/1co/08/14)
+        """
+        expected = """
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/as_tn/{}/8-RUT.html#tn-chunk-rut-004-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/{}/47-1CO.html#tn-chunk-1co-005-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/{}/47-1CO.html#tn-chunk-1co-006-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/{}/47-1CO.html#tn-chunk-1co-007-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/{}/47-1CO.html#tn-chunk-1co-008-014)
+        """.format(
+            as_tn_commit_number, en_tn_commit_number, fr_tn_commit_number, fr_tn_commit_number, fr_tn_commit_number
+        )
+
+        converted = ta.fix_links(content)
+        self.assertEqual(expected, converted)
+
+    @mock.patch('requests.get')
+    def test_fix_links(self, mock_get):
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'ta'))
         ta = TaPreprocessor(rc, tempfile.gettempdir(), tempfile.gettempdir())
 
@@ -99,23 +135,19 @@ class TestTaPreprocessor(unittest.TestCase):
 
         ################################################################################################################
 
-        # content = """This [link](rc://en/tw/dict/bible/other/dream) is a rc link that should go to
-        #     other/dream.md in the en_tw repo"""
-        # expected = """This [link](https://git.door43.org/Door43/en_tw/src/master/bible/other/dream.md) is a rc link that should go to
-        #     other/dream.md in the en_tw repo"""
+        mock_get.return_value.url = "http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/"
+
         content = """
-        [link](rc://as/tn/help/rut/04/14)
-        [link](rc://en/tn/help/1co/05/14)
-        [link](rc://fr/tn/help/1co/06/14)
-        [link](rc://fr/tn/help/1co/07/14)
-        [link](rc://fr/tn/help/1co/08/14)
+        [link](rc://en/tn/help/rut/04/14)
+        [link](rc://en/tn/help/1co/02/03)
+        [link](rc://en/tn/help/1sa/05/12)
+        [link](rc://en/tn/help/tit/01/02)
         """
         expected = """
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/as_tn/5ec1fb81f6/8-RUT.html#tn-chunk-rut-004-014)
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/47-1CO.html#tn-chunk-1co-005-014)
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-006-014)
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-007-014)
-        [link](http://read.bibletranslationtools.org/u/WA-Catalog/fr_tn/5f066d1aab/47-1CO.html#tn-chunk-1co-008-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/8-RUT.html#tn-chunk-rut-004-014)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/47-1CO.html#tn-chunk-1co-002-003)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/9-1SA.html#tn-chunk-1sa-005-012)
+        [link](http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/57-TIT.html#tn-chunk-tit-001-002)
         """
 
         converted = ta.fix_links(content)
