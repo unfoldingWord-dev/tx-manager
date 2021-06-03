@@ -157,8 +157,6 @@ class TestTwPreprocessor(unittest.TestCase):
         converted = tw.fix_links(content, current_category)
 
         # then
-        print(converted)
-        print(expected)
         self.assertEqual(expected, converted)
 
     #
