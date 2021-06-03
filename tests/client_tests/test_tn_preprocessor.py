@@ -86,7 +86,14 @@ class TestTnPreprocessor(unittest.TestCase):
         rc = RC(os.path.join(self.resources_dir, 'manifests', 'ta'))
         tn = TnPreprocessor(rc, tempfile.gettempdir(), tempfile.gettempdir())
 
-        # TODO: add comment here about these needing to be updated ...
+        # these are the commit numbers that should be updated in order to make this test run properly
+        # for example, to get the as_tn_commit_number, go to this url:
+            # http://read.bibletranslationtools.org/u/WA-Catalog/as_tn
+        # this url should redirect to another url which will be the exact same except that it will have a commit number
+        # appended to it
+        # that should be the commit number to be placed in the as_tn_commit_number variable
+        # the same should hold true for the other variables here
+        # just make sure to change as_tn to en_tn, fr_tn, ... etc in the url above
         as_tn_commit_number = "5ec1fb81f6"
         en_tn_commit_number = "ccdb2a707b"
         fr_tn_commit_number = "5f066d1aab"
