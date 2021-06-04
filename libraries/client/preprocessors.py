@@ -749,12 +749,19 @@ class TnPreprocessor(Preprocessor):
         return content
 
     def fix_links(self, content):
+        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism =>
+        # https://content.bibletranslationtools.org/WycliffeAssociates/en_tm/src/branch/master/jit/figs-euphemism/01.md
+        content = re.sub(
+            r'rc://([^/]+)/ta/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+            r'https://content.bibletranslationtools.org/WycliffeAssociates/\1_tm/src/branch/master/jit/\4/01.md',
+            content,
+            flags=re.IGNORECASE
+        )
+
+        # convert RC links, e.g. rc://en/tn/help/rut/04/14 =>
+        # http://read.bibletranslationtools.org/u/WA-Catalog/en_tn/ccdb2a707b/8-RUT.html#tn-chunk-rut-004-014
         content = self.fix_rc_links(content)
 
-        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
-        content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
-                         flags=re.IGNORECASE)
         # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
                          r'https://content.bibletranslationtools.org/WycliffeAssociates/\1_\2/src/master/\4.md', content,
