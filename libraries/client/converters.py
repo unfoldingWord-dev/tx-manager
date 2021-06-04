@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import codecs
 from libraries.app.app import App
 
 
@@ -29,7 +30,7 @@ def txt2md(rootdir="."):
                                     md += elm["body"] + "\n\n"
 
                             md_filepath = re.sub(r"\.txt$", ".md", filepath)
-                            with open(md_filepath, "w") as md_file:
+                            with codecs.open(md_filepath, "w", encoding="utf-8") as md_file:
                                 md_file.write(md)
 
                             proccessed = True
