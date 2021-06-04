@@ -83,6 +83,7 @@ class TnLinter(MarkdownLinter):
                     self.log.warnings.append(msg)
                     App.logger.debug(msg)
 
+    # TODO: does this need to be changed?
     def get_file_link(self, f, folder):
         parts = folder.split(self.source_dir)
         sub_path = self.source_dir  # default
