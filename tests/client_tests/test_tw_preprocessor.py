@@ -150,8 +150,8 @@ class TestTwPreprocessor(unittest.TestCase):
 
 
         # given
-        content = "https://git.door43.org/unfoldingWord/en_tw/src/branch/master/bible/kt/sin.md"
-        expected = "https://read.bibletranslationtools.org/u/WycliffeAssociates/en_tw/#sin"
+        content = """(rc://en/ta/man/translate/figs-euphemism)"""
+        expected = """(https://content.bibletranslationtools.org/WycliffeAssociates/en_tm/src/branch/master/jit/figs-euphemism/01.md)"""
 
         # when
         converted = tw.fix_links(content, current_category)

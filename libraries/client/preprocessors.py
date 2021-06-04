@@ -419,10 +419,7 @@ class TaPreprocessor(Preprocessor):
         return True
 
 
-
     def fix_links(self, content):
-        # content = self.fix_rc_links(content)
-
         # fix links to other sections within the same manual (only one ../ and a section name)
         # e.g. [Section 2](../section2/01.md) => [Section 2](#section2)
         content = re.sub(r'\]\(\.\./([^/)]+)/01.md\)', r'](#\1)', content)
@@ -571,11 +568,14 @@ class TwPreprocessor(Preprocessor):
         return True
 
     def fix_links(self, content, section):
-        # TODO: change what this is pointing to as well
-        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism => https://git.door43.org/Door43/en_ta/translate/figs-euphemism/01.md
-        content = re.sub(r'rc://([^/]+)/ta/([^/]+)/([^\s)\]\n$]+)',
-                         r'https://git.door43.org/Door43/\1_ta/src/master/\3/01.md', content,
-                         flags=re.IGNORECASE)
+        # convert tA RC links, e.g. rc://en/ta/man/translate/figs-euphemism =>
+        # https://content.bibletranslationtools.org/WycliffeAssociates/en_tm/src/branch/master/jit/figs-euphemism/01.md
+        content = re.sub(
+            r'rc://([^/]+)/ta/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
+            r'https://content.bibletranslationtools.org/WycliffeAssociates/\1_tm/src/branch/master/jit/\4/01.md',
+            content,
+            flags=re.IGNORECASE
+        )
 
         # convert other RC links, e.g. rc://en/tn/help/1sa/16/02 => https://git.door43.org/Door43/en_tn/1sa/16/02.md
         content = re.sub(r'rc://([^/]+)/([^/]+)/([^/]+)/([^\s)\]\n$]+)',
@@ -605,16 +605,6 @@ class TwPreprocessor(Preprocessor):
         # URLS wth just www at the start, no http
         content = re.sub(r'([^A-Z0-9"(/])(www\.[A-Z0-9/?&_.:=#-]+[A-Z0-9/?&_:=#-])', r'\1[\2](http://\2)',
                          content, flags=re.IGNORECASE)
-
-        # git.door43.org urls
-        # https://git.door43.org/unfoldingWord/en_tw/src/branch/master/bible/kt/sin.md
-        # https://read.bibletranslationtools.org/u/WycliffeAssociates/en_tw/#sin
-        # content = re.sub(
-        #     r'^(https://)?(git.door43.org/unfoldingWord/)([A-Z_]+)(/src/branch/master/bible/kt/)([A-Z]+)(.md)',
-        #     r'https://read.bibletranslationtools.org/u/WycliffeAssociates/\3/#\5',
-        #     content,
-        #     flags=re.IGNORECASE
-        # )
 
         return content
 
