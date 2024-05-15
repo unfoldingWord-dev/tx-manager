@@ -65,7 +65,7 @@ setup(
         'md2html',
         'usfm2html'
     ],
-    url='https://github.org/unfoldingWord-dev/tx-manager',
+    url='https://github.com/unfoldingWord-dev/tx-manager',
     long_description=read('README.rst'),
     classifiers=[
         'License :: OSI Approved :: MIT License',
